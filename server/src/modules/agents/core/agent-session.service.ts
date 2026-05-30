@@ -1,7 +1,8 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { AgentType, Intent } from '../../../common/enums';
+import { AiService } from '../../ai/ai.service';
 import { AgentResponse } from '../../ai/types/agent.types';
 import {
   AgentMessage,
@@ -10,12 +11,50 @@ import {
   AgentSessionDocument,
 } from '../schemas/agent-session.schema';
 
+const RECENT_WINDOW = 8; // turns kept verbatim; older turns roll into the summary
+const SUMMARIZE_AT = 16; // only summarize once a session grows past this many messages
+
 @Injectable()
 export class AgentSessionService {
+  private readonly logger = new Logger(AgentSessionService.name);
+
   constructor(
     @InjectModel(AgentSession.name) private readonly sessions: Model<AgentSessionDocument>,
     @InjectModel(AgentMessage.name) private readonly messages: Model<AgentMessageDocument>,
+    private readonly ai: AiService,
   ) {}
+
+  /**
+   * Roll older turns into a rolling LLM summary so long chats stay coherent without a huge
+   * prompt. Fire-and-forget after a turn; no-op offline or under the threshold.
+   */
+  async maybeSummarize(userId: string, sessionId: string): Promise<void> {
+    if (!this.ai.isLive || !Types.ObjectId.isValid(sessionId)) return;
+    try {
+      const count = await this.messages.countDocuments({ session: sessionId, user: new Types.ObjectId(userId) });
+      if (count <= SUMMARIZE_AT) return;
+      const older = await this.messages
+        .find({ session: sessionId, user: new Types.ObjectId(userId) })
+        .sort({ createdAt: 1 })
+        .limit(count - RECENT_WINDOW)
+        .exec();
+      const transcript = older
+        .map((m) => `${m.role === 'assistant' ? 'Asta' : 'Student'}: ${m.content.slice(0, 600)}`)
+        .join('\n');
+      const summary = await this.ai.generateText(
+        [
+          { role: 'system', content: 'Summarize this tutoring conversation in 4-6 sentences: topics covered, the student’s understanding/struggles, and any decisions. Be specific and concise.' },
+          { role: 'user', content: transcript },
+        ],
+        { temperature: 0.2, maxTokens: 320, meta: { userId, agentType: AgentType.Tutor, operation: 'session.summary' } },
+      );
+      if (summary.trim()) {
+        await this.sessions.updateOne({ _id: sessionId }, { $set: { summary: summary.trim().slice(0, 1500) } }).exec();
+      }
+    } catch (err) {
+      this.logger.warn(`Session summarization failed: ${(err as Error).message}`);
+    }
+  }
 
   async ensureSession(userId: string, sessionId?: string, source = 'chat'): Promise<AgentSessionDocument> {
     if (sessionId && Types.ObjectId.isValid(sessionId)) {
@@ -42,6 +81,30 @@ export class AgentSessionService {
       .find({ session: sessionId, user: new Types.ObjectId(userId) })
       .sort({ createdAt: 1 })
       .exec();
+  }
+
+  /**
+   * Recent turns as {role, content} for multi-turn coherence — so a live LLM remembers
+   * the conversation, not just the current message. Newest `limit`, chronological order;
+   * long answers truncated to keep the prompt lean.
+   */
+  async recentHistory(
+    userId: string,
+    sessionId: string,
+    limit = 8,
+  ): Promise<{ role: 'user' | 'assistant'; content: string }[]> {
+    if (!Types.ObjectId.isValid(sessionId)) return [];
+    const docs = await this.messages
+      .find({ session: sessionId, user: new Types.ObjectId(userId) })
+      .sort({ createdAt: -1 })
+      .limit(limit)
+      .exec();
+    return docs
+      .reverse()
+      .map((m) => ({
+        role: m.role === 'assistant' ? ('assistant' as const) : ('user' as const),
+        content: m.content.length > 1500 ? `${m.content.slice(0, 1500)}…` : m.content,
+      }));
   }
 
   async addUserMessage(userId: string, sessionId: string, content: string): Promise<AgentMessageDocument> {

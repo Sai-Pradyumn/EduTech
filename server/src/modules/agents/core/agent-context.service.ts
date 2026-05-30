@@ -26,14 +26,14 @@ export class AgentContextService {
     private readonly memory: AgentMemoryService,
   ) {}
 
-  async load(userId: string): Promise<LoadedContext> {
+  async load(userId: string, query?: string): Promise<LoadedContext> {
     const [profile, activeRoadmap, memories] = await Promise.all([
       this.profiles.findByUser(userId),
       this.roadmaps
         .findOne({ user: new Types.ObjectId(userId), status: RoadmapStatus.Active })
         .sort({ updatedAt: -1 })
         .exec(),
-      this.memory.retrieve(userId),
+      this.memory.retrieve(userId, query),
     ]);
 
     let roadmap: RoadmapContext | null = null;

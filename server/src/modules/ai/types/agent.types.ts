@@ -133,6 +133,25 @@ export type VisualBlock =
 
 export type VisualBlockType = VisualBlock['type'];
 
+/** A proactive "what to do next" the system decides on the learner's behalf. */
+export interface NextAction {
+  label: string;
+  reason: string;
+  /** Client route to open (e.g. /app/quizzes). */
+  route?: string;
+  /** Agent to invoke if the action is a follow-up prompt. */
+  agentType?: AgentType;
+  /** Prefilled prompt for the follow-up. */
+  prompt?: string;
+  kind: 'revise' | 'roadmap' | 'quiz' | 'project' | 'career' | 'explore' | 'session';
+}
+
+/** One step in an orchestration plan (usually a single step). */
+export interface PlanStep {
+  agentType: AgentType;
+  goal: string;
+}
+
 /** Normalized response every agent returns. */
 export interface AgentResponse {
   agentType: AgentType;
@@ -145,12 +164,17 @@ export interface AgentResponse {
   confidence: number; // 0–1
   followUpQuestions: string[];
   recommendedNextActions: string[];
+  /** Proactive next move chosen from the learner's state (orchestrator-attached). */
+  nextAction?: NextAction;
 }
 
 /* ───────────────────── Streaming workflow events ───────────────────── */
 
 export type AgentStreamEvent =
   | { type: 'started'; sessionId: string; messageId: string; agentType: AgentType }
+  | { type: 'plan'; messageId: string; steps: PlanStep[]; rationale: string }
+  | { type: 'step_started'; messageId: string; index: number; agentType: AgentType; goal: string }
+  | { type: 'step_completed'; messageId: string; index: number; agentType: AgentType }
   | { type: 'thinking'; messageId: string; label: string }
   | { type: 'tool_call'; messageId: string; tool: string; label: string }
   | { type: 'tool_result'; messageId: string; tool: string; summary: string }

@@ -1,21 +1,29 @@
 import { Injectable } from '@nestjs/common';
 import { AiService } from '../../ai/ai.service';
 
+const CONCURRENCY = 5;
+
 /**
- * Embeds chunk texts via IAIProvider.generateEmbedding. With the MockAIProvider this is
- * a deterministic, L2-normalized hashed vector (stable per input), so cosine + keyword
- * retrieval both behave realistically with no API key. Batched sequentially to stay
- * within provider rate limits; swap to a batch endpoint for real providers.
+ * Embeds chunk texts via the LLM gateway (AiService.generateEmbedding). With a live,
+ * embeddings-capable provider these are real dense vectors; with no key the gateway
+ * returns deterministic L2-normalized hashed vectors, so cosine + keyword retrieval both
+ * behave realistically offline. Embedded with bounded concurrency to stay within rate
+ * limits while keeping ingestion fast.
  */
 @Injectable()
 export class EmbeddingService {
   constructor(private readonly ai: AiService) {}
 
   async embedAll(texts: string[]): Promise<number[][]> {
-    const out: number[][] = [];
-    for (const text of texts) {
-      out.push(await this.ai.generateEmbedding(text));
-    }
+    const out: number[][] = new Array(texts.length);
+    let cursor = 0;
+    const worker = async (): Promise<void> => {
+      while (cursor < texts.length) {
+        const i = cursor++;
+        out[i] = await this.ai.generateEmbedding(texts[i]);
+      }
+    };
+    await Promise.all(Array.from({ length: Math.min(CONCURRENCY, texts.length) }, worker));
     return out;
   }
 

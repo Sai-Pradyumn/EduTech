@@ -13,7 +13,7 @@ import { CitationService } from './services/citation.service';
 import { RagAnswerService } from './services/rag-answer.service';
 import { HybridRetrieverService } from './vector/hybrid-retriever.service';
 import { vectorStoreFactory } from './vector/vector-store.factory';
-import { NoopReranker, RERANKER_TOKEN } from './vector/reranker';
+import { LlmReranker, RERANKER_TOKEN } from './vector/reranker';
 import { fileStorageFactory } from './storage/file-storage';
 
 /**
@@ -42,7 +42,7 @@ import { fileStorageFactory } from './storage/file-storage';
     HybridRetrieverService,
     vectorStoreFactory,
     fileStorageFactory,
-    { provide: RERANKER_TOKEN, useClass: NoopReranker },
+    { provide: RERANKER_TOKEN, useClass: LlmReranker },
   ],
   exports: [RagAnswerService, KnowledgeService, IngestionService],
 })

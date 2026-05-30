@@ -18,6 +18,10 @@ export class AgentSession {
   @Prop({ default: 'chat' })
   source!: string;
 
+  /** Rolling LLM summary of older turns, so long chats stay coherent without a huge prompt. */
+  @Prop({ default: '' })
+  summary!: string;
+
   @Prop({ index: true })
   lastMessageAt?: Date;
 }

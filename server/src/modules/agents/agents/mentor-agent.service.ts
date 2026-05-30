@@ -7,11 +7,15 @@ import {
   VisualBlock,
 } from '../../ai/types/agent.types';
 import { AgentRuntimeContext, IAgent } from '../core/agent.interface';
+import { LlmComposerService } from '../core/llm-composer.service';
+import { personaFor } from '../prompts/personas';
 
 /** Senior-mentor agent: reviews progress, scores learning health, plans the week. */
 @Injectable()
 export class MentorAgentService implements IAgent {
   readonly type = AgentType.Mentor;
+
+  constructor(private readonly composer: LlmComposerService) {}
 
   async handle(ctx: AgentRuntimeContext): Promise<AgentResponse> {
     ctx.emit({ type: 'thinking', messageId: '', label: 'Reviewing your roadmap & recent activity' });
@@ -54,7 +58,7 @@ export class MentorAgentService implements IAgent {
     };
 
     const blocks: VisualBlock[] = [mentorBlock, weekPlan];
-    const answer = [
+    const fallback = [
       `${name}, here's your honest weekly review.`,
       '',
       `**Learning health: ${health}/100.** ${this.healthNote(health)}`,
@@ -65,7 +69,17 @@ export class MentorAgentService implements IAgent {
       ...actionPlan.map((a, i) => `${i + 1}. ${a}`),
     ].join('\n');
 
-    await this.stream(answer, ctx);
+    const system =
+      `${personaFor(AgentType.Mentor)}\n` +
+      `DATA (ground your review in these): learning health ${health}/100, roadmap progress ${progress}%, ` +
+      `weak areas: ${weak.join(', ') || 'none'}. Suggested this-week plan: ${actionPlan.join(' | ')}.`;
+    const answer = await this.composer.streamAnswer(ctx, {
+      system,
+      fallback,
+      agentType: AgentType.Mentor,
+      operation: 'mentor.review',
+      temperature: 0.5,
+    });
     for (const block of blocks) ctx.emit({ type: 'visual_block', messageId: '', block });
 
     return {
@@ -97,12 +111,5 @@ export class MentorAgentService implements IAgent {
     if (score >= 75) return 'Strong and consistent — push into harder material.';
     if (score >= 50) return 'Solid base — focus on consistency and weak areas.';
     return 'Needs attention — small daily wins will turn this around fast.';
-  }
-
-  private async stream(text: string, ctx: AgentRuntimeContext): Promise<void> {
-    for (const token of text.split(/(\s+)/)) {
-      ctx.emit({ type: 'chunk', messageId: '', delta: token });
-      await new Promise((r) => setTimeout(r, 7));
-    }
   }
 }

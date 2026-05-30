@@ -2,6 +2,8 @@ import { Injectable } from '@nestjs/common';
 import { AgentType, Intent } from '../../../common/enums';
 import { AgentResponse, PracticeBlock, VisualBlock } from '../../ai/types/agent.types';
 import { AgentRuntimeContext, IAgent } from '../core/agent.interface';
+import { LlmComposerService } from '../core/llm-composer.service';
+import { personaFor } from '../prompts/personas';
 
 /** Detects the kind of problem so the hints are specific, not generic. */
 function classify(message: string): { kind: string; causes: string[]; checks: string[] } {
@@ -50,6 +52,8 @@ function classify(message: string): { kind: string; causes: string[]; checks: st
 export class DoubtSolverAgentService implements IAgent {
   readonly type = AgentType.DoubtSolver;
 
+  constructor(private readonly composer: LlmComposerService) {}
+
   async handle(ctx: AgentRuntimeContext): Promise<AgentResponse> {
     const problem = ctx.request.message.trim();
     const reveal =
@@ -62,8 +66,20 @@ export class DoubtSolverAgentService implements IAgent {
     ctx.emit({ type: 'tool_call', messageId: '', tool: 'doubt.classify', label: `Looks like ${c.kind}` });
     ctx.emit({ type: 'tool_result', messageId: '', tool: 'doubt.classify', summary: reveal ? 'Revealing a direct approach' : 'Hint-first (you debug it)' });
 
-    const answer = reveal ? this.revealAnswer(c, problem) : this.hintAnswer(c, problem, name);
-    await this.stream(answer, ctx);
+    const fallback = reveal ? this.revealAnswer(c, problem) : this.hintAnswer(c, problem, name);
+    const system =
+      `${personaFor(AgentType.DoubtSolver)}\n` +
+      `Detected problem type: ${c.kind}. Likely causes: ${c.causes.join('; ')}. ` +
+      (reveal
+        ? 'The student asked to SEE THE FIX — give a direct, correct solution and explain why it works.'
+        : 'Stay HINT-FIRST: do NOT give the full fix yet; guide them with the most likely cause and one diagnostic question.');
+    const answer = await this.composer.streamAnswer(ctx, {
+      system,
+      fallback,
+      agentType: AgentType.DoubtSolver,
+      operation: reveal ? 'doubt.reveal' : 'doubt.hint',
+      temperature: 0.4,
+    });
 
     const block: PracticeBlock = {
       type: 'practice',
@@ -116,12 +132,5 @@ export class DoubtSolverAgentService implements IAgent {
       '',
       `The fix almost always falls out of step where expectation ≠ reality. Apply it, then re-run. If a *new* error appears, paste it — a new error usually means you fixed the first one.`,
     ].join('\n');
-  }
-
-  private async stream(text: string, ctx: AgentRuntimeContext): Promise<void> {
-    for (const token of text.split(/(\s+)/)) {
-      ctx.emit({ type: 'chunk', messageId: '', delta: token });
-      await new Promise((r) => setTimeout(r, 6));
-    }
   }
 }

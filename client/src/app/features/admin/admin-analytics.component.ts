@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, OnInit, computed, inject, signal } from '@angular/core';
 import { AdminService } from '../../core/services/admin.service';
-import { AdminAnalytics } from '../../core/models';
+import { AgentService } from '../../core/services/agent.service';
+import { AdminAnalytics, AiProvidersSnapshot } from '../../core/models';
 import { SkeletonComponent } from '../../shared/ui/skeleton.component';
 import { DonutChartComponent, ChartDatum } from '../../shared/charts';
 import { CountDirective } from '../../shared/directives/count.directive';
@@ -47,6 +48,27 @@ import { TiltDirective } from '../../shared/directives/tilt.directive';
           <span class="lbl">est. cost ⓘ</span>
         </asta-card>
       </div>
+
+      @if (providers(); as p) {
+        <asta-card class="block mb-5" [astaReveal]="1" pad="18px">
+          <div class="panel-head">
+            <div class="min-w-0">
+              <p class="kicker mb-1">AI providers</p>
+              <h2 class="t-h-card">Live chain · strategy: <b>{{ p.strategy }}</b></h2>
+            </div>
+            <span class="pill" [class.on]="p.live">{{ p.live ? 'LIVE' : 'MOCK' }}</span>
+          </div>
+          <div class="prov-grid mt-3">
+            @for (pr of p.providers; track pr.name) {
+              <div class="prov" [class.on]="pr.isLive && pr.available">
+                <span class="dot2"></span>
+                <span class="pname">{{ pr.name }}</span>
+                <span class="pstate">{{ pr.name === 'mock' ? 'fallback' : (pr.isLive ? (pr.available ? 'live' : 'cooldown') : 'no key') }}</span>
+              </div>
+            }
+          </div>
+        </asta-card>
+      }
 
       @if (agentShare().length) {
         <asta-card class="block mb-5" [astaReveal]="1" pad="18px">
@@ -137,12 +159,23 @@ import { TiltDirective } from '../../shared/directives/tilt.directive';
       .agent-name .arr { opacity: 0; transform: translateX(-4px); transition: opacity 0.18s var(--ease), transform 0.18s var(--ease); color: var(--peri-deep); }
       tbody tr:hover .agent-name .arr { opacity: 1; transform: translateX(0); }
       .empty { text-align: center; color: var(--text-mute); padding: 32px 24px; }
+
+      .pill { font-family: var(--mono); font-size: 10px; letter-spacing: 0.06em; padding: 3px 8px; border-radius: 999px; background: color-mix(in oklch, var(--text-mute) 18%, transparent); color: var(--text-mute); }
+      .pill.on { background: color-mix(in oklch, var(--green) 18%, transparent); color: var(--green-deep); }
+      .prov-grid { display: grid; gap: 8px; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); }
+      .prov { display: flex; align-items: center; gap: 8px; padding: 9px 11px; border-radius: 10px; background: color-mix(in oklch, var(--paper-2) 80%, transparent); }
+      .prov .dot2 { width: 8px; height: 8px; border-radius: 999px; background: var(--text-mute); flex-shrink: 0; }
+      .prov.on .dot2 { background: var(--green); box-shadow: 0 0 0 3px color-mix(in oklch, var(--green) 22%, transparent); }
+      .prov .pname { font-weight: 600; font-size: 12.5px; text-transform: capitalize; }
+      .prov .pstate { margin-left: auto; font-family: var(--mono); font-size: 10px; color: var(--text-mute); }
     `,
   ],
 })
 export class AdminAnalyticsComponent implements OnInit {
   private readonly api = inject(AdminService);
+  private readonly agent = inject(AgentService);
   readonly data = signal<AdminAnalytics | null>(null);
+  readonly providers = signal<AiProvidersSnapshot | null>(null);
 
   /** Agent call counts → donut slices. */
   readonly agentShare = computed<ChartDatum[]>(() =>
@@ -151,6 +184,7 @@ export class AdminAnalyticsComponent implements OnInit {
 
   ngOnInit(): void {
     this.api.analytics().subscribe({ next: (d) => this.data.set(d) });
+    this.agent.aiProviders().subscribe({ next: (p) => this.providers.set(p), error: () => undefined });
   }
 
   pct(value: number, total: number): number {

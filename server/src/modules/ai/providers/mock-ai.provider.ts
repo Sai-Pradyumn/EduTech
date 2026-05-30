@@ -1,5 +1,10 @@
 import { Injectable } from '@nestjs/common';
-import { AIMessage, GenOptions, IAIProvider } from '../interfaces/ai-provider.interface';
+import {
+  AIMessage,
+  GenOptions,
+  IAIProvider,
+  ProviderCapabilities,
+} from '../interfaces/ai-provider.interface';
 
 /**
  * Deterministic, realistic mock provider — runs with zero API keys.
@@ -12,6 +17,13 @@ import { AIMessage, GenOptions, IAIProvider } from '../interfaces/ai-provider.in
 @Injectable()
 export class MockAIProvider implements IAIProvider {
   readonly name = 'mock';
+  readonly isLive = false;
+  readonly capabilities: ProviderCapabilities = {
+    chat: true,
+    streaming: true,
+    structured: true,
+    embeddings: true,
+  };
   private static readonly EMBED_DIM = 256;
 
   async generateText(messages: AIMessage[], _opts?: GenOptions): Promise<string> {

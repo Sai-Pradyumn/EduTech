@@ -7,6 +7,8 @@ import {
   AgentResponse,
   AgentSessionSummary,
   AgentStreamEvent,
+  AiProvidersSnapshot,
+  NextAction,
 } from '../models';
 
 export interface AgentMessageResult {
@@ -41,5 +43,15 @@ export class AgentService {
 
   sendFeedback(rating: string, messageId?: string, reason?: string): Observable<{ ok: boolean }> {
     return this.api.post<{ ok: boolean }>('/ai/feedback', { rating, messageId, reason });
+  }
+
+  /** Proactive "Your next move" computed from the learner's current state. */
+  nextAction(): Observable<NextAction> {
+    return this.api.get<NextAction>('/ai/next-action');
+  }
+
+  /** Admin-only: live AI provider chain + health snapshot. */
+  aiProviders(): Observable<AiProvidersSnapshot> {
+    return this.api.get<AiProvidersSnapshot>('/ai/providers');
   }
 }

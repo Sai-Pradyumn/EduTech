@@ -2,6 +2,8 @@ import { Injectable } from '@nestjs/common';
 import { AgentType, Intent } from '../../../common/enums';
 import { AgentResponse, QuizBlock, StudyPlanBlock, VisualBlock } from '../../ai/types/agent.types';
 import { AgentRuntimeContext, IAgent } from '../core/agent.interface';
+import { LlmComposerService } from '../core/llm-composer.service';
+import { personaFor } from '../prompts/personas';
 
 type Format = 'notes' | 'flashcards' | 'summary' | 'cheatsheet';
 
@@ -22,6 +24,8 @@ function detectFormat(message: string): Format {
 export class ContentCreatorAgentService implements IAgent {
   readonly type = AgentType.ContentCreator;
 
+  constructor(private readonly composer: LlmComposerService) {}
+
   async handle(ctx: AgentRuntimeContext): Promise<AgentResponse> {
     const format = detectFormat(ctx.request.message);
     const topic = this.extractTopic(ctx.request.message);
@@ -31,8 +35,18 @@ export class ContentCreatorAgentService implements IAgent {
     ctx.emit({ type: 'tool_call', messageId: '', tool: 'content.generate', label: `Tuning to your level (${level})` });
     ctx.emit({ type: 'tool_result', messageId: '', tool: 'content.generate', summary: `${format} ready` });
 
-    const answer = this.buildContent(format, topic, level);
-    await this.stream(answer, ctx);
+    const fallback = this.buildContent(format, topic, level);
+    const system =
+      `${personaFor(AgentType.ContentCreator)}\n` +
+      `Produce: ${format} on "${topic}", tuned to a ${level} learner. Use clean markdown` +
+      `${format === 'cheatsheet' ? ' (include a reference table)' : ''}.`;
+    const answer = await this.composer.streamAnswer(ctx, {
+      system,
+      fallback,
+      agentType: AgentType.ContentCreator,
+      operation: `content.${format}`,
+      temperature: 0.6,
+    });
 
     const blocks: VisualBlock[] = [];
     const plan: StudyPlanBlock = {
@@ -123,11 +137,5 @@ export class ContentCreatorAgentService implements IAgent {
 
   private titleCase(s: string): string {
     return s.replace(/\b\w/g, (c) => c.toUpperCase());
-  }
-  private async stream(text: string, ctx: AgentRuntimeContext): Promise<void> {
-    for (const token of text.split(/(\s+)/)) {
-      ctx.emit({ type: 'chunk', messageId: '', delta: token });
-      await new Promise((r) => setTimeout(r, 5));
-    }
   }
 }

@@ -304,6 +304,13 @@ export class AgentWorkspaceComponent implements OnInit {
   private onEvent(e: AgentStreamEvent, assistant: ChatMsg): void {
     switch (e.type) {
       case 'started': this.sessionId = e.sessionId; break;
+      case 'plan':
+        if (e.steps.length > 1) this.steps.update((s) => [...s, { kind: 'tool_call', label: `Plan: ${e.steps.map((p) => p.agentType.replace('_', ' ')).join(' → ')}` }]);
+        break;
+      case 'step_started':
+        if (e.index > 0) this.steps.update((s) => [...s, { kind: 'thinking', label: `Step ${e.index + 1}: ${e.goal}` }]);
+        break;
+      case 'step_completed': break;
       case 'thinking': this.steps.update((s) => [...s, { kind: 'thinking', label: e.label }]); break;
       case 'tool_call': this.steps.update((s) => [...s, { kind: 'tool_call', label: e.label }]); break;
       case 'tool_result': this.steps.update((s) => [...s, { kind: 'tool_result', label: e.summary }]); break;

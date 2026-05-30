@@ -5,7 +5,8 @@ import { AuthService } from '../../core/services/auth.service';
 import { RoadmapService } from '../../core/services/roadmap.service';
 import { StudentProfileService } from '../../core/services/student-profile.service';
 import { IntelligenceService } from '../../core/services/intelligence.service';
-import { LearningIntelligence, Roadmap, RoadmapWeek, StudentProfile } from '../../core/models';
+import { AgentService } from '../../core/services/agent.service';
+import { LearningIntelligence, NextAction, Roadmap, RoadmapWeek, StudentProfile } from '../../core/models';
 import { ButtonComponent } from '../../shared/ui/button.component';
 import { CardComponent } from '../../shared/ui/card.component';
 import { EmptyStateComponent } from '../../shared/ui/empty-state.component';
@@ -81,6 +82,20 @@ import { ConfettiService } from '../../core/services/confetti.service';
           <asta-btn variant="ghost" astaMagnetic routerLink="/app/tutor">Ask Asta</asta-btn>
         </div>
       </header>
+
+      <!-- Proactive "Your next move" — the system decides what's next from your state -->
+      @if (nextMove(); as nm) {
+        <asta-card class="mb-5 next-move" astaTilt [tiltMax]="2" [astaReveal]="0">
+          <div class="flex items-center justify-between gap-4 flex-wrap">
+            <div class="min-w-0">
+              <p class="kicker mb-1">Your next move</p>
+              <h3 class="t-h-card mb-0.5">{{ nm.label }}</h3>
+              <p class="text-sm text-txt-soft">{{ nm.reason }}</p>
+            </div>
+            <asta-btn variant="accent" astaMagnetic (click)="goNext(nm)">Let’s go <span class="arr">→</span></asta-btn>
+          </div>
+        </asta-card>
+      }
 
       <!-- Active roadmap (anchor) + progress -->
       <div class="grid gap-5 lg:grid-cols-3">
@@ -252,12 +267,14 @@ export class DashboardComponent {
   private readonly profiles = inject(StudentProfileService);
   private readonly roadmaps = inject(RoadmapService);
   private readonly intelligence = inject(IntelligenceService);
+  private readonly agent = inject(AgentService);
   private readonly router = inject(Router);
   private readonly confetti = inject(ConfettiService);
 
   readonly profile = signal<StudentProfile | null>(null);
   readonly roadmap = signal<Roadmap | null>(null);
   readonly intel = signal<LearningIntelligence | null>(null);
+  readonly nextMove = signal<NextAction | null>(null);
   readonly loading = signal(true);
   readonly error = signal(false);
 
@@ -355,6 +372,12 @@ export class DashboardComponent {
     if (r) this.router.navigate(['/app/roadmap', r.id]);
   }
 
+  /** Act on the proactive next move (deep-links, optionally prefilling a prompt). */
+  goNext(nm: NextAction): void {
+    if (!nm.route) return;
+    this.router.navigate([nm.route], nm.prompt ? { queryParams: { prompt: nm.prompt } } : {});
+  }
+
   load(): void {
     this.loading.set(true);
     this.error.set(false);
@@ -363,6 +386,9 @@ export class DashboardComponent {
         this.profile.set(profile);
         this.roadmap.set(roadmap);
         this.loading.set(false);
+        if (profile) {
+          this.agent.nextAction().subscribe({ next: (n) => this.nextMove.set(n), error: () => undefined });
+        }
         if (profile && roadmap) {
           this.intelligence.overview().subscribe({ next: (d) => this.intel.set(d), error: () => undefined });
         }

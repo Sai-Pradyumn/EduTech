@@ -3,6 +3,8 @@ import { AgentType, Intent } from '../../../common/enums';
 import { AgentResponse, QuizBlock, VisualBlock } from '../../ai/types/agent.types';
 import { AssessmentService } from '../../assessment/services/assessment.service';
 import { AgentRuntimeContext, IAgent } from '../core/agent.interface';
+import { LlmComposerService } from '../core/llm-composer.service';
+import { personaFor } from '../prompts/personas';
 
 /**
  * Assessment agent — turns "quiz me on X" into a real, persisted adaptive quiz, returned
@@ -14,7 +16,10 @@ import { AgentRuntimeContext, IAgent } from '../core/agent.interface';
 export class AssessmentAgentService implements IAgent {
   readonly type = AgentType.Assessment;
 
-  constructor(private readonly assessment: AssessmentService) {}
+  constructor(
+    private readonly assessment: AssessmentService,
+    private readonly composer: LlmComposerService,
+  ) {}
 
   async handle(ctx: AgentRuntimeContext): Promise<AgentResponse> {
     const documentId = this.readDocumentId(ctx.request.context);
@@ -32,12 +37,22 @@ export class AssessmentAgentService implements IAgent {
 
     ctx.emit({ type: 'tool_result', messageId: '', tool: 'assessment.generate', summary: `${quiz.questions.length} ${quiz.difficulty} questions ready` });
 
-    const answer = [
+    const fallback = [
       `Here's a **${quiz.difficulty}** quiz on **${this.titleCase(quiz.topic)}** — ${quiz.questions.length} questions.`,
       '',
       'Answer below, or open it in the Quiz Studio to take it properly and get graded with weak-area feedback.',
     ].join('\n');
-    await this.stream(answer, ctx);
+    const system =
+      `${personaFor(AgentType.Assessment)}\n` +
+      `A ${quiz.difficulty} quiz on "${quiz.topic}" with ${quiz.questions.length} questions was just generated for the student. ` +
+      `Write a short, encouraging 1–2 sentence intro framing what it tests. Do NOT list the questions.`;
+    const answer = await this.composer.streamAnswer(ctx, {
+      system,
+      fallback,
+      agentType: AgentType.Assessment,
+      operation: 'assessment.intro',
+      temperature: 0.5,
+    });
 
     const block = this.toQuizBlock(quiz.title, quiz.questions);
     ctx.emit({ type: 'visual_block', messageId: '', block });
@@ -98,12 +113,5 @@ export class AssessmentAgentService implements IAgent {
 
   private titleCase(s: string): string {
     return s.replace(/\b\w/g, (c) => c.toUpperCase());
-  }
-
-  private async stream(text: string, ctx: AgentRuntimeContext): Promise<void> {
-    for (const token of text.split(/(\s+)/)) {
-      ctx.emit({ type: 'chunk', messageId: '', delta: token });
-      await new Promise((r) => setTimeout(r, 6));
-    }
   }
 }

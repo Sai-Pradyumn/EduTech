@@ -124,12 +124,15 @@ npm run build            # builds server then client
 |---|---|
 | `PORT` | API port (3000) |
 | `CLIENT_ORIGIN` | CORS origin (http://localhost:4200) |
-| `MONGO_URI` | MongoDB connection string |
+| `MONGO_URI` | MongoDB connection string. Optional — defaults to local standalone `:27017`. A replica-set URI that isn't reachable **auto-falls-back to standalone**. |
 | `JWT_SECRET` / `JWT_REFRESH_SECRET` | token signing secrets |
 | `JWT_EXPIRES_IN` / `JWT_REFRESH_EXPIRES_IN` | token lifetimes |
 | `REDIS_HOST` / `REDIS_PORT` | Redis for BullMQ |
-| `AI_PROVIDER` | `mock` \| `openai` \| `gemini` (mock needs no keys) |
-| `OPENAI_API_KEY` / `GEMINI_API_KEY` | real provider keys (optional) |
+| `AI_PROVIDER` | `auto` \| `mock` \| `openai` \| `gemini` \| `claude`. `auto` uses whichever key is present (claude→openai→gemini), else mock. |
+| `OPENAI_API_KEY` / `GEMINI_API_KEY` / `CLAUDE_API_KEY` | real provider keys (any/all optional) |
+| `LLM_STRATEGY` | `fallback` (default) \| `parallel` \| `refine` |
+| `CLAUDE_MODEL` / `OPENAI_MODEL` / `GEMINI_MODEL` | model overrides |
+| `AI_REQUEST_TIMEOUT_MS` / `AI_MAX_OUTPUT_TOKENS` / `AI_USER_RATE_PER_MIN` | gateway timeout, output cap, per-user AI turns/min |
 | `VECTOR_BACKEND` | `keyword` \| `atlas` (keyword needs no vector DB) |
 | `STORAGE_PROVIDER` | `local` \| `s3` |
 | `AWS_*` / `S3_BUCKET` | S3 storage (optional) |
@@ -140,12 +143,18 @@ Frontend (`client/.env.example`): `API_BASE_URL`, `SOCKET_URL` → set in `clien
 
 ## How the AI provider abstraction works
 
-All AI goes through **`IAIProvider`** (`generateText`, `streamText`, `generateStructuredOutput`, `generateEmbedding`). A factory selects the implementation from `AI_PROVIDER`:
+All AI goes through **`IAIProvider`** (`generateText`, `streamText`, `generateStructuredOutput`, `generateEmbedding`), fronted by the **LLM Gateway** (`modules/ai/gateway`):
 
-- **`MockAIProvider`** (default) — realistic, deterministic responses; simulates token streaming; deterministic hashed embeddings. **Runs with zero API keys.**
-- **`OpenAIProvider` / `GeminiProvider`** — real SDK calls behind the same interface; throw a clear "configure key" error until wired.
+- **Multi-provider chain** built at boot from whatever keys are present — `ClaudeProvider` / `OpenAIProvider` / `GeminiProvider` (real SDK calls: streaming, structured output via tool-use/JSON mode, real embeddings + token usage) → **`MockAIProvider`** terminal fallback (deterministic, zero-key).
+- **Strategies** (`LLM_STRATEGY`): `fallback` (first healthy wins), `parallel` (race), `refine` (draft→critique).
+- **Health tracker** cools down a provider on 429/auth errors; per-call timeout + failover; the gateway **always** lands on mock so the UX never hard-breaks.
+- **Honest cost telemetry** — real token counts + per-model pricing flow into `ai_usage_logs` (admin/founder/reports).
 
-Swap providers by changing one env var — no code changes. Details: [`docs/AI_AGENTS.md`](docs/AI_AGENTS.md).
+**Go live:** paste any one key into `server/.env` and restart — that's it. With no keys it runs fully on mock. Details: [`docs/AI_AGENTS.md`](docs/AI_AGENTS.md).
+
+### Orchestration 2.0 (agentic)
+
+The orchestrator **classifies** (LLM + keyword fallback) → **plans** (1–N steps, threaded session) → runs LLM-native agents (streamed) → attaches a **proactive next action** decided from the learner's state. Milestones (quiz graded, roadmap week completed, project submitted) emit events that the **ProgressionService** reacts to autonomously — nudging the student to the next step via notifications. Security: prompt-injection screening + per-user AI rate limiting; prompts/answers are never logged (only token counts).
 
 ## How RAG works
 

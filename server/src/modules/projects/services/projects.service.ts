@@ -1,9 +1,11 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { randomUUID } from 'crypto';
 import { AgentType, Difficulty, ItemStatus, SkillLevel } from '../../../common/enums';
 import { AiService } from '../../ai/ai.service';
+import { PROGRESSION_EVENTS, ProjectSubmittedEvent } from '../../progression/progression.events';
 import { StudentProfileService } from '../../student-profile/student-profile.service';
 import { Project, ProjectDocument, ProjectSource, ProjectStatus } from '../schemas/project.schema';
 import { GenerateProjectDto, SubmitProjectDto } from '../dto/project.dto';
@@ -26,6 +28,7 @@ export class ProjectsService {
     private readonly blueprint: ProjectBlueprintGenerator,
     private readonly reviewer: ProjectReviewGenerator,
     private readonly ai: AiService,
+    private readonly events: EventEmitter2,
   ) {}
 
   async generate(userId: string, dto: GenerateProjectDto, source: ProjectSource = 'goal'): Promise<ProjectDocument> {
@@ -109,6 +112,11 @@ export class ProjectsService {
     this.recompute(project);
     await project.save();
     await this.ai.logUsage({ userId, agentType: AgentType.ProjectBuilder, operation: 'project.submit' });
+    this.events.emit(PROGRESSION_EVENTS.projectSubmitted, {
+      userId,
+      projectId: String(project._id),
+      projectTitle: project.title,
+    } satisfies ProjectSubmittedEvent);
     // B8: auto-run the AI review so the student gets feedback immediately on submit.
     return this.runAiReview(userId, project);
   }

@@ -11,6 +11,9 @@ import {
   WeaknessAnalysisBlock,
 } from '../../ai/types/agent.types';
 import { AgentRuntimeContext, IAgent } from '../core/agent.interface';
+import { LlmComposerService } from '../core/llm-composer.service';
+import { ToolAugmentationService } from '../core/tool-augmentation.service';
+import { personaFor } from '../prompts/personas';
 
 /** Small topic-knowledge library so explanations/analogies feel specific, not generic. */
 const TOPIC_LIBRARY: Record<string, { analogy: string; pillars: string[]; mistakes: string[] }> = {
@@ -50,6 +53,11 @@ const TOPIC_LIBRARY: Record<string, { analogy: string; pillars: string[]; mistak
 export class TutorAgentService implements IAgent {
   readonly type = AgentType.Tutor;
 
+  constructor(
+    private readonly composer: LlmComposerService,
+    private readonly toolAug: ToolAugmentationService,
+  ) {}
+
   async handle(ctx: AgentRuntimeContext): Promise<AgentResponse> {
     const mode = (ctx.request.context?.['mode'] as TutorMode) ?? TutorMode.Explain;
     const topic = this.extractTopic(ctx.request.message);
@@ -67,10 +75,22 @@ export class TutorAgentService implements IAgent {
 
     ctx.emit({ type: 'thinking', messageId: '', label: 'Composing explanation & visual blocks' });
 
-    const answer = this.buildAnswer(topic, mode, know, ctx);
-
-    // Stream the answer token-by-token for the live typing effect.
-    await this.stream(answer, ctx);
+    // Deterministic answer is the offline fallback; the composer streams a real LLM answer
+    // when a key is configured, grounded in the learner context + this topic seed.
+    const fallback = this.buildAnswer(topic, mode, know, ctx);
+    const seed = know
+      ? `\nTopic seed — analogy: ${know.analogy}\nPillars: ${know.pillars.join(', ')}\nCommon mistakes: ${know.mistakes.join('; ')}`
+      : '';
+    // Actor→critic→tool: optionally pull live data (the student's notes/mastery) first.
+    const toolNote = await this.toolAug.augment(ctx);
+    const system = `${personaFor(AgentType.Tutor)}\nTeaching mode: ${mode}.${seed}${toolNote ? `\n\n${toolNote}` : ''}`;
+    const answer = await this.composer.streamAnswer(ctx, {
+      system,
+      fallback,
+      agentType: AgentType.Tutor,
+      operation: 'tutor.explain',
+      temperature: 0.5,
+    });
 
     const visualBlocks = this.buildVisualBlocks(topic, mode, know, weakHit);
     for (const block of visualBlocks) {
@@ -262,13 +282,5 @@ export class TutorAgentService implements IAgent {
 
   private titleCase(s: string): string {
     return s.replace(/\b\w/g, (c) => c.toUpperCase());
-  }
-
-  /** Stream the answer as word chunks for the live typing effect. */
-  private async stream(text: string, ctx: AgentRuntimeContext): Promise<void> {
-    for (const token of text.split(/(\s+)/)) {
-      ctx.emit({ type: 'chunk', messageId: '', delta: token });
-      await new Promise((r) => setTimeout(r, 8));
-    }
   }
 }

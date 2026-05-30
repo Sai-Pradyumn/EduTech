@@ -1,7 +1,9 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { AgentType, Difficulty, RoadmapStatus, SkillLevel } from '../../../common/enums';
+import { PROGRESSION_EVENTS, QuizGradedEvent } from '../../progression/progression.events';
 import { AiService } from '../../ai/ai.service';
 import { KnowledgeService } from '../../rag/services/knowledge.service';
 import { StudentProfileService } from '../../student-profile/student-profile.service';
@@ -75,6 +77,7 @@ export class AssessmentService {
     private readonly profiles: StudentProfileService,
     private readonly knowledge: KnowledgeService,
     private readonly ai: AiService,
+    private readonly events: EventEmitter2,
   ) {}
 
   async generate(userId: string, dto: GenerateQuizDto): Promise<QuizDocument> {
@@ -225,6 +228,16 @@ export class AssessmentService {
       await this.profiles.addWeakAreas(userId, evaluation.weakTopics).catch(() => undefined);
     }
     await this.ai.logUsage({ userId, agentType: AgentType.Assessment, operation: 'quiz.grade' });
+
+    // Let the progression engine react (nudge / next step) autonomously.
+    this.events.emit(PROGRESSION_EVENTS.quizGraded, {
+      userId,
+      quizId: String(quiz._id),
+      quizTitle: quiz.title,
+      topic: quiz.topic,
+      score: evaluation.score,
+      weakTopics: evaluation.weakTopics,
+    } satisfies QuizGradedEvent);
 
     return { attempt: this.toAttemptView(attempt), evaluation, review };
   }

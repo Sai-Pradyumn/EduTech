@@ -17,9 +17,14 @@ import { ContentCreatorAgentService } from './agents/content-creator-agent.servi
 import { AdminInsightAgentService } from './agents/admin-insight-agent.service';
 import { AgentRouterService } from './core/agent-router.service';
 import { AgentContextService } from './core/agent-context.service';
+import { LlmComposerService } from './core/llm-composer.service';
+import { PlannerService } from './core/planner.service';
+import { NextActionService } from './core/next-action.service';
 import { AgentMemoryService } from './core/agent-memory.service';
 import { AgentObservabilityService } from './core/agent-observability.service';
 import { AgentToolRegistryService } from './core/agent-tool-registry.service';
+import { ToolsRegistrarService } from './core/agent-tools';
+import { ToolAugmentationService } from './core/tool-augmentation.service';
 import { AgentRegistryService } from './core/agent-registry.service';
 import { AgentSessionService } from './core/agent-session.service';
 import { AgentOrchestratorService } from './agent-orchestrator.service';
@@ -66,9 +71,14 @@ import { TutorController } from './tutor.controller';
     AdminInsightAgentService,
     AgentRouterService,
     AgentContextService,
+    LlmComposerService,
+    PlannerService,
+    NextActionService,
     AgentMemoryService,
     AgentObservabilityService,
     AgentToolRegistryService,
+    ToolsRegistrarService,
+    ToolAugmentationService,
     AgentRegistryService,
     AgentSessionService,
     AgentOrchestratorService,
@@ -78,6 +88,8 @@ import { TutorController } from './tutor.controller';
     AgentOrchestratorService,
     AgentSessionService,
     AgentMemoryService,
+    AgentContextService,
+    NextActionService,
   ],
 })
 export class AgentsModule {}

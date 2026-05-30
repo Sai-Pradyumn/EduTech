@@ -96,10 +96,43 @@ export interface AgentResponse {
   confidence: number;
   followUpQuestions: string[];
   recommendedNextActions: string[];
+  nextAction?: NextAction;
+}
+
+/** Proactive "what to do next", decided by the orchestrator from the learner's state. */
+export interface NextAction {
+  label: string;
+  reason: string;
+  route?: string;
+  agentType?: AgentType;
+  prompt?: string;
+  kind: 'revise' | 'roadmap' | 'quiz' | 'project' | 'career' | 'explore' | 'session';
+}
+
+export interface PlanStep {
+  agentType: AgentType;
+  goal: string;
+}
+
+/** AI gateway ops snapshot (admin) from GET /ai/providers. */
+export interface AiProviderStatus {
+  name: string;
+  isLive: boolean;
+  available: boolean;
+  capabilities: { chat: boolean; streaming: boolean; structured: boolean; embeddings: boolean };
+}
+export interface AiProvidersSnapshot {
+  strategy: string;
+  live: boolean;
+  providers: AiProviderStatus[];
+  health: { provider: string; availableInMs: number }[];
 }
 
 export type AgentStreamEvent =
   | { type: 'started'; sessionId: string; messageId: string; agentType: AgentType }
+  | { type: 'plan'; messageId: string; steps: PlanStep[]; rationale: string }
+  | { type: 'step_started'; messageId: string; index: number; agentType: AgentType; goal: string }
+  | { type: 'step_completed'; messageId: string; index: number; agentType: AgentType }
   | { type: 'thinking'; messageId: string; label: string }
   | { type: 'tool_call'; messageId: string; tool: string; label: string }
   | { type: 'tool_result'; messageId: string; tool: string; summary: string }

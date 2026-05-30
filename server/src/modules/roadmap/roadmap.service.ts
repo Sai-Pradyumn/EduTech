@@ -1,7 +1,9 @@
 import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { Difficulty, RoadmapStatus } from '../../common/enums';
+import { PROGRESSION_EVENTS, WeekCompletedEvent } from '../progression/progression.events';
 import { StudentProfileService } from '../student-profile/student-profile.service';
 import { RoadmapAgentService } from '../agents/roadmap/roadmap-agent.service';
 import { RoadmapBlueprintInput } from '../agents/roadmap/roadmap-blueprint.generator';
@@ -16,6 +18,7 @@ export class RoadmapService {
     @InjectModel(Roadmap.name) private readonly model: Model<RoadmapDocument>,
     private readonly profiles: StudentProfileService,
     private readonly roadmapAgent: RoadmapAgentService,
+    private readonly events: EventEmitter2,
   ) {}
 
   /** Generate from the student's profile (with optional goal/timeline/intensity overrides). */
@@ -94,8 +97,10 @@ export class RoadmapService {
   ): Promise<RoadmapDocument> {
     const roadmap = await this.findByIdForUser(userId, id);
 
+    let newlyCompletedWeek: number | null = null;
     if (typeof dto.weekNumber === 'number' && typeof dto.weekCompleted === 'boolean') {
       const set = new Set(roadmap.completedWeeks);
+      if (dto.weekCompleted && !set.has(dto.weekNumber)) newlyCompletedWeek = dto.weekNumber;
       if (dto.weekCompleted) set.add(dto.weekNumber);
       else set.delete(dto.weekNumber);
       roadmap.completedWeeks = [...set].sort((a, b) => a - b);
@@ -112,7 +117,21 @@ export class RoadmapService {
     if (roadmap.progressPercentage >= 100 && roadmap.status === RoadmapStatus.Active) {
       roadmap.status = RoadmapStatus.Completed;
     }
-    return roadmap.save();
+    const saved = await roadmap.save();
+
+    // Autonomous progression: a freshly-completed week triggers a forward nudge.
+    if (newlyCompletedWeek !== null) {
+      const nextWeek = saved.weeklyPlan
+        .filter((w) => !saved.completedWeeks.includes(w.weekNumber))
+        .sort((a, b) => a.weekNumber - b.weekNumber)[0];
+      this.events.emit(PROGRESSION_EVENTS.weekCompleted, {
+        userId,
+        roadmapTitle: saved.title,
+        weekNumber: newlyCompletedWeek,
+        nextWeekFocus: nextWeek?.focus,
+      } satisfies WeekCompletedEvent);
+    }
+    return saved;
   }
 
   async updateStatus(

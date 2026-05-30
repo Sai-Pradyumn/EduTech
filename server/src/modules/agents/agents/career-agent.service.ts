@@ -2,6 +2,8 @@ import { Injectable } from '@nestjs/common';
 import { AgentType, CareerTarget, Intent, SkillLevel } from '../../../common/enums';
 import { AgentResponse, SkillGapBlock, StudyPlanBlock, VisualBlock } from '../../ai/types/agent.types';
 import { AgentRuntimeContext, IAgent } from '../core/agent.interface';
+import { LlmComposerService } from '../core/llm-composer.service';
+import { personaFor } from '../prompts/personas';
 
 const TARGET: Record<CareerTarget, { label: string; bar: number; focus: string[] }> = {
   [CareerTarget.Internship]: { label: 'an internship', bar: 70, focus: ['DSA basics', '1 solid project', 'resume', 'communication'] },
@@ -27,6 +29,8 @@ const BASELINE: Record<SkillLevel, number> = {
 export class CareerAgentService implements IAgent {
   readonly type = AgentType.Career;
 
+  constructor(private readonly composer: LlmComposerService) {}
+
   async handle(ctx: AgentRuntimeContext): Promise<AgentResponse> {
     const profile = ctx.profile;
     const target = TARGET[profile?.careerTarget ?? CareerTarget.SkillImprovement];
@@ -49,8 +53,20 @@ export class CareerAgentService implements IAgent {
       items: target.focus.map((f, i) => ({ label: `${i + 1}. ${this.titleCase(f)}`, kind: 'career' })),
     } satisfies VisualBlock;
 
-    const answer = this.buildAnswer(profile?.fullName?.split(' ')[0], target.label, readiness, skills, ctx);
-    await this.stream(answer, ctx);
+    const fallback = this.buildAnswer(profile?.fullName?.split(' ')[0], target.label, readiness, skills, ctx);
+    const biggest = [...skills].sort((a, b) => b.target - b.current - (a.target - a.current))[0];
+    const system =
+      `${personaFor(AgentType.Career)}\n` +
+      `Target: ${target.label}. Computed readiness: ~${readiness}%. ` +
+      `Biggest gap: ${biggest ? `${biggest.skill} (${biggest.current}/${biggest.target})` : 'n/a'}. ` +
+      `Focus areas for this target: ${target.focus.join(', ')}. Ground your coaching in these numbers.`;
+    const answer = await this.composer.streamAnswer(ctx, {
+      system,
+      fallback,
+      agentType: AgentType.Career,
+      operation: 'career.assess',
+      temperature: 0.5,
+    });
     ctx.emit({ type: 'visual_block', messageId: '', block: gapBlock });
     ctx.emit({ type: 'visual_block', messageId: '', block: planBlock });
 
@@ -117,11 +133,5 @@ export class CareerAgentService implements IAgent {
   }
   private short(s: string): string {
     return s.length > 16 ? `${s.slice(0, 15)}…` : s;
-  }
-  private async stream(text: string, ctx: AgentRuntimeContext): Promise<void> {
-    for (const token of text.split(/(\s+)/)) {
-      ctx.emit({ type: 'chunk', messageId: '', delta: token });
-      await new Promise((r) => setTimeout(r, 6));
-    }
   }
 }

@@ -2,13 +2,21 @@ import { Inject, Injectable, Logger } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { AgentType } from '../../common/enums';
+import { LlmGatewayService } from './gateway/llm-gateway.service';
+import { estimateCostUsd, estimateTokens } from './gateway/pricing';
 import {
   AI_PROVIDER_TOKEN,
   AIMessage,
   GenOptions,
   IAIProvider,
+  TokenUsage,
 } from './interfaces/ai-provider.interface';
 import { AiUsageLog, AiUsageLogDocument } from './schemas/ai-usage-log.schema';
+
+/** Instruction for the refine strategy's critic pass. */
+const CRITIC_INSTRUCTION =
+  'Critique the draft answer above for accuracy, clarity, completeness and helpfulness for the ' +
+  'student, then return an improved version. Output ONLY the improved answer (markdown), no preamble.';
 
 export interface UsageMeta {
   userId: string;
@@ -20,8 +28,9 @@ export interface UsageMeta {
 }
 
 /**
- * Thin facade over the active provider that also records ai_usage_logs.
- * Agents depend on this, never on a concrete provider.
+ * Thin facade over the active provider (the LLM gateway) that also records honest
+ * ai_usage_logs. Agents depend on this, never on a concrete provider. When a call's
+ * `opts.meta` is set, the real token usage + estimated cost are logged automatically.
  */
 @Injectable()
 export class AiService {
@@ -29,6 +38,7 @@ export class AiService {
 
   constructor(
     @Inject(AI_PROVIDER_TOKEN) private readonly provider: IAIProvider,
+    private readonly gateway: LlmGatewayService,
     @InjectModel(AiUsageLog.name) private readonly usageModel: Model<AiUsageLogDocument>,
   ) {}
 
@@ -36,25 +46,122 @@ export class AiService {
     return this.provider.name;
   }
 
-  generateText(messages: AIMessage[], opts?: GenOptions): Promise<string> {
-    return this.provider.generateText(messages, opts);
+  /** True when at least one real LLM key is configured (used to pick LLM vs deterministic paths). */
+  get isLive(): boolean {
+    return this.provider.isLive;
   }
 
-  streamText(messages: AIMessage[], opts?: GenOptions): AsyncIterable<string> {
-    return this.provider.streamText(messages, opts);
+  /** Active multi-provider strategy: fallback | parallel | refine. */
+  get strategy(): 'fallback' | 'parallel' | 'refine' {
+    return this.gateway.strategy;
   }
 
-  generateStructuredOutput<T>(
+  /**
+   * Produce a complete answer honoring the configured strategy:
+   * - fallback → single best provider (default)
+   * - refine   → draft, then a distinct provider critiques + improves it
+   * - parallel → race providers, then a judge synthesizes the best answer
+   * Returns the final text (callers stream it); usage is logged.
+   */
+  async composeWithStrategy(messages: AIMessage[], opts?: GenOptions): Promise<string> {
+    const cap = this.captureOpts(opts);
+    const started = Date.now();
+    let out: string;
+    switch (this.gateway.strategy) {
+      case 'refine':
+        out = await this.gateway.refineText(messages, CRITIC_INSTRUCTION, cap.opts);
+        break;
+      case 'parallel':
+        out = await this.gateway.parallelText(messages, cap.opts);
+        break;
+      default:
+        out = await this.gateway.generateText(messages, cap.opts);
+    }
+    await this.autolog(opts, messages, out, cap, Date.now() - started);
+    return out;
+  }
+
+  async generateText(messages: AIMessage[], opts?: GenOptions): Promise<string> {
+    const cap = this.captureOpts(opts);
+    const started = Date.now();
+    const out = await this.provider.generateText(messages, cap.opts);
+    await this.autolog(opts, messages, out, cap, Date.now() - started);
+    return out;
+  }
+
+  async *streamText(messages: AIMessage[], opts?: GenOptions): AsyncIterable<string> {
+    const cap = this.captureOpts(opts);
+    const started = Date.now();
+    let acc = '';
+    for await (const token of this.provider.streamText(messages, cap.opts)) {
+      acc += token;
+      yield token;
+    }
+    await this.autolog(opts, messages, acc, cap, Date.now() - started);
+  }
+
+  async generateStructuredOutput<T>(
     messages: AIMessage[],
     schema: Record<string, unknown>,
     opts?: GenOptions,
   ): Promise<T> {
-    return this.provider.generateStructuredOutput<T>(messages, schema, opts);
+    const cap = this.captureOpts(opts);
+    const started = Date.now();
+    const out = await this.provider.generateStructuredOutput<T>(messages, schema, cap.opts);
+    await this.autolog(opts, messages, JSON.stringify(out), cap, Date.now() - started);
+    return out;
   }
 
   generateEmbedding(text: string): Promise<number[]> {
     return this.provider.generateEmbedding(text);
   }
+
+  // ───────────────────────── usage capture ─────────────────────────
+
+  /** Wraps opts.onUsage so we capture real provider usage while preserving the caller's. */
+  private captureOpts(opts?: GenOptions): {
+    opts: GenOptions | undefined;
+    get: () => { usage?: TokenUsage; model: string };
+  } {
+    let usage: TokenUsage | undefined;
+    let model = this.provider.name;
+    const wrapped: GenOptions | undefined = opts
+      ? {
+          ...opts,
+          onUsage: (u, m) => {
+            usage = u;
+            model = m.model;
+            opts.onUsage?.(u, m);
+          },
+        }
+      : { onUsage: (u, m) => ((usage = u), (model = m.model)) };
+    return { opts: wrapped, get: () => ({ usage, model }) };
+  }
+
+  private async autolog(
+    opts: GenOptions | undefined,
+    messages: AIMessage[],
+    output: string,
+    cap: { get: () => { usage?: TokenUsage; model: string } },
+    latencyMs: number,
+  ): Promise<void> {
+    const meta = opts?.meta;
+    if (!meta?.userId) return; // only attributed calls are logged here
+    const { usage, model } = cap.get();
+    const tokensIn = usage?.promptTokens ?? estimateTokens(messages.map((m) => m.content).join(' '));
+    const tokensOut = usage?.completionTokens ?? estimateTokens(output);
+    await this.record({
+      userId: meta.userId,
+      agentType: (meta.agentType as AgentType) ?? AgentType.Tutor,
+      operation: meta.operation ?? 'generate',
+      tokensIn,
+      tokensOut,
+      latencyMs,
+      model,
+    });
+  }
+
+  // ───────────────────────── analytics ─────────────────────────
 
   /** Platform-wide AI usage aggregate (for the AdminInsight agent / Command Center). */
   async usageSummary(): Promise<{
@@ -86,7 +193,7 @@ export class AiService {
     };
   }
 
-  /** Per-agent analytics: count, tokens, avg latency, estimated cost (Admin Command Center). */
+  /** Per-agent analytics: count, tokens, avg latency, real cost (Admin Command Center). */
   async agentAnalytics(): Promise<{
     totalCalls: number;
     totalTokens: number;
@@ -94,14 +201,20 @@ export class AiService {
     estCostUsd: number;
     byAgent: { agentType: string; count: number; tokens: number; avgLatencyMs: number; estCostUsd: number }[];
   }> {
-    const COST_PER_1K = 0.002; // placeholder rate
-    const rows = await this.usageModel.aggregate<{ _id: string; count: number; tokens: number; avgLatencyMs: number }>([
+    const rows = await this.usageModel.aggregate<{
+      _id: string;
+      count: number;
+      tokens: number;
+      avgLatencyMs: number;
+      cost: number;
+    }>([
       {
         $group: {
           _id: '$agentType',
           count: { $sum: 1 },
           tokens: { $sum: { $add: ['$tokensIn', '$tokensOut'] } },
           avgLatencyMs: { $avg: '$latencyMs' },
+          cost: { $sum: '$costUsd' },
         },
       },
       { $sort: { count: -1 } },
@@ -111,29 +224,38 @@ export class AiService {
       count: r.count,
       tokens: r.tokens,
       avgLatencyMs: Math.round(r.avgLatencyMs ?? 0),
-      estCostUsd: Math.round((r.tokens / 1000) * COST_PER_1K * 100) / 100,
+      estCostUsd: Math.round((r.cost ?? 0) * 100) / 100,
     }));
     const totalTokens = byAgent.reduce((s, a) => s + a.tokens, 0);
     return {
       totalCalls: byAgent.reduce((s, a) => s + a.count, 0),
       totalTokens,
       avgLatencyMs: byAgent.length ? Math.round(byAgent.reduce((s, a) => s + a.avgLatencyMs, 0) / byAgent.length) : 0,
-      estCostUsd: Math.round((totalTokens / 1000) * COST_PER_1K * 100) / 100,
+      estCostUsd: Math.round(byAgent.reduce((s, a) => s + a.estCostUsd, 0) * 100) / 100,
       byAgent,
     };
   }
 
-  /** Best-effort usage logging (placeholder cost). Never throws into the caller. */
+  /**
+   * Explicit usage marker (legacy + deterministic operations). Computes real cost from
+   * the tokens provided + the active model. Never throws into the caller.
+   */
   async logUsage(meta: UsageMeta): Promise<void> {
+    return this.record({ ...meta, model: this.provider.name });
+  }
+
+  private async record(meta: UsageMeta & { model: string }): Promise<void> {
     try {
+      const tokensIn = meta.tokensIn ?? 0;
+      const tokensOut = meta.tokensOut ?? 0;
       await this.usageModel.create({
         user: new Types.ObjectId(meta.userId),
         agentType: meta.agentType,
         provider: this.provider.name,
         operation: meta.operation,
-        tokensIn: meta.tokensIn ?? 0,
-        tokensOut: meta.tokensOut ?? 0,
-        costUsd: 0,
+        tokensIn,
+        tokensOut,
+        costUsd: estimateCostUsd(meta.model, tokensIn, tokensOut),
         latencyMs: meta.latencyMs ?? 0,
       });
     } catch (err) {

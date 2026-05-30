@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
+import { EventEmitterModule } from '@nestjs/event-emitter';
 import { APP_FILTER, APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
 import configuration from './config/configuration';
 import { validationSchema } from './config/validation';
@@ -35,6 +36,7 @@ import { BillingModule } from './modules/billing/billing.module';
 import { CertificatesModule } from './modules/certificates/certificates.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
 import { RoadmapModule } from './modules/roadmap/roadmap.module';
+import { ProgressionModule } from './modules/progression/progression.module';
 import { SocketsModule } from './sockets/sockets.module';
 
 @Module({
@@ -45,6 +47,7 @@ import { SocketsModule } from './sockets/sockets.module';
       validationSchema,
       validationOptions: { allowUnknown: true, abortEarly: false },
     }),
+    EventEmitterModule.forRoot(),
     DatabaseModule,
     AiModule,
     AiEvalsModule,
@@ -71,6 +74,7 @@ import { SocketsModule } from './sockets/sockets.module';
     TenancyModule,
     StudentProfileModule,
     RoadmapModule,
+    ProgressionModule,
     SocketsModule,
   ],
   controllers: [HealthController],

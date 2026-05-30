@@ -2,7 +2,11 @@
 
 /** Cosine similarity for (already L2-normalized) vectors; safe on mismatched/empty. */
 export function cosine(a: number[], b: number[]): number {
-  const n = Math.min(a.length, b.length);
+  // Different dimensions ⇒ embedded by different providers/models (e.g. mock-256 vs a
+  // real 768/1536-dim model). Comparing them is meaningless, so score 0 (the keyword
+  // path still matches). Re-ingest a corpus after switching providers for dense recall.
+  if (a.length !== b.length) return 0;
+  const n = a.length;
   if (n === 0) return 0;
   let dot = 0;
   let na = 0;

@@ -6,6 +6,9 @@ import { IReranker, RERANKER_TOKEN } from './reranker';
 import { ChunkHit, IVectorStore, RetrievalScope, VECTOR_STORE_TOKEN } from './vector-store.interface';
 
 const RRF_K = 60; // Reciprocal Rank Fusion constant.
+// With real embeddings, a strong semantic match with NO lexical overlap is still valid
+// recall — but only above this cosine floor, so we don't reopen the hallucination door.
+const SEMANTIC_FLOOR = 0.55;
 
 /**
  * Hybrid retrieval: runs the dense (vector) and sparse (keyword) paths in parallel,
@@ -46,6 +49,11 @@ export class HybridRetrieverService {
     return reranked.slice(0, k);
   }
 
+  /** Real embeddings (a live, embeddings-capable provider) unlock semantic recall. */
+  private get semanticRecall(): boolean {
+    return this.ai.isLive;
+  }
+
   /**
    * Fuses the dense and sparse rankings. RRF decides ORDER (it's a good rank combiner),
    * but the `score` we surface is an ABSOLUTE relevance — dominated by lexical (term)
@@ -75,9 +83,13 @@ export class HybridRetrieverService {
         // Lexical overlap is a NECESSARY condition for grounding on the keyword/mock
         // backend: the mock's hashed-embedding cosine produces spurious matches, so dense
         // similarity is only allowed to REFINE the score of a lexically-relevant chunk,
-        // never to create relevance from zero. (A real embedding backend adds semantic
-        // recall; this gate is what keeps the anti-hallucination contract honest here.)
-        const relevance = s > 0 ? Math.min(1, 0.7 * s + 0.3 * Math.min(1, d)) : 0;
+        // never to create relevance from zero.
+        let relevance = s > 0 ? Math.min(1, 0.7 * s + 0.3 * Math.min(1, d)) : 0;
+        // With a real embedding backend, allow a STRONG semantic-only match (no shared
+        // terms) to ground — but gated by SEMANTIC_FLOOR so weak cosine can't fabricate it.
+        if (relevance === 0 && this.semanticRecall && d >= SEMANTIC_FLOOR) {
+          relevance = Math.min(1, 0.85 * d);
+        }
         return { ...hit, score: relevance };
       })
       .filter((h) => h.score > 0);
