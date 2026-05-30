@@ -59,6 +59,12 @@
   --shadow-ink: 0 20px 60px oklch(0.12 0.04 264 / .5);
   --ease: cubic-bezier(.2, .7, .2, 1);
   --ease-spring: cubic-bezier(.22, 1.2, .36, 1);
+  /* Dashboard motion taxonomy — shared timing so a row reveals as one family.
+     Reveal delay = row base (--motion-row-delay) + tiny per-card stagger
+     (--motion-card-index * --motion-stagger-step). */
+  --motion-duration-fast: 0.34s;
+  --motion-duration-med: 0.5s;
+  --motion-stagger-step: 70ms;
   --sidebar-w: 240px;
   --skeleton-hi: oklch(1 0 0 / .6);
   /* Card surface highlight — a thin top light-bloom layered over the soft shadow,
@@ -183,6 +189,7 @@
     border: 1px solid color-mix(in oklch, var(--paper-3) 75%, transparent);
     border-radius: var(--r-md);
     box-shadow: var(--shadow-sm);
+    margin-bottom: 15px;
   }
   /* On dark, lift the card surface a step above the page so edges + gaps read. */
   :root[data-theme='dark'] .card {
@@ -221,6 +228,7 @@
   a.card, button.card, .hover-lift, .card {
     transition: transform .22s var(--ease), box-shadow .22s var(--ease), border-color .22s var(--ease);
   }
+  .hover-lift { cursor: pointer; }
   a.card:hover, button.card:hover, .hover-lift:hover {
     transform: translateY(-3px);
     border-color: color-mix(in oklch, var(--green) 28%, transparent);
@@ -489,6 +497,48 @@
 }
 
 .motion-fade-up { animation: astaRevealUp 0.36s var(--asta-ease) both; }
+
+/* ---------- App motion system ---------- (reduced-motion-safe)
+   ONE reveal taxonomy for EVERY screen so similar cards move as a family.
+   - Same row  → same keyframe / duration / easing / transform distance.
+   - Only a tiny per-card stagger differs (--motion-card-index * step).
+   - Each row class sets --motion-row-delay so rows cascade top→bottom.
+   Apply `.motion-card-reveal` to every card; put the row class on the row wrapper
+   (or the card itself when a row is a single card) and set --motion-card-index.
+   `.dashboard-reveal` is a retained alias (dashboard shipped first). DO NOT use
+   per-card `astaTilt [tiltMax]` with varying maxima — that is the inconsistency
+   this system replaces. */
+.motion-row-primary { --motion-row-delay: 0ms; }
+.motion-strip       { --motion-row-delay: 130ms; }
+.motion-row-panel   { --motion-row-delay: 200ms; }
+.motion-lower       { --motion-row-delay: 300ms; }
+.motion-row-2       { --motion-row-delay: 130ms; }
+.motion-row-3       { --motion-row-delay: 260ms; }
+
+.dashboard-reveal,
+.motion-card-reveal {
+  animation: astaRevealUp var(--motion-duration-med) var(--ease) both;
+  animation-delay: calc(var(--motion-row-delay, 0ms) + var(--motion-card-index, 0) * var(--motion-stagger-step));
+}
+
+/* Card families — semantic markers that guarantee identical hover within a family.
+   The actual lift comes from `.hover-lift` (uniform translateY(-3px) + green glow);
+   these keep the cursor/glyph micro-interactions consistent across same-kind cards. */
+.dashboard-primary-card,
+.dashboard-panel-card { will-change: transform; }
+.dashboard-action-chip {
+  transition: transform 0.14s var(--ease-spring), background 0.18s var(--ease);
+}
+.dashboard-action-chip:hover { transform: translateY(-2px); }
+.dashboard-action-chip:active { transform: scale(0.96); }
+
+@media (prefers-reduced-motion: reduce) {
+  /* No transform/animation — snap to the resolved state, keep layout legible. */
+  .dashboard-reveal,
+  .motion-card-reveal { animation: none; opacity: 1; }
+  .dashboard-action-chip:hover,
+  .dashboard-action-chip:active { transform: none; }
+}
 
 /* Panel header pattern (global so every screen renders it correctly even if its
    component didn't define the styles): kicker left, glyph chip right. */

@@ -20,9 +20,9 @@ import {
 import { ButtonComponent } from '../../shared/ui/button.component';
 import { RingComponent } from '../../shared/ui/ring.component';
 import { CardComponent } from '../../shared/ui/card.component';
+import { EmptyStateComponent } from '../../shared/ui/empty-state.component';
+import { SkeletonComponent } from '../../shared/ui/skeleton.component';
 import { VisualBlockRendererComponent } from '../../shared/components/ai/visual-block-renderer.component';
-import { TiltDirective } from '../../shared/directives/tilt.directive';
-import { RevealDirective } from '../../shared/directives/reveal.directive';
 import { MagneticDirective } from '../../shared/directives/magnetic.directive';
 import { CountDirective } from '../../shared/directives/count.directive';
 
@@ -40,8 +40,8 @@ const DIFFS: Difficulty[] = ['beginner', 'intermediate', 'advanced'];
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
-    FormsModule, ButtonComponent, RingComponent, CardComponent, VisualBlockRendererComponent,
-    TiltDirective, RevealDirective, MagneticDirective, CountDirective,
+    FormsModule, ButtonComponent, RingComponent, CardComponent, EmptyStateComponent,
+    SkeletonComponent, VisualBlockRendererComponent, MagneticDirective, CountDirective,
   ],
   template: `
     <!-- Compact command header -->
@@ -57,36 +57,55 @@ const DIFFS: Difficulty[] = ['beginner', 'intermediate', 'advanced'];
 
     @switch (view()) {
       @case ('home') {
+        @if (loading()) {
+          <!-- Loading skeleton -->
+          <div class="space-y-5">
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              @for (i of [1, 2, 3, 4]; track i) {
+                <asta-card class="stat-card"><asta-skeleton h="30px" w="50%" /><div class="mt-2"><asta-skeleton h="11px" w="70%" /></div></asta-card>
+              }
+            </div>
+            <asta-card><asta-skeleton h="20px" w="40%" /><div class="mt-4"><asta-skeleton h="120px" /></div></asta-card>
+            <asta-card><asta-skeleton h="20px" w="40%" /><div class="mt-4 space-y-2"><asta-skeleton h="44px" /><asta-skeleton h="44px" /></div></asta-card>
+          </div>
+        } @else if (loadError()) {
+          <!-- Error + retry -->
+          <asta-card class="block motion-card-reveal motion-row-primary">
+            <asta-empty-state title="Could not load the arena" description="Something went wrong fetching your quizzes and stats. Give it another go.">
+              <asta-btn variant="accent" astaMagnetic (click)="refresh()">Retry</asta-btn>
+            </asta-empty-state>
+          </asta-card>
+        } @else {
         <div class="space-y-5">
-          <!-- stats -->
+          <!-- stats — one reveal family (.motion-row-primary) -->
           @if (stats(); as s) {
-            <div class="grid grid-cols-2 sm:grid-cols-4 gap-3" [astaReveal]="0">
-              <asta-card astaTilt [tiltMax]="4" class="stat-card">
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 motion-row-primary mb-3.75">
+              <asta-card class="stat-card motion-card-reveal" style="--motion-card-index:0">
                 <p class="font-display text-2xl"><span [astaCount]="s.quizzes"></span></p><p class="lbl">Quizzes</p>
               </asta-card>
-              <asta-card astaTilt [tiltMax]="4" class="stat-card">
+              <asta-card class="stat-card motion-card-reveal" style="--motion-card-index:1">
                 <p class="font-display text-2xl"><span [astaCount]="s.attempts"></span></p><p class="lbl">Attempts</p>
               </asta-card>
-              <asta-card astaTilt [tiltMax]="4" class="stat-card">
+              <asta-card class="stat-card motion-card-reveal" style="--motion-card-index:2">
                 <p class="font-display text-2xl"><span [astaCount]="s.averageScore" suffix="%"></span></p><p class="lbl">Avg score</p>
               </asta-card>
-              <asta-card astaTilt [tiltMax]="4" class="stat-card">
+              <asta-card class="stat-card motion-card-reveal" style="--motion-card-index:3">
                 <p class="font-display text-2xl"><span [astaCount]="s.weakTopics.length"></span></p><p class="lbl">Weak topics</p>
               </asta-card>
             </div>
           }
 
           <!-- generate -->
-          <asta-card astaTilt [tiltMax]="3" [astaReveal]="1">
+          <asta-card class="motion-card-reveal motion-strip" style="--motion-card-index:0">
             <div class="panel-head mb-3">
               <p class="kicker">Generate a quiz</p>
               <span class="panel-ico" aria-hidden="true">
                 <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4"/><circle cx="12" cy="12" r="4"/></svg>
               </span>
             </div>
-            <div class="flex flex-wrap gap-2 mb-3">
+            <div class="src-grid mb-3">
               @for (src of sources; track src.key) {
-                <button class="src" [class.src-on]="source() === src.key" (click)="source.set(src.key)">
+                <button class="src" [class.src-on]="source() === src.key" [attr.aria-pressed]="source() === src.key" (click)="source.set(src.key)">
                   <span class="font-medium">{{ src.label }}</span>
                   <span class="block text-[11px] text-txt-mute">{{ src.hint }}</span>
                 </button>
@@ -112,9 +131,9 @@ const DIFFS: Difficulty[] = ['beginner', 'intermediate', 'advanced'];
             <div class="flex flex-wrap items-center gap-3">
               <div class="flex gap-1.5">
                 @for (d of diffs; track d) {
-                  <button class="chip" [class.chip-on]="difficulty() === d" (click)="difficulty.set(d)">{{ d }}</button>
+                  <button class="pill" [class.pill-on]="difficulty() === d" [attr.aria-pressed]="difficulty() === d" (click)="difficulty.set(d)">{{ d }}</button>
                 }
-                <button class="chip" [class.chip-on]="difficulty() === null" (click)="difficulty.set(null)">adaptive</button>
+                <button class="pill" [class.pill-on]="difficulty() === null" [attr.aria-pressed]="difficulty() === null" (click)="difficulty.set(null)">adaptive</button>
               </div>
               <div class="flex items-center gap-2 text-sm">
                 <span class="text-txt-mute">Questions</span>
@@ -125,7 +144,7 @@ const DIFFS: Difficulty[] = ['beginner', 'intermediate', 'advanced'];
           </asta-card>
 
           <!-- library -->
-          <asta-card astaTilt [tiltMax]="3" [astaReveal]="2">
+          <asta-card class="motion-card-reveal motion-lower" style="--motion-card-index:0">
             <div class="panel-head mb-3">
               <p class="kicker">Your quizzes</p>
               <span class="panel-ico" aria-hidden="true">
@@ -133,35 +152,44 @@ const DIFFS: Difficulty[] = ['beginner', 'intermediate', 'advanced'];
               </span>
             </div>
             @if (quizzes().length === 0) {
-              <p class="text-sm text-txt-mute py-6 text-center">No quizzes yet — generate one above.</p>
-            }
-            <div class="space-y-2">
-              @for (q of quizzes(); track q.id) {
-                <div class="row">
-                  <div class="min-w-0">
-                    <p class="text-sm font-medium truncate">{{ q.title }}</p>
-                    <p class="text-[11px] text-txt-mute">{{ q.difficulty }} · {{ q.questionCount }} Q · {{ q.source }}@if (q.attemptCount) { · best {{ q.bestScore }}% }</p>
+              <asta-empty-state title="No quizzes yet" description="Generate your first drill above — pick a topic, your weak areas, a roadmap week, or one of your documents, and prove your gains.">
+                <asta-btn variant="accent" size="sm" astaMagnetic (click)="scrollToGenerate()">Generate a quiz <span class="arr">→</span></asta-btn>
+              </asta-empty-state>
+            } @else {
+              <div class="space-y-2">
+                @for (q of quizzes(); track q.id) {
+                  <div class="row">
+                    <div class="min-w-0">
+                      <p class="text-sm font-medium truncate">{{ q.title }}</p>
+                      <p class="text-[11px] text-txt-mute">{{ q.difficulty }} · {{ q.questionCount }} Q · {{ q.source }}@if (q.attemptCount) { · best {{ q.bestScore }}% }</p>
+                    </div>
+                    <asta-btn variant="ghost" size="sm" (click)="startQuiz(q.id)">{{ q.attemptCount ? 'Retake' : 'Take' }} <span class="arr">→</span></asta-btn>
                   </div>
-                  <asta-btn variant="ghost" size="sm" (click)="startQuiz(q.id)">{{ q.attemptCount ? 'Retake' : 'Take' }} <span class="arr">→</span></asta-btn>
-                </div>
-              }
-            </div>
+                }
+              </div>
+            }
           </asta-card>
         </div>
+        }
       }
 
       @case ('take') {
         @if (quiz(); as qz) {
-          <asta-card class="block" [astaReveal]="0" style="max-width:760px;margin:0 auto">
+          <asta-card class="block motion-card-reveal motion-row-primary" style="--motion-card-index:0;max-width:760px;margin:0 auto">
             <div class="flex items-center justify-between mb-1">
               <h2 class="text-[18px] font-display font-semibold">{{ qz.title }}</h2>
               <button class="text-xs text-txt-mute hover:text-txt" (click)="view.set('home')">Cancel</button>
             </div>
-            <p class="text-xs text-txt-mute mb-5">{{ qz.difficulty }} · {{ qz.questions.length }} questions · answer all, then submit</p>
+            <p class="text-xs text-txt-mute mb-3">{{ qz.difficulty }} · {{ qz.questions.length }} questions · answer all, then submit</p>
 
-            <div class="space-y-6">
+            <!-- progress -->
+            <div class="take-progress mb-5" role="progressbar" [attr.aria-valuenow]="answeredCount()" aria-valuemin="0" [attr.aria-valuemax]="qz.questions.length">
+              <span class="take-progress-bar" [style.width.%]="qz.questions.length ? (answeredCount() / qz.questions.length) * 100 : 0"></span>
+            </div>
+
+            <div class="space-y-6 q-flow motion-row-2">
               @for (q of qz.questions; track qi; let qi = $index) {
-                <div [astaReveal]="qi">
+                <div class="motion-card-reveal" [style.--motion-card-index]="qi">
                   <p class="text-sm font-medium mb-2"><span class="qnum">{{ qi + 1 }}</span> {{ q.prompt }}</p>
                   @if (q.type === 'mcq') {
                     <div class="space-y-1.5">
@@ -191,8 +219,8 @@ const DIFFS: Difficulty[] = ['beginner', 'intermediate', 'advanced'];
 
       @case ('result') {
         @if (result(); as r) {
-          <div class="space-y-5" style="max-width:760px;margin:0 auto">
-            <asta-card class="block result-hero" [astaReveal]="0">
+          <div class="space-y-5 motion-row-primary" style="max-width:760px;margin:0 auto">
+            <asta-card class="block result-hero motion-card-reveal" style="--motion-card-index:0">
               <div class="flex items-start gap-5">
                 <asta-ring [value]="r.evaluation.score" [size]="92" />
                 <div class="flex-1">
@@ -208,7 +236,7 @@ const DIFFS: Difficulty[] = ['beginner', 'intermediate', 'advanced'];
 
             @if (weaknessBlock(); as wb) { <ai-visual-block [block_]="wb" /> }
 
-            <asta-card class="block" [astaReveal]="1">
+            <asta-card class="block motion-card-reveal" style="--motion-card-index:1">
               <div class="panel-head mb-3">
                 <p class="kicker">Review</p>
                 <span class="panel-ico" aria-hidden="true">
@@ -286,6 +314,8 @@ export class QuizStudioComponent implements OnInit {
   readonly result = signal<SubmitResult | null>(null);
   readonly generating = signal(false);
   readonly submitting = signal(false);
+  readonly loading = signal(true);
+  readonly loadError = signal(false);
 
   // generate form
   readonly source = signal<QuizSource>('topic');
@@ -313,8 +343,25 @@ export class QuizStudioComponent implements OnInit {
   }
 
   refresh(): void {
-    this.quizApi.list().subscribe({ next: (q) => this.quizzes.set(q) });
-    this.quizApi.stats().subscribe({ next: (s) => this.stats.set(s) });
+    this.loading.set(true);
+    this.loadError.set(false);
+    let pending = 2;
+    const done = () => { if (--pending === 0) this.loading.set(false); };
+    this.quizApi.list().subscribe({
+      next: (q) => this.quizzes.set(q),
+      error: () => { this.loadError.set(true); done(); },
+      complete: done,
+    });
+    this.quizApi.stats().subscribe({
+      next: (s) => this.stats.set(s),
+      error: () => { this.loadError.set(true); done(); },
+      complete: done,
+    });
+  }
+
+  /** Smoothly scroll the generator panel into view from the empty-library CTA. */
+  scrollToGenerate(): void {
+    document.querySelector('[data-asta-scroll]')?.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
   generate(): void {

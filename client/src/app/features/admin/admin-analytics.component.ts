@@ -7,8 +7,6 @@ import { DonutChartComponent, ChartDatum } from '../../shared/charts';
 import { CountDirective } from '../../shared/directives/count.directive';
 import { CardComponent } from '../../shared/ui/card.component';
 import { ProgressComponent } from '../../shared/ui/progress.component';
-import { RevealDirective } from '../../shared/directives/reveal.directive';
-import { TiltDirective } from '../../shared/directives/tilt.directive';
 
 /**
  * Admin Command Center — AI analytics (A7). Usage by agent with latency + estimated cost
@@ -18,8 +16,9 @@ import { TiltDirective } from '../../shared/directives/tilt.directive';
   selector: 'asta-admin-analytics',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [SkeletonComponent, DonutChartComponent, CountDirective, CardComponent, ProgressComponent, RevealDirective, TiltDirective],
+  imports: [SkeletonComponent, DonutChartComponent, CountDirective, CardComponent, ProgressComponent],
   template: `
+   <div class="asta-observatory">
     <!-- Compact command header -->
     <header class="asta-page-command-header">
       <div class="min-w-0">
@@ -30,27 +29,27 @@ import { TiltDirective } from '../../shared/directives/tilt.directive';
 
     @if (data(); as d) {
       <!-- Dense metric row -->
-      <div class="grid gap-3 sm:grid-cols-4 mb-5" [astaReveal]="0">
-        <asta-card astaTilt [tiltMax]="4" pad="16px">
+      <div class="grid gap-3 sm:grid-cols-4 mb-5 motion-row-primary">
+        <asta-card class="motion-card-reveal" style="--motion-card-index:0" pad="16px">
           <span class="num grad-flow" [astaCount]="d.totalCalls">0</span>
           <span class="lbl">AI calls</span>
         </asta-card>
-        <asta-card astaTilt [tiltMax]="4" pad="16px">
+        <asta-card class="motion-card-reveal" style="--motion-card-index:1" pad="16px">
           <span class="num grad-flow" [astaCount]="d.totalTokens">0</span>
           <span class="lbl">Tokens</span>
         </asta-card>
-        <asta-card astaTilt [tiltMax]="4" pad="16px">
+        <asta-card class="motion-card-reveal" style="--motion-card-index:2" pad="16px">
           <span class="num grad-flow" [astaCount]="d.avgLatencyMs" suffix="ms">0</span>
           <span class="lbl">Avg latency</span>
         </asta-card>
-        <asta-card astaTilt [tiltMax]="4" pad="16px" accentVar="var(--peri)" title="Estimate: token usage × standard provider rates. Actuals vary by model and provider.">
+        <asta-card class="motion-card-reveal" style="--motion-card-index:3" pad="16px" accentVar="var(--peri)" title="Estimate: token usage × standard provider rates. Actuals vary by model and provider.">
           <span class="num" style="color:var(--peri-deep)" [astaCount]="d.estCostUsd" prefix="$" [decimals]="2">0</span>
           <span class="lbl">est. cost ⓘ</span>
         </asta-card>
       </div>
 
       @if (providers(); as p) {
-        <asta-card class="block mb-5" [astaReveal]="1" pad="18px">
+        <asta-card class="block mb-5 motion-card-reveal motion-row-2" style="--motion-card-index:0" pad="18px">
           <div class="panel-head">
             <div class="min-w-0">
               <p class="kicker mb-1">AI providers</p>
@@ -71,7 +70,7 @@ import { TiltDirective } from '../../shared/directives/tilt.directive';
       }
 
       @if (agentShare().length) {
-        <asta-card class="block mb-5" [astaReveal]="1" pad="18px">
+        <asta-card class="block mb-5 motion-card-reveal motion-row-panel" style="--motion-card-index:0" pad="18px">
           <div class="panel-head">
             <p class="kicker" style="color:var(--peri-deep)">Agent share of calls</p>
             <span class="panel-ico peri" aria-hidden="true">
@@ -85,7 +84,7 @@ import { TiltDirective } from '../../shared/directives/tilt.directive';
       }
 
       <!-- Agent usage table -->
-      <asta-card class="block" [astaReveal]="2" pad="0">
+      <asta-card class="block motion-card-reveal motion-row-3" style="--motion-card-index:0" pad="0">
         <div class="panel-head" style="padding:18px 18px 14px">
           <div class="min-w-0">
             <p class="kicker mb-1">Usage by agent</p>
@@ -130,6 +129,7 @@ import { TiltDirective } from '../../shared/directives/tilt.directive';
         @for (n of [1, 2, 3, 4, 5]; track n) { <div class="py-2"><asta-skeleton h="14px" /></div> }
       </asta-card>
     }
+   </div>
   `,
   styles: [
     `

@@ -7,8 +7,6 @@ import { ASSIGNABLE_ORG_ROLES, OrgMember, OrgRole, PERM } from '../../core/model
 import { ButtonComponent } from '../../shared/ui/button.component';
 import { CardComponent } from '../../shared/ui/card.component';
 import { EmptyStateComponent } from '../../shared/ui/empty-state.component';
-import { RevealDirective } from '../../shared/directives/reveal.directive';
-import { TiltDirective } from '../../shared/directives/tilt.directive';
 
 type Tab = 'overview' | 'members' | 'settings';
 
@@ -16,7 +14,7 @@ type Tab = 'overview' | 'members' | 'settings';
   selector: 'asta-org-admin',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormsModule, ButtonComponent, CardComponent, EmptyStateComponent, RevealDirective, TiltDirective],
+  imports: [FormsModule, ButtonComponent, CardComponent, EmptyStateComponent],
   template: `
     <!-- Command header -->
     <header class="asta-page-command-header">
@@ -48,8 +46,8 @@ type Tab = 'overview' | 'members' | 'settings';
 
         @switch (tab()) {
           @case ('overview') {
-            <div class="grid gap-5 md:grid-cols-3">
-              <asta-card class="md:col-span-2" [astaReveal]="0">
+            <div class="grid gap-5 md:grid-cols-3 motion-row-primary">
+              <asta-card class="md:col-span-2 motion-card-reveal" style="--motion-card-index:0">
                 <p class="kicker mb-2">{{ org.type }}</p>
                 <h2 class="text-[20px] mb-1">{{ org.name }}</h2>
                 <p class="text-sm text-txt-soft mb-3">{{ org.description || 'No description yet.' }}</p>
@@ -59,7 +57,7 @@ type Tab = 'overview' | 'members' | 'settings';
                   <span class="pill">your role: {{ ctx.context()?.orgRole }}</span>
                 </div>
               </asta-card>
-              <asta-card astaTilt [tiltMax]="4" [astaReveal]="1">
+              <asta-card class="motion-card-reveal" style="--motion-card-index:1">
                 <p class="kicker mb-3">Your access</p>
                 <ul class="text-sm text-txt-soft space-y-1">
                   @for (p of ctx.permissions(); track p) { <li class="flex gap-2"><span style="color:var(--green-deep)">✓</span>{{ p }}</li> }

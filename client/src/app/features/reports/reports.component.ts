@@ -5,8 +5,6 @@ import { ToastService } from '../../core/services/toast.service';
 import { AiUsageReport, StudentOutcomesReport, WeakTopicRow } from '../../core/models';
 import { BarChartComponent, DonutChartComponent, ChartDatum } from '../../shared/charts';
 import { CountDirective } from '../../shared/directives/count.directive';
-import { RevealDirective } from '../../shared/directives/reveal.directive';
-import { TiltDirective } from '../../shared/directives/tilt.directive';
 
 type Tab = 'students' | 'weak-topics' | 'ai-usage';
 
@@ -18,7 +16,7 @@ type Tab = 'students' | 'weak-topics' | 'ai-usage';
   selector: 'asta-reports',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [DatePipe, BarChartComponent, DonutChartComponent, CountDirective, RevealDirective, TiltDirective],
+  imports: [DatePipe, BarChartComponent, DonutChartComponent, CountDirective],
   template: `
     <!-- Command header -->
     <header class="asta-page-command-header">
@@ -42,16 +40,33 @@ type Tab = 'students' | 'weak-topics' | 'ai-usage';
         <p class="font-display text-lg mb-1">Reports aren't available for your role</p>
         <p class="text-sm text-txt-soft">Enterprise reports need the <b>reports</b> permission. Ask an org admin for access.</p>
       </div>
+    } @else if (loading()) {
+      <div class="grid sm:grid-cols-3 gap-3 mb-4 motion-row-primary">
+        @for (n of [0, 1, 2]; track n) {
+          <div class="card stat motion-card-reveal" [style.--motion-card-index]="n">
+            <span class="skel skel-num"></span><span class="skel skel-lbl"></span>
+          </div>
+        }
+      </div>
+      <div class="card motion-card-reveal motion-row-panel" style="padding:18px;--motion-card-index:0">
+        <span class="skel skel-row"></span><span class="skel skel-row"></span><span class="skel skel-row"></span>
+      </div>
+    } @else if (error()) {
+      <div class="card" style="padding:28px;text-align:center">
+        <p class="font-display text-lg mb-1">Couldn't load this report</p>
+        <p class="text-sm text-txt-soft mb-4">Something went wrong fetching the data. Please try again.</p>
+        <button class="btn-go" (click)="retry()">↻ Retry</button>
+      </div>
     } @else {
     @switch (tab()) {
       @case ('students') {
         @if (students(); as r) {
-          <div class="grid sm:grid-cols-3 gap-3 mb-4">
-            <div class="card stat" astaTilt [tiltMax]="4" [astaReveal]="0"><span class="num" [astaCount]="r.studentCount">0</span><span class="lbl">Students</span></div>
-            <div class="card stat" astaTilt [tiltMax]="4" [astaReveal]="1"><span class="num" [astaCount]="r.avgHealth">0</span><span class="lbl">Avg health</span></div>
-            <div class="card stat" astaTilt [tiltMax]="4" [astaReveal]="2"><span class="num" [astaCount]="r.avgReadiness">0</span><span class="lbl">Avg readiness</span></div>
+          <div class="grid sm:grid-cols-3 gap-3 mb-4 motion-row-primary">
+            <div class="card stat motion-card-reveal" style="--motion-card-index:0"><span class="num" [astaCount]="r.studentCount">0</span><span class="lbl">Students</span></div>
+            <div class="card stat motion-card-reveal" style="--motion-card-index:1"><span class="num" [astaCount]="r.avgHealth">0</span><span class="lbl">Avg health</span></div>
+            <div class="card stat motion-card-reveal" style="--motion-card-index:2"><span class="num" [astaCount]="r.avgReadiness">0</span><span class="lbl">Avg readiness</span></div>
           </div>
-          <div class="card" style="padding:0;overflow:auto" [astaReveal]="3">
+          <div class="card motion-card-reveal motion-row-panel" style="padding:0;overflow:auto;--motion-card-index:0">
             <table>
               <thead><tr><th>Name</th><th>Health</th><th>Readiness</th><th>Quizzes</th><th>Projects</th><th>Active days</th><th>Top weakness</th></tr></thead>
               <tbody>
@@ -70,12 +85,12 @@ type Tab = 'students' | 'weak-topics' | 'ai-usage';
       }
       @case ('weak-topics') {
         @if (weakTopics().length) {
-          <div class="card mb-4" style="padding:18px" [astaReveal]="0">
+          <div class="card mb-4 motion-card-reveal motion-row-primary" style="padding:18px;--motion-card-index:0">
             <p class="kicker mb-3" style="color:var(--coral-deep)">Avg severity by topic</p>
             <asta-bar-chart [horizontal]="true" tone="coral" [data]="weakTopicData()" label="Average weakness severity by topic" />
           </div>
         }
-        <div class="card" style="padding:0;overflow:auto" [astaReveal]="1">
+        <div class="card motion-card-reveal motion-row-panel" style="padding:0;overflow:auto;--motion-card-index:0">
           <table>
             <thead><tr><th>Topic</th><th>Affected students</th><th>Avg severity</th></tr></thead>
             <tbody>
@@ -97,18 +112,18 @@ type Tab = 'students' | 'weak-topics' | 'ai-usage';
       }
       @case ('ai-usage') {
         @if (aiUsage(); as r) {
-          <div class="grid sm:grid-cols-3 gap-3 mb-4">
-            <div class="card stat" astaTilt [tiltMax]="4" [astaReveal]="0"><span class="num" [astaCount]="r.totalCalls">0</span><span class="lbl">Total AI calls</span></div>
-            <div class="card stat" astaTilt [tiltMax]="4" [astaReveal]="1"><span class="num" [astaCount]="r.totalTokens">0</span><span class="lbl">Tokens</span></div>
-            <div class="card stat" astaTilt [tiltMax]="4" [astaReveal]="2"><span class="num" [astaCount]="r.avgLatencyMs" suffix="ms">0</span><span class="lbl">Avg latency</span></div>
+          <div class="grid sm:grid-cols-3 gap-3 mb-4 motion-row-primary">
+            <div class="card stat motion-card-reveal" style="--motion-card-index:0"><span class="num" [astaCount]="r.totalCalls">0</span><span class="lbl">Total AI calls</span></div>
+            <div class="card stat motion-card-reveal" style="--motion-card-index:1"><span class="num" [astaCount]="r.totalTokens">0</span><span class="lbl">Tokens</span></div>
+            <div class="card stat motion-card-reveal" style="--motion-card-index:2"><span class="num" [astaCount]="r.avgLatencyMs" suffix="ms">0</span><span class="lbl">Avg latency</span></div>
           </div>
           @if (aiAgentData().length) {
-            <div class="card mb-4" style="padding:18px" [astaReveal]="3">
+            <div class="card mb-4 motion-card-reveal motion-row-panel" style="padding:18px;--motion-card-index:0">
               <p class="kicker mb-3" style="color:var(--peri-deep)">Calls by agent</p>
               <asta-donut-chart [data]="aiAgentData()" centerLabel="calls" label="AI calls by agent" />
             </div>
           }
-          <div class="card" style="padding:0;overflow:auto" [astaReveal]="4">
+          <div class="card motion-card-reveal motion-row-3" style="padding:0;overflow:auto;--motion-card-index:0">
             <table>
               <thead><tr><th>Agent</th><th>Calls</th></tr></thead>
               <tbody>
@@ -141,6 +156,14 @@ type Tab = 'students' | 'weak-topics' | 'ai-usage';
       .bar { width: 90px; height: 6px; border-radius: 100px; background: var(--paper-3); overflow: hidden; }
       .bar-fill { height: 100%; border-radius: 100px; background: var(--coral, oklch(0.72 0.17 28)); }
       .gen { font-size: 11px; font-family: var(--mono); color: var(--text-mute); margin-top: 10px; }
+      .skel { display: block; border-radius: 8px; background: linear-gradient(90deg, var(--paper-2) 25%, var(--paper-3) 50%, var(--paper-2) 75%); background-size: 200% 100%; animation: skel-shimmer 1.4s ease infinite; }
+      .skel-num { width: 60%; height: 28px; margin-bottom: 8px; }
+      .skel-lbl { width: 40%; height: 11px; }
+      .skel-row { width: 100%; height: 14px; margin: 8px 0; }
+      .skel-row:nth-child(2) { width: 80%; }
+      .skel-row:nth-child(3) { width: 65%; }
+      @keyframes skel-shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+      @media (prefers-reduced-motion: reduce) { .skel { animation: none; } }
     `,
   ],
 })
@@ -154,6 +177,8 @@ export class ReportsComponent implements OnInit {
   readonly aiUsage = signal<AiUsageReport | null>(null);
   readonly downloading = signal(false);
   readonly denied = signal(false);
+  readonly loading = signal(false);
+  readonly error = signal(false);
 
   /** Weak topics → horizontal bar (severity). */
   readonly weakTopicData = computed<ChartDatum[]>(() =>
@@ -176,10 +201,34 @@ export class ReportsComponent implements OnInit {
 
   switch(tab: Tab): void {
     this.tab.set(tab);
-    const onErr = (e: { status?: number }) => { if (e?.status === 403) this.denied.set(true); };
-    if (tab === 'students' && !this.students()) this.api.students().subscribe({ next: (r) => this.students.set(r), error: onErr });
-    if (tab === 'weak-topics' && this.weakTopics().length === 0) this.api.weakTopics().subscribe({ next: (r) => this.weakTopics.set(r), error: onErr });
-    if (tab === 'ai-usage' && !this.aiUsage()) this.api.aiUsage().subscribe({ next: (r) => this.aiUsage.set(r), error: onErr });
+    this.error.set(false);
+    const onErr = (e: { status?: number }) => {
+      this.loading.set(false);
+      if (e?.status === 403) this.denied.set(true);
+      else this.error.set(true);
+    };
+    const done = () => this.loading.set(false);
+    if (tab === 'students' && !this.students()) {
+      this.loading.set(true);
+      this.api.students().subscribe({ next: (r) => { this.students.set(r); done(); }, error: onErr });
+    }
+    if (tab === 'weak-topics' && this.weakTopics().length === 0) {
+      this.loading.set(true);
+      this.api.weakTopics().subscribe({ next: (r) => { this.weakTopics.set(r); done(); }, error: onErr });
+    }
+    if (tab === 'ai-usage' && !this.aiUsage()) {
+      this.loading.set(true);
+      this.api.aiUsage().subscribe({ next: (r) => { this.aiUsage.set(r); done(); }, error: onErr });
+    }
+  }
+
+  /** Re-fetch the active tab after a transient error. */
+  retry(): void {
+    const tab = this.tab();
+    if (tab === 'students') this.students.set(null);
+    else if (tab === 'weak-topics') this.weakTopics.set([]);
+    else if (tab === 'ai-usage') this.aiUsage.set(null);
+    this.switch(tab);
   }
 
   download(): void {

@@ -2,7 +2,6 @@ import { ChangeDetectionStrategy, Component, OnInit, inject, signal } from '@ang
 import { FormsModule } from '@angular/forms';
 import { VoiceApiService } from '../../core/services/lab.service';
 import { ToastService } from '../../core/services/toast.service';
-import { RevealDirective } from '../../shared/directives/reveal.directive';
 
 interface Turn {
   role: 'you' | 'asta';
@@ -18,7 +17,7 @@ interface Turn {
   selector: 'asta-voice-room',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormsModule, RevealDirective],
+  imports: [FormsModule],
   template: `
     <!-- Command header -->
     <header class="asta-page-command-header">
@@ -36,8 +35,8 @@ interface Turn {
         </div>
       </div>
     } @else if (enabled()) {
-      <div class="grid gap-5 lg:grid-cols-[1fr_minmax(280px,340px)]">
-        <div class="card" style="padding:20px;min-height:340px" [astaReveal]="0">
+      <div class="grid gap-5 lg:grid-cols-[1fr_minmax(280px,340px)] motion-row-primary">
+        <div class="card motion-card-reveal" style="--motion-card-index:0;padding:20px;min-height:340px">
           <div class="flex items-center justify-between mb-3">
             <p class="kicker">Conversation</p>
             <div class="flex gap-1.5">
@@ -57,7 +56,7 @@ interface Turn {
           @if (thinking()) { <p class="text-xs text-txt-mute mt-3">Asta is thinking…</p> }
         </div>
 
-        <div class="card" style="padding:20px" [astaReveal]="1">
+        <div class="card motion-card-reveal" style="--motion-card-index:1;padding:20px">
           <p class="kicker mb-3">Speak</p>
           <div class="grid place-items-center py-4">
             <button class="mic" [class.mic-on]="listening()" (click)="toggleMic()" [disabled]="!speechSupported">

@@ -6,7 +6,6 @@ import { ButtonComponent } from '../../shared/ui/button.component';
 import { CardComponent } from '../../shared/ui/card.component';
 import { EmptyStateComponent } from '../../shared/ui/empty-state.component';
 import { SkeletonComponent } from '../../shared/ui/skeleton.component';
-import { RevealDirective } from '../../shared/directives/reveal.directive';
 import { MagneticDirective } from '../../shared/directives/magnetic.directive';
 import { RoadmapCardComponent } from './components/roadmap-card.component';
 
@@ -14,7 +13,7 @@ import { RoadmapCardComponent } from './components/roadmap-card.component';
   selector: 'asta-roadmap-list',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink, ButtonComponent, CardComponent, EmptyStateComponent, SkeletonComponent, RevealDirective, MagneticDirective, RoadmapCardComponent],
+  imports: [RouterLink, ButtonComponent, CardComponent, EmptyStateComponent, SkeletonComponent, MagneticDirective, RoadmapCardComponent],
   template: `
     <!-- Command header -->
     <header class="asta-page-command-header">
@@ -39,22 +38,22 @@ import { RoadmapCardComponent } from './components/roadmap-card.component';
         </div>
       </asta-card>
     } @else if (roadmaps().length === 0) {
-      <asta-card>
-        <asta-empty-state title="No roadmaps yet" description="Generate your first personalized roadmap to start your path.">
+      <asta-card class="block motion-card-reveal motion-row-primary">
+        <asta-empty-state title="No roadmap yet" description="Asta can build a focused, week-by-week path from your goal — sequenced modules, weekly tasks, projects and checkpoints.">
           <asta-btn variant="accent" astaMagnetic routerLink="/app/roadmap/generate">Build my roadmap</asta-btn>
         </asta-empty-state>
       </asta-card>
     } @else {
       @if (active().length) {
         <p class="kicker mb-3">Active</p>
-        <div class="grid gap-5 md:grid-cols-2 mb-8">
-          @for (r of active(); track r.id; let i = $index) { <asta-roadmap-card [astaReveal]="i" [roadmap]="r" /> }
+        <div class="grid gap-5 md:grid-cols-2 mb-8 motion-row-primary">
+          @for (r of active(); track r.id; let i = $index) { <asta-roadmap-card class="block motion-card-reveal" [style.--motion-card-index]="i" [roadmap]="r" /> }
         </div>
       }
       @if (past().length) {
         <p class="kicker mb-3">Past &amp; archived</p>
-        <div class="grid gap-5 md:grid-cols-2">
-          @for (r of past(); track r.id; let i = $index) { <asta-roadmap-card [astaReveal]="i" [roadmap]="r" /> }
+        <div class="grid gap-5 md:grid-cols-2 motion-row-2">
+          @for (r of past(); track r.id; let i = $index) { <asta-roadmap-card class="block motion-card-reveal" [style.--motion-card-index]="i" [roadmap]="r" /> }
         </div>
       }
     }

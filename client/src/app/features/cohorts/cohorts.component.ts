@@ -7,7 +7,6 @@ import { OrgContextService } from '../../core/services/org-context.service';
 import { ToastService } from '../../core/services/toast.service';
 import { CohortDetail, CohortStatus, CohortView, LeaderboardRow, OrgMember } from '../../core/models';
 import { ProgressComponent } from '../../shared/ui/progress.component';
-import { RevealDirective } from '../../shared/directives/reveal.directive';
 
 /**
  * Cohort-based learning (B3). Students see the cohorts they belong to; org admins
@@ -18,7 +17,7 @@ import { RevealDirective } from '../../shared/directives/reveal.directive';
   selector: 'asta-cohorts',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormsModule, DatePipe, ProgressComponent, RevealDirective],
+  imports: [FormsModule, DatePipe, ProgressComponent],
   template: `
     <!-- Command header -->
     <header class="asta-page-command-header">
@@ -48,9 +47,10 @@ import { RevealDirective } from '../../shared/directives/reveal.directive';
             @if (orgCohorts().length === 0) {
               <p class="text-sm text-txt-mute">No cohorts yet. Create one above.</p>
             }
-            <div class="space-y-2">
-              @for (c of orgCohorts(); track c.id) {
-                <button class="w-full text-left card" style="padding:12px 14px"
+            <div class="space-y-2 motion-row-primary">
+              @for (c of orgCohorts(); track c.id; let i = $index) {
+                <button class="w-full text-left card hover-lift motion-card-reveal" style="padding:12px 14px"
+                  [style.--motion-card-index]="i"
                   [style.borderColor]="selected()?.id === c.id ? 'var(--green)' : null" (click)="select(c.id)">
                   <div class="flex items-center justify-between gap-2">
                     <b class="font-display">{{ c.name }}</b>
@@ -68,9 +68,10 @@ import { RevealDirective } from '../../shared/directives/reveal.directive';
           @if (mine().length === 0) {
             <p class="text-sm text-txt-mute">You're not in a cohort yet.</p>
           }
-          <div class="space-y-2">
-            @for (c of mine(); track c.id) {
-              <button class="w-full text-left card" style="padding:12px 14px"
+          <div class="space-y-2 motion-row-2">
+            @for (c of mine(); track c.id; let i = $index) {
+              <button class="w-full text-left card hover-lift motion-card-reveal" style="padding:12px 14px"
+                [style.--motion-card-index]="i"
                 [style.borderColor]="selected()?.id === c.id ? 'var(--green)' : null" (click)="select(c.id)">
                 <b class="font-display">{{ c.name }}</b>
                 <p class="text-xs text-txt-mute mt-1">{{ c.organizationName }} · {{ c.roadmapGoal || 'No goal set' }}</p>
@@ -91,8 +92,8 @@ import { RevealDirective } from '../../shared/directives/reveal.directive';
           </div>
         }
         @if (selected(); as c) {
-          <div class="space-y-5">
-            <div class="card" style="padding:20px" [astaReveal]="0">
+          <div class="space-y-5 motion-row-primary">
+            <div class="card motion-card-reveal" style="padding:20px" [style.--motion-card-index]="0">
               <div class="flex items-start justify-between gap-3 flex-wrap">
                 <div>
                   <h2 class="font-display text-2xl">{{ c.name }}</h2>
@@ -113,7 +114,7 @@ import { RevealDirective } from '../../shared/directives/reveal.directive';
             </div>
 
             <!-- Leaderboard -->
-            <div class="card" style="padding:18px" [astaReveal]="1">
+            <div class="card motion-card-reveal" style="padding:18px" [style.--motion-card-index]="1">
               <p class="kicker mb-3" style="color:var(--green-deep)">Leaderboard</p>
               @if (leaderboard().length === 0) {
                 <p class="text-sm text-txt-mute">No students yet — add some to populate the leaderboard.</p>
@@ -132,7 +133,7 @@ import { RevealDirective } from '../../shared/directives/reveal.directive';
             </div>
 
             <!-- Announcements -->
-            <div class="card" style="padding:18px" [astaReveal]="2">
+            <div class="card motion-card-reveal" style="padding:18px" [style.--motion-card-index]="2">
               <p class="kicker mb-3">Announcements</p>
               @if (canManage()) {
                 <div class="mb-4">
@@ -156,7 +157,7 @@ import { RevealDirective } from '../../shared/directives/reveal.directive';
             </div>
 
             <!-- Members -->
-            <div class="card" style="padding:18px" [astaReveal]="3">
+            <div class="card motion-card-reveal" style="padding:18px" [style.--motion-card-index]="3">
               <p class="kicker mb-3">Members</p>
               <div class="grid sm:grid-cols-2 gap-4">
                 <div>

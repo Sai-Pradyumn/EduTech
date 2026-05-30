@@ -13,6 +13,7 @@ import { ChangeDetectionStrategy, Component, ElementRef, Input, Renderer2, injec
     <div
       #card
       class="card h-full"
+      [class.hover-lift]="interactive"
       [class.card-accent]="!!accentVar"
       [style.--accent-c]="accentVar"
       [style.padding]="padded ? pad : '0'"
@@ -28,6 +29,9 @@ import { ChangeDetectionStrategy, Component, ElementRef, Input, Renderer2, injec
 export class CardComponent {
   @Input() padded = true;
   @Input() pad = '20px';
+  /** When the card is clickable, apply the uniform `.hover-lift` interaction
+   *  (translateY(-3px) + green glow-ring) so every clickable card lifts the same. */
+  @Input() interactive = false;
   /** Optional accent, e.g. 'var(--green)'. Rendered as a soft corner bloom +
    *  accent-tinted hairline + accent spotlight — never a border strip. */
   @Input() accentVar: string | null = null;

@@ -9,8 +9,6 @@ import { ButtonComponent } from '../../shared/ui/button.component';
 import { CardComponent } from '../../shared/ui/card.component';
 import { RingComponent } from '../../shared/ui/ring.component';
 import { ProgressComponent } from '../../shared/ui/progress.component';
-import { TiltDirective } from '../../shared/directives/tilt.directive';
-import { RevealDirective } from '../../shared/directives/reveal.directive';
 import { MagneticDirective } from '../../shared/directives/magnetic.directive';
 import { CountDirective } from '../../shared/directives/count.directive';
 
@@ -28,7 +26,7 @@ const DIFFS: Difficulty[] = ['beginner', 'intermediate', 'advanced'];
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     FormsModule, ButtonComponent, CardComponent, RingComponent, ProgressComponent,
-    TiltDirective, RevealDirective, MagneticDirective, CountDirective,
+    MagneticDirective, CountDirective,
   ],
   template: `
     @switch (view()) {
@@ -42,7 +40,7 @@ const DIFFS: Difficulty[] = ['beginner', 'intermediate', 'advanced'];
         </header>
 
         <div class="space-y-5">
-          <asta-card accentVar="var(--green)" astaTilt [tiltMax]="4" [astaReveal]="0">
+          <asta-card accentVar="var(--green)" class="motion-card-reveal motion-row-primary" style="--motion-card-index:0">
             <div class="panel-head mb-3">
               <p class="kicker">Plan a new project</p>
               <span class="panel-ico" aria-hidden="true">
@@ -60,7 +58,7 @@ const DIFFS: Difficulty[] = ['beginner', 'intermediate', 'advanced'];
             </div>
           </asta-card>
 
-          <asta-card astaTilt [tiltMax]="4" [astaReveal]="1">
+          <asta-card class="motion-card-reveal motion-strip" style="--motion-card-index:0">
             <div class="panel-head mb-3">
               <p class="kicker">Your projects</p>
               <span class="panel-ico" aria-hidden="true">
@@ -101,8 +99,8 @@ const DIFFS: Difficulty[] = ['beginner', 'intermediate', 'advanced'];
           </header>
 
           <!-- blueprint header -->
-          <div class="grid gap-5 lg:grid-cols-3 mb-5" [astaReveal]="0">
-            <asta-card class="lg:col-span-2" astaTilt [tiltMax]="4">
+          <div class="grid gap-5 lg:grid-cols-3 mb-5 motion-row-primary">
+            <asta-card class="lg:col-span-2 motion-card-reveal" style="--motion-card-index:0">
               <div class="panel-head mb-2">
                 <p class="kicker">Blueprint</p>
                 <span class="panel-ico" aria-hidden="true">
@@ -117,7 +115,7 @@ const DIFFS: Difficulty[] = ['beginner', 'intermediate', 'advanced'];
               <div class="flex flex-wrap gap-1.5">@for (l of p.learningGoals; track l) { <span class="tag">{{ l }}</span> }</div>
             </asta-card>
 
-            <asta-card accentVar="var(--peri)" astaTilt [tiltMax]="4">
+            <asta-card accentVar="var(--peri)" class="motion-card-reveal" style="--motion-card-index:1">
               <div class="panel-head mb-3">
                 <p class="kicker" style="color:var(--peri-deep)">Milestones</p>
                 <span class="panel-ico peri" aria-hidden="true">
@@ -136,9 +134,9 @@ const DIFFS: Difficulty[] = ['beginner', 'intermediate', 'advanced'];
           </div>
 
           <!-- kanban -->
-          <div class="grid gap-4 md:grid-cols-3 mb-5" [astaReveal]="1">
-            @for (col of columns; track col.key) {
-              <div class="kcol">
+          <div class="grid gap-4 md:grid-cols-3 mb-5 motion-row-panel">
+            @for (col of columns; track col.key; let i = $index) {
+              <div class="kcol motion-card-reveal" [style.--motion-card-index]="i">
                 <div class="flex items-center justify-between mb-2">
                   <p class="kicker">{{ col.label }}</p>
                   <span class="count">{{ tasksIn(col.key).length }}</span>
@@ -171,7 +169,7 @@ const DIFFS: Difficulty[] = ['beginner', 'intermediate', 'advanced'];
           </div>
 
           <!-- submit -->
-          <asta-card accentVar="var(--green)" astaTilt [tiltMax]="4" [astaReveal]="2">
+          <asta-card accentVar="var(--green)" class="motion-card-reveal motion-lower" style="--motion-card-index:0">
             <div class="panel-head mb-3">
               <p class="kicker">@if (p.submission?.submittedAt) { Submission } @else { Submit your project }</p>
               <span class="panel-ico" aria-hidden="true">
@@ -200,7 +198,7 @@ const DIFFS: Difficulty[] = ['beginner', 'intermediate', 'advanced'];
 
           <!-- AI review (B8) -->
           @if (p.submission?.submittedAt) {
-            <asta-card accentVar="var(--peri)" astaTilt [tiltMax]="4" class="mt-5">
+            <asta-card accentVar="var(--peri)" class="mt-5 motion-card-reveal motion-lower" style="--motion-card-index:1">
               <div class="panel-head mb-3">
                 <div class="flex items-center gap-3">
                   <span class="panel-ico peri" aria-hidden="true">
@@ -248,7 +246,7 @@ const DIFFS: Difficulty[] = ['beginner', 'intermediate', 'advanced'];
 
           <!-- Mentor review (B2) -->
           @if (p.mentorReview; as mr) {
-            <asta-card accentVar="var(--green)" astaTilt [tiltMax]="4" class="mt-5">
+            <asta-card accentVar="var(--green)" class="mt-5 motion-card-reveal motion-lower" style="--motion-card-index:2">
               <div class="panel-head mb-2">
                 <p class="kicker">Mentor review</p>
                 <span class="panel-ico" aria-hidden="true">

@@ -4,15 +4,13 @@ import { LogoComponent } from '../../shared/ui/logo.component';
 import { ThemeToggleComponent } from '../../shared/ui/theme-toggle.component';
 import { BillingService } from '../../core/services/billing.service';
 import { Plan } from '../../core/models';
-import { RevealDirective } from '../../shared/directives/reveal.directive';
-import { TiltDirective } from '../../shared/directives/tilt.directive';
 
 /** Public pricing page (B5). Reads the plan catalog; CTAs route to register. */
 @Component({
   selector: 'asta-pricing',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink, LogoComponent, ThemeToggleComponent, RevealDirective, TiltDirective],
+  imports: [RouterLink, LogoComponent, ThemeToggleComponent],
   template: `
     <div style="background:var(--paper);color:var(--text);min-height:100vh">
       <nav class="flex items-center justify-between px-6 py-4 mx-auto" style="max-width:var(--maxw,1240px)">
@@ -29,9 +27,9 @@ import { TiltDirective } from '../../shared/directives/tilt.directive';
         <p class="text-txt-soft mt-4 text-lg">Every plan runs on the full agent OS. Mock payment mode — no real charge in the demo.</p>
       </header>
 
-      <div class="grid gap-4 md:grid-cols-3 px-6 pb-20 mx-auto" style="max-width:1040px">
+      <div class="grid gap-4 md:grid-cols-3 px-6 pb-20 mx-auto motion-row-panel" style="max-width:1040px">
         @for (p of plans(); track p.id; let i = $index) {
-          <div class="card relative" style="padding:24px" astaTilt [tiltMax]="4" [astaReveal]="i" [style.borderColor]="p.highlight ? 'var(--green)' : null" [style.boxShadow]="p.highlight ? 'var(--shadow-lg)' : null">
+          <div class="card relative motion-card-reveal" style="padding:24px" [style.--motion-card-index]="i" [style.borderColor]="p.highlight ? 'var(--green)' : null" [style.boxShadow]="p.highlight ? 'var(--shadow-lg)' : null">
             @if (p.highlight) { <span class="pill absolute" style="top:-12px;right:18px;background:var(--green);color:var(--ink);border:0">Popular</span> }
             <h3 class="font-display text-2xl">{{ p.name }}</h3>
             <p class="mt-1"><span class="font-display text-4xl">₹{{ p.priceInr }}</span><span class="text-txt-mute">/mo</span></p>
@@ -46,10 +44,26 @@ import { TiltDirective } from '../../shared/directives/tilt.directive';
               {{ p.priceInr === 0 ? 'Start free' : 'Get ' + p.name }}
             </a>
           </div>
+        } @empty {
+          @for (n of [0, 1, 2]; track n) {
+            <div class="card motion-card-reveal" style="padding:24px" [style.--motion-card-index]="n">
+              <span class="skel" style="width:50%;height:24px;margin-bottom:12px"></span>
+              <span class="skel" style="width:40%;height:36px;margin-bottom:12px"></span>
+              <span class="skel" style="width:90%;height:14px;margin-bottom:8px"></span>
+              <span class="skel" style="width:75%;height:14px"></span>
+            </div>
+          }
         }
       </div>
     </div>
   `,
+  styles: [
+    `
+      .skel { display: block; border-radius: 8px; background: linear-gradient(90deg, var(--paper-2) 25%, var(--paper-3) 50%, var(--paper-2) 75%); background-size: 200% 100%; animation: skel-shimmer 1.4s ease infinite; }
+      @keyframes skel-shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+      @media (prefers-reduced-motion: reduce) { .skel { animation: none; } }
+    `,
+  ],
 })
 export class PricingComponent implements OnInit {
   private readonly billing = inject(BillingService);

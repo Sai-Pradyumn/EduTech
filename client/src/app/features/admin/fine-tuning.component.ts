@@ -4,7 +4,6 @@ import { FormsModule } from '@angular/forms';
 import { FineTuningApiService } from '../../core/services/lab.service';
 import { ToastService } from '../../core/services/toast.service';
 import { FineTuningJob } from '../../core/models';
-import { RevealDirective } from '../../shared/directives/reveal.directive';
 
 /**
  * Fine-Tuning Lab (A8). LoRA job records orchestrating the ml-service (simulated progress).
@@ -14,8 +13,9 @@ import { RevealDirective } from '../../shared/directives/reveal.directive';
   selector: 'asta-fine-tuning',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [DatePipe, FormsModule, RevealDirective],
+  imports: [DatePipe, FormsModule],
   template: `
+   <div class="asta-observatory">
     <!-- Command header -->
     <header class="asta-page-command-header">
       <div class="min-w-0">
@@ -32,8 +32,8 @@ import { RevealDirective } from '../../shared/directives/reveal.directive';
         </div>
       </div>
     } @else if (enabled()) {
-      <div class="grid gap-5 lg:grid-cols-[minmax(280px,340px)_1fr]">
-        <div class="card" style="padding:18px;height:max-content">
+      <div class="grid gap-5 lg:grid-cols-[minmax(280px,340px)_1fr] motion-row-primary">
+        <div class="card motion-card-reveal" style="padding:18px;height:max-content;--motion-card-index:0">
           <p class="kicker mb-3" style="color:var(--green-deep)">New fine-tune</p>
           <input class="input mb-2" placeholder="Job name" [(ngModel)]="name" />
           <select class="input mb-2" [(ngModel)]="baseModel">
@@ -51,9 +51,9 @@ import { RevealDirective } from '../../shared/directives/reveal.directive';
         <div>
           <p class="kicker mb-3">Jobs</p>
           @if (jobs().length === 0) { <p class="text-sm text-txt-mute">No jobs yet.</p> }
-          <div class="space-y-3">
+          <div class="space-y-3 motion-row-2">
             @for (j of jobs(); track j.id; let i = $index) {
-              <div class="card" style="padding:16px" [astaReveal]="i">
+              <div class="card motion-card-reveal" style="padding:16px" [style.--motion-card-index]="i">
                 <div class="flex items-center justify-between gap-2 mb-2">
                   <b class="font-display">{{ j.name }}</b>
                   <span class="pill" [style.color]="statusColor(j.status)">{{ j.status }}</span>
@@ -73,6 +73,7 @@ import { RevealDirective } from '../../shared/directives/reveal.directive';
         </div>
       </div>
     }
+   </div>
   `,
   styles: [
     `

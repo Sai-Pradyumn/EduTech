@@ -14,9 +14,7 @@ import { SkeletonComponent } from '../../shared/ui/skeleton.component';
 import { RingComponent } from '../../shared/ui/ring.component';
 import { ProgressComponent } from '../../shared/ui/progress.component';
 import { AstaLearningRiverComponent, RiverNode } from '../../shared/ui/synapse';
-import { RevealDirective } from '../../shared/directives/reveal.directive';
 import { MagneticDirective } from '../../shared/directives/magnetic.directive';
-import { TiltDirective } from '../../shared/directives/tilt.directive';
 import { CountDirective } from '../../shared/directives/count.directive';
 import { ConfettiService } from '../../core/services/confetti.service';
 
@@ -31,7 +29,7 @@ import { ConfettiService } from '../../core/services/confetti.service';
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     RouterLink, ButtonComponent, CardComponent, EmptyStateComponent, SkeletonComponent,
-    RingComponent, ProgressComponent, AstaLearningRiverComponent, RevealDirective, MagneticDirective, TiltDirective, CountDirective,
+    RingComponent, ProgressComponent, AstaLearningRiverComponent, MagneticDirective, CountDirective,
   ],
   template: `
     @if (loading()) {
@@ -85,7 +83,7 @@ import { ConfettiService } from '../../core/services/confetti.service';
 
       <!-- Proactive "Your next move" — the system decides what's next from your state -->
       @if (nextMove(); as nm) {
-        <asta-card class="mb-5 next-move" astaTilt [tiltMax]="2" [astaReveal]="0">
+        <asta-card class="mb-5 next-move dashboard-primary-card dashboard-reveal" style="--motion-card-index:0">
           <div class="flex items-center justify-between gap-4 flex-wrap">
             <div class="min-w-0">
               <p class="kicker mb-1">Your next move</p>
@@ -97,9 +95,9 @@ import { ConfettiService } from '../../core/services/confetti.service';
         </asta-card>
       }
 
-      <!-- Active roadmap (anchor) + progress -->
-      <div class="grid gap-5 lg:grid-cols-3">
-        <asta-card class="lg:col-span-2" astaTilt [tiltMax]="3" [astaReveal]="0">
+      <!-- Active roadmap (anchor) + progress — same row, same reveal family -->
+      <div class="grid gap-5 lg:grid-cols-3 motion-row-primary">
+        <asta-card class="lg:col-span-2 dashboard-primary-card dashboard-reveal" style="--motion-card-index:0">
           <p class="kicker mb-3">Active roadmap</p>
           <h2 class="t-h-card mb-1">{{ r.title }}</h2>
           <p class="text-sm text-txt-soft mb-4">{{ r.estimatedDuration }}</p>
@@ -125,7 +123,7 @@ import { ConfettiService } from '../../core/services/confetti.service';
           <div class="mt-4"><asta-btn variant="accent" size="sm" [routerLink]="['/app/roadmap', r.id]">Open full roadmap <span class="arr">→</span></asta-btn></div>
         </asta-card>
 
-        <asta-card astaTilt [tiltMax]="5" [astaReveal]="1">
+        <asta-card class="dashboard-primary-card dashboard-reveal" style="--motion-card-index:1">
           <p class="kicker mb-3">Progress</p>
           <div class="flex items-center gap-4">
             <asta-ring [value]="r.progressPercentage" [size]="92" />
@@ -140,7 +138,7 @@ import { ConfettiService } from '../../core/services/confetti.service';
 
       <!-- Learning intelligence strip (compact, horizontal) -->
       @if (intel(); as li) {
-        <a routerLink="/app/progress" [astaReveal]="2" astaTilt [tiltMax]="2" class="card block mt-5" style="padding:16px 18px;text-decoration:none">
+        <a routerLink="/app/progress" class="card hover-lift block mt-5 motion-strip dashboard-reveal" style="padding:16px 18px;text-decoration:none;--motion-card-index:0">
           <div class="flex flex-wrap items-center gap-5">
             <div class="text-center"><asta-ring [value]="li.healthScore" [size]="60" /><p class="text-[11px] text-txt-mute mt-1">Health</p></div>
             <div class="text-center"><asta-ring [value]="li.readinessScore" [size]="60" tone="peri" /><p class="text-[11px] text-txt-mute mt-1">Readiness</p></div>
@@ -154,9 +152,9 @@ import { ConfettiService } from '../../core/services/confetti.service';
         </a>
       }
 
-      <!-- Three compact intelligence panels -->
-      <div class="grid gap-5 md:grid-cols-3 mt-5">
-        <asta-card astaTilt [tiltMax]="6" [astaReveal]="3">
+      <!-- Three compact intelligence panels — same row, same reveal + hover family -->
+      <div class="grid gap-5 md:grid-cols-3 mt-5 motion-row-panel">
+        <asta-card class="dashboard-panel-card dashboard-reveal" style="--motion-card-index:0" [interactive]="true" [routerLink]="['/app/roadmap', r.id]">
           <div class="panel-head">
             <p class="kicker" style="color:var(--peri-deep)">Next milestone</p>
             <span class="panel-ico peri" aria-hidden="true">
@@ -169,7 +167,7 @@ import { ConfettiService } from '../../core/services/confetti.service';
           } @else { <p class="text-sm text-txt-soft mt-2">All milestones reached 🎉</p> }
         </asta-card>
 
-        <asta-card astaTilt [tiltMax]="6" [astaReveal]="4">
+        <asta-card class="dashboard-panel-card dashboard-reveal" style="--motion-card-index:1" [interactive]="true" routerLink="/app/quizzes">
           <div class="panel-head">
             <p class="kicker" style="color:var(--coral-deep)">Weak areas</p>
             <span class="panel-ico coral" aria-hidden="true">
@@ -183,7 +181,7 @@ import { ConfettiService } from '../../core/services/confetti.service';
           } @else { <p class="text-sm text-txt-soft mt-2">None flagged — keep it up.</p> }
         </asta-card>
 
-        <asta-card astaTilt [tiltMax]="6" [astaReveal]="5">
+        <asta-card class="dashboard-panel-card dashboard-reveal" style="--motion-card-index:2" [interactive]="true" routerLink="/app/projects">
           <div class="panel-head">
             <p class="kicker">Recommended project</p>
             <span class="panel-ico green" aria-hidden="true">
@@ -198,7 +196,7 @@ import { ConfettiService } from '../../core/services/confetti.service';
       </div>
 
       <!-- Learning river (lower section — path overview, not a hero) -->
-      <asta-card [astaReveal]="6" class="block mt-5">
+      <asta-card class="block mt-5 motion-lower dashboard-reveal" style="--motion-card-index:0">
         <div class="flex flex-wrap items-center justify-between gap-3">
           <div>
             <p class="kicker mb-1">Learning river</p>

@@ -16,9 +16,7 @@ import { MilestoneCardComponent } from './components/milestone-card.component';
 import { ProjectCardComponent } from './components/project-card.component';
 import { ScrollDrawDirective } from '../../shared/directives/scroll-draw.directive';
 import { AstaLearningRiverComponent, AstaStepTrackerComponent, RiverNode, StepItem, StepState } from '../../shared/ui/synapse';
-import { RevealDirective } from '../../shared/directives/reveal.directive';
 import { MagneticDirective } from '../../shared/directives/magnetic.directive';
-import { TiltDirective } from '../../shared/directives/tilt.directive';
 import { CountDirective } from '../../shared/directives/count.directive';
 
 @Component({
@@ -40,9 +38,7 @@ import { CountDirective } from '../../shared/directives/count.directive';
     ScrollDrawDirective,
     AstaLearningRiverComponent,
     AstaStepTrackerComponent,
-    RevealDirective,
     MagneticDirective,
-    TiltDirective,
     CountDirective,
   ],
   template: `
@@ -82,13 +78,14 @@ import { CountDirective } from '../../shared/directives/count.directive';
         </div>
         <div class="flex gap-2.5 shrink-0">
           <asta-btn variant="accent" astaMagnetic routerLink="/app/tutor">Ask Asta <span class="arr">→</span></asta-btn>
+          <asta-btn variant="ghost" astaMagnetic routerLink="/app/roadmap/generate">Recalculate</asta-btn>
           <asta-btn variant="ghost" astaMagnetic routerLink="/app/roadmap">All roadmaps</asta-btn>
         </div>
       </header>
 
       <!-- Overview + progress -->
-      <div class="grid gap-5 lg:grid-cols-3 mb-6" [astaReveal]="0">
-        <asta-card class="lg:col-span-2" astaTilt [tiltMax]="3" pad="16px 18px">
+      <div class="grid gap-5 lg:grid-cols-3 mb-6 motion-row-primary">
+        <asta-card class="lg:col-span-2 block motion-card-reveal" [style.--motion-card-index]="0" pad="16px 18px">
           <div class="panel-head">
             <p class="kicker">Overview</p>
             <span class="panel-ico" aria-hidden="true">
@@ -102,7 +99,7 @@ import { CountDirective } from '../../shared/directives/count.directive';
           </div>
         </asta-card>
 
-        <asta-card astaTilt [tiltMax]="5" pad="16px 18px">
+        <asta-card class="block motion-card-reveal" [style.--motion-card-index]="1" pad="16px 18px">
           <p class="kicker mb-3">Progress</p>
           <div class="flex items-center gap-4">
             <asta-ring [value]="r.progressPercentage" [size]="92" />
@@ -120,7 +117,7 @@ import { CountDirective } from '../../shared/directives/count.directive';
 
       <!-- Learning river — path overview -->
       @if (riverNodes().length) {
-        <asta-card [astaReveal]="1" class="block mb-6" pad="16px 18px">
+        <asta-card class="block mb-6 motion-card-reveal motion-strip" pad="16px 18px">
           <div class="panel-head">
             <div>
               <p class="kicker mb-1">Learning river</p>
@@ -137,7 +134,7 @@ import { CountDirective } from '../../shared/directives/count.directive';
       }
 
       <!-- Weekly plan — step tracker overview + detailed week cards -->
-      <section class="mb-8" [astaReveal]="2">
+      <section class="mb-8 motion-card-reveal motion-row-panel">
         <div class="grid gap-5 lg:grid-cols-3">
           <asta-card class="lg:col-span-1" pad="16px 18px">
             <div class="panel-head">
@@ -154,12 +151,14 @@ import { CountDirective } from '../../shared/directives/count.directive';
             <div class="panel-head mb-3">
               <h2 class="text-[20px] leading-tight">Weekly plan</h2>
             </div>
-            <div class="relative" astaScrollDraw>
+            <div class="relative motion-row-3" astaScrollDraw>
               <!-- spine: static track + a scroll-drawn accent that fills as you read down -->
               <span class="absolute left-[8px] top-2 bottom-2 w-0.5" style="background:var(--paper-3)"></span>
               <span class="absolute left-[8px] top-2 bottom-2 w-0.5 origin-top" style="background:linear-gradient(var(--green),var(--peri));transform:scaleY(var(--draw,0));transition:transform .12s linear"></span>
-              @for (week of r.weeklyPlan; track week.weekNumber) {
+              @for (week of r.weeklyPlan; track week.weekNumber; let i = $index) {
                 <asta-week-card
+                  class="block motion-card-reveal"
+                  [style.--motion-card-index]="i"
                   [week]="week"
                   [completed]="r.completedWeeks.includes(week.weekNumber)"
                   [isCurrent]="week.weekNumber === currentWeek()"
@@ -173,7 +172,7 @@ import { CountDirective } from '../../shared/directives/count.directive';
       </section>
 
       <!-- Milestones -->
-      <section class="mb-8" [astaReveal]="3">
+      <section class="mb-8 motion-card-reveal motion-lower">
         <div class="panel-head mb-4">
           <h2 class="text-[20px] leading-tight">Milestones</h2>
         </div>
@@ -185,7 +184,7 @@ import { CountDirective } from '../../shared/directives/count.directive';
       </section>
 
       <!-- Projects -->
-      <section class="mb-8" [astaReveal]="4">
+      <section class="mb-8 motion-card-reveal motion-lower">
         <div class="panel-head mb-4">
           <h2 class="text-[20px] leading-tight">Recommended projects</h2>
         </div>
@@ -194,9 +193,9 @@ import { CountDirective } from '../../shared/directives/count.directive';
         </div>
       </section>
 
-      <div class="grid gap-5 lg:grid-cols-3" [astaReveal]="5">
+      <div class="grid gap-5 lg:grid-cols-3 motion-lower">
         <!-- Assessment plan -->
-        <asta-card astaTilt [tiltMax]="4" pad="16px 18px">
+        <asta-card class="block motion-card-reveal" [style.--motion-card-index]="0" pad="16px 18px">
           <div class="panel-head">
             <p class="kicker">Assessment plan</p>
             <span class="panel-ico" aria-hidden="true">
@@ -217,7 +216,7 @@ import { CountDirective } from '../../shared/directives/count.directive';
         </asta-card>
 
         <!-- Daily study plan -->
-        <asta-card astaTilt [tiltMax]="4" pad="16px 18px">
+        <asta-card class="block motion-card-reveal" [style.--motion-card-index]="1" pad="16px 18px">
           <div class="panel-head">
             <p class="kicker">Daily study plan</p>
             <span class="panel-ico" aria-hidden="true">
@@ -230,7 +229,7 @@ import { CountDirective } from '../../shared/directives/count.directive';
         </asta-card>
 
         <!-- Success tips -->
-        <asta-card accentVar="var(--peri)" astaTilt [tiltMax]="4" pad="16px 18px">
+        <asta-card accentVar="var(--peri)" class="block motion-card-reveal" [style.--motion-card-index]="2" pad="16px 18px">
           <div class="panel-head">
             <p class="kicker" style="color:var(--peri-deep)">Success tips</p>
             <span class="panel-ico peri" aria-hidden="true">

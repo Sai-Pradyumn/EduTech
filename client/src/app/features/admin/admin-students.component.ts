@@ -4,7 +4,6 @@ import { FormsModule } from '@angular/forms';
 import { AdminService } from '../../core/services/admin.service';
 import { AdminStudentRow } from '../../core/models';
 import { CardComponent } from '../../shared/ui/card.component';
-import { RevealDirective } from '../../shared/directives/reveal.directive';
 import { CountDirective } from '../../shared/directives/count.directive';
 
 /**
@@ -15,8 +14,9 @@ import { CountDirective } from '../../shared/directives/count.directive';
   selector: 'asta-admin-students',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [DatePipe, FormsModule, CardComponent, RevealDirective, CountDirective],
+  imports: [DatePipe, FormsModule, CardComponent, CountDirective],
   template: `
+   <div class="asta-observatory">
     <!-- Compact command header -->
     <header class="asta-page-command-header">
       <div class="min-w-0">
@@ -31,7 +31,7 @@ import { CountDirective } from '../../shared/directives/count.directive';
       </div>
     </header>
 
-    <asta-card [padded]="false" [astaReveal]="0">
+    <asta-card class="motion-card-reveal motion-row-primary" style="--motion-card-index:0" [padded]="false">
       <div class="panel-head" style="padding:16px 18px 12px">
         <div class="min-w-0">
           <p class="kicker mb-1">Roster</p>
@@ -47,7 +47,7 @@ import { CountDirective } from '../../shared/directives/count.directive';
           <thead><tr><th>Student</th><th>Goal</th><th>Level</th><th>Health</th><th>Readiness</th><th>Quizzes</th><th>Last active</th></tr></thead>
           <tbody>
             @for (s of filtered(); track s.userId) {
-              <tr [astaReveal]="$index">
+              <tr>
                 <td data-label="Student">
                   <b>{{ s.name }}</b> @if (!s.onboarded) { <span class="flag">new</span> }
                   <span class="sub">{{ s.email }}</span>
@@ -79,6 +79,7 @@ import { CountDirective } from '../../shared/directives/count.directive';
     <p class="gen">
       <span [astaCount]="filtered().length"></span> of <span [astaCount]="all().length"></span> students
     </p>
+   </div>
   `,
   styles: [
     `

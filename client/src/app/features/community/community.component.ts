@@ -8,7 +8,6 @@ import { AuthService } from '../../core/services/auth.service';
 import { OrgContextService } from '../../core/services/org-context.service';
 import { ToastService } from '../../core/services/toast.service';
 import { CommunityChannel, CommunityReply, CommunityThread, Project, ThreadKind } from '../../core/models';
-import { RevealDirective } from '../../shared/directives/reveal.directive';
 
 /**
  * Community + discussion (B9). Org-scoped channels (General / Help / Showcase), threads
@@ -19,7 +18,7 @@ import { RevealDirective } from '../../shared/directives/reveal.directive';
   selector: 'asta-community',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormsModule, DatePipe, RouterLink, RevealDirective],
+  imports: [FormsModule, DatePipe, RouterLink],
   template: `
     <!-- Command header -->
     <header class="asta-page-command-header">
@@ -34,9 +33,13 @@ import { RevealDirective } from '../../shared/directives/reveal.directive';
       <div class="space-y-4">
         <div>
           <p class="kicker mb-2">Channels</p>
-          <div class="space-y-1.5">
-            @for (c of channels(); track c.id) {
-              <button class="w-full text-left card" style="padding:10px 13px"
+          @if (channels().length === 0) {
+            <p class="text-sm text-txt-mute">No channels yet.</p>
+          }
+          <div class="space-y-1.5 motion-row-primary">
+            @for (c of channels(); track c.id; let i = $index) {
+              <button class="w-full text-left card hover-lift motion-card-reveal" style="padding:10px 13px"
+                [style.--motion-card-index]="i"
                 [style.borderColor]="activeChannel()?.id === c.id ? 'var(--green)' : null" (click)="selectChannel(c)">
                 <div class="flex items-center justify-between gap-2">
                   <b class="font-display text-sm">{{ kindIcon(c.kind) }} {{ c.name }}</b>
@@ -73,9 +76,10 @@ import { RevealDirective } from '../../shared/directives/reveal.directive';
             }
 
             @if (threads().length === 0) { <p class="text-sm text-txt-mute">No threads yet — start one.</p> }
-            <div class="space-y-1.5">
-              @for (t of threads(); track t.id) {
-                <button class="w-full text-left card" style="padding:10px 13px"
+            <div class="space-y-1.5 motion-row-2">
+              @for (t of threads(); track t.id; let i = $index) {
+                <button class="w-full text-left card hover-lift motion-card-reveal" style="padding:10px 13px"
+                  [style.--motion-card-index]="i"
                   [style.borderColor]="activeThread()?.id === t.id ? 'var(--green)' : null" (click)="selectThread(t.id)">
                   <div class="flex items-start gap-2">
                     <span class="vote-mini">▲ {{ t.upvotes }}</span>
@@ -105,7 +109,7 @@ import { RevealDirective } from '../../shared/directives/reveal.directive';
           </div>
         }
         @if (activeThread(); as t) {
-          <div class="card" style="padding:22px" [astaReveal]="0">
+          <div class="card motion-card-reveal motion-row-primary" style="padding:22px" [style.--motion-card-index]="0">
             <div class="flex items-start gap-4">
               <button class="vote" [class.vote-on]="t.hasUpvoted" (click)="upvoteThread(t.id)">
                 <span>▲</span><b>{{ t.upvotes }}</b>
@@ -128,10 +132,10 @@ import { RevealDirective } from '../../shared/directives/reveal.directive';
           </div>
 
           <!-- replies -->
-          <div class="mt-4 space-y-3">
+          <div class="mt-4 space-y-3 motion-row-2">
             <p class="kicker">{{ replies().length }} {{ replies().length === 1 ? 'reply' : 'replies' }}</p>
-            @for (r of replies(); track r.id) {
-              <div class="card" style="padding:14px 16px" [style.borderColor]="r.isAnswer ? 'var(--green)' : null">
+            @for (r of replies(); track r.id; let i = $index) {
+              <div class="card motion-card-reveal" style="padding:14px 16px" [style.--motion-card-index]="i" [style.borderColor]="r.isAnswer ? 'var(--green)' : null">
                 <div class="flex items-start gap-3">
                   <button class="vote-sm" [class.vote-on]="r.hasUpvoted" (click)="upvoteReply(r.id)"><span>▲</span><b>{{ r.upvotes }}</b></button>
                   <div class="min-w-0 flex-1">
@@ -148,7 +152,7 @@ import { RevealDirective } from '../../shared/directives/reveal.directive';
                 </div>
               </div>
             }
-            <div class="card" style="padding:14px 16px">
+            <div class="card motion-card-reveal" style="padding:14px 16px" [style.--motion-card-index]="replies().length">
               <textarea class="input mb-2" rows="3" placeholder="Write a reply…" [(ngModel)]="replyBody"></textarea>
               <button class="btn-go" [disabled]="!replyBody.trim() || replying()" (click)="sendReply()">{{ replying() ? 'Posting…' : 'Reply' }}</button>
             </div>

@@ -9,15 +9,13 @@ import { SkeletonComponent } from '../../shared/ui/skeleton.component';
 import { EmptyStateComponent } from '../../shared/ui/empty-state.component';
 import { AiSkillRadarComponent, RadarAxis } from '../../shared/components/ai/ai-skill-radar.component';
 import { LineChartComponent, ChartDatum } from '../../shared/charts';
-import { RevealDirective } from '../../shared/directives/reveal.directive';
-import { TiltDirective } from '../../shared/directives/tilt.directive';
 import { MagneticDirective } from '../../shared/directives/magnetic.directive';
 
 @Component({
   selector: 'asta-intelligence-cockpit',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink, ButtonComponent, CardComponent, RingComponent, SkeletonComponent, EmptyStateComponent, AiSkillRadarComponent, LineChartComponent, RevealDirective, TiltDirective, MagneticDirective],
+  imports: [RouterLink, ButtonComponent, CardComponent, RingComponent, SkeletonComponent, EmptyStateComponent, AiSkillRadarComponent, LineChartComponent, MagneticDirective],
   template: `
     <!-- Command header -->
     <header class="asta-page-command-header">
@@ -46,7 +44,7 @@ import { MagneticDirective } from '../../shared/directives/magnetic.directive';
         </asta-card>
       } @else {
         <!-- headline + scores -->
-        <asta-card [astaReveal]="0" class="block mb-5">
+        <asta-card class="block mb-5 motion-card-reveal motion-row-primary" style="--motion-card-index:0">
           <div class="flex flex-wrap items-center gap-6">
             <div class="flex items-center gap-5">
               <div class="text-center"><asta-ring [value]="d.healthScore" [size]="104" /><p class="kicker mt-2">Learning health</p></div>
@@ -56,9 +54,9 @@ import { MagneticDirective } from '../../shared/directives/magnetic.directive';
           </div>
         </asta-card>
 
-        <div class="grid gap-4 grid-cols-2 lg:grid-cols-4 mb-5">
+        <div class="grid gap-4 grid-cols-2 lg:grid-cols-4 mb-5 motion-strip">
           @for (s of d.scores; track s.label; let i = $index) {
-            <asta-card astaTilt [tiltMax]="4" [astaReveal]="i + 1">
+            <asta-card class="motion-card-reveal" [style.--motion-card-index]="i">
               <p class="kicker mb-2">{{ s.label }}</p>
               <p class="font-display text-[26px] leading-none">{{ s.value }}<span class="text-base text-txt-mute">%</span></p>
               <div class="bar mt-2"><div class="bar-fill" [style.width.%]="s.value"></div></div>
@@ -67,9 +65,9 @@ import { MagneticDirective } from '../../shared/directives/magnetic.directive';
           }
         </div>
 
-        <div class="grid gap-5 lg:grid-cols-2 mb-5">
+        <div class="grid gap-5 lg:grid-cols-2 mb-5 motion-row-panel">
           <!-- radar -->
-          <asta-card [astaReveal]="5">
+          <asta-card class="motion-card-reveal" style="--motion-card-index:0">
             <p class="kicker mb-3">Skill radar</p>
             @if (radarAxes().length >= 3) {
               <div class="grid place-items-center"><ai-skill-radar [data]="radarAxes()" /></div>
@@ -89,7 +87,7 @@ import { MagneticDirective } from '../../shared/directives/magnetic.directive';
           </asta-card>
 
           <!-- weakness heatmap -->
-          <asta-card [astaReveal]="6">
+          <asta-card class="motion-card-reveal" style="--motion-card-index:1">
             <p class="kicker mb-3" style="color:var(--coral-deep)">Weakness heatmap</p>
             @if (d.weaknesses.length) {
               <div class="space-y-2.5">
@@ -108,9 +106,9 @@ import { MagneticDirective } from '../../shared/directives/magnetic.directive';
           </asta-card>
         </div>
 
-        <div class="grid gap-5 lg:grid-cols-3 mb-5">
+        <div class="grid gap-5 lg:grid-cols-3 mb-5 motion-row-3">
           <!-- momentum -->
-          <asta-card astaTilt [tiltMax]="4" [astaReveal]="7">
+          <asta-card class="motion-card-reveal" style="--motion-card-index:0">
             <p class="kicker mb-3">Momentum</p>
             <div class="grid grid-cols-2 gap-3">
               <div><p class="font-display text-2xl">{{ d.momentum.streak }}🔥</p><p class="text-xs text-txt-mute">day streak</p></div>
@@ -122,7 +120,7 @@ import { MagneticDirective } from '../../shared/directives/magnetic.directive';
           </asta-card>
 
           <!-- trend -->
-          <asta-card astaTilt [tiltMax]="4" [astaReveal]="8">
+          <asta-card class="motion-card-reveal" style="--motion-card-index:1">
             <p class="kicker mb-3">Quiz trend</p>
             @if (trendData().length >= 2) {
               <asta-line-chart [area]="true" tone="green" [data]="trendData()" [height]="92"
@@ -136,7 +134,7 @@ import { MagneticDirective } from '../../shared/directives/magnetic.directive';
           </asta-card>
 
           <!-- recommendations -->
-          <asta-card astaTilt [tiltMax]="4" [astaReveal]="9">
+          <asta-card class="motion-card-reveal" style="--motion-card-index:2">
             <p class="kicker mb-3" style="color:var(--peri-deep)">Recommended next</p>
             <ul class="space-y-2 text-sm text-txt-soft">
               @for (r of d.recommendations; track r) { <li class="flex gap-2"><span class="arr" style="color:var(--peri-deep)">→</span>{{ r }}</li> }
@@ -145,7 +143,7 @@ import { MagneticDirective } from '../../shared/directives/magnetic.directive';
         </div>
 
         <!-- timeline -->
-        <asta-card [astaReveal]="10">
+        <asta-card class="motion-card-reveal motion-lower" style="--motion-card-index:0">
           <p class="kicker mb-3">Recent activity</p>
           @if (d.timeline.length) {
             <ol class="space-y-2.5">

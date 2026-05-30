@@ -23,10 +23,16 @@ export interface TaskToggle {
         }
       </span>
 
-      <div class="card mb-3" [style.borderColor]="isCurrent ? 'var(--peri)' : null" style="padding:16px 18px">
+      <div class="card mb-3 wk" [class.wk-current]="isCurrent && !completed" [class.wk-done]="completed"
+        [style.borderColor]="isCurrent && !completed ? 'var(--peri)' : null" style="padding:16px 18px">
         <button type="button" class="w-full flex items-center justify-between gap-3 text-left" (click)="open.set(!open())">
           <div class="min-w-0">
-            <p class="font-mono text-[11px] uppercase tracking-wider text-txt-mute">Week {{ week.weekNumber }}</p>
+            <p class="font-mono text-[11px] uppercase tracking-wider flex items-center gap-1.5"
+              [style.color]="isCurrent && !completed ? 'var(--peri-deep)' : 'var(--text-mute)'">
+              Week {{ week.weekNumber }}
+              @if (isCurrent && !completed) { <span class="wk-tag">In focus</span> }
+              @else if (completed) { <span class="wk-tag wk-tag-done">Done</span> }
+            </p>
             <h4 class="text-[16px] font-semibold truncate">{{ week.focus }}</h4>
           </div>
           <div class="flex items-center gap-3 shrink-0">
@@ -73,6 +79,19 @@ export interface TaskToggle {
       </div>
     </div>
   `,
+  styles: [
+    `
+      .wk { transition: border-color 0.2s var(--ease), background 0.2s var(--ease); }
+      .wk-current { background: color-mix(in oklch, var(--peri) 6%, transparent); }
+      .wk-done { border-color: color-mix(in oklch, var(--green) 40%, var(--paper-3)); }
+      .wk-tag {
+        display: inline-flex; align-items: center; padding: 1px 7px; border-radius: 100px;
+        font-size: 9.5px; letter-spacing: 0.04em;
+        background: color-mix(in oklch, var(--peri) 18%, transparent); color: var(--peri-deep);
+      }
+      .wk-tag-done { background: color-mix(in oklch, var(--green) 18%, transparent); color: var(--green-deep); }
+    `,
+  ],
 })
 export class WeekCardComponent {
   @Input({ required: true }) week!: RoadmapWeek;

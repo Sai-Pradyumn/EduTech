@@ -3,15 +3,13 @@ import { DatePipe } from '@angular/common';
 import { CertificateService } from '../../core/services/certificate.service';
 import { ToastService } from '../../core/services/toast.service';
 import { CertificateView } from '../../core/models';
-import { TiltDirective } from '../../shared/directives/tilt.directive';
-import { RevealDirective } from '../../shared/directives/reveal.directive';
 
 /** My certificates (B7): credential cards with a public verification link. */
 @Component({
   selector: 'asta-certificates',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [DatePipe, TiltDirective, RevealDirective],
+  imports: [DatePipe],
   template: `
     <!-- Command header -->
     <header class="asta-page-command-header">
@@ -30,9 +28,9 @@ import { RevealDirective } from '../../shared/directives/reveal.directive';
           </div>
         </div>
       }
-      <div class="grid gap-4 md:grid-cols-2">
+      <div class="grid gap-4 md:grid-cols-2 motion-row-primary">
         @for (c of certs(); track c.id; let i = $index) {
-          <div class="card relative overflow-hidden" style="padding:22px" astaTilt [tiltMax]="4" [astaReveal]="i">
+          <div class="card motion-card-reveal relative overflow-hidden" style="padding:22px" [style.--motion-card-index]="i">
             <div class="absolute inset-0 pointer-events-none" style="background:radial-gradient(120% 80% at 100% 0%, oklch(0.8 0.16 150 / .10), transparent 60%)"></div>
             <div class="relative">
               <p class="kicker mb-2" style="color:var(--green-deep)">Certificate</p>

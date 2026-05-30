@@ -6,7 +6,6 @@ import { AdminDocumentRow } from '../../core/models';
 import { SkeletonComponent } from '../../shared/ui/skeleton.component';
 import { EmptyStateComponent } from '../../shared/ui/empty-state.component';
 import { DonutChartComponent, ChartDatum } from '../../shared/charts';
-import { RevealDirective } from '../../shared/directives/reveal.directive';
 
 /**
  * `/admin/documents` (B1) — platform-wide knowledge document browser. Lists every
@@ -17,8 +16,9 @@ import { RevealDirective } from '../../shared/directives/reveal.directive';
   selector: 'asta-admin-documents',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [DatePipe, FormsModule, SkeletonComponent, EmptyStateComponent, DonutChartComponent, RevealDirective],
+  imports: [DatePipe, FormsModule, SkeletonComponent, EmptyStateComponent, DonutChartComponent],
   template: `
+   <div class="asta-observatory">
     <!-- Command header -->
     <header class="asta-page-command-header">
       <div class="min-w-0">
@@ -37,14 +37,14 @@ import { RevealDirective } from '../../shared/directives/reveal.directive';
       </asta-empty-state>
     } @else {
       @if (all().length) {
-        <div class="card mb-4" style="padding:18px" [astaReveal]="0">
+        <div class="card mb-4 motion-card-reveal motion-row-primary" style="padding:18px;--motion-card-index:0">
           <p class="kicker mb-3" style="color:var(--peri-deep)">Ingestion status</p>
           <asta-donut-chart [data]="statusMix()" centerLabel="docs" label="Documents by ingestion status" />
         </div>
       }
       <input class="input mb-4" style="max-width:320px" placeholder="Search title, owner or topic…"
         [(ngModel)]="query" (ngModelChange)="q.set($event)" />
-      <div class="card" style="padding:0;overflow:auto" [astaReveal]="1">
+      <div class="card motion-card-reveal motion-row-2" style="padding:0;overflow:auto;--motion-card-index:0">
         <table>
           <thead><tr><th>Document</th><th>Owner</th><th>Source</th><th>Status</th><th>Chunks</th><th>Tokens</th><th>Lang</th><th>Added</th></tr></thead>
           <tbody>
@@ -65,6 +65,7 @@ import { RevealDirective } from '../../shared/directives/reveal.directive';
       </div>
       <p class="gen">{{ filtered().length }} of {{ all().length }} documents</p>
     }
+   </div>
   `,
   styles: [
     `

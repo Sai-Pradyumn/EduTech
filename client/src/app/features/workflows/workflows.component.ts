@@ -3,7 +3,6 @@ import { FormsModule } from '@angular/forms';
 import { AgentGraphApiService } from '../../core/services/lab.service';
 import { ToastService } from '../../core/services/toast.service';
 import { GraphRun, GraphTemplate } from '../../core/models';
-import { RevealDirective } from '../../shared/directives/reveal.directive';
 
 /**
  * Agent-graph workflows (A9). Run a LangGraph-style multi-step workflow (explain → quiz →
@@ -14,7 +13,7 @@ import { RevealDirective } from '../../shared/directives/reveal.directive';
   selector: 'asta-workflows',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormsModule, RevealDirective],
+  imports: [FormsModule],
   template: `
     <!-- Command header -->
     <header class="asta-page-command-header">
@@ -59,7 +58,7 @@ import { RevealDirective } from '../../shared/directives/reveal.directive';
           }
 
           @if (active(); as r) {
-            <div class="card" style="padding:18px" [astaReveal]="0">
+            <div class="card motion-card-reveal motion-row-primary" style="--motion-card-index:0;padding:18px">
               <div class="flex items-center justify-between mb-3">
                 <p class="kicker">Run result <span class="text-txt-mute">· {{ r.input }}</span></p>
                 <span class="pill" [style.color]="r.status === 'succeeded' ? 'var(--green-deep)' : 'var(--coral-deep)'">{{ r.status }} · {{ r.latencyMs }}ms</span>

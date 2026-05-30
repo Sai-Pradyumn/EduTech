@@ -7,7 +7,6 @@ import { CohortService } from '../../core/services/cohort.service';
 import { OrgContextService } from '../../core/services/org-context.service';
 import { ToastService } from '../../core/services/toast.service';
 import { CohortView, LiveSessionStatus, SessionDetail, SessionView } from '../../core/models';
-import { RevealDirective } from '../../shared/directives/reveal.directive';
 
 /**
  * Live session system (B4). Students see sessions for their cohorts, mark attendance and
@@ -18,7 +17,7 @@ import { RevealDirective } from '../../shared/directives/reveal.directive';
   selector: 'asta-live-sessions',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormsModule, DatePipe, RouterLink, RevealDirective],
+  imports: [FormsModule, DatePipe, RouterLink],
   template: `
     <!-- Command header -->
     <header class="asta-page-command-header">
@@ -53,9 +52,10 @@ import { RevealDirective } from '../../shared/directives/reveal.directive';
           <div>
             <p class="kicker mb-3">Organization sessions</p>
             @if (orgSessions().length === 0) { <p class="text-sm text-txt-mute">No sessions scheduled.</p> }
-            <div class="space-y-2">
-              @for (s of orgSessions(); track s.id) {
-                <button class="w-full text-left card" style="padding:12px 14px"
+            <div class="space-y-2 motion-row-primary">
+              @for (s of orgSessions(); track s.id; let i = $index) {
+                <button class="w-full text-left card hover-lift motion-card-reveal" style="padding:12px 14px"
+                  [style.--motion-card-index]="i"
                   [style.borderColor]="selected()?.id === s.id ? 'var(--green)' : null" (click)="select(s.id)">
                   <div class="flex items-center justify-between gap-2">
                     <b class="font-display truncate">{{ s.title }}</b>
@@ -71,9 +71,10 @@ import { RevealDirective } from '../../shared/directives/reveal.directive';
         <div>
           <p class="kicker mb-3">My sessions</p>
           @if (mine().length === 0) { <p class="text-sm text-txt-mute">No sessions for your cohorts yet.</p> }
-          <div class="space-y-2">
-            @for (s of mine(); track s.id) {
-              <button class="w-full text-left card" style="padding:12px 14px"
+          <div class="space-y-2 motion-row-2">
+            @for (s of mine(); track s.id; let i = $index) {
+              <button class="w-full text-left card hover-lift motion-card-reveal" style="padding:12px 14px"
+                [style.--motion-card-index]="i"
                 [style.borderColor]="selected()?.id === s.id ? 'var(--green)' : null" (click)="select(s.id)">
                 <div class="flex items-center justify-between gap-2">
                   <b class="font-display truncate">{{ s.title }}</b>
@@ -97,8 +98,8 @@ import { RevealDirective } from '../../shared/directives/reveal.directive';
           </div>
         }
         @if (selected(); as s) {
-          <div class="space-y-5">
-            <div class="card" style="padding:20px" [astaReveal]="0">
+          <div class="space-y-5 motion-row-primary">
+            <div class="card motion-card-reveal" style="padding:20px" [style.--motion-card-index]="0">
               <div class="flex items-start justify-between gap-3 flex-wrap">
                 <div>
                   <div class="flex items-center gap-2">
@@ -136,7 +137,7 @@ import { RevealDirective } from '../../shared/directives/reveal.directive';
 
             <!-- AI recap -->
             @if (s.recap; as r) {
-              <div class="card card-accent" style="padding:18px;--accent-c:var(--peri)" [astaReveal]="1">
+              <div class="card card-accent motion-card-reveal" style="padding:18px;--accent-c:var(--peri)" [style.--motion-card-index]="1">
                 <p class="kicker mb-2" style="color:var(--peri-deep)">AI recap</p>
                 <p class="text-sm text-txt-soft mb-3">{{ r.summary }}</p>
                 @if (r.keyPoints.length) {
@@ -152,7 +153,7 @@ import { RevealDirective } from '../../shared/directives/reveal.directive';
             }
 
             <!-- Attendance -->
-            <div class="card" style="padding:18px" [astaReveal]="2">
+            <div class="card motion-card-reveal" style="padding:18px" [style.--motion-card-index]="2">
               <p class="kicker mb-3">Attendance ({{ s.attendees.length }})</p>
               @if (s.attendees.length === 0) { <p class="text-sm text-txt-mute">No one has joined yet.</p> }
               <div class="grid sm:grid-cols-2 gap-x-4 gap-y-1.5">

@@ -9,8 +9,6 @@ import { CardComponent } from '../../shared/ui/card.component';
 import { AiAgentActivityFeedComponent } from '../../shared/components/ai/ai-agent-activity-feed.component';
 import { VisualBlockRendererComponent } from '../../shared/components/ai/visual-block-renderer.component';
 import { ComposerComponent, ComposerSubmit } from '../../shared/ui/composer.component';
-import { RevealDirective } from '../../shared/directives/reveal.directive';
-import { TiltDirective } from '../../shared/directives/tilt.directive';
 
 interface ChatMsg {
   role: 'user' | 'assistant';
@@ -21,6 +19,7 @@ interface ChatMsg {
   followUps: string[];
   recommended: string[];
   streaming: boolean;
+  failed?: boolean;
   messageId?: string;
 }
 
@@ -43,7 +42,7 @@ const DEFAULT: WorkspaceConfig = { agentType: 'tutor', title: 'AI Agent', subtit
   selector: 'asta-agent-workspace',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormsModule, MarkdownPipe, CardComponent, AiAgentActivityFeedComponent, VisualBlockRendererComponent, ComposerComponent, RevealDirective, TiltDirective],
+  imports: [FormsModule, MarkdownPipe, CardComponent, AiAgentActivityFeedComponent, VisualBlockRendererComponent, ComposerComponent],
   template: `
     <!-- Command header -->
     <header class="asta-page-command-header">
@@ -86,9 +85,24 @@ const DEFAULT: WorkspaceConfig = { agentType: 'tutor', title: 'AI Agent', subtit
                 <span class="msg-orb shrink-0" [class.busy]="msg.streaming" aria-hidden="true"></span>
                 <div class="min-w-0 flex-1">
                   <p class="font-mono text-[11px] text-txt-mute mb-1">{{ msg.agentType || cfg().agentType }}</p>
-                  <div class="prose-asta text-[15px]" [innerHTML]="msg.content | markdown"></div>
-                  @if (msg.streaming) { <span class="stream-cursor"></span> }
-                  @if (!msg.streaming && msg.role === 'assistant') {
+                  @if (msg.streaming && !msg.content) {
+                    <div class="stream-skeleton" aria-label="Agent is responding">
+                      <span class="sk-line" style="width:92%"></span>
+                      <span class="sk-line" style="width:78%"></span>
+                      <span class="sk-line" style="width:60%"></span>
+                    </div>
+                  } @else {
+                    <div class="prose-asta text-[15px]" [innerHTML]="msg.content | markdown"></div>
+                  }
+                  @if (msg.streaming && msg.content) { <span class="stream-cursor"></span> }
+                  @if (msg.failed) {
+                    <div class="err-row mt-2.5">
+                      <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 8v5M12 16h.01"/></svg>
+                      <span>That response didn't complete.</span>
+                      <button class="retry-btn" (click)="retry()">Retry</button>
+                    </div>
+                  }
+                  @if (!msg.streaming && !msg.failed && msg.role === 'assistant') {
                     <div class="flex items-center flex-wrap gap-2 mt-2.5">
                       <button class="fb-btn" title="Helpful" (click)="feedback('up', msg)">
                         <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 10v12M15 5.88 14 10h5.83a2 2 0 0 1 1.92 2.56l-2.33 8A2 2 0 0 1 17.5 22H4a2 2 0 0 1-2-2v-8a2 2 0 0 1 2-2h2.76a2 2 0 0 0 1.79-1.11L12 2a3.13 3.13 0 0 1 3 3.88Z"/></svg>
@@ -117,12 +131,12 @@ const DEFAULT: WorkspaceConfig = { agentType: 'tutor', title: 'AI Agent', subtit
         </div>
       </div>
 
-      <!-- RIGHT: agent rail -->
-      <div class="space-y-5">
-        <div [astaReveal]="0"><ai-agent-activity-feed [steps]="steps()" [running]="busy()" /></div>
+      <!-- RIGHT: agent rail — one reveal family (.motion-row-panel) -->
+      <div class="space-y-5 motion-row-panel">
+        <div class="motion-card-reveal" style="--motion-card-index:0"><ai-agent-activity-feed [steps]="steps()" [running]="busy()" /></div>
 
         @if (latestActions().length) {
-          <asta-card astaTilt [tiltMax]="4" [astaReveal]="1" pad="16px 18px">
+          <asta-card class="motion-card-reveal" style="--motion-card-index:1" pad="16px 18px">
             <div class="panel-head">
               <p class="kicker">Quick actions</p>
               <span class="panel-ico" aria-hidden="true"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2 3 14h9l-1 8 10-12h-9z"/></svg></span>
@@ -134,11 +148,11 @@ const DEFAULT: WorkspaceConfig = { agentType: 'tutor', title: 'AI Agent', subtit
         }
 
         @for (block of latestBlocks(); track $index) {
-          <div [astaReveal]="2"><ai-visual-block [block_]="block" /></div>
+          <div class="motion-card-reveal" style="--motion-card-index:2"><ai-visual-block [block_]="block" /></div>
         }
 
         @if (latestRecommended().length) {
-          <asta-card astaTilt [tiltMax]="4" [astaReveal]="3" pad="16px 18px">
+          <asta-card class="motion-card-reveal" style="--motion-card-index:3" pad="16px 18px">
             <div class="panel-head">
               <p class="kicker" style="color:var(--green-deep)">Recommended next</p>
               <span class="panel-ico" aria-hidden="true"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
@@ -177,6 +191,17 @@ const DEFAULT: WorkspaceConfig = { agentType: 'tutor', title: 'AI Agent', subtit
 
       .fb-btn { display: grid; place-items: center; width: 28px; height: 28px; border-radius: 8px; color: var(--text-mute); transition: color .15s var(--ease), background .15s var(--ease), transform .12s var(--ease-spring); }
       .fb-btn:hover { color: var(--green-deep); background: var(--asta-accent-glow); transform: translateY(-1px); }
+
+      /* Streaming skeleton — shown before the first chunk arrives. */
+      .stream-skeleton { display: flex; flex-direction: column; gap: 8px; padding: 2px 0; }
+      .sk-line { height: 11px; border-radius: 6px; background: linear-gradient(100deg, color-mix(in oklch, var(--paper-3) 55%, transparent) 30%, color-mix(in oklch, var(--green) 16%, transparent) 50%, color-mix(in oklch, var(--paper-3) 55%, transparent) 70%); background-size: 220% 100%; animation: skShimmer 1.4s ease infinite; }
+      @keyframes skShimmer { 0% { background-position: 180% 0; } 100% { background-position: -40% 0; } }
+
+      /* Error + retry row. */
+      .err-row { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--text-soft); }
+      .err-row svg { color: #e0654f; flex-shrink: 0; }
+      .retry-btn { font-family: var(--mono); font-size: 12px; padding: 4px 12px; border-radius: 999px; border: 1px solid color-mix(in oklch, var(--green) 38%, transparent); background: var(--asta-accent-glow); color: var(--green-deep); cursor: pointer; transition: transform .14s var(--ease-spring), background .14s var(--ease); }
+      .retry-btn:hover { transform: translateY(-1px); background: color-mix(in oklch, var(--green) 22%, transparent); }
 
       .rec-item { display: flex; gap: 8px; align-items: flex-start; cursor: pointer; padding: 4px 6px; margin: 0 -6px; border-radius: 8px; transition: background .16s var(--ease), color .16s var(--ease); }
       .rec-item:hover { background: color-mix(in oklch, var(--paper-2) 55%, transparent); color: var(--text); }
@@ -263,11 +288,16 @@ export class AgentWorkspaceComponent implements OnInit {
       next: (e) => this.onEvent(e, assistant),
       error: () => {
         assistant.streaming = false;
-        assistant.content = assistant.content || 'Something went wrong. Please try again.';
+        assistant.failed = true;
         this.bump();
         this.busy.set(false);
       },
     });
+  }
+
+  /** Re-send the last user prompt after a failed response. */
+  retry(): void {
+    if (this.lastTopic) this.send(this.lastTopic);
   }
 
   runAction(a: AgentAction): void {
@@ -331,7 +361,7 @@ export class AgentWorkspaceComponent implements OnInit {
         break;
       case 'error':
         assistant.streaming = false;
-        assistant.content = assistant.content || e.message;
+        if (!assistant.content) assistant.failed = true;
         this.bump();
         this.busy.set(false);
         break;

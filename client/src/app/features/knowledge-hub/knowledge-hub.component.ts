@@ -18,10 +18,9 @@ import { CardComponent } from '../../shared/ui/card.component';
 import { ComposerComponent, ComposerSubmit } from '../../shared/ui/composer.component';
 import { AiAgentActivityFeedComponent } from '../../shared/components/ai/ai-agent-activity-feed.component';
 import { VisualBlockRendererComponent } from '../../shared/components/ai/visual-block-renderer.component';
-import { RevealDirective } from '../../shared/directives/reveal.directive';
 import { MagneticDirective } from '../../shared/directives/magnetic.directive';
-import { TiltDirective } from '../../shared/directives/tilt.directive';
 import { CountDirective } from '../../shared/directives/count.directive';
+import { KnowledgeShardComponent } from './components/knowledge-shard.component';
 
 interface ChatMsg {
   role: 'user' | 'assistant';
@@ -44,7 +43,7 @@ const STARTERS = [
   selector: 'asta-knowledge-hub',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormsModule, MarkdownPipe, ButtonComponent, CardComponent, ComposerComponent, AiAgentActivityFeedComponent, VisualBlockRendererComponent, RevealDirective, MagneticDirective, TiltDirective, CountDirective],
+  imports: [FormsModule, MarkdownPipe, ButtonComponent, CardComponent, ComposerComponent, AiAgentActivityFeedComponent, VisualBlockRendererComponent, MagneticDirective, CountDirective, KnowledgeShardComponent],
   template: `
     <!-- Compact command header -->
     <header class="asta-page-command-header">
@@ -60,8 +59,8 @@ const STARTERS = [
 
     <div class="grid gap-5 lg:grid-cols-[minmax(300px,360px)_1fr]" style="min-height:calc(100dvh - 230px)">
       <!-- LEFT: upload + library -->
-      <div class="space-y-5">
-        <asta-card astaTilt [tiltMax]="4" [astaReveal]="0" pad="16px 18px">
+      <div class="space-y-5 motion-row-primary">
+        <asta-card class="motion-card-reveal" style="--motion-card-index:0" pad="16px 18px">
           <div class="panel-head">
             <p class="kicker">Add to knowledge base</p>
             <span class="panel-ico green" aria-hidden="true">
@@ -92,7 +91,7 @@ const STARTERS = [
           }
         </asta-card>
 
-        <asta-card [astaReveal]="1" pad="16px 18px">
+        <asta-card class="motion-card-reveal" style="--motion-card-index:1" pad="16px 18px">
           <div class="panel-head">
             <p class="kicker">Your documents</p>
             <span class="panel-ico peri" aria-hidden="true">
@@ -105,33 +104,19 @@ const STARTERS = [
               <asta-btn variant="ghost" size="sm" (click)="fileInput.click()" [disabled]="uploading()">Upload your first doc <span class="arr">→</span></asta-btn>
             </div>
           }
-          <div class="space-y-2.5 mt-3">
-            @for (d of docs(); track d.id) {
-              <div class="doc" [class.doc-on]="isSelected(d.id)">
-                <div class="flex items-start gap-2">
-                  <input type="checkbox" class="mt-1" [checked]="isSelected(d.id)" [disabled]="d.status !== 'ready'"
-                    (change)="toggleSelect(d.id)" />
-                  <div class="min-w-0 flex-1">
-                    <p class="text-sm font-medium truncate">{{ d.title }}</p>
-                    <div class="flex items-center gap-2 mt-1">
-                      <span class="status" [attr.data-s]="d.status">{{ statusLabel(d) }}</span>
-                      @if (d.status === 'ready') { <span class="text-[11px] text-txt-mute"><span [astaCount]="d.chunkCount"></span> chunks</span> }
-                    </div>
-                    @if (d.tags.length) {
-                      <div class="flex flex-wrap gap-1 mt-1.5">@for (t of d.tags.slice(0,4); track t) { <span class="tag">{{ t }}</span> }</div>
-                    }
-                    @if (d.status === 'failed' && d.error) { <p class="text-[11px] mt-1" style="color:var(--coral-deep)">{{ d.error }}</p> }
-                    @if (d.warnings.length) { <p class="text-[11px] mt-1 text-txt-mute">⚠ {{ d.warnings[0] }}</p> }
-                    @if (d.status === 'ready') {
-                      <div class="flex gap-2 mt-2">
-                        <button class="mini" (click)="loadSummary(d)">Summary</button>
-                        <button class="mini" (click)="loadFlashcards(d)">Flashcards</button>
-                        <button class="mini" style="color:var(--coral-deep)" (click)="remove(d)">Delete</button>
-                      </div>
-                    }
-                  </div>
-                </div>
-              </div>
+          <div class="space-y-2.5 mt-3 motion-row-2">
+            @for (d of docs(); track d.id; let i = $index) {
+              <asta-knowledge-shard
+                class="block motion-card-reveal"
+                [style.--motion-card-index]="i"
+                [doc]="d"
+                [selected]="isSelected(d.id)"
+                (select)="toggleSelect($event.id)"
+                (summary)="loadSummary($event)"
+                (flashcards)="loadFlashcards($event)"
+                (delete)="remove($event)"
+                (retry)="retryIngestion($event)"
+              />
             }
           </div>
         </asta-card>
@@ -369,6 +354,22 @@ export class KnowledgeHubComponent implements OnInit, OnDestroy {
     this.knowledge.remove(d.id).subscribe({
       next: () => {
         this.toast.success('Deleted');
+        this.refresh();
+      },
+    });
+  }
+
+  /** Failed ingestion: no server-side reprocess endpoint exists, so clear the
+   *  failed shard and prompt a fresh upload (the honest "retry" path). */
+  retryIngestion(d: KnowledgeDoc): void {
+    this.knowledge.remove(d.id).subscribe({
+      next: () => {
+        this.toast.success('Removed the failed document — upload it again to retry ingestion.');
+        this.selected.update((s) => {
+          const next = new Set(s);
+          next.delete(d.id);
+          return next;
+        });
         this.refresh();
       },
     });

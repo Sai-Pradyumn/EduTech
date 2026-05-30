@@ -7,8 +7,6 @@ import { SkeletonComponent } from '../../shared/ui/skeleton.component';
 import { EmptyStateComponent } from '../../shared/ui/empty-state.component';
 import { ProgressComponent } from '../../shared/ui/progress.component';
 import { DonutChartComponent, ChartDatum } from '../../shared/charts';
-import { RevealDirective } from '../../shared/directives/reveal.directive';
-import { TiltDirective } from '../../shared/directives/tilt.directive';
 
 /**
  * `/admin/roadmaps` (B1) — read-only browser of every generated roadmap across
@@ -19,8 +17,9 @@ import { TiltDirective } from '../../shared/directives/tilt.directive';
   selector: 'asta-admin-roadmaps',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [DatePipe, FormsModule, SkeletonComponent, EmptyStateComponent, ProgressComponent, DonutChartComponent, RevealDirective, TiltDirective],
+  imports: [DatePipe, FormsModule, SkeletonComponent, EmptyStateComponent, ProgressComponent, DonutChartComponent],
   template: `
+   <div class="asta-observatory">
     <!-- Command header -->
     <header class="asta-page-command-header">
       <div class="min-w-0">
@@ -39,10 +38,10 @@ import { TiltDirective } from '../../shared/directives/tilt.directive';
       </asta-empty-state>
     } @else {
       @if (all().length) {
-        <div class="grid gap-4 md:grid-cols-3 mb-4">
-          <div class="card stat" astaTilt [tiltMax]="4" [astaReveal]="0"><span class="num">{{ all().length }}</span><span class="lbl">Roadmaps</span></div>
-          <div class="card stat" astaTilt [tiltMax]="4" [astaReveal]="1"><span class="num">{{ avgProgress() }}%</span><span class="lbl">Avg progress</span></div>
-          <div class="card" style="padding:14px 16px" [astaReveal]="2">
+        <div class="grid gap-4 md:grid-cols-3 mb-4 motion-row-primary">
+          <div class="card stat motion-card-reveal" style="--motion-card-index:0"><span class="num">{{ all().length }}</span><span class="lbl">Roadmaps</span></div>
+          <div class="card stat motion-card-reveal" style="--motion-card-index:1"><span class="num">{{ avgProgress() }}%</span><span class="lbl">Avg progress</span></div>
+          <div class="card motion-card-reveal" style="padding:14px 16px;--motion-card-index:2">
             <p class="kicker mb-2" style="color:var(--green-deep)">By status</p>
             <asta-donut-chart [data]="statusMix()" [size]="92" [thickness]="14" centerLabel="total" label="Roadmaps by status" />
           </div>
@@ -50,7 +49,7 @@ import { TiltDirective } from '../../shared/directives/tilt.directive';
       }
       <input class="input mb-4" style="max-width:320px" placeholder="Search title, goal or owner…"
         [(ngModel)]="query" (ngModelChange)="q.set($event)" />
-      <div class="card" style="padding:0;overflow:auto" [astaReveal]="3">
+      <div class="card motion-card-reveal motion-row-2" style="padding:0;overflow:auto;--motion-card-index:0">
         <table>
           <thead><tr><th>Roadmap</th><th>Owner</th><th>Status</th><th style="min-width:160px">Progress</th><th>Weeks</th><th>Created</th></tr></thead>
           <tbody>
@@ -74,6 +73,7 @@ import { TiltDirective } from '../../shared/directives/tilt.directive';
       </div>
       <p class="gen">{{ filtered().length }} of {{ all().length }} roadmaps</p>
     }
+   </div>
   `,
   styles: [
     `

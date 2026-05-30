@@ -7,15 +7,14 @@ import { Organization } from '../../core/models';
 import { ButtonComponent } from '../../shared/ui/button.component';
 import { CardComponent } from '../../shared/ui/card.component';
 import { EmptyStateComponent } from '../../shared/ui/empty-state.component';
-import { RevealDirective } from '../../shared/directives/reveal.directive';
-import { TiltDirective } from '../../shared/directives/tilt.directive';
 
 @Component({
   selector: 'asta-platform-orgs',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormsModule, ButtonComponent, CardComponent, EmptyStateComponent, RevealDirective, TiltDirective],
+  imports: [FormsModule, ButtonComponent, CardComponent, EmptyStateComponent],
   template: `
+    <div class="asta-observatory">
     <!-- Command header -->
     <header class="asta-page-command-header">
       <div class="min-w-0">
@@ -28,14 +27,14 @@ import { TiltDirective } from '../../shared/directives/tilt.directive';
       <asta-card><asta-empty-state title="Operators only" description="This area is restricted to platform administrators." /></asta-card>
     } @else {
       @if (stats(); as s) {
-        <div class="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-5">
-          <div class="card stat" astaTilt [tiltMax]="4" [astaReveal]="0"><p class="font-display text-2xl">{{ s.organizations }}</p><p class="lbl">Organizations</p></div>
-          <div class="card stat" astaTilt [tiltMax]="4" [astaReveal]="1"><p class="font-display text-2xl">{{ s.totalMembers }}</p><p class="lbl">Total members</p></div>
-          <div class="card stat" astaTilt [tiltMax]="4" [astaReveal]="2"><p class="font-display text-2xl">{{ typeCount(s.byType) }}</p><p class="lbl">Org types</p></div>
+        <div class="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-5 motion-strip">
+          <div class="card stat motion-card-reveal" style="--motion-card-index:0"><p class="font-display text-2xl">{{ s.organizations }}</p><p class="lbl">Organizations</p></div>
+          <div class="card stat motion-card-reveal" style="--motion-card-index:1"><p class="font-display text-2xl">{{ s.totalMembers }}</p><p class="lbl">Total members</p></div>
+          <div class="card stat motion-card-reveal" style="--motion-card-index:2"><p class="font-display text-2xl">{{ typeCount(s.byType) }}</p><p class="lbl">Org types</p></div>
         </div>
       }
 
-      <div class="card" style="padding:16px;margin-bottom:20px" [astaReveal]="3">
+      <div class="card motion-row-panel motion-card-reveal" style="padding:16px;margin-bottom:20px;--motion-card-index:0">
         <p class="kicker mb-3">Create organization</p>
         <div class="flex flex-wrap items-end gap-2">
           <input class="input" style="max-width:260px" placeholder="Organization name" [(ngModel)]="name" />
@@ -49,22 +48,35 @@ import { TiltDirective } from '../../shared/directives/tilt.directive';
         </div>
       </div>
 
-      <div class="card" style="padding:16px" [astaReveal]="4">
+      <div class="card motion-row-3 motion-card-reveal" style="padding:16px;--motion-card-index:0">
         <p class="kicker mb-3">All organizations</p>
-        @if (orgs().length === 0) { <p class="text-sm text-txt-mute py-6 text-center">No organizations yet.</p> }
-        <div class="space-y-2">
-          @for (o of orgs(); track o.id) {
-            <div class="row">
-              <div class="min-w-0">
-                <p class="text-sm font-medium truncate">{{ o.name }} <span class="pill" style="margin-left:6px">{{ o.type }}</span></p>
-                <p class="text-[11px] text-txt-mute">/{{ o.slug }} · {{ o.memberCount }} members · plan {{ o.plan }}</p>
+        @if (error()) {
+          <div class="py-6 text-center">
+            <p class="text-sm text-txt-mute mb-3">Couldn't load organizations.</p>
+            <asta-btn variant="ghost" size="sm" (click)="refresh()">Retry</asta-btn>
+          </div>
+        } @else if (loading()) {
+          <div class="space-y-2">
+            @for (_ of [0,1,2]; track _) { <div class="row skel"></div> }
+          </div>
+        } @else if (orgs().length === 0) {
+          <p class="text-sm text-txt-mute py-6 text-center">No organizations yet.</p>
+        } @else {
+          <div class="space-y-2">
+            @for (o of orgs(); track o.id) {
+              <div class="row">
+                <div class="min-w-0">
+                  <p class="text-sm font-medium truncate">{{ o.name }} <span class="pill" style="margin-left:6px">{{ o.type }}</span></p>
+                  <p class="text-[11px] text-txt-mute">/{{ o.slug }} · {{ o.memberCount }} members · plan {{ o.plan }}</p>
+                </div>
+                <span class="status" [attr.data-s]="o.status">{{ o.status }}</span>
               </div>
-              <span class="status" [attr.data-s]="o.status">{{ o.status }}</span>
-            </div>
-          }
-        </div>
+            }
+          </div>
+        }
       </div>
     }
+    </div>
   `,
   styles: [
     `
@@ -72,6 +84,9 @@ import { TiltDirective } from '../../shared/directives/tilt.directive';
       .lbl { font-size: 11px; color: var(--text-mute); text-transform: uppercase; letter-spacing: .04em; }
       .row { display: flex; align-items: center; justify-content: space-between; gap: 10px; border: 1px solid var(--paper-3); border-radius: 12px; padding: 10px 14px; }
       .status { font-family: var(--mono); font-size: 10px; text-transform: uppercase; padding: 1px 8px; border-radius: 100px; background: oklch(0.80 0.16 150 / .18); color: var(--green-deep); }
+      .skel { height: 44px; opacity: .5; background: linear-gradient(90deg, var(--paper) 25%, var(--paper-3) 50%, var(--paper) 75%); background-size: 200% 100%; animation: skel-shimmer 1.4s ease-in-out infinite; }
+      @keyframes skel-shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+      @media (prefers-reduced-motion: reduce) { .skel { animation: none; } }
     `,
   ],
 })
@@ -83,6 +98,8 @@ export class PlatformOrgsComponent implements OnInit {
   readonly orgs = signal<Organization[]>([]);
   readonly stats = signal<{ organizations: number; totalMembers: number; byType: Record<string, number> } | null>(null);
   readonly creating = signal(false);
+  readonly loading = signal(false);
+  readonly error = signal(false);
   name = '';
   type = 'college';
 
@@ -91,7 +108,18 @@ export class PlatformOrgsComponent implements OnInit {
   }
 
   refresh(): void {
-    this.orgApi.listAll().subscribe({ next: (o) => this.orgs.set(o), error: () => undefined });
+    this.loading.set(true);
+    this.error.set(false);
+    this.orgApi.listAll().subscribe({
+      next: (o) => {
+        this.orgs.set(o);
+        this.loading.set(false);
+      },
+      error: () => {
+        this.loading.set(false);
+        this.error.set(true);
+      },
+    });
     this.orgApi.platformStats().subscribe({ next: (s) => this.stats.set(s), error: () => undefined });
   }
 

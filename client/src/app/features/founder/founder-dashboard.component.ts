@@ -5,7 +5,6 @@ import { FounderDashboard } from '../../core/models';
 import { SkeletonComponent } from '../../shared/ui/skeleton.component';
 import { LineChartComponent, BarChartComponent, ChartDatum } from '../../shared/charts';
 import { CountDirective } from '../../shared/directives/count.directive';
-import { RevealDirective } from '../../shared/directives/reveal.directive';
 
 /**
  * Founder / operator dashboard (B17). Platform-wide aggregates across every org — totals,
@@ -16,7 +15,7 @@ import { RevealDirective } from '../../shared/directives/reveal.directive';
   selector: 'asta-founder-dashboard',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [DatePipe, SkeletonComponent, LineChartComponent, BarChartComponent, CountDirective, RevealDirective],
+  imports: [DatePipe, SkeletonComponent, LineChartComponent, BarChartComponent, CountDirective],
   template: `
     <!-- Command header -->
     <header class="asta-page-command-header">
@@ -28,19 +27,19 @@ import { RevealDirective } from '../../shared/directives/reveal.directive';
 
     @if (data(); as d) {
       <!-- headline metrics -->
-      <div class="grid gap-3 sm:grid-cols-3 lg:grid-cols-5 mb-5">
-        <div class="card metric" [astaReveal]="0"><span class="num" [astaCount]="d.totals.organizations">0</span><span class="lbl">Organizations</span></div>
-        <div class="card metric" [astaReveal]="1"><span class="num" [astaCount]="d.totals.students">0</span><span class="lbl">Students</span></div>
-        <div class="card metric" [astaReveal]="2"><span class="num" [astaCount]="d.totals.mentors">0</span><span class="lbl">Mentors</span></div>
-        <div class="card metric" [astaReveal]="3"><span class="num" [astaCount]="d.subscriptions.active">0</span><span class="lbl">Active subs</span></div>
-        <div class="card metric" [astaReveal]="4" style="background:oklch(0.80 0.16 150 / .1)" title="Monthly recurring revenue: sum of active plan prices.">
+      <div class="grid gap-3 sm:grid-cols-3 lg:grid-cols-5 mb-5 motion-row-primary">
+        <div class="card metric motion-card-reveal" style="--motion-card-index:0"><span class="num" [astaCount]="d.totals.organizations">0</span><span class="lbl">Organizations</span></div>
+        <div class="card metric motion-card-reveal" style="--motion-card-index:1"><span class="num" [astaCount]="d.totals.students">0</span><span class="lbl">Students</span></div>
+        <div class="card metric motion-card-reveal" style="--motion-card-index:2"><span class="num" [astaCount]="d.totals.mentors">0</span><span class="lbl">Mentors</span></div>
+        <div class="card metric motion-card-reveal" style="--motion-card-index:3"><span class="num" [astaCount]="d.subscriptions.active">0</span><span class="lbl">Active subs</span></div>
+        <div class="card metric motion-card-reveal" style="background:oklch(0.80 0.16 150 / .1);--motion-card-index:4" title="Monthly recurring revenue: sum of active plan prices.">
           <span class="num" [astaCount]="d.subscriptions.estMrrInr" prefix="₹">0</span><span class="lbl">MRR / mo</span>
         </div>
       </div>
 
-      <div class="grid gap-5 lg:grid-cols-2">
+      <div class="grid gap-5 lg:grid-cols-2 motion-row-2">
         <!-- AI cost + agents -->
-        <div class="card" style="padding:18px" [astaReveal]="5">
+        <div class="card motion-card-reveal" style="padding:18px;--motion-card-index:0">
           <p class="kicker mb-3" style="color:var(--peri-deep)">AI usage & cost</p>
           <div class="flex gap-5 mb-3">
             <div><p class="num2">{{ d.ai.totalCalls }}</p><p class="lbl">calls</p></div>
@@ -53,7 +52,7 @@ import { RevealDirective } from '../../shared/directives/reveal.directive';
         </div>
 
         <!-- feature adoption -->
-        <div class="card" style="padding:18px" [astaReveal]="6">
+        <div class="card motion-card-reveal" style="padding:18px;--motion-card-index:1">
           <p class="kicker mb-3" style="color:var(--green-deep)">Feature adoption</p>
           <div class="space-y-3">
             @for (f of d.adoption; track f.feature) {
@@ -70,7 +69,7 @@ import { RevealDirective } from '../../shared/directives/reveal.directive';
         </div>
 
         <!-- top cohorts -->
-        <div class="card" style="padding:18px" [astaReveal]="7">
+        <div class="card motion-card-reveal" style="padding:18px;--motion-card-index:2">
           <p class="kicker mb-3">Top cohorts</p>
           @if (d.topCohorts.length === 0) { <p class="text-sm text-txt-mute">No cohorts yet.</p> }
           <div class="space-y-2">
@@ -84,7 +83,7 @@ import { RevealDirective } from '../../shared/directives/reveal.directive';
         </div>
 
         <!-- signups + health -->
-        <div class="card" style="padding:18px" [astaReveal]="8">
+        <div class="card motion-card-reveal" style="padding:18px;--motion-card-index:3">
           <p class="kicker mb-3">Signups (14d)</p>
           <div class="mb-4">
             <asta-line-chart [area]="true" tone="peri" [data]="signupData()" [height]="96" label="Signups over the last 14 days" />

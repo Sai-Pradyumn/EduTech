@@ -7,9 +7,7 @@ import { ButtonComponent } from '../../shared/ui/button.component';
 import { CardComponent } from '../../shared/ui/card.component';
 import { RingComponent } from '../../shared/ui/ring.component';
 import { EmptyStateComponent } from '../../shared/ui/empty-state.component';
-import { RevealDirective } from '../../shared/directives/reveal.directive';
 import { MagneticDirective } from '../../shared/directives/magnetic.directive';
-import { TiltDirective } from '../../shared/directives/tilt.directive';
 import { CountDirective } from '../../shared/directives/count.directive';
 
 interface ReviewDraft {
@@ -22,7 +20,7 @@ interface ReviewDraft {
   selector: 'asta-mentor-workspace',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormsModule, ButtonComponent, CardComponent, RingComponent, EmptyStateComponent, RevealDirective, MagneticDirective, TiltDirective, CountDirective],
+  imports: [FormsModule, ButtonComponent, CardComponent, RingComponent, EmptyStateComponent, MagneticDirective, CountDirective],
   template: `
     @if (loading()) {
       <header class="asta-page-command-header">
@@ -51,7 +49,7 @@ interface ReviewDraft {
         <asta-card><asta-empty-state title="No students assigned yet" description="You'll see students from organizations where you're a mentor, instructor or admin. Ask an org admin to add you, or invite students to your org." /></asta-card>
       } @else {
         <!-- weekly actions -->
-        <asta-card accentVar="var(--peri)" class="block mb-5" astaTilt [tiltMax]="3" [astaReveal]="0">
+        <asta-card accentVar="var(--peri)" class="block mb-5 motion-row-primary motion-card-reveal" style="--motion-card-index:0">
           <div class="panel-head">
             <p class="kicker" style="color:var(--peri-deep)">This week</p>
             <span class="panel-ico peri" aria-hidden="true">
@@ -63,9 +61,9 @@ interface ReviewDraft {
           </ul>
         </asta-card>
 
-        <div class="grid gap-5 lg:grid-cols-[minmax(280px,360px)_1fr]">
+        <div class="grid gap-5 lg:grid-cols-[minmax(280px,360px)_1fr] motion-row-2">
           <!-- student list -->
-          <div class="card" style="padding:14px" [astaReveal]="1">
+          <div class="card motion-card-reveal" style="padding:14px;--motion-card-index:0">
             <p class="kicker mb-3">Your students</p>
             <div class="space-y-2">
               @for (s of d.students; track s.userId) {
@@ -86,9 +84,9 @@ interface ReviewDraft {
           </div>
 
           <!-- detail -->
-          <div>
+          <div class="motion-card-reveal" style="--motion-card-index:1">
             @if (detail(); as det) {
-              <asta-card class="block mb-4" astaTilt [tiltMax]="4">
+              <asta-card class="block mb-4">
                 <div class="flex items-start gap-4">
                   <asta-ring [value]="det.summary.health" [size]="76" />
                   <div class="flex-1 min-w-0">
@@ -162,6 +160,18 @@ interface ReviewDraft {
           </div>
         </div>
       }
+      } @else if (loadError()) {
+      <header class="asta-page-command-header">
+        <div class="min-w-0">
+          <h1 class="text-[26px] leading-tight mb-2 grad-flow">Mentor Room</h1>
+          <span class="goal-pill"><span class="dot"></span>Couldn't load your room</span>
+        </div>
+      </header>
+      <asta-card class="block motion-row-primary motion-card-reveal" style="--motion-card-index:0">
+        <asta-empty-state title="We couldn't load your mentor room" description="Something went wrong fetching your assigned students. Please try again.">
+          <asta-btn variant="accent" size="sm" astaMagnetic (click)="load()">Retry <span class="arr">→</span></asta-btn>
+        </asta-empty-state>
+      </asta-card>
       }
     }
   `,
@@ -192,6 +202,7 @@ export class MentorWorkspaceComponent implements OnInit {
   readonly detail = signal<StudentDetail | null>(null);
   readonly selectedId = signal<string | null>(null);
   readonly loading = signal(true);
+  readonly loadError = signal(false);
 
   noteDraft = '';
   private drafts = new Map<string, ReviewDraft>();
@@ -202,13 +213,17 @@ export class MentorWorkspaceComponent implements OnInit {
 
   load(): void {
     this.loading.set(true);
+    this.loadError.set(false);
     this.api.dashboard().subscribe({
       next: (d) => {
         this.dash.set(d);
         this.loading.set(false);
         if (d.students[0]) this.select(d.students[0]);
       },
-      error: () => this.loading.set(false),
+      error: () => {
+        this.loading.set(false);
+        this.loadError.set(true);
+      },
     });
   }
 

@@ -9,15 +9,13 @@ import { StudentProfile, TARGET_TIMELINES, TIME_PER_DAY, TargetTimeline, TimePer
 import { ButtonComponent } from '../../shared/ui/button.component';
 import { CardComponent } from '../../shared/ui/card.component';
 import { SkeletonComponent } from '../../shared/ui/skeleton.component';
-import { RevealDirective } from '../../shared/directives/reveal.directive';
-import { TiltDirective } from '../../shared/directives/tilt.directive';
 import { MagneticDirective } from '../../shared/directives/magnetic.directive';
 
 @Component({
   selector: 'asta-roadmap-generate',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormsModule, RouterLink, UpperCasePipe, ButtonComponent, CardComponent, SkeletonComponent, RevealDirective, TiltDirective, MagneticDirective],
+  imports: [FormsModule, RouterLink, UpperCasePipe, ButtonComponent, CardComponent, SkeletonComponent, MagneticDirective],
   template: `
     <div class="mx-auto" style="max-width:var(--max-w-app,720px)">
       @if (generating()) {
@@ -59,7 +57,7 @@ import { MagneticDirective } from '../../shared/directives/magnetic.directive';
         </header>
 
         @if (profile(); as p) {
-          <asta-card astaTilt [tiltMax]="4" [astaReveal]="0">
+          <asta-card class="block motion-card-reveal motion-row-primary">
             <p class="kicker mb-3">Your profile</p>
             <div class="flex flex-wrap gap-2 mb-2">
               <span class="pill">{{ p.currentSkillLevel }}</span>

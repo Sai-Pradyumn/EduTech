@@ -4,15 +4,13 @@ import { BillingService } from '../../core/services/billing.service';
 import { ToastService } from '../../core/services/toast.service';
 import { Plan, PlanId, SubscriptionView, TransactionView, UsageView } from '../../core/models';
 import { GaugeComponent } from '../../shared/charts';
-import { RevealDirective } from '../../shared/directives/reveal.directive';
-import { TiltDirective } from '../../shared/directives/tilt.directive';
 
 /** Billing & usage (B5/B6): current plan, AI usage meter, plan upgrade (mock checkout), invoices. */
 @Component({
   selector: 'asta-billing',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [DatePipe, GaugeComponent, RevealDirective, TiltDirective],
+  imports: [DatePipe, GaugeComponent],
   template: `
     <!-- Command header -->
     <header class="asta-page-command-header max-w-app mx-auto">
@@ -24,8 +22,8 @@ import { TiltDirective } from '../../shared/directives/tilt.directive';
 
     <div class="max-w-app mx-auto space-y-6">
       <!-- Current plan + usage -->
-      <div class="grid gap-5 md:grid-cols-2">
-        <div class="card" style="padding:20px" [astaReveal]="0">
+      <div class="grid gap-5 md:grid-cols-2 motion-row-primary">
+        <div class="card motion-card-reveal" style="padding:20px;--motion-card-index:0">
           <p class="kicker mb-3" style="color:var(--green-deep)">Current plan</p>
           @if (sub(); as s) {
             <div class="flex items-baseline gap-2">
@@ -36,10 +34,13 @@ import { TiltDirective } from '../../shared/directives/tilt.directive';
             @if (s.currentPeriodEnd) {
               <p class="text-xs font-mono text-txt-mute mt-3">Renews {{ s.currentPeriodEnd | date: 'mediumDate' }}</p>
             }
+          } @else {
+            <span class="skel" style="width:50%;height:30px;margin-bottom:8px"></span>
+            <span class="skel" style="width:70%;height:14px"></span>
           }
         </div>
 
-        <div class="card" style="padding:20px" [astaReveal]="1">
+        <div class="card motion-card-reveal" style="padding:20px;--motion-card-index:1">
           <p class="kicker mb-3">AI usage this month</p>
           @if (usage(); as u) {
             <div class="flex items-center gap-5">
@@ -60,6 +61,14 @@ import { TiltDirective } from '../../shared/directives/tilt.directive';
                 }
               </div>
             </div>
+          } @else {
+            <div class="flex items-center gap-5">
+              <span class="skel" style="width:120px;height:120px;border-radius:50%"></span>
+              <div class="flex-1 space-y-2">
+                <span class="skel" style="width:80%;height:14px"></span>
+                <span class="skel" style="width:60%;height:14px"></span>
+              </div>
+            </div>
           }
         </div>
       </div>
@@ -67,9 +76,9 @@ import { TiltDirective } from '../../shared/directives/tilt.directive';
       <!-- Plans -->
       <div>
         <p class="kicker mb-4">Plans</p>
-        <div class="grid gap-4 md:grid-cols-3">
+        <div class="grid gap-4 md:grid-cols-3 motion-row-panel">
           @for (p of plans(); track p.id; let i = $index) {
-            <div class="card relative" style="padding:22px" astaTilt [tiltMax]="4" [astaReveal]="i"
+            <div class="card relative motion-card-reveal" style="padding:22px" [style.--motion-card-index]="i"
               [style.borderColor]="p.highlight ? 'var(--green)' : null"
               [style.boxShadow]="p.highlight ? 'var(--shadow-md)' : null">
               @if (p.highlight) { <span class="pill absolute" style="top:-12px;right:16px;background:var(--green);color:var(--ink);border:0">Popular</span> }
@@ -86,6 +95,14 @@ import { TiltDirective } from '../../shared/directives/tilt.directive';
                 {{ isCurrent(p.id) ? 'Current plan' : (p.priceInr === 0 ? 'Switch to Free' : 'Upgrade') }}
               </button>
             </div>
+          } @empty {
+            @for (n of [0, 1, 2]; track n) {
+              <div class="card motion-card-reveal motion-row-panel" style="padding:22px" [style.--motion-card-index]="n">
+                <span class="skel" style="width:50%;height:22px;margin-bottom:10px"></span>
+                <span class="skel" style="width:40%;height:30px;margin-bottom:10px"></span>
+                <span class="skel" style="width:90%;height:14px"></span>
+              </div>
+            }
           }
         </div>
         <p class="text-xs text-txt-mute mt-3 font-mono">Mock payment mode — no real charge. Razorpay/Stripe slot behind the same checkout.</p>
@@ -93,7 +110,7 @@ import { TiltDirective } from '../../shared/directives/tilt.directive';
 
       <!-- Invoices -->
       @if (txns().length) {
-        <div class="card" style="padding:18px" [astaReveal]="0">
+        <div class="card motion-card-reveal motion-lower" style="padding:18px;--motion-card-index:0">
           <p class="kicker mb-3">Invoices</p>
           <div class="space-y-1.5">
             @for (t of txns(); track t.id) {
@@ -109,6 +126,13 @@ import { TiltDirective } from '../../shared/directives/tilt.directive';
       }
     </div>
   `,
+  styles: [
+    `
+      .skel { display: block; border-radius: 8px; background: linear-gradient(90deg, var(--paper-2) 25%, var(--paper-3) 50%, var(--paper-2) 75%); background-size: 200% 100%; animation: skel-shimmer 1.4s ease infinite; }
+      @keyframes skel-shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+      @media (prefers-reduced-motion: reduce) { .skel { animation: none; } }
+    `,
+  ],
 })
 export class BillingComponent implements OnInit {
   private readonly billing = inject(BillingService);
