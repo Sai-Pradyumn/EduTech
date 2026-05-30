@@ -34,6 +34,8 @@ export interface AppConfig {
     langgraph: boolean;
     realtimeVoice: boolean;
     fineTuning: boolean;
+    /** Phase 8 · Flow Studio (visual learning graphs). On by default; set ENABLE_FLOW_STUDIO=false to disable. */
+    flowStudio: boolean;
   };
   vector: { backend: 'keyword' | 'atlas' };
   rag: { topK: number; minScore: number; hybrid: boolean };
@@ -106,6 +108,7 @@ export default (): AppConfig => ({
     langgraph: process.env.ENABLE_LANGGRAPH === 'true',
     realtimeVoice: process.env.ENABLE_REALTIME_VOICE === 'true',
     fineTuning: process.env.ENABLE_FINE_TUNING === 'true',
+    flowStudio: process.env.ENABLE_FLOW_STUDIO !== 'false',
   },
   vector: {
     backend: (process.env.VECTOR_STORE_PROVIDER ??

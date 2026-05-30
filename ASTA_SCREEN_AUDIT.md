@@ -26,6 +26,8 @@ Legend — Rebuild: ✅ done · 🎯 next priority · ⏳ queued · ➖ keep (no
 | `voice-room` | VoiceRoomComponent | **Voice Chamber** (living orb exists) | ⏳ | `/voice` (flag) |
 | `workflows` | WorkflowsComponent | **Agent Swarm Map** | ⏳ | `/agent-graph` (flag) |
 | `roadmap` / `roadmap/:id` / `roadmap/generate` | Roadmap{List,Details,Generate} | **Learning Path Galaxy** (learning river + constellation) | 🎯 | `/roadmap/*` |
+| `flows` / `flows/new` | FlowsListComponent | **Flow Studio** home — generate panel + flow gallery (Phase 8) | ✅ | `/flows` |
+| `flows/:id` | FlowDetailComponent | **Flow Studio cockpit** — SVG dependency graph (pan/zoom/drag), inspector, Map/Timeline/Focus/Weakness/Project views (Phase 8) | ✅ | `/flows/:id` |
 | `knowledge` | KnowledgeHubComponent | **Knowledge Vault** (shards + retrieval confidence) | 🎯 | `/knowledge/*` |
 | `quizzes` | QuizStudioComponent | **Mastery Arena** (focus Q + mastery rings) | 🎯 | `/assessment/*` |
 | `projects` | ProjectStudioComponent | **Project Forge** (blueprint + journey + AI review) | ⏳ | `/projects/*` |

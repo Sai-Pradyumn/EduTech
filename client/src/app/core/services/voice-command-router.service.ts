@@ -54,6 +54,7 @@ export class VoiceCommandRouterService {
     { keywords: ['workflow'], route: '/app/workflows', label: 'Open Workflows', say: 'Opening workflows.' },
     { keywords: ['create roadmap', 'generate roadmap', 'new roadmap', 'build a roadmap'], route: '/app/roadmap/generate', label: 'Generate a Roadmap', say: 'Let’s build a roadmap.' },
     { keywords: ['roadmap', 'learning path'], route: '/app/roadmap', label: 'Open Roadmaps', say: 'Opening your roadmaps.' },
+    { keywords: ['flow', 'flows', 'flow studio', 'learning flow', 'learning graph'], route: '/app/flows', label: 'Open Flow Studio', say: 'Opening Flow Studio.' },
     { keywords: ['knowledge', 'documents', 'upload', 'sources'], route: '/app/knowledge', adminRoute: '/admin/documents', label: 'Open Knowledge Hub', say: 'Opening the knowledge hub.' },
     { keywords: ['generate a quiz', 'create a quiz', 'quiz me', 'quiz', 'assessment', 'test me'], route: '/app/quizzes', adminRoute: '/admin/assessments', label: 'Open Quiz Studio', say: 'Opening quiz studio.' },
     { keywords: ['project', 'kanban'], route: '/app/projects', label: 'Open Project Studio', say: 'Opening project studio.' },

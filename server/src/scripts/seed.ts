@@ -17,7 +17,9 @@ import { Roadmap, RoadmapSchema } from '../modules/roadmap/schemas/roadmap.schem
 import { Organization, OrganizationSchema } from '../modules/tenancy/schemas/organization.schema';
 import { Membership, MembershipSchema } from '../modules/tenancy/schemas/membership.schema';
 import { Cohort, CohortSchema } from '../modules/cohort/schemas/cohort.schema';
+import { Flow, FlowSchema } from '../modules/flows/schemas/flow.schema';
 import { buildRoadmapBlueprint } from '../modules/agents/roadmap/roadmap-blueprint.generator';
+import { buildFlowBlueprint } from '../modules/flows/flow-architect/flow-blueprint.generator';
 import {
   Branch,
   CareerTarget,
@@ -53,6 +55,7 @@ async function run(): Promise<void> {
   const OrgModel = mongoose.model(Organization.name, OrganizationSchema);
   const MembershipModel = mongoose.model(Membership.name, MembershipSchema);
   const CohortModel = mongoose.model(Cohort.name, CohortSchema);
+  const FlowModel = mongoose.model(Flow.name, FlowSchema);
 
   await UserModel.updateOne(
     { email: DEMO.admin.email },
@@ -140,6 +143,66 @@ async function run(): Promise<void> {
       progressPercentage: 0,
       completedWeeks: [],
       completedTasks: [],
+    });
+  }
+
+  // ── Phase 8 · Flow Studio: seed two demo learning flows so the graph is alive on first run.
+  const existingFlow = await FlowModel.findOne({ user: student._id }).exec();
+  if (!existingFlow) {
+    const mern = buildFlowBlueprint({
+      goal: 'Learn the MERN stack and land an internship',
+      skillLevel: Difficulty.Beginner,
+      currentSkills: profileFields.currentSkills,
+      weakAreas: profileFields.weakAreas,
+      targetRole: 'Full-stack intern',
+      sourceType: 'generated',
+    });
+    // Mark the first few nodes as completed/available so progress looks lived-in.
+    const sorted = [...mern.nodes].sort((a, b) => a.stage - b.stage);
+    if (sorted[0]) sorted[0].status = 'completed';
+    if (sorted[1]) sorted[1].status = 'completed';
+    if (sorted[2]) sorted[2].status = 'in_progress';
+    const completed = new Set(mern.nodes.filter((n) => n.status === 'completed').map((n) => n.id));
+    mern.nodes.forEach((n) => {
+      if (n.status === 'completed' || n.status === 'in_progress') return;
+      n.status = n.prerequisites.every((p) => completed.has(p)) ? 'available' : 'locked';
+    });
+    await FlowModel.create({
+      user: student._id,
+      title: mern.title,
+      goal: mern.goal,
+      description: mern.description,
+      sourceType: 'generated',
+      status: 'active',
+      difficulty: mern.difficulty as Difficulty,
+      nodes: mern.nodes,
+      edges: mern.edges,
+      timeline: mern.timeline,
+      metadata: mern.metadata,
+      progressPercentage: Math.round((completed.size / (mern.nodes.length || 1)) * 100),
+    });
+
+    const dsa = buildFlowBlueprint({
+      goal: 'Crack DSA interviews in 45 days',
+      skillLevel: Difficulty.Intermediate,
+      currentSkills: ['JavaScript', 'Problem solving'],
+      weakAreas: ['Dynamic programming', 'Graphs'],
+      targetRole: 'SDE',
+      sourceType: 'generated',
+    });
+    await FlowModel.create({
+      user: student._id,
+      title: dsa.title,
+      goal: dsa.goal,
+      description: dsa.description,
+      sourceType: 'generated',
+      status: 'active',
+      difficulty: dsa.difficulty as Difficulty,
+      nodes: dsa.nodes,
+      edges: dsa.edges,
+      timeline: dsa.timeline,
+      metadata: dsa.metadata,
+      progressPercentage: 0,
     });
   }
 

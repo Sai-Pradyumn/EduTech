@@ -37,6 +37,7 @@ import { CertificatesModule } from './modules/certificates/certificates.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
 import { RoadmapModule } from './modules/roadmap/roadmap.module';
 import { ProgressionModule } from './modules/progression/progression.module';
+import { FlowsModule } from './modules/flows/flows.module';
 import { SocketsModule } from './sockets/sockets.module';
 
 @Module({
@@ -75,6 +76,7 @@ import { SocketsModule } from './sockets/sockets.module';
     StudentProfileModule,
     RoadmapModule,
     ProgressionModule,
+    FlowsModule,
     SocketsModule,
   ],
   controllers: [HealthController],

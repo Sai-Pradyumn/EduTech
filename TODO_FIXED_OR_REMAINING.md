@@ -1,5 +1,29 @@
 # Asta — Fixed / Remaining
 
+## ✅ Shipped — Phase 8 · Flow Studio (Multimodal Learning OS, Priority 1 · module 1)
+Built **Flow Studio** end-to-end and deeply (per the Phase 8 brief: complete Priority 1 deeply, not
+everything shallowly). Full detail in [`PHASE_8_MULTIMODAL_LEARNING_OS.md`](PHASE_8_MULTIMODAL_LEARNING_OS.md).
+- **Backend** `server/src/modules/flows/`: `Flow` schema (embedded `FlowNode`/`FlowEdge`/timeline, 15
+  node types, 8 edge relations, unlock statuses), DTOs, `FlowsService` (generate / from-roadmap / CRUD /
+  node ops / execute-node / recalculate / export), `FlowsController` (13 routes, `ENABLE_FLOW_STUDIO`
+  gate), and the **FlowArchitect** agent (`AiService.generateStructuredOutput` + `mockFactory`
+  deterministic blueprint + normalize/validate → works offline). Registered in `app.module`; flag added
+  to config (default on).
+- **Frontend** `client/src/app/features/flows/`: `flows-list` (generate panel + gallery + states),
+  `flow-detail` **graph cockpit** — custom **SVG canvas** (pan/zoom/drag, dot-grid mission-control look),
+  right inspector, **5 views** (Map/Timeline/Focus/Weakness/Project), node actions (Start → routes to
+  tutor/quiz/project/voice/mentor/knowledge; Mark mastered → unlock cascade), recalculate, export. New
+  `flow.service.ts` + `flow-node-meta.ts`. Routes (`/app/flows`, `/flows/new`, `/flows/:id`), **nav**
+  ("Flow Studio" in Learn), command palette (auto), and a voice-command nav rule.
+- **Seed**: 2 demo flows (22-node MERN with lived-in progress, 20-node DSA).
+- **Verification**: `build:server` green; `build:client` green & **warning-free** (517.77 kB < 540 kB);
+  server **boots clean** (all flow routes mapped, no DI errors); API **runtime-smoked** with the mock
+  provider (generate → execute-node → complete-cascade → recalculate → export).
+- **Design**: compact Noir cockpit — command headers, `.card`/`.kicker`, no heroes; green=path,
+  cyan/violet=AI nodes, amber=weakness; shared motion taxonomy + reduced-motion safe; mobile → list view.
+- **Remaining Phase 8** (queued, see the Phase 8 doc): Visual Intelligence Studio, complete Voice Room,
+  Skill Twin, Mistake OS (Priority 1); then Study Spaces / Simulations / Daily Autopilot (P2); etc.
+
 ## ✅ Fixed / done — WHOLE-APP motion rollout (latest)
 Completed the motion-taxonomy rollout across **every remaining logged-in screen**
 (20 files, via two waves of 3 parallel agents + central build verification). The

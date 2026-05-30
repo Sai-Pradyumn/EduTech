@@ -37,6 +37,7 @@
 | 11m | **Certificates** — issue verifiable credentials (gated by permission), **public verification page** at `/certificate/verify/:id`; `/app/certificates` | ✅ Phase 4 · B7 |
 | 11n | **In-app notifications** — topbar bell with unread badge + mark-read; cohort announcements fan out to enrolled students | ✅ Phase 4 · B13 |
 | 11o | **Production ops** — Dockerfiles (FE/BE), `docker-compose.prod.yml`, nginx reverse-proxy, CI workflow, deploy doc; security headers + per-IP rate limiting; `/api/health/detailed` readiness probe | ✅ Phase 4 · B10/B11/B12 |
+| P8·1 | **Flow Studio** — a goal becomes a **living visual learning graph** (concept/practice/quiz/project/voice/repair/mastery-gate nodes + dependency edges). SVG graph cockpit (pan/zoom/drag, inspector, Map/Timeline/Focus/Weakness/Project views), unlock cascades, recalculate (adds weak-area repairs), export; from-roadmap generation; FlowArchitect agent (LLM + deterministic offline fallback); `/app/flows` | ✅ Phase 8 |
 | 11 | Admin dashboard + AI analytics | ⏳ Phase 6 |
 | 12 | Notifications (in-app + BullMQ) | ⏳ Phase 6 |
 | 13 | WebSocket foundation (streaming + realtime) | ⏳ Phase 3 |
@@ -134,6 +135,7 @@ npm run build            # builds server then client
 | `CLAUDE_MODEL` / `OPENAI_MODEL` / `GEMINI_MODEL` | model overrides |
 | `AI_REQUEST_TIMEOUT_MS` / `AI_MAX_OUTPUT_TOKENS` / `AI_USER_RATE_PER_MIN` | gateway timeout, output cap, per-user AI turns/min |
 | `VECTOR_BACKEND` | `keyword` \| `atlas` (keyword needs no vector DB) |
+| `ENABLE_FLOW_STUDIO` | Phase 8 Flow Studio. **On by default**; set `false` to disable `/app/flows` generation (`GET /api/flows/status` reports state). |
 | `STORAGE_PROVIDER` | `local` \| `s3` |
 | `AWS_*` / `S3_BUCKET` | S3 storage (optional) |
 
@@ -181,3 +183,4 @@ Every AI surface goes through one pipeline: **classify intent → route to agent
 - [`docs/DATABASE_SCHEMA.md`](docs/DATABASE_SCHEMA.md) · [`docs/API_CONTRACTS.md`](docs/API_CONTRACTS.md) · [`docs/AI_AGENTS.md`](docs/AI_AGENTS.md)
 - Phase 3: [`docs/AI_AGENT_OS.md`](docs/AI_AGENT_OS.md) · [`docs/AGENT_WORKFLOWS.md`](docs/AGENT_WORKFLOWS.md) · [`docs/RAG_ARCHITECTURE.md`](docs/RAG_ARCHITECTURE.md) · [`docs/VOICE_AGENT_ARCHITECTURE.md`](docs/VOICE_AGENT_ARCHITECTURE.md) · [`docs/FINE_TUNING_LORA_ARCHITECTURE.md`](docs/FINE_TUNING_LORA_ARCHITECTURE.md)
 - UX/dashboards: [`docs/FRONTEND_UX_SYSTEM.md`](docs/FRONTEND_UX_SYSTEM.md) · [`docs/STUDENT_DASHBOARD.md`](docs/STUDENT_DASHBOARD.md) · [`docs/ADMIN_COMMAND_CENTER.md`](docs/ADMIN_COMMAND_CENTER.md)
+- Phase 8 (Multimodal Learning OS): [`PHASE_8_MULTIMODAL_LEARNING_OS.md`](PHASE_8_MULTIMODAL_LEARNING_OS.md) — Flow Studio shipped; Visual Studio / Voice / Skill Twin / Mistake OS queued.

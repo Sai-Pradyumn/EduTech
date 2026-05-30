@@ -112,6 +112,24 @@ export const routes: Routes = [
         loadComponent: () => import('./features/roadmap/roadmap-details.component').then((m) => m.RoadmapDetailsComponent),
       },
       {
+        path: 'flows',
+        title: 'Flow Studio',
+        data: { title: 'Flow Studio' },
+        loadComponent: () => import('./features/flows/flows-list.component').then((m) => m.FlowsListComponent),
+      },
+      {
+        path: 'flows/new',
+        title: 'New Flow',
+        data: { title: 'New Flow' },
+        loadComponent: () => import('./features/flows/flows-list.component').then((m) => m.FlowsListComponent),
+      },
+      {
+        path: 'flows/:id',
+        title: 'Flow',
+        data: { title: 'Flow' },
+        loadComponent: () => import('./features/flows/flow-detail.component').then((m) => m.FlowDetailComponent),
+      },
+      {
         path: 'knowledge',
         title: 'Knowledge Hub',
         data: { title: 'Knowledge Hub' },
