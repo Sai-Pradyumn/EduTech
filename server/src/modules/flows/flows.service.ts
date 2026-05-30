@@ -287,6 +287,16 @@ export class FlowsService {
     return flow.save();
   }
 
+  /** Attach a generated visual asset to a node (Phase 8 cross-module link). */
+  async linkVisual(userId: string, flowId: string, nodeId: string, visualId: string): Promise<FlowDocument> {
+    const flow = await this.get(userId, flowId);
+    const node = flow.nodes.find((n) => n.id === nodeId);
+    if (!node) throw new NotFoundException('Node not found');
+    if (!node.linkedVisualAssetIds.includes(visualId)) node.linkedVisualAssetIds.push(visualId);
+    flow.markModified('nodes');
+    return flow.save();
+  }
+
   /** Export a portable JSON snapshot of the flow graph. */
   async export(userId: string, id: string): Promise<Record<string, unknown>> {
     const flow = await this.get(userId, id);

@@ -11,8 +11,8 @@
 
 | Priority | Module | Status |
 |---|---|---|
-| **1** | **Flow Studio** (visual learning graphs) | ✅ **Shipped** (this pass) |
-| 1 | Visual Intelligence Studio | ⏳ queued |
+| **1** | **Flow Studio** (visual learning graphs) | ✅ **Shipped** |
+| **1** | **Visual Intelligence Studio** | ✅ **Shipped** |
 | 1 | Complete Voice Room (browser STT/TTS + sessions) | ⏳ queued (stub `voice` module + browser STT/TTS services already exist) |
 | 1 | Skill Twin foundation | ⏳ queued (builds on `learning-intelligence` + `student-profile`) |
 | 1 | Mistake OS foundation | ⏳ queued (quiz wrong-answers + topic severity already captured) |
@@ -21,10 +21,9 @@
 | 4 | AI Mentor Council · Proof-of-Learning · Learning Replay · Modality Router | ⏳ queued |
 
 Build status: **`npm run build:server` green**, **`npm run build:client` green & warning-free**
-(initial bundle **517.77 kB**, < 540 kB budget; `flow-detail` lazy chunk ~24.8 kB). Server **boots
-clean** (all 13 flow routes mapped, no DI errors) and the API was **runtime-smoked** with the mock
-provider (generate → execute-node → complete-cascade → recalculate → export all verified). Seed
-inserts **2 demo flows** (22-node MERN, 20-node DSA).
+(initial bundle **518.31 kB**, < 540 kB budget). Server **boots clean** (all flow + visual routes
+mapped, no DI errors); both modules **runtime-smoked** with the mock provider. Seed inserts **2 demo
+flows** (22-node MERN, 20-node DSA) + **4 demo visuals**.
 
 ---
 
@@ -147,6 +146,81 @@ weak-area repairs) · ✅ export · ✅ loading/empty/error/success states · �
 
 ---
 
+## Module 2 — Visual Intelligence Studio ✅
+
+Turns any concept (or a flow node) into a **structured educational visual**. Structured-first — it
+produces renderable **JSON graphs** (rendered natively as SVG client-side), **Mermaid**, and
+**Markdown**, plus mock SVG **illustrations** — so it works with **zero paid image API**.
+
+### Routes (client)
+- `/app/visuals` — gallery + generate panel (concept + type selector with "Auto" + idea chips). States: loading / error / empty / success.
+- `/app/visuals/:id` — viewer: renderer on the left, caption + "how to read this" + actions on the right.
+
+### Visual types (16) & formats
+`flowchart · mind_map · concept_graph · sequence_diagram · system_design · architecture · comparison ·
+timeline · infographic · flashcard · memory_palace · formula_map · process_map · cheat_sheet ·
+illustration · analogy`. Each maps to a `contentFormat`: **jsonGraph** (graph-like → vertical/radial/
+layered/horizontal SVG), **markdown** (comparison/cheat-sheet/flashcard/infographic/memory-palace),
+**imageUrl** (illustration/analogy → mock SVG data-URI), with a portable **mermaid** string stored
+alongside graph visuals for copy/export. `svg`/`html` formats are also renderable.
+
+### Renderer
+`VisualRendererComponent` is a single reusable component that renders all formats: a dependency-free
+**SVG graph renderer** (computes node positions from the layout + draws bezier edges) for jsonGraph,
+the existing `MarkdownPipe` (marked) for markdown, `<img>` for image data-URIs, and a copyable code
+block for mermaid. No new heavy dependencies (no mermaid.js / d3 / cytoscape).
+
+### Backend
+```
+server/src/modules/visuals/
+  schemas/visual-asset.schema.ts        VisualAsset (type/contentFormat/content/mermaid/thumbnail/caption/howToRead/status/provider)
+  providers/image-provider.ts           IImageProvider + MockImageProvider (deterministic SVG data-URI); IMAGE_PROVIDER_TOKEN
+  visual-explainer/
+    generated-visual.types.ts           GeneratedVisual + VisualGraph + VisualGenInput
+    visual-generator.ts                  deterministic builder (infer type, graph/markdown/illustration archetypes, mermaid)
+    visual-explainer.service.ts          VisualExplainerAgent: LLM structured output + mock fallback + image provider
+  visuals.service.ts                     generate / fromFlowNode (+links node) / list / get / update / regenerate / remove
+  visuals.controller.ts                  REST + toView + ENABLE_VISUAL_STUDIO gate
+  visuals.module.ts                      VisualAsset model + FlowsModule (for node linking) + image provider
+```
+
+### API (`/api`, JWT-guarded, `userId`-scoped)
+`GET /visuals/status` · `POST /visuals/generate` · `POST /visuals/from-flow-node` · `GET /visuals` ·
+`GET /visuals/:id` · `PATCH /visuals/:id` · `POST /visuals/:id/regenerate` · `DELETE /visuals/:id`.
+
+### Agent — VisualExplainer
+`VisualExplainerService.generate` calls `AiService.generateStructuredOutput<GeneratedVisual>` with a
+schema + `mockFactory` deterministic builder, **normalizes/validates**, and routes illustration/analogy
+types through the **image provider abstraction** (mock by default). Falls back to the deterministic
+generator on any failure — **works offline**.
+
+### Provider abstraction (image)
+`IImageProvider` (`generate(prompt) → {url, provider}`) with `MockImageProvider` returning a
+deterministic SVG data-URI. Registered via `IMAGE_PROVIDER_TOKEN`; a real provider (OpenAI Images /
+Gemini / Stability) can be slotted in behind `ENABLE_IMAGE_GENERATION` (default off). No hard
+dependency on any paid API.
+
+### Cross-module integration
+**"Explain visually"** action in the **Flow Studio node inspector** calls `POST /visuals/from-flow-node`
+→ generates a visual for that node, sets `sourceType: flow` + `sourceNodeId`, and **links the new
+visual id onto the flow node's `linkedVisualAssetIds`** (verified in the runtime smoke), then opens the
+viewer. The visual viewer's "Ask the AI Tutor about this" routes to the tutor with a prefilled prompt.
+
+### Feature flags
+`ENABLE_VISUAL_STUDIO` (`flags.visualStudio`, default **on**) and `ENABLE_IMAGE_GENERATION`
+(`flags.imageGeneration`, default **off** → mock SVG). `GET /visuals/status` reports both.
+
+### Seed data
+4 demo visuals for the seeded student: a MERN request **sequence**, a React lifecycle **mind map**, a
+scalable-app **architecture** diagram, and a **SQL vs NoSQL** comparison.
+
+### Acceptance (Module 2) — all met
+✅ generate SVG/Mermaid/graph visuals **without a paid image API** · ✅ save visuals · ✅ attach to a
+flow node (links back) · ✅ regenerate · ✅ export/copy (Mermaid + content + download) · ✅
+loading/empty/error/success states · ✅ mock provider works · ✅ build green & warning-free.
+
+---
+
 ## Data relationships wired this pass
 - **Roadmap → Flow**: `POST /flows/from-roadmap/:roadmapId` seeds the graph backbone from roadmap weeks.
 - **Flow node → Tutor / Quiz / Project / Voice / Mentor / Knowledge**: `execute-node` returns the route + prompt + agent.
@@ -155,21 +229,24 @@ weak-area repairs) · ✅ export · ✅ loading/empty/error/success states · �
   are persisted now so Modules 2–7 can attach artifacts back onto flow nodes without a schema change.
 
 ## Limitations / deferred
-- `from-knowledge` flow generation is deferred to land with the Visual/Spaces modules (the node link
-  fields already exist).
-- `diagram` / `image` / `simulation` node types render and route today but their dedicated studios
-  (Modules 2 & 7) are not built yet — they currently route to Knowledge / Voice as sensible stand-ins.
-- FlowArchitect is **not** wired into the chat orchestrator's agent registry (it runs as a generator
-  service like the Roadmap agent); a `FlowArchitect` `AgentType` + registry entry can be added when
-  voice "speak-a-goal → flow" lands in Module 3.
+- `from-knowledge` flow generation and Visual Studio's `from-knowledge` / `from-quiz-mistake` /
+  `from-tutor-message` convenience endpoints are deferred (the generic `generate` + `from-flow-node`
+  cover the core flows; the node link fields already exist).
+- `diagram` / `image` / `document_source` flow node types route to Knowledge today; they can be
+  pointed at Visual Studio in a follow-up. `simulation` routes to Voice until Module 7 lands.
+- Mermaid visuals render as copyable source (no mermaid.js dependency by design); the jsonGraph format
+  is the natively-rendered structured visual.
+- FlowArchitect / VisualExplainer run as generator services (like the Roadmap agent), not in the chat
+  orchestrator's agent registry; registry entries can be added when voice "speak-a-goal → flow" lands.
 
 ## Feature flags (Phase 8 roster)
-Shipped: `ENABLE_FLOW_STUDIO` (default on). Planned: `ENABLE_VISUAL_STUDIO`, `ENABLE_VOICE`,
-`ENABLE_BROWSER_STT`, `ENABLE_BROWSER_TTS`, `ENABLE_IMAGE_GENERATION`, `ENABLE_SIMULATIONS`,
-`ENABLE_STUDY_SPACES`. (`ENABLE_REALTIME_VOICE` already exists for the stub voice module.)
+Shipped: `ENABLE_FLOW_STUDIO` (default on), `ENABLE_VISUAL_STUDIO` (default on),
+`ENABLE_IMAGE_GENERATION` (default off → mock SVG). Planned: `ENABLE_VOICE`, `ENABLE_BROWSER_STT`,
+`ENABLE_BROWSER_TTS`, `ENABLE_SIMULATIONS`, `ENABLE_STUDY_SPACES`. (`ENABLE_REALTIME_VOICE` already
+exists for the stub voice module.)
 
 ## Next-pass recommendations
-1. **Visual Intelligence Studio** — SVG/Mermaid/graph-JSON first (no paid image API), behind an image-provider abstraction; attach visuals to flow nodes via `linkedVisualAssetIds`.
-2. **Complete Voice Room** — promote the stub `voice` module to persisted `VoiceSession`s + socket events, using the existing browser STT/TTS services; add "speak a goal → generate flow".
-3. **Skill Twin** — fold flow progress + quiz mastery + weak areas into `learning-intelligence` as a learner graph that powers recommendations with an explainability drawer.
-4. **Mistake OS** — turn quiz `QuestionResult`/`TopicScore.severity` into repair entries that spawn `weak_area_repair` flow nodes (the edge relation already exists).
+1. **Complete Voice Room** — promote the stub `voice` module to persisted `VoiceSession`s + socket events, using the existing browser STT/TTS services; add "speak a goal → generate flow" and voice viva for `voice_practice` nodes.
+2. **Skill Twin** — fold flow progress + quiz mastery + weak areas into `learning-intelligence` as a learner graph that powers recommendations with an explainability drawer.
+3. **Mistake OS** — turn quiz `QuestionResult`/`TopicScore.severity` into repair entries that spawn `weak_area_repair` flow nodes (the edge relation already exists).
+4. Point flow `diagram`/`image` nodes at Visual Studio and add the remaining Visual `from-*` source endpoints.

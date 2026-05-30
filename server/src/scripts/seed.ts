@@ -18,8 +18,10 @@ import { Organization, OrganizationSchema } from '../modules/tenancy/schemas/org
 import { Membership, MembershipSchema } from '../modules/tenancy/schemas/membership.schema';
 import { Cohort, CohortSchema } from '../modules/cohort/schemas/cohort.schema';
 import { Flow, FlowSchema } from '../modules/flows/schemas/flow.schema';
+import { VisualAsset, VisualAssetSchema } from '../modules/visuals/schemas/visual-asset.schema';
 import { buildRoadmapBlueprint } from '../modules/agents/roadmap/roadmap-blueprint.generator';
 import { buildFlowBlueprint } from '../modules/flows/flow-architect/flow-blueprint.generator';
+import { buildVisual } from '../modules/visuals/visual-explainer/visual-generator';
 import {
   Branch,
   CareerTarget,
@@ -56,6 +58,7 @@ async function run(): Promise<void> {
   const MembershipModel = mongoose.model(Membership.name, MembershipSchema);
   const CohortModel = mongoose.model(Cohort.name, CohortSchema);
   const FlowModel = mongoose.model(Flow.name, FlowSchema);
+  const VisualModel = mongoose.model(VisualAsset.name, VisualAssetSchema);
 
   await UserModel.updateOne(
     { email: DEMO.admin.email },
@@ -204,6 +207,37 @@ async function run(): Promise<void> {
       metadata: dsa.metadata,
       progressPercentage: 0,
     });
+  }
+
+  // ── Phase 8 · Visual Intelligence Studio: seed a few educational visuals.
+  const existingVisual = await VisualModel.findOne({ user: student._id }).exec();
+  if (!existingVisual) {
+    const demos: { concept: string; type: import('../modules/visuals/schemas/visual-asset.schema').VisualType }[] = [
+      { concept: 'How a MERN request flows end to end', type: 'sequence_diagram' },
+      { concept: 'React component lifecycle', type: 'mind_map' },
+      { concept: 'Scalable web app architecture', type: 'architecture' },
+      { concept: 'SQL vs NoSQL', type: 'comparison' },
+    ];
+    for (const d of demos) {
+      const v = buildVisual({ concept: d.concept, type: d.type });
+      await VisualModel.create({
+        user: student._id,
+        type: v.type,
+        title: d.concept,
+        prompt: d.concept,
+        sourceType: 'manual',
+        contentFormat: v.contentFormat,
+        content: v.content,
+        mermaid: v.mermaid,
+        thumbnail: v.thumbnail,
+        caption: v.caption,
+        howToRead: v.howToRead,
+        level: 'beginner',
+        status: 'ready',
+        provider: 'deterministic',
+        metadata: v.metadata,
+      });
+    }
   }
 
   // ── Multi-tenant demo (B1): a sample college org with admin as owner + student member.

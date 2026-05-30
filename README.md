@@ -38,6 +38,7 @@
 | 11n | **In-app notifications** — topbar bell with unread badge + mark-read; cohort announcements fan out to enrolled students | ✅ Phase 4 · B13 |
 | 11o | **Production ops** — Dockerfiles (FE/BE), `docker-compose.prod.yml`, nginx reverse-proxy, CI workflow, deploy doc; security headers + per-IP rate limiting; `/api/health/detailed` readiness probe | ✅ Phase 4 · B10/B11/B12 |
 | P8·1 | **Flow Studio** — a goal becomes a **living visual learning graph** (concept/practice/quiz/project/voice/repair/mastery-gate nodes + dependency edges). SVG graph cockpit (pan/zoom/drag, inspector, Map/Timeline/Focus/Weakness/Project views), unlock cascades, recalculate (adds weak-area repairs), export; from-roadmap generation; FlowArchitect agent (LLM + deterministic offline fallback); `/app/flows` | ✅ Phase 8 |
+| P8·2 | **Visual Studio** — turn any concept (or a flow node) into a **structured educational visual**: jsonGraph→SVG, Mermaid, Markdown tables/cheat-sheets, mock SVG illustrations. Reusable SVG renderer (no mermaid.js/d3 dep), regenerate/copy/export, "Explain visually" from a flow node (links back). VisualExplainer agent + image-provider abstraction (mock by default, no paid API); `/app/visuals` | ✅ Phase 8 |
 | 11 | Admin dashboard + AI analytics | ⏳ Phase 6 |
 | 12 | Notifications (in-app + BullMQ) | ⏳ Phase 6 |
 | 13 | WebSocket foundation (streaming + realtime) | ⏳ Phase 3 |
@@ -136,6 +137,8 @@ npm run build            # builds server then client
 | `AI_REQUEST_TIMEOUT_MS` / `AI_MAX_OUTPUT_TOKENS` / `AI_USER_RATE_PER_MIN` | gateway timeout, output cap, per-user AI turns/min |
 | `VECTOR_BACKEND` | `keyword` \| `atlas` (keyword needs no vector DB) |
 | `ENABLE_FLOW_STUDIO` | Phase 8 Flow Studio. **On by default**; set `false` to disable `/app/flows` generation (`GET /api/flows/status` reports state). |
+| `ENABLE_VISUAL_STUDIO` | Phase 8 Visual Studio. **On by default** (`/app/visuals`). |
+| `ENABLE_IMAGE_GENERATION` | Real image generation provider. **Off by default** — a deterministic mock SVG is used so no paid image API is required. |
 | `STORAGE_PROVIDER` | `local` \| `s3` |
 | `AWS_*` / `S3_BUCKET` | S3 storage (optional) |
 

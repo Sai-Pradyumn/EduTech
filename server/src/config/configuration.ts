@@ -36,6 +36,10 @@ export interface AppConfig {
     fineTuning: boolean;
     /** Phase 8 · Flow Studio (visual learning graphs). On by default; set ENABLE_FLOW_STUDIO=false to disable. */
     flowStudio: boolean;
+    /** Phase 8 · Visual Intelligence Studio. On by default. */
+    visualStudio: boolean;
+    /** Phase 8 · real image generation (OpenAI/Gemini/Stability). Off by default — mock SVG used. */
+    imageGeneration: boolean;
   };
   vector: { backend: 'keyword' | 'atlas' };
   rag: { topK: number; minScore: number; hybrid: boolean };
@@ -109,6 +113,8 @@ export default (): AppConfig => ({
     realtimeVoice: process.env.ENABLE_REALTIME_VOICE === 'true',
     fineTuning: process.env.ENABLE_FINE_TUNING === 'true',
     flowStudio: process.env.ENABLE_FLOW_STUDIO !== 'false',
+    visualStudio: process.env.ENABLE_VISUAL_STUDIO !== 'false',
+    imageGeneration: process.env.ENABLE_IMAGE_GENERATION === 'true',
   },
   vector: {
     backend: (process.env.VECTOR_STORE_PROVIDER ??

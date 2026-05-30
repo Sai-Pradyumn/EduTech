@@ -130,6 +130,18 @@ export const routes: Routes = [
         loadComponent: () => import('./features/flows/flow-detail.component').then((m) => m.FlowDetailComponent),
       },
       {
+        path: 'visuals',
+        title: 'Visual Studio',
+        data: { title: 'Visual Studio' },
+        loadComponent: () => import('./features/visuals/visuals-list.component').then((m) => m.VisualsListComponent),
+      },
+      {
+        path: 'visuals/:id',
+        title: 'Visual',
+        data: { title: 'Visual' },
+        loadComponent: () => import('./features/visuals/visual-detail.component').then((m) => m.VisualDetailComponent),
+      },
+      {
         path: 'knowledge',
         title: 'Knowledge Hub',
         data: { title: 'Knowledge Hub' },

@@ -38,6 +38,7 @@ import { NotificationsModule } from './modules/notifications/notifications.modul
 import { RoadmapModule } from './modules/roadmap/roadmap.module';
 import { ProgressionModule } from './modules/progression/progression.module';
 import { FlowsModule } from './modules/flows/flows.module';
+import { VisualsModule } from './modules/visuals/visuals.module';
 import { SocketsModule } from './sockets/sockets.module';
 
 @Module({
@@ -77,6 +78,7 @@ import { SocketsModule } from './sockets/sockets.module';
     RoadmapModule,
     ProgressionModule,
     FlowsModule,
+    VisualsModule,
     SocketsModule,
   ],
   controllers: [HealthController],

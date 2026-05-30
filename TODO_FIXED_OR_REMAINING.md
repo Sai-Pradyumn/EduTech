@@ -1,5 +1,23 @@
 # Asta — Fixed / Remaining
 
+## ✅ Shipped — Phase 8 · Visual Intelligence Studio (Priority 1 · module 2)
+Built **Visual Studio** end-to-end — turns any concept (or a flow node) into a structured educational
+visual, **with no paid image API**. Full detail in [`PHASE_8_MULTIMODAL_LEARNING_OS.md`](PHASE_8_MULTIMODAL_LEARNING_OS.md).
+- **Backend** `server/src/modules/visuals/`: `VisualAsset` schema (16 types, formats svg/mermaid/
+  jsonGraph/imageUrl/markdown/html), **VisualExplainer** agent (LLM structured output + deterministic
+  `buildVisual` fallback), **image-provider abstraction** (`IImageProvider`/`MockImageProvider`, behind
+  `ENABLE_IMAGE_GENERATION`, default off → mock SVG), `VisualsService` (generate / from-flow-node /
+  regenerate / CRUD), controller (8 routes, `ENABLE_VISUAL_STUDIO` gate). Seed: 4 demo visuals.
+- **Frontend** `client/src/app/features/visuals/`: reusable `VisualRendererComponent` (dependency-free
+  SVG graph renderer for jsonGraph + `MarkdownPipe` + image + mermaid code — **no mermaid.js/d3 dep**),
+  `visuals-list` (gallery + generate panel) and `visual-detail` (viewer + copy/export/regenerate/ask-
+  tutor). New `visual.service.ts`. Routes `/app/visuals`,`/visuals/:id`; nav "Visual Studio"; voice rule.
+- **Cross-module**: "Explain visually" in the **Flow inspector** → `from-flow-node` generates a visual
+  and **links it back onto the flow node** (`linkedVisualAssetIds`, verified in smoke).
+- **Verification**: builds green; client warning-free (518.31 kB < 540 kB); server boots clean (visual
+  routes mapped); API runtime-smoked (generate / comparison / from-flow-node+link / get / regenerate /
+  delete). Noir cockpit compliant.
+
 ## ✅ Shipped — Phase 8 · Flow Studio (Multimodal Learning OS, Priority 1 · module 1)
 Built **Flow Studio** end-to-end and deeply (per the Phase 8 brief: complete Priority 1 deeply, not
 everything shallowly). Full detail in [`PHASE_8_MULTIMODAL_LEARNING_OS.md`](PHASE_8_MULTIMODAL_LEARNING_OS.md).

@@ -13,6 +13,7 @@ import { EmptyStateComponent } from '../../shared/ui/empty-state.component';
 import { SkeletonComponent } from '../../shared/ui/skeleton.component';
 import { ToastService } from '../../core/services/toast.service';
 import { Flow, FlowNode, FlowService } from '../../core/services/flow.service';
+import { VisualService } from '../../core/services/visual.service';
 import { EDGE_META, FLOW_NODE_META, toneColor } from './flow-node-meta';
 
 type View = 'map' | 'timeline' | 'focus' | 'weakness' | 'project';
@@ -234,6 +235,7 @@ const NODE_H = 70;
               } @else {
                 <asta-btn variant="ghost" size="sm" (click)="setStatus(n, 'available')">Reopen node</asta-btn>
               }
+              <asta-btn variant="ghost" size="sm" [loading]="visualizing()" (click)="explainVisually(n)">Explain visually</asta-btn>
             </div>
           } @else {
             <p class="kicker mb-2">Mission briefing</p>
@@ -320,6 +322,7 @@ const NODE_H = 70;
 })
 export class FlowDetailComponent {
   private readonly flowApi = inject(FlowService);
+  private readonly visualApi = inject(VisualService);
   private readonly toast = inject(ToastService);
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
@@ -334,6 +337,7 @@ export class FlowDetailComponent {
   readonly loadError = signal(false);
   readonly recalculating = signal(false);
   readonly executing = signal(false);
+  readonly visualizing = signal(false);
 
   readonly view = signal<View>('map');
   readonly selectedId = signal<string | null>(null);
@@ -622,6 +626,23 @@ export class FlowDetailComponent {
         this.toast.success(status === 'completed' ? 'Node mastered — next nodes unlocked' : 'Node reopened');
       },
       error: (err: Error) => this.toast.error(err.message || 'Could not update node'),
+    });
+  }
+
+  explainVisually(n: FlowNode): void {
+    const f = this.flow();
+    if (!f) return;
+    this.visualizing.set(true);
+    this.visualApi.fromFlowNode(f.id, n.id).subscribe({
+      next: (v) => {
+        this.visualizing.set(false);
+        this.toast.success('Visual generated for this node');
+        this.router.navigate(['/app/visuals', v.id]);
+      },
+      error: (err: Error) => {
+        this.visualizing.set(false);
+        this.toast.error(err.message || 'Could not generate a visual');
+      },
     });
   }
 
