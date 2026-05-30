@@ -39,6 +39,7 @@
 | 11o | **Production ops** — Dockerfiles (FE/BE), `docker-compose.prod.yml`, nginx reverse-proxy, CI workflow, deploy doc; security headers + per-IP rate limiting; `/api/health/detailed` readiness probe | ✅ Phase 4 · B10/B11/B12 |
 | P8·1 | **Flow Studio** — a goal becomes a **living visual learning graph** (concept/practice/quiz/project/voice/repair/mastery-gate nodes + dependency edges). SVG graph cockpit (pan/zoom/drag, inspector, Map/Timeline/Focus/Weakness/Project views), unlock cascades, recalculate (adds weak-area repairs), export; from-roadmap generation; FlowArchitect agent (LLM + deterministic offline fallback); `/app/flows` | ✅ Phase 8 |
 | P8·2 | **Visual Studio** — turn any concept (or a flow node) into a **structured educational visual**: jsonGraph→SVG, Mermaid, Markdown tables/cheat-sheets, mock SVG illustrations. Reusable SVG renderer (no mermaid.js/d3 dep), regenerate/copy/export, "Explain visually" from a flow node (links back). VisualExplainer agent + image-provider abstraction (mock by default, no paid API); `/app/visuals` | ✅ Phase 8 |
+| P8·3 | **Mistake OS** — remembers misconceptions, not just scores. **Auto-captures** weak topics from graded quizzes (event-driven), builds **repair loops** (tutor/visual/micro-quiz/voice-viva), injects `weak_area_repair` nodes into the active flow, weakness heatmap + top repair focus; `/app/mistakes` | ✅ Phase 8 |
 | 11 | Admin dashboard + AI analytics | ⏳ Phase 6 |
 | 12 | Notifications (in-app + BullMQ) | ⏳ Phase 6 |
 | 13 | WebSocket foundation (streaming + realtime) | ⏳ Phase 3 |

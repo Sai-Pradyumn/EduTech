@@ -60,6 +60,7 @@ export class VoiceCommandRouterService {
     { keywords: ['generate a quiz', 'create a quiz', 'quiz me', 'quiz', 'assessment', 'test me'], route: '/app/quizzes', adminRoute: '/admin/assessments', label: 'Open Quiz Studio', say: 'Opening quiz studio.' },
     { keywords: ['project', 'kanban'], route: '/app/projects', label: 'Open Project Studio', say: 'Opening project studio.' },
     { keywords: ['weak area', 'weak areas', 'what should i focus', 'focus on', 'my progress', 'progress', 'learning intelligence', 'insights'], route: '/app/progress', adminRoute: '/admin/analytics', label: 'Open Learning Intelligence', say: 'Here’s your learning intelligence.' },
+    { keywords: ['mistake', 'mistakes', 'repair', 'fix my mistakes', 'what did i get wrong'], route: '/app/mistakes', label: 'Open Mistake OS', say: 'Opening Mistake OS.' },
     { keywords: ['cohort'], route: '/app/cohorts', label: 'Open Cohorts', say: 'Opening cohorts.' },
     { keywords: ['live session', 'live'], route: '/app/live-sessions', label: 'Open Live Sessions', say: 'Opening live sessions.' },
     { keywords: ['community'], route: '/app/community', label: 'Open Community', say: 'Opening the community.' },

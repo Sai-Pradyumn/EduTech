@@ -34,6 +34,7 @@ Legend — Rebuild: ✅ done · 🎯 next priority · ⏳ queued · ➖ keep (no
 | `quizzes` | QuizStudioComponent | **Mastery Arena** (focus Q + mastery rings) | 🎯 | `/assessment/*` |
 | `projects` | ProjectStudioComponent | **Project Forge** (blueprint + journey + AI review) | ⏳ | `/projects/*` |
 | `progress` | IntelligenceCockpitComponent | **Skill Observatory** (radar/heatmap/momentum + rings) | 🎯 | `/intelligence/overview` |
+| `mistakes` | MistakesComponent | **Mistake OS** — repair inbox: stats, top focus, weakness heatmap, repair loops (Phase 8) | ✅ | `/mistakes` |
 | `cohorts` | CohortsComponent | Leaderboard + announcements (signal timeline) | ⏳ | `/cohorts/*` |
 | `live-sessions` | LiveSessionsComponent | Session + recap | ⏳ | `/live-sessions/*` |
 | `community` | CommunityComponent | Channels + threads | ⏳ | `/community/*` |

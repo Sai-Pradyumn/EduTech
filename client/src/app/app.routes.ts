@@ -166,6 +166,12 @@ export const routes: Routes = [
         loadComponent: () => import('./features/intelligence/intelligence-cockpit.component').then((m) => m.IntelligenceCockpitComponent),
       },
       {
+        path: 'mistakes',
+        title: 'Mistake OS',
+        data: { title: 'Mistake OS' },
+        loadComponent: () => import('./features/mistakes/mistakes.component').then((m) => m.MistakesComponent),
+      },
+      {
         path: 'cohorts',
         title: 'Cohorts',
         data: { title: 'Cohorts' },

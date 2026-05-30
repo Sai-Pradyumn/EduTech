@@ -13,17 +13,18 @@
 |---|---|---|
 | **1** | **Flow Studio** (visual learning graphs) | ✅ **Shipped** |
 | **1** | **Visual Intelligence Studio** | ✅ **Shipped** |
+| **1** | **Mistake OS foundation** | ✅ **Shipped** |
 | 1 | Complete Voice Room (browser STT/TTS + sessions) | ⏳ queued (stub `voice` module + browser STT/TTS services already exist) |
-| 1 | Skill Twin foundation | ⏳ queued (builds on `learning-intelligence` + `student-profile`) |
-| 1 | Mistake OS foundation | ⏳ queued (quiz wrong-answers + topic severity already captured) |
+| 1 | Skill Twin foundation | ⏳ queued (builds on `learning-intelligence` + `student-profile` + Mistake OS) |
 | 2 | Study Spaces · Simulation Labs · Daily Autopilot | ⏳ queued |
 | 3 | Course Builder · Peer Rooms | ⏳ queued |
 | 4 | AI Mentor Council · Proof-of-Learning · Learning Replay · Modality Router | ⏳ queued |
 
 Build status: **`npm run build:server` green**, **`npm run build:client` green & warning-free**
-(initial bundle **518.31 kB**, < 540 kB budget). Server **boots clean** (all flow + visual routes
-mapped, no DI errors); both modules **runtime-smoked** with the mock provider. Seed inserts **2 demo
-flows** (22-node MERN, 20-node DSA) + **4 demo visuals**.
+(initial bundle **518.80 kB**, < 540 kB budget). Server **boots clean** (all flow + visual + mistake
+routes mapped, no DI errors); all three modules **runtime-smoked** with the mock provider (incl. the
+Mistake-OS quiz auto-capture event path). Seed inserts **2 demo flows** (22-node MERN, 20-node DSA),
+**4 demo visuals**, and **4 demo mistakes**.
 
 ---
 
@@ -221,6 +222,64 @@ loading/empty/error/success states · ✅ mock provider works · ✅ build green
 
 ---
 
+## Module — Mistake OS ✅ (Priority 1)
+
+Remembers **misconceptions**, not just scores. Auto-captures the topics a learner misses, turns them
+into **repair loops**, and can inject `weak_area_repair` nodes into the active flow.
+
+### Route (client)
+- `/app/mistakes` — repair inbox: stats strip (open/repairing/resolved + avg severity), **top repair
+  focus** card, **weakness heatmap** (severity bars), status filter, and expandable mistake cards with
+  a repair plan + actions.
+
+### Auto-capture (event-driven)
+`MistakesService` listens to `PROGRESSION_EVENTS.quizGraded` (enriched with per-topic `topicScores`)
+and **upserts a mistake per weak topic** — dedupes by concept, increments `frequency`, blends
+`severity`, maps `severity → mistakeType`, and **reopens** a resolved mistake if it recurs. Verified
+live: a 0% quiz created `Graph algorithms [severity 100, misconception, source quiz]`.
+
+### Mistake model
+`Mistake { concept, topic, mistakeType, wrongReasoning, correction, severity(0–100), frequency,
+source, sourceId, status(open|repairing|resolved), repairActions[], linkedQuizId, linkedFlowId,
+linkedVisualId, lastSeenAt, resolvedAt }`. **8 mistake types**: misconception, missing_prerequisite,
+careless_error, weak_recall, poor_explanation, implementation_gap, interview_communication_gap,
+project_architecture_gap.
+
+### Repair loops
+`POST /mistakes/:id/repair` builds a concrete, routable plan (deterministic): **tutor_explanation**
+(/app/tutor), **visual_correction** (/app/visuals), **micro_quiz** (/app/quizzes), and either a
+**voice_viva** (/app/voice-room, for communication/explanation gaps) or a **flow_repair_node**. Each
+action is toggle-able; completing all auto-resolves the mistake.
+
+### Backend
+```
+server/src/modules/mistakes/
+  schemas/mistake.schema.ts       Mistake + RepairAction
+  mistake-repair.generator.ts     severityToType + buildRepairPlan (deterministic)
+  mistakes.service.ts             @OnEvent capture / upsert / stats / generateRepair / status / toggleAction / repairFlow
+  mistakes.controller.ts          REST + toView
+  mistakes.module.ts              Mistake model + FlowsModule (for repair nodes)
+```
+
+### API (`/api`, JWT-guarded, `userId`-scoped)
+`GET /mistakes` (+ `?status=`) · `GET /mistakes/stats` · `GET /mistakes/:id` · `POST /mistakes/capture` ·
+`POST /mistakes/:id/repair` · `PATCH /mistakes/:id/status` · `PATCH /mistakes/:id/actions` ·
+`POST /mistakes/:id/repair-flow` · `DELETE /mistakes/:id`.
+
+### Cross-module integration
+- **Quiz → Mistake**: graded quizzes auto-create/strengthen mistakes (enriched `QuizGradedEvent`).
+- **Mistake → Flow**: `repair-flow` adds a `weak_area_repair` node (with a `weak_area_patch` edge to the
+  matching concept) to the learner's active flow via the new `FlowsService.addRepairNode` — verified.
+- **Mistake → Tutor / Visual / Quiz / Voice**: repair actions deep-link to those studios with a prompt.
+
+### Acceptance (Mistake OS) — all met
+✅ wrong quiz creates mistake entries (auto) · ✅ user can repair a mistake (plan + actions) · ✅
+flow can add weak-area patch nodes from a mistake · ✅ dashboard-ready "top repair focus" + heatmap ·
+✅ resolve/reopen · ✅ states · ✅ build green & warning-free. (Skill-Twin effect lands when the Twin
+module reads mistakes next.)
+
+---
+
 ## Data relationships wired this pass
 - **Roadmap → Flow**: `POST /flows/from-roadmap/:roadmapId` seeds the graph backbone from roadmap weeks.
 - **Flow node → Tutor / Quiz / Project / Voice / Mentor / Knowledge**: `execute-node` returns the route + prompt + agent.
@@ -246,7 +305,7 @@ Shipped: `ENABLE_FLOW_STUDIO` (default on), `ENABLE_VISUAL_STUDIO` (default on),
 exists for the stub voice module.)
 
 ## Next-pass recommendations
-1. **Complete Voice Room** — promote the stub `voice` module to persisted `VoiceSession`s + socket events, using the existing browser STT/TTS services; add "speak a goal → generate flow" and voice viva for `voice_practice` nodes.
-2. **Skill Twin** — fold flow progress + quiz mastery + weak areas into `learning-intelligence` as a learner graph that powers recommendations with an explainability drawer.
-3. **Mistake OS** — turn quiz `QuestionResult`/`TopicScore.severity` into repair entries that spawn `weak_area_repair` flow nodes (the edge relation already exists).
+1. **Skill Twin** — fold flow progress + quiz mastery + **Mistake OS** entries into `learning-intelligence` as a learner graph that powers recommendations with an explainability drawer ("because you have 3 open repairs in DP…").
+2. **Complete Voice Room** — promote the stub `voice` module to persisted `VoiceSession`s + socket events, using the existing browser STT/TTS services; add "speak a goal → generate flow", voice viva for `voice_practice` flow nodes, and the Mistake-OS `voice_viva` repair action.
+3. On resolve, have Mistake OS nudge the Skill Twin / profile weak-areas; surface "top repair focus" on the dashboard.
 4. Point flow `diagram`/`image` nodes at Visual Studio and add the remaining Visual `from-*` source endpoints.

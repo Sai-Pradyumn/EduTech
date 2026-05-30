@@ -1,5 +1,21 @@
 # Asta — Fixed / Remaining
 
+## ✅ Shipped — Phase 8 · Mistake OS (Priority 1 · module 3)
+Remembers **misconceptions, not just scores**. Full detail in [`PHASE_8_MULTIMODAL_LEARNING_OS.md`](PHASE_8_MULTIMODAL_LEARNING_OS.md).
+- **Backend** `server/src/modules/mistakes/`: `Mistake` schema (8 types, severity/frequency, repair
+  actions, status), `MistakesService` with **`@OnEvent(quizGraded)` auto-capture** (enriched the event
+  with per-topic `topicScores`), `buildRepairPlan` generator (tutor/visual/micro-quiz/voice-viva/flow-
+  node), stats (open/repairing/resolved + top focus + heatmap), controller (9 routes). Added
+  `FlowsService.addRepairNode` + `findActive` so a mistake can inject a `weak_area_repair` node into the
+  active flow. Seed: 4 demo mistakes.
+- **Frontend** `client/src/app/features/mistakes/`: repair **inbox** — stats strip, top-repair-focus
+  card, **weakness heatmap**, status filter, expandable cards with a repair plan whose actions deep-link
+  to tutor/visual/quiz/voice or add a flow repair node; resolve/reopen/delete. `mistake.service.ts`;
+  route `/app/mistakes`; nav "Mistakes"; voice rule.
+- **Verification**: builds green; client warning-free (518.80 kB < 540 kB); server boots clean (mistake
+  routes mapped); API runtime-smoked incl. the **0%-quiz → auto-captured mistake** event path and
+  **repair-flow → node added to active flow**.
+
 ## ✅ Shipped — Phase 8 · Visual Intelligence Studio (Priority 1 · module 2)
 Built **Visual Studio** end-to-end — turns any concept (or a flow node) into a structured educational
 visual, **with no paid image API**. Full detail in [`PHASE_8_MULTIMODAL_LEARNING_OS.md`](PHASE_8_MULTIMODAL_LEARNING_OS.md).

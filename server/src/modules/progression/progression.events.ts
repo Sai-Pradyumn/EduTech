@@ -13,6 +13,8 @@ export interface QuizGradedEvent {
   topic: string;
   score: number; // 0..100
   weakTopics: string[];
+  /** Per-topic weakness severity (0..100) — consumed by Mistake OS to create repair entries. */
+  topicScores?: { topic: string; severity: number }[];
 }
 
 export interface WeekCompletedEvent {

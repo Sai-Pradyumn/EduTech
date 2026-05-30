@@ -287,6 +287,59 @@ export class FlowsService {
     return flow.save();
   }
 
+  /** Most-recent active flow for a user (used by Mistake OS / Skill Twin). */
+  async findActive(userId: string): Promise<FlowDocument | null> {
+    return this.model
+      .findOne({ user: new Types.ObjectId(userId), status: 'active' })
+      .sort({ updatedAt: -1 })
+      .exec();
+  }
+
+  /** Add a weak-area repair node for a concept (Phase 8 · Mistake OS → flow). Returns node id. */
+  async addRepairNode(userId: string, flowId: string, concept: string): Promise<{ flow: FlowDocument; nodeId: string }> {
+    const flow = await this.get(userId, flowId);
+    const lastStage = Math.max(0, ...flow.nodes.map((n) => n.stage));
+    const lane = flow.nodes.filter((n) => n.stage === lastStage).length;
+    const nodeId = `n_repair_${Date.now().toString(36)}`;
+    const anchor = flow.nodes.find(
+      (n) => n.type === 'concept' && n.title.toLowerCase().includes(concept.toLowerCase().split(' ')[0]),
+    );
+    flow.nodes.push({
+      id: nodeId,
+      type: 'weak_area_repair',
+      title: `Repair: ${concept}`,
+      summary: `Repair loop for "${concept}" (from a logged mistake).`,
+      objective: `Turn "${concept}" from a weakness into a strength.`,
+      difficulty: Difficulty.Intermediate,
+      estimatedMinutes: 35,
+      masteryScore: 0,
+      status: 'available',
+      position: { x: 120 + lastStage * 280, y: 120 + lane * 150 },
+      stage: lastStage,
+      prerequisites: anchor ? [anchor.id] : [],
+      resources: [{ label: 'Start repair loop', kind: 'tutor' }],
+      agentHints: [`Diagnose and repair misconceptions about ${concept}.`],
+      linkedKnowledgeDocumentIds: [],
+      linkedVisualAssetIds: [],
+      linkedVoiceSessionIds: [],
+    } as FlowNode);
+    if (anchor) {
+      flow.edges.push({
+        id: `e_repair_${Date.now().toString(36)}`,
+        source: anchor.id,
+        target: nodeId,
+        relation: 'weak_area_patch',
+        strength: 0.9,
+        explanation: `Patches the weak area: ${concept}.`,
+      });
+    }
+    flow.markModified('nodes');
+    flow.markModified('edges');
+    this.recomputeStatuses(flow);
+    const saved = await flow.save();
+    return { flow: saved, nodeId };
+  }
+
   /** Attach a generated visual asset to a node (Phase 8 cross-module link). */
   async linkVisual(userId: string, flowId: string, nodeId: string, visualId: string): Promise<FlowDocument> {
     const flow = await this.get(userId, flowId);

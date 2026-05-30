@@ -19,6 +19,8 @@ import { Membership, MembershipSchema } from '../modules/tenancy/schemas/members
 import { Cohort, CohortSchema } from '../modules/cohort/schemas/cohort.schema';
 import { Flow, FlowSchema } from '../modules/flows/schemas/flow.schema';
 import { VisualAsset, VisualAssetSchema } from '../modules/visuals/schemas/visual-asset.schema';
+import { Mistake, MistakeSchema } from '../modules/mistakes/schemas/mistake.schema';
+import { buildRepairPlan, severityToType } from '../modules/mistakes/mistake-repair.generator';
 import { buildRoadmapBlueprint } from '../modules/agents/roadmap/roadmap-blueprint.generator';
 import { buildFlowBlueprint } from '../modules/flows/flow-architect/flow-blueprint.generator';
 import { buildVisual } from '../modules/visuals/visual-explainer/visual-generator';
@@ -59,6 +61,7 @@ async function run(): Promise<void> {
   const CohortModel = mongoose.model(Cohort.name, CohortSchema);
   const FlowModel = mongoose.model(Flow.name, FlowSchema);
   const VisualModel = mongoose.model(VisualAsset.name, VisualAssetSchema);
+  const MistakeModel = mongoose.model(Mistake.name, MistakeSchema);
 
   await UserModel.updateOne(
     { email: DEMO.admin.email },
@@ -236,6 +239,35 @@ async function run(): Promise<void> {
         status: 'ready',
         provider: 'deterministic',
         metadata: v.metadata,
+      });
+    }
+  }
+
+  // ── Phase 8 · Mistake OS: seed a few logged mistakes so the repair inbox is alive.
+  const existingMistake = await MistakeModel.findOne({ user: student._id }).exec();
+  if (!existingMistake) {
+    const demos = [
+      { concept: 'Dynamic programming', severity: 82, frequency: 3, source: 'quiz' as const, status: 'open' as const, repaired: false },
+      { concept: 'REST API design', severity: 64, frequency: 2, source: 'quiz' as const, status: 'repairing' as const, repaired: true },
+      { concept: 'MongoDB aggregation', severity: 58, frequency: 2, source: 'quiz' as const, status: 'open' as const, repaired: false },
+      { concept: 'Deployment & CI/CD', severity: 47, frequency: 1, source: 'project' as const, status: 'resolved' as const, repaired: false },
+    ];
+    for (const d of demos) {
+      const type = severityToType(d.severity);
+      const plan = d.repaired ? buildRepairPlan(d.concept, type) : { correction: '', actions: [] };
+      await MistakeModel.create({
+        user: student._id,
+        concept: d.concept,
+        topic: d.concept,
+        mistakeType: type,
+        correction: plan.correction,
+        severity: d.severity,
+        frequency: d.frequency,
+        source: d.source,
+        status: d.status,
+        repairActions: plan.actions,
+        lastSeenAt: new Date(),
+        resolvedAt: d.status === 'resolved' ? new Date() : undefined,
       });
     }
   }
