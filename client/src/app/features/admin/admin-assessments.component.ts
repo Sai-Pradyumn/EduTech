@@ -1,0 +1,129 @@
+import { ChangeDetectionStrategy, Component, OnInit, computed, inject, signal } from '@angular/core';
+import { DatePipe } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { AdminService } from '../../core/services/admin.service';
+import { AdminQuizRow } from '../../core/models';
+import { SkeletonComponent } from '../../shared/ui/skeleton.component';
+import { EmptyStateComponent } from '../../shared/ui/empty-state.component';
+import { BarChartComponent, ChartDatum } from '../../shared/charts';
+
+/**
+ * `/admin/assessments` (B1) — read-only browser of every generated quiz across
+ * students: owner, topic, difficulty, question count + attempt stats. Difficulty
+ * distribution bar, search, loading / empty / error states (E). Role.Admin.
+ */
+@Component({
+  selector: 'asta-admin-assessments',
+  standalone: true,
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [DatePipe, FormsModule, SkeletonComponent, EmptyStateComponent, BarChartComponent],
+  template: `
+    @if (loading()) {
+      <div class="card" style="padding:16px">
+        @for (n of [1,2,3,4,5,6]; track n) { <div class="py-2"><asta-skeleton h="16px" /></div> }
+      </div>
+    } @else if (error()) {
+      <asta-empty-state title="Couldn't load assessments" [description]="error()!">
+        <button class="retry" (click)="load()">Retry</button>
+      </asta-empty-state>
+    } @else {
+      @if (all().length) {
+        <div class="grid gap-4 md:grid-cols-3 mb-4">
+          <div class="card stat"><span class="num">{{ all().length }}</span><span class="lbl">Quizzes</span></div>
+          <div class="card stat"><span class="num">{{ totalAttempts() }}</span><span class="lbl">Total attempts</span></div>
+          <div class="card" style="padding:14px 16px">
+            <p class="kicker mb-2">By difficulty</p>
+            <asta-bar-chart tone="peri" [data]="difficultyMix()" [height]="96" label="Quizzes by difficulty" />
+          </div>
+        </div>
+      }
+      <input class="input mb-4" style="max-width:320px" placeholder="Search title, topic or owner…"
+        [(ngModel)]="query" (ngModelChange)="q.set($event)" />
+      <div class="card" style="padding:0;overflow:auto">
+        <table>
+          <thead><tr><th>Quiz</th><th>Owner</th><th>Topic</th><th>Difficulty</th><th>Source</th><th>Qs</th><th>Attempts</th><th>Best</th><th>Created</th></tr></thead>
+          <tbody>
+            @for (a of filtered(); track a.id) {
+              <tr>
+                <td><b class="clamp">{{ a.title }}</b></td>
+                <td class="sub2">{{ a.owner }}</td>
+                <td class="sub2">{{ a.topic }}</td>
+                <td><span class="pill" [style.color]="diffColor(a.difficulty)">{{ a.difficulty }}</span></td>
+                <td class="sub">{{ a.source }}</td>
+                <td>{{ a.questionCount }}</td>
+                <td>{{ a.attemptCount }}</td>
+                <td>{{ a.bestScore != null ? a.bestScore + '%' : '—' }}</td>
+                <td class="sub">{{ a.createdAt ? (a.createdAt | date: 'MMM d') : '—' }}</td>
+              </tr>
+            } @empty { <tr><td colspan="9" class="empty">No quizzes match.</td></tr> }
+          </tbody>
+        </table>
+      </div>
+      <p class="gen">{{ filtered().length }} of {{ all().length }} quizzes</p>
+    }
+  `,
+  styles: [
+    `
+      table { width: 100%; border-collapse: collapse; font-size: 13px; }
+      th { text-align: left; font-family: var(--mono); font-size: 10px; text-transform: uppercase; letter-spacing: .04em; color: var(--text-mute); padding: 12px 14px; border-bottom: 1px solid var(--paper-3); white-space: nowrap; }
+      td { padding: 11px 14px; border-bottom: 1px solid var(--paper-2); vertical-align: top; }
+      tr:last-child td { border-bottom: none; }
+      .sub { font-size: 11px; color: var(--text-mute); white-space: nowrap; }
+      .sub2 { font-size: 12px; color: var(--text-soft); }
+      .clamp { display: inline-block; max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; vertical-align: bottom; }
+      .empty { text-align: center; color: var(--text-mute); padding: 28px; }
+      .gen { font-size: 11px; font-family: var(--mono); color: var(--text-mute); margin-top: 10px; }
+      .stat { padding: 16px; display: flex; flex-direction: column; gap: 2px; }
+      .num { font-family: var(--display); font-size: 28px; line-height: 1; }
+      .lbl { font-size: 10px; font-family: var(--mono); text-transform: uppercase; color: var(--text-mute); }
+      .retry { border-radius: 100px; padding: 9px 18px; font-weight: 600; background: var(--accent); color: var(--ink); min-height: 40px; }
+    `,
+  ],
+})
+export class AdminAssessmentsComponent implements OnInit {
+  private readonly api = inject(AdminService);
+  readonly all = signal<AdminQuizRow[]>([]);
+  readonly loading = signal(true);
+  readonly error = signal<string | null>(null);
+  readonly q = signal('');
+  query = '';
+
+  readonly filtered = computed(() => {
+    const needle = this.q().trim().toLowerCase();
+    if (!needle) return this.all();
+    return this.all().filter((a) => `${a.title} ${a.topic} ${a.owner}`.toLowerCase().includes(needle));
+  });
+
+  readonly totalAttempts = computed(() => this.all().reduce((s, a) => s + a.attemptCount, 0));
+
+  readonly difficultyMix = computed<ChartDatum[]>(() => {
+    const order = ['beginner', 'intermediate', 'advanced'];
+    const counts = new Map<string, number>();
+    for (const a of this.all()) counts.set(a.difficulty, (counts.get(a.difficulty) ?? 0) + 1);
+    const entries = [...counts.entries()].sort((x, y) => order.indexOf(x[0]) - order.indexOf(y[0]));
+    return entries.map(([label, value]) => ({ label, value }));
+  });
+
+  ngOnInit(): void {
+    this.load();
+  }
+
+  load(): void {
+    this.loading.set(true);
+    this.error.set(null);
+    this.api.assessments().subscribe({
+      next: (a) => {
+        this.all.set(a);
+        this.loading.set(false);
+      },
+      error: () => {
+        this.error.set('We could not reach the server. Check your connection and retry.');
+        this.loading.set(false);
+      },
+    });
+  }
+
+  diffColor(d: string): string {
+    return d === 'advanced' ? 'var(--coral-deep)' : d === 'intermediate' ? 'var(--peri-deep)' : 'var(--green-deep)';
+  }
+}

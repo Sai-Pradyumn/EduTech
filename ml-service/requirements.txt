@@ -1,0 +1,22 @@
+# Asta ml-service — training dependencies.
+# Pinned to compatible minor ranges. For real GPU training, install a CUDA
+# build of torch from the PyTorch index instead of the default wheel below.
+
+# Core training stack
+torch>=2.2,<2.6
+transformers>=4.44,<4.50
+peft>=0.12,<0.15
+datasets>=2.20,<3.2
+accelerate>=0.33,<1.3
+
+# Config + serving
+pyyaml>=6.0,<7.0
+fastapi>=0.111,<0.116
+uvicorn[standard]>=0.30,<0.35
+
+# Optional but commonly used during SFT (kept light / unpinned-ish):
+#   trl            # if you prefer TRL's SFTTrainer over the bare HF Trainer
+#   bitsandbytes   # 4-bit / 8-bit QLoRA (CUDA only)
+#   sentencepiece  # required tokenizer backend for Llama/Mistral family
+#   scipy          # some tokenizers / metrics
+sentencepiece>=0.2.0

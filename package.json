@@ -1,0 +1,28 @@
+{
+  "name": "edu-ai-platform",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Asta — AI Skill Mentor. An AI-native learning operating system (Angular + NestJS + MongoDB).",
+  "workspaces": [
+    "client",
+    "server"
+  ],
+  "scripts": {
+    "dev:infra": "docker compose up -d",
+    "dev:infra:down": "docker compose down",
+    "dev:server": "npm run start:dev --workspace server",
+    "dev:client": "npm run start --workspace client",
+    "dev": "concurrently -n server,client -c green,cyan \"npm:dev:server\" \"npm:dev:client\"",
+    "build:server": "npm run build --workspace server",
+    "build:client": "npm run build --workspace client",
+    "build": "npm run build:server && npm run build:client",
+    "seed": "npm run seed --workspace server",
+    "lint": "npm run lint --workspace server && npm run lint --workspace client"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.0"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

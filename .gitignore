@@ -1,0 +1,41 @@
+# Dependencies
+node_modules/
+**/node_modules/
+
+# Build output
+dist/
+**/dist/
+.angular/
+**/.angular/cache/
+build/
+
+# Env
+.env
+**/.env
+!**/.env.example
+
+# Local file storage (uploaded documents in dev)
+server/storage-data/
+server/uploads/
+
+# Local DB data (when running mongod natively instead of docker)
+.localdb/
+
+# Logs
+*.log
+npm-debug.log*
+
+# OS / editor
+.DS_Store
+.idea/
+.vscode/*
+!.vscode/extensions.json
+*.swp
+
+# Coverage / test
+coverage/
+**/coverage/
+
+# Docs / Design
+EduTechDesign/
+docs/

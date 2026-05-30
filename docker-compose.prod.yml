@@ -1,0 +1,50 @@
+# Asta — production-style compose (app + Mongo replica set + Redis).
+# Secrets come from an .env file next to this compose (never commit it).
+services:
+  mongo:
+    image: mongo:7
+    command: ["--replSet", "rs0", "--bind_ip_all"]
+    volumes:
+      - mongo_data:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "rs.status().ok || rs.initiate()"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+
+  api:
+    build:
+      context: .
+      dockerfile: server/Dockerfile
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      CLIENT_ORIGIN: ${CLIENT_ORIGIN:-http://localhost}
+      MONGO_URI: ${MONGO_URI:-mongodb://mongo:27017/asta?replicaSet=rs0}
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET}
+      AI_PROVIDER: ${AI_PROVIDER:-mock}
+    depends_on:
+      - mongo
+      - redis
+    restart: unless-stopped
+
+  web:
+    build:
+      context: .
+      dockerfile: client/Dockerfile
+    ports:
+      - "80:80"
+    depends_on:
+      - api
+    restart: unless-stopped
+
+volumes:
+  mongo_data:

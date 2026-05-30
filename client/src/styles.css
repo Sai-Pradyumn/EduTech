@@ -1,0 +1,247 @@
+/* ============================================================
+   ASTA — global styles. Tokens + base ported from
+   EduTechDesign/assets/css/system.css (the visual contract).
+   ============================================================ */
+@import url('https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,500;12..96,600;12..96,700&family=Hanken+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  /* Surfaces */
+  --ink: oklch(0.19 0.035 264);
+  --ink-2: oklch(0.24 0.04 264);
+  --ink-3: oklch(0.30 0.04 264);
+  --paper: oklch(0.985 0.006 86);
+  --paper-2: oklch(0.96 0.008 86);
+  --paper-3: oklch(0.92 0.01 86);
+  /* Text */
+  --text: oklch(0.22 0.025 264);
+  --text-soft: oklch(0.44 0.02 264);
+  --text-mute: oklch(0.60 0.015 264);
+  --on-ink: oklch(0.96 0.006 86);
+  --on-ink-soft: oklch(0.78 0.015 264);
+  --on-ink-mute: oklch(0.62 0.02 264);
+  /* Accents */
+  --green: oklch(0.80 0.16 150);
+  --green-deep: oklch(0.62 0.15 150);
+  --coral: oklch(0.78 0.16 38);
+  --coral-deep: oklch(0.64 0.16 38);
+  --peri: oklch(0.78 0.15 268);
+  --peri-deep: oklch(0.62 0.15 268);
+  --danger: oklch(0.62 0.17 25);
+  --accent: var(--green);
+  --accent-deep: var(--green-deep);
+  /* Type */
+  --display: 'Bricolage Grotesque', Georgia, serif;
+  --body: 'Hanken Grotesk', system-ui, sans-serif;
+  --mono: 'JetBrains Mono', ui-monospace, monospace;
+  /* Geometry */
+  --r-xs: 8px; --r-sm: 12px; --r-md: 18px; --r-lg: 26px; --r-xl: 36px; --r-2xl: 48px;
+  /* Spacing scale (A1) — 4px base grid, per DESIGN_SPEC §2.3. Use for raw CSS /
+     inline styles; Tailwind p-/m-/gap- already follow the same 4px grid. */
+  --space-1: 4px; --space-2: 8px; --space-3: 12px; --space-4: 16px;
+  --space-5: 20px; --space-6: 24px; --space-8: 32px; --space-10: 40px;
+  --space-12: 48px; --space-16: 64px; --space-20: 80px;
+  /* Container max-widths (A1) — per context. Reading/chat narrow, app medium,
+     dashboards wide. The shell main defaults to --maxw (dashboards). */
+  --maxw-reading: 760px;
+  --maxw-app: 1100px;
+  --maxw-content: 1240px;
+  --maxw-dash: 1360px;
+  --maxw: var(--maxw-dash);
+  /* Elevation / shadows. Levels: paper (flat) → card (shadow-sm) → raised
+     (shadow-md) → overlay (shadow-lg). On dark, cards use --ink-3 borders, no shadow. */
+  --shadow-sm: 0 1px 2px oklch(0.2 0.03 264 / .06), 0 2px 8px oklch(0.2 0.03 264 / .05);
+  --shadow-md: 0 4px 12px oklch(0.2 0.03 264 / .08), 0 16px 40px oklch(0.2 0.03 264 / .08);
+  --shadow-lg: 0 8px 24px oklch(0.2 0.03 264 / .12), 0 30px 80px oklch(0.2 0.03 264 / .14);
+  --shadow-ink: 0 20px 60px oklch(0.12 0.04 264 / .5);
+  --ease: cubic-bezier(.2, .7, .2, 1);
+  --ease-spring: cubic-bezier(.22, 1.2, .36, 1);
+  --sidebar-w: 240px;
+  --skeleton-hi: oklch(1 0 0 / .6);
+  color-scheme: light;
+}
+
+/* ============================================================
+   DARK THEME — flips the token ramp (applied via data-theme="dark"
+   on <html> by ThemeService). Same accent family, lifted slightly
+   for glow; warm paper → cool deep ink. See docs/UI_UX_UPGRADE_PLAN.md.
+   ============================================================ */
+:root[data-theme='dark'] {
+  /* Surfaces — dark sections (ink) go darker still so they keep contrast */
+  --ink: oklch(0.13 0.03 264);
+  --ink-2: oklch(0.185 0.03 264);
+  --ink-3: oklch(0.32 0.035 264);
+  --paper: oklch(0.17 0.022 264);
+  --paper-2: oklch(0.215 0.028 264);
+  --paper-3: oklch(0.30 0.032 264);
+  /* Text */
+  --text: oklch(0.94 0.01 86);
+  --text-soft: oklch(0.74 0.02 264);
+  --text-mute: oklch(0.58 0.02 264);
+  --on-ink: oklch(0.96 0.006 86);
+  --on-ink-soft: oklch(0.78 0.015 264);
+  --on-ink-mute: oklch(0.62 0.02 264);
+  /* Accents — slightly brighter; -deep variants LIGHTEN so accent text stays legible on dark */
+  --green: oklch(0.82 0.17 150);
+  --green-deep: oklch(0.85 0.16 150);
+  --coral: oklch(0.80 0.17 38);
+  --coral-deep: oklch(0.83 0.16 38);
+  --peri: oklch(0.81 0.16 268);
+  --peri-deep: oklch(0.84 0.15 268);
+  --danger: oklch(0.70 0.18 25);
+  --accent: var(--green);
+  --accent-deep: var(--green-deep);
+  /* Depth — lean on near-black shadows + borders */
+  --shadow-sm: 0 1px 2px oklch(0 0 0 / .35), 0 2px 8px oklch(0 0 0 / .3);
+  --shadow-md: 0 4px 14px oklch(0 0 0 / .4), 0 16px 44px oklch(0 0 0 / .45);
+  --shadow-lg: 0 10px 30px oklch(0 0 0 / .5), 0 36px 90px oklch(0 0 0 / .6);
+  --shadow-ink: 0 20px 60px oklch(0 0 0 / .55);
+  --skeleton-hi: oklch(1 0 0 / .07);
+  color-scheme: dark;
+}
+
+@layer base {
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    font-family: var(--body);
+    background: var(--paper);
+    color: var(--text);
+    line-height: 1.55;
+    font-size: 16px;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+  h1, h2, h3, h4 {
+    font-family: var(--display);
+    font-weight: 600;
+    line-height: 1.12;
+    letter-spacing: -0.025em;
+    text-wrap: balance;
+  }
+  a { color: inherit; text-decoration: none; }
+  img, svg { display: block; max-width: 100%; }
+  ::selection { background: var(--green); color: var(--ink); }
+  :focus-visible { outline: 2px solid var(--peri); outline-offset: 2px; border-radius: 4px; }
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; }
+  }
+
+  /* Thin, theme-aware custom scrollbars (A2) — applied to the shell's independent
+     scroll regions (sidebar + main) so they read as distinct surfaces. */
+  .scroll-area { scrollbar-width: thin; scrollbar-color: color-mix(in oklch, var(--text-mute) 35%, transparent) transparent; }
+  .scroll-area::-webkit-scrollbar { width: 10px; height: 10px; }
+  .scroll-area::-webkit-scrollbar-track { background: transparent; }
+  .scroll-area::-webkit-scrollbar-thumb {
+    background: color-mix(in oklch, var(--text-mute) 32%, transparent);
+    border-radius: 100px; border: 3px solid transparent; background-clip: padding-box;
+  }
+  .scroll-area::-webkit-scrollbar-thumb:hover {
+    background: color-mix(in oklch, var(--text-mute) 52%, transparent);
+    background-clip: padding-box;
+  }
+  .scroll-area::-webkit-scrollbar-corner { background: transparent; }
+}
+
+@layer components {
+  /* Type scale (A1) — codified from DESIGN_SPEC §2.2. Apply a single class per
+     role instead of one-off text-[NNpx] literals so headings stay consistent. */
+  .t-display-1 { font-family: var(--display); font-weight: 600; font-size: clamp(34px, 4.6vw, 60px); line-height: 1.12; letter-spacing: -.025em; }
+  .t-display-2 { font-family: var(--display); font-weight: 600; font-size: clamp(26px, 3vw, 38px); line-height: 1.12; letter-spacing: -.02em; }
+  .t-h-app { font-family: var(--display); font-weight: 600; font-size: clamp(22px, 2.4vw, 28px); line-height: 1.15; letter-spacing: -.02em; }
+  .t-h-card { font-family: var(--display); font-weight: 600; font-size: 20px; line-height: 1.2; letter-spacing: -.015em; }
+  .t-body { font-size: 16px; line-height: 1.55; }
+  .t-small { font-size: 14.5px; line-height: 1.5; }
+  .t-label { font-family: var(--mono); font-size: 12px; letter-spacing: .1em; text-transform: uppercase; color: var(--text-mute); }
+
+  /* Kicker / eyebrow */
+  .kicker {
+    font-family: var(--mono); font-size: 12.5px; letter-spacing: .18em;
+    text-transform: uppercase; color: var(--accent-deep);
+    display: inline-flex; align-items: center; gap: 10px;
+  }
+  .kicker::before { content: ''; width: 22px; height: 1.5px; background: currentColor; display: inline-block; }
+
+  /* Card */
+  .card {
+    background: var(--paper); border: 1px solid var(--paper-3);
+    border-radius: var(--r-md); box-shadow: var(--shadow-sm);
+  }
+  .dark-surface .card, .card.on-dark { background: var(--ink-2); border-color: var(--ink-3); box-shadow: none; }
+
+  /* Standardized interaction states (D1) — opt-in utilities so application is
+     mechanical. Clickable cards (anchors/buttons) lift on hover automatically.
+     The global reduced-motion rule neutralizes all of these. */
+  a.card, button.card, .hover-lift {
+    transition: transform .2s var(--ease), box-shadow .2s var(--ease), border-color .2s var(--ease);
+  }
+  a.card:hover, button.card:hover, .hover-lift:hover {
+    transform: translateY(-2px); box-shadow: var(--shadow-md);
+  }
+  .pressable { transition: transform .12s var(--ease-spring); }
+  .pressable:active { transform: scale(.97); }
+  /* Streak flame pulse (D2) — gentle scale + glow; reduced-motion-safe. */
+  .flame { animation: flamePulse 1.8s var(--ease) infinite; transform-origin: center bottom; }
+  @keyframes flamePulse {
+    0%, 100% { transform: scale(1); filter: none; }
+    50% { transform: scale(1.14); filter: brightness(1.15) drop-shadow(0 0 3px var(--coral)); }
+  }
+
+  /* Form controls */
+  .input {
+    width: 100%; font-family: var(--body); font-size: 15px; color: var(--text);
+    background: var(--paper); border: 1px solid var(--paper-3); border-radius: var(--r-sm);
+    padding: 11px 14px; transition: border-color .2s var(--ease), box-shadow .2s var(--ease);
+  }
+  .input::placeholder { color: var(--text-mute); }
+  .input:focus { outline: none; border-color: var(--peri); box-shadow: 0 0 0 3px oklch(0.78 0.15 268 / .15); }
+  .input.invalid { border-color: var(--danger); }
+  textarea.input { resize: vertical; min-height: 96px; line-height: 1.5; }
+
+  /* Pill / tag */
+  .pill {
+    font-family: var(--mono); font-size: 12px; letter-spacing: .06em; text-transform: uppercase;
+    padding: 6px 12px; border-radius: 100px; border: 1px solid var(--paper-3);
+    color: var(--text-soft); background: var(--paper);
+    display: inline-flex; align-items: center; gap: 7px;
+  }
+  .pill .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--green); }
+
+  /* Reveal-on-scroll (driven by the reveal directive) */
+  .reveal { opacity: 0; transform: translateY(26px); transition: opacity .9s var(--ease), transform .9s var(--ease); }
+  .reveal.in { opacity: 1; transform: none; }
+
+  /* Imagery placeholder slot */
+  .slot {
+    position: relative; border-radius: var(--r-lg);
+    background: repeating-linear-gradient(135deg, oklch(0.5 0.02 264 / .05) 0 2px, transparent 2px 11px);
+    border: 1px dashed var(--paper-3); display: grid; place-items: center;
+    color: var(--text-mute); font-family: var(--mono); font-size: 12px; letter-spacing: .04em; text-align: center;
+  }
+
+  /* Skeleton shimmer (DESIGN_SPEC §8) */
+  .skeleton { position: relative; overflow: hidden; background: var(--paper-2); border-radius: var(--r-sm); }
+  .skeleton::after {
+    content: ''; position: absolute; inset: 0;
+    background: linear-gradient(100deg, transparent, var(--skeleton-hi), transparent);
+    transform: translateX(-100%); animation: shimmer 1.4s var(--ease) infinite;
+  }
+  @keyframes shimmer { to { transform: translateX(100%); } }
+
+  /* Streaming cursor (DESIGN_SPEC §7) */
+  .stream-cursor {
+    display: inline-block; width: 8px; height: 16px; vertical-align: -2px;
+    background: var(--green); margin-left: 2px; animation: blink 1s steps(2, start) infinite;
+  }
+  @keyframes blink { 0%, 50% { opacity: 1; } 50.01%, 100% { opacity: 0; } }
+}
+
+/* Utility shorthands matching the prototype */
+.font-mono-token { font-family: var(--mono); }
+.grad-green {
+  color: transparent; background: linear-gradient(100deg, var(--green-deep), var(--green));
+  -webkit-background-clip: text; background-clip: text;
+}

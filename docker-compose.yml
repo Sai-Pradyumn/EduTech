@@ -1,0 +1,30 @@
+# Local development infrastructure for Asta — AI Skill Mentor.
+# Mongo runs as a single-node replica set so Change Streams / transactions work,
+# and so the codebase stays compatible with MongoDB Atlas (incl. Vector Search) later.
+services:
+  mongo:
+    image: mongo:7
+    container_name: asta-mongo
+    command: ["--replSet", "rs0", "--bind_ip_all"]
+    ports:
+      - "27017:27017"
+    volumes:
+      - asta-mongo-data:/data/db
+    healthcheck:
+      test: echo "try { rs.status() } catch (e) { rs.initiate({_id:'rs0',members:[{_id:0,host:'localhost:27017'}]}) }" | mongosh --quiet
+      interval: 10s
+      timeout: 10s
+      retries: 10
+      start_period: 20s
+
+  redis:
+    image: redis:7-alpine
+    container_name: asta-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - asta-redis-data:/data
+
+volumes:
+  asta-mongo-data:
+  asta-redis-data:

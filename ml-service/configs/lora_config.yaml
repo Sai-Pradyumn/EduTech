@@ -1,0 +1,41 @@
+# Asta — LoRA / PEFT adapter configuration.
+# Consumed by training/train_lora.py (and evaluate/merge for sanity logging).
+# These map 1:1 onto peft.LoraConfig fields.
+
+# Rank of the low-rank update matrices. Higher = more capacity + more params.
+# 8-16 is a sweet spot for instruction tuning a 7-8B model.
+r: 16
+
+# Scaling factor for the LoRA update (effective LR multiplier ~ alpha / r).
+# Common convention: alpha = 2 * r.
+lora_alpha: 32
+
+# Dropout applied to the LoRA layers — light regularization.
+lora_dropout: 0.05
+
+# No bias adaptation (cheapest, standard for SFT).
+bias: "none"
+
+# Causal LM SFT.
+task_type: "CAUSAL_LM"
+
+# Which projection matrices to inject adapters into.
+# Defaults below target the attention + MLP projections of the Llama/Mistral
+# family. For other architectures adjust to match the module names
+# (train_lora.py logs the model's named_modules to help you pick).
+target_modules:
+  - q_proj
+  - k_proj
+  - v_proj
+  - o_proj
+  - gate_proj
+  - up_proj
+  - down_proj
+
+# Keep these trainable/saved alongside the adapter when the tokenizer adds
+# new special tokens (e.g. a chat template). Leave empty if vocab is unchanged.
+modules_to_save: []
+
+# Optional QLoRA: load the base model in 4-bit to fit larger models on one GPU.
+# Requires bitsandbytes (CUDA). train_lora.py honors this flag.
+use_qlora: false
