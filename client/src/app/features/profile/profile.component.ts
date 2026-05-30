@@ -5,6 +5,7 @@ import { AuthService } from '../../core/services/auth.service';
 import { ThemeService, ThemeMode } from '../../core/services/theme.service';
 import { I18nService } from '../../core/services/i18n.service';
 import { ToastService } from '../../core/services/toast.service';
+import { VoiceActivationService } from '../../core/services/voice-activation.service';
 import {
   CreateStudentProfilePayload,
   BRANCHES,
@@ -67,6 +68,12 @@ type Form = Pick<
         <button type="button" class="btn-primary" (click)="load()">Retry</button>
       </asta-empty-state>
     } @else {
+      <header class="asta-page-command-header mx-auto" style="max-width:var(--maxw-app)">
+        <div class="min-w-0">
+          <h1 class="text-[26px] leading-tight mb-2 grad-flow">Profile &amp; settings</h1>
+          <span class="goal-pill"><span class="dot"></span>Your identity, learning preferences, appearance &amp; voice</span>
+        </div>
+      </header>
       @if (form(); as f) {
       <form class="mx-auto" style="max-width:var(--maxw-app)" (ngSubmit)="save()">
         <!-- Account -->
@@ -170,6 +177,29 @@ type Form = Pick<
           </div>
         </section>
 
+        <!-- Voice -->
+        <section class="card mb-4 p-5 md:p-6">
+          <h2 class="t-h-card mb-1">Voice</h2>
+          <p class="t-small text-txt-mute mb-4">Hands-free “Hey Asta” activation and spoken replies.</p>
+
+          @if (!voice.supported) {
+            <p class="t-small text-txt-mute">Voice isn’t supported in this browser. Try Chrome or Edge to enable “Hey Asta”.</p>
+          } @else {
+            <asta-field label="Wake word" hint="Listen in the background for “Hey Asta”, then act on what you say.">
+              <div class="flex flex-wrap gap-2">
+                <button type="button" class="seg" [class.on]="voice.wakeEnabled()" (click)="voice.setWakeEnabled(true)">On</button>
+                <button type="button" class="seg" [class.on]="!voice.wakeEnabled()" (click)="voice.setWakeEnabled(false)">Off</button>
+              </div>
+            </asta-field>
+            <asta-field label="Microphone" hint="Spoken replies use your browser’s voice; nothing is recorded until you consent.">
+              <div class="flex items-center gap-3 flex-wrap">
+                <span class="pill" [style.color]="micColor()">{{ micLabel() }}</span>
+                <button type="button" class="seg" (click)="voice.activate()">Test voice</button>
+              </div>
+            </asta-field>
+          }
+        </section>
+
         <div class="flex items-center justify-end gap-3 pb-2">
           @if (savedAt()) { <span class="t-small text-txt-mute">Saved.</span> }
           <button type="submit" class="btn-primary" [disabled]="saving() || !f.fullName.trim()">
@@ -203,7 +233,25 @@ export class ProfileComponent implements OnInit {
   readonly auth = inject(AuthService);
   readonly theme = inject(ThemeService);
   readonly i18n = inject(I18nService);
+  readonly voice = inject(VoiceActivationService);
   private readonly toast = inject(ToastService);
+
+  /** Microphone-permission badge copy + colour for the Voice section. */
+  micLabel(): string {
+    switch (this.voice.permission()) {
+      case 'granted': return 'Allowed';
+      case 'denied': return 'Blocked — enable it in browser settings';
+      case 'unsupported': return 'Unsupported';
+      default: return 'Not requested yet';
+    }
+  }
+  micColor(): string {
+    switch (this.voice.permission()) {
+      case 'granted': return 'var(--green-deep)';
+      case 'denied': return 'var(--danger)';
+      default: return 'var(--text-mute)';
+    }
+  }
 
   readonly loading = signal(true);
   readonly saving = signal(false);

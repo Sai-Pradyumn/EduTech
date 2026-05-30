@@ -19,7 +19,12 @@ import {
 } from '../../core/models';
 import { ButtonComponent } from '../../shared/ui/button.component';
 import { RingComponent } from '../../shared/ui/ring.component';
+import { CardComponent } from '../../shared/ui/card.component';
 import { VisualBlockRendererComponent } from '../../shared/components/ai/visual-block-renderer.component';
+import { TiltDirective } from '../../shared/directives/tilt.directive';
+import { RevealDirective } from '../../shared/directives/reveal.directive';
+import { MagneticDirective } from '../../shared/directives/magnetic.directive';
+import { CountDirective } from '../../shared/directives/count.directive';
 
 type View = 'home' | 'take' | 'result';
 const SOURCES: { key: QuizSource; label: string; hint: string }[] = [
@@ -34,24 +39,51 @@ const DIFFS: Difficulty[] = ['beginner', 'intermediate', 'advanced'];
   selector: 'asta-quiz-studio',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormsModule, ButtonComponent, RingComponent, VisualBlockRendererComponent],
+  imports: [
+    FormsModule, ButtonComponent, RingComponent, CardComponent, VisualBlockRendererComponent,
+    TiltDirective, RevealDirective, MagneticDirective, CountDirective,
+  ],
   template: `
+    <!-- Compact command header -->
+    <header class="asta-page-command-header">
+      <div class="min-w-0">
+        <h1 class="text-[26px] leading-tight mb-2 grad-flow">Quiz Studio</h1>
+        <span class="goal-pill"><span class="dot"></span>Mastery arena · drill weak spots, prove your gains</span>
+      </div>
+      <div class="flex gap-2.5 shrink-0">
+        @if (view() !== 'home') { <asta-btn variant="ghost" size="sm" (click)="backHome()">Back to studio</asta-btn> }
+      </div>
+    </header>
+
     @switch (view()) {
       @case ('home') {
         <div class="space-y-5">
           <!-- stats -->
           @if (stats(); as s) {
-            <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
-              <div class="card stat"><p class="font-display text-2xl">{{ s.quizzes }}</p><p class="lbl">Quizzes</p></div>
-              <div class="card stat"><p class="font-display text-2xl">{{ s.attempts }}</p><p class="lbl">Attempts</p></div>
-              <div class="card stat"><p class="font-display text-2xl">{{ s.averageScore }}%</p><p class="lbl">Avg score</p></div>
-              <div class="card stat"><p class="font-display text-2xl">{{ s.weakTopics.length }}</p><p class="lbl">Weak topics</p></div>
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-3" [astaReveal]="0">
+              <asta-card astaTilt [tiltMax]="4" class="stat-card">
+                <p class="font-display text-2xl"><span [astaCount]="s.quizzes"></span></p><p class="lbl">Quizzes</p>
+              </asta-card>
+              <asta-card astaTilt [tiltMax]="4" class="stat-card">
+                <p class="font-display text-2xl"><span [astaCount]="s.attempts"></span></p><p class="lbl">Attempts</p>
+              </asta-card>
+              <asta-card astaTilt [tiltMax]="4" class="stat-card">
+                <p class="font-display text-2xl"><span [astaCount]="s.averageScore" suffix="%"></span></p><p class="lbl">Avg score</p>
+              </asta-card>
+              <asta-card astaTilt [tiltMax]="4" class="stat-card">
+                <p class="font-display text-2xl"><span [astaCount]="s.weakTopics.length"></span></p><p class="lbl">Weak topics</p>
+              </asta-card>
             </div>
           }
 
           <!-- generate -->
-          <div class="card" style="padding:18px">
-            <p class="kicker mb-3">Generate a quiz</p>
+          <asta-card astaTilt [tiltMax]="3" [astaReveal]="1">
+            <div class="panel-head mb-3">
+              <p class="kicker">Generate a quiz</p>
+              <span class="panel-ico" aria-hidden="true">
+                <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4"/><circle cx="12" cy="12" r="4"/></svg>
+              </span>
+            </div>
             <div class="flex flex-wrap gap-2 mb-3">
               @for (src of sources; track src.key) {
                 <button class="src" [class.src-on]="source() === src.key" (click)="source.set(src.key)">
@@ -88,13 +120,18 @@ const DIFFS: Difficulty[] = ['beginner', 'intermediate', 'advanced'];
                 <span class="text-txt-mute">Questions</span>
                 <input type="number" class="input" style="width:70px" min="3" max="15" [(ngModel)]="count" />
               </div>
-              <asta-btn variant="accent" size="sm" [loading]="generating()" [disabled]="!canGenerate()" (click)="generate()">Generate quiz</asta-btn>
+              <asta-btn variant="accent" size="sm" astaMagnetic [loading]="generating()" [disabled]="!canGenerate()" (click)="generate()">Generate quiz <span class="arr">→</span></asta-btn>
             </div>
-          </div>
+          </asta-card>
 
           <!-- library -->
-          <div class="card" style="padding:18px">
-            <p class="kicker mb-3">Your quizzes</p>
+          <asta-card astaTilt [tiltMax]="3" [astaReveal]="2">
+            <div class="panel-head mb-3">
+              <p class="kicker">Your quizzes</p>
+              <span class="panel-ico" aria-hidden="true">
+                <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+              </span>
+            </div>
             @if (quizzes().length === 0) {
               <p class="text-sm text-txt-mute py-6 text-center">No quizzes yet — generate one above.</p>
             }
@@ -105,17 +142,17 @@ const DIFFS: Difficulty[] = ['beginner', 'intermediate', 'advanced'];
                     <p class="text-sm font-medium truncate">{{ q.title }}</p>
                     <p class="text-[11px] text-txt-mute">{{ q.difficulty }} · {{ q.questionCount }} Q · {{ q.source }}@if (q.attemptCount) { · best {{ q.bestScore }}% }</p>
                   </div>
-                  <asta-btn variant="ghost" size="sm" (click)="startQuiz(q.id)">{{ q.attemptCount ? 'Retake' : 'Take' }}</asta-btn>
+                  <asta-btn variant="ghost" size="sm" (click)="startQuiz(q.id)">{{ q.attemptCount ? 'Retake' : 'Take' }} <span class="arr">→</span></asta-btn>
                 </div>
               }
             </div>
-          </div>
+          </asta-card>
         </div>
       }
 
       @case ('take') {
         @if (quiz(); as qz) {
-          <div class="card" style="padding:20px;max-width:760px;margin:0 auto">
+          <asta-card class="block" [astaReveal]="0" style="max-width:760px;margin:0 auto">
             <div class="flex items-center justify-between mb-1">
               <h2 class="text-[18px] font-display font-semibold">{{ qz.title }}</h2>
               <button class="text-xs text-txt-mute hover:text-txt" (click)="view.set('home')">Cancel</button>
@@ -124,13 +161,14 @@ const DIFFS: Difficulty[] = ['beginner', 'intermediate', 'advanced'];
 
             <div class="space-y-6">
               @for (q of qz.questions; track qi; let qi = $index) {
-                <div>
-                  <p class="text-sm font-medium mb-2"><span class="text-txt-mute font-mono mr-1">{{ qi + 1 }}.</span> {{ q.prompt }}</p>
+                <div [astaReveal]="qi">
+                  <p class="text-sm font-medium mb-2"><span class="qnum">{{ qi + 1 }}</span> {{ q.prompt }}</p>
                   @if (q.type === 'mcq') {
                     <div class="space-y-1.5">
                       @for (opt of q.options; track oi; let oi = $index) {
                         <label class="opt" [class.opt-on]="selectedIndex(qi) === oi">
                           <input type="radio" [name]="'q' + qi" [value]="oi" [checked]="selectedIndex(qi) === oi" (change)="setChoice(qi, oi)" />
+                          <span class="opt-mark" aria-hidden="true"></span>
                           <span>{{ opt }}</span>
                         </label>
                       }
@@ -144,37 +182,42 @@ const DIFFS: Difficulty[] = ['beginner', 'intermediate', 'advanced'];
             </div>
 
             <div class="flex items-center gap-3 mt-6">
-              <asta-btn variant="accent" [loading]="submitting()" [disabled]="!allAnswered()" (click)="submit()">Submit quiz</asta-btn>
+              <asta-btn variant="accent" astaMagnetic [loading]="submitting()" [disabled]="!allAnswered()" (click)="submit()">Submit quiz <span class="arr">→</span></asta-btn>
               <span class="text-xs text-txt-mute">{{ answeredCount() }}/{{ qz.questions.length }} answered</span>
             </div>
-          </div>
+          </asta-card>
         }
       }
 
       @case ('result') {
         @if (result(); as r) {
           <div class="space-y-5" style="max-width:760px;margin:0 auto">
-            <div class="card" style="padding:20px">
+            <asta-card class="block result-hero" [astaReveal]="0">
               <div class="flex items-start gap-5">
                 <asta-ring [value]="r.evaluation.score" [size]="92" />
                 <div class="flex-1">
-                  <h2 class="text-[18px] font-display font-semibold mb-1">{{ r.evaluation.score }}% · {{ r.evaluation.correctCount }}/{{ r.evaluation.total }} correct</h2>
+                  <h2 class="text-[18px] font-display font-semibold mb-1"><span [astaCount]="r.evaluation.score" suffix="%"></span> · {{ r.evaluation.correctCount }}/{{ r.evaluation.total }} correct</h2>
                   <p class="text-sm text-txt-soft">{{ r.evaluation.feedback }}</p>
                   <div class="flex gap-2 mt-3">
-                    <asta-btn variant="accent" size="sm" (click)="retake()">Retake</asta-btn>
+                    <asta-btn variant="accent" size="sm" astaMagnetic (click)="retake()">Retake</asta-btn>
                     <asta-btn variant="ghost" size="sm" (click)="backHome()">Back to studio</asta-btn>
                   </div>
                 </div>
               </div>
-            </div>
+            </asta-card>
 
             @if (weaknessBlock(); as wb) { <ai-visual-block [block_]="wb" /> }
 
-            <div class="card" style="padding:18px">
-              <p class="kicker mb-3">Review</p>
+            <asta-card class="block" [astaReveal]="1">
+              <div class="panel-head mb-3">
+                <p class="kicker">Review</p>
+                <span class="panel-ico" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4z"/></svg>
+                </span>
+              </div>
               <div class="space-y-4">
                 @for (rev of r.review; track $index) {
-                  <div>
+                  <div class="rev-block" [class.rev-block-ok]="rev.correct" [class.rev-block-no]="!rev.correct">
                     <p class="text-sm font-medium mb-1">
                       <span [style.color]="rev.correct ? 'var(--green-deep)' : 'var(--coral-deep)'">{{ rev.correct ? '✓' : '✗' }}</span>
                       <span class="text-txt-mute font-mono mx-1">{{ $index + 1 }}.</span>{{ rev.prompt }}
@@ -195,11 +238,11 @@ const DIFFS: Difficulty[] = ['beginner', 'intermediate', 'advanced'];
                       <p class="text-[13px] ml-5"><span class="text-txt-mute">Your answer:</span> {{ rev.yourText || '—' }}</p>
                       <p class="text-[13px] ml-5"><span class="text-txt-mute">Model answer:</span> {{ rev.modelAnswer }}</p>
                     }
-                    @if (rev.explanation) { <p class="text-[12px] text-txt-mute ml-5 mt-1">{{ rev.explanation }}</p> }
+                    @if (rev.explanation) { <p class="explain ml-5 mt-1">{{ rev.explanation }}</p> }
                   </div>
                 }
               </div>
-            </div>
+            </asta-card>
           </div>
         }
       }
@@ -211,8 +254,10 @@ const DIFFS: Difficulty[] = ['beginner', 'intermediate', 'advanced'];
       .lbl { font-size: 11px; color: var(--text-mute); text-transform: uppercase; letter-spacing: .04em; }
       .src { text-align: left; border: 1px solid var(--paper-3); border-radius: 12px; padding: 8px 12px; background: var(--paper); font-size: 13px; min-width: 150px; }
       .src-on { border-color: var(--green); background: oklch(0.80 0.16 150 / .06); }
-      .chip { font-family: var(--mono); font-size: 11px; text-transform: uppercase; padding: 4px 10px; border-radius: 100px; border: 1px solid var(--paper-3); background: var(--paper); color: var(--text-soft); }
-      .chip-on { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+      .chip { font-family: var(--mono); font-size: 11px; text-transform: uppercase; padding: 5px 11px; border-radius: 100px; border: 1px solid color-mix(in oklch, var(--paper-3) 70%, transparent); background: color-mix(in oklch, var(--paper-2) 55%, transparent); color: var(--text-soft); cursor: pointer; transition: transform .15s var(--ease-spring), border-color .15s var(--ease), color .15s var(--ease); }
+      .chip:hover { color: var(--text); border-color: color-mix(in oklch, var(--green) 38%, transparent); transform: translateY(-1px); }
+      .chip-on { background: linear-gradient(135deg, var(--green), var(--green-deep)); color: #06100a; border-color: transparent; box-shadow: 0 4px 12px var(--asta-accent-glow); }
+      .chip-on:hover { color: #06100a; transform: translateY(-1px); }
       .row { display: flex; align-items: center; justify-content: space-between; gap: 10px; border: 1px solid var(--paper-3); border-radius: 12px; padding: 10px 14px; }
       .opt { display: flex; gap: 10px; align-items: center; border: 1px solid var(--paper-3); border-radius: 10px; padding: 9px 12px; font-size: 14px; cursor: pointer; }
       .opt-on { border-color: var(--green); background: oklch(0.80 0.16 150 / .06); }

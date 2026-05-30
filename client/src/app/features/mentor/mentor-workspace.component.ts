@@ -7,6 +7,10 @@ import { ButtonComponent } from '../../shared/ui/button.component';
 import { CardComponent } from '../../shared/ui/card.component';
 import { RingComponent } from '../../shared/ui/ring.component';
 import { EmptyStateComponent } from '../../shared/ui/empty-state.component';
+import { RevealDirective } from '../../shared/directives/reveal.directive';
+import { MagneticDirective } from '../../shared/directives/magnetic.directive';
+import { TiltDirective } from '../../shared/directives/tilt.directive';
+import { CountDirective } from '../../shared/directives/count.directive';
 
 interface ReviewDraft {
   decision: 'approved' | 'changes_requested';
@@ -18,36 +22,50 @@ interface ReviewDraft {
   selector: 'asta-mentor-workspace',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormsModule, ButtonComponent, CardComponent, RingComponent, EmptyStateComponent],
+  imports: [FormsModule, ButtonComponent, CardComponent, RingComponent, EmptyStateComponent, RevealDirective, MagneticDirective, TiltDirective, CountDirective],
   template: `
-    <h1 class="text-[26px] mb-1">Mentor Room</h1>
-    <p class="text-sm text-txt-mute mb-6">Your students, their risk signals, and what needs your attention this week.</p>
-
     @if (loading()) {
-      <asta-card><p class="text-sm text-txt-mute py-8 text-center">Loading your students…</p></asta-card>
+      <header class="asta-page-command-header">
+        <div class="min-w-0">
+          <h1 class="text-[26px] leading-tight mb-2 grad-flow">Mentor Room</h1>
+          <span class="goal-pill"><span class="dot"></span>Loading your assigned students…</span>
+        </div>
+      </header>
+      <asta-card><p class="text-sm text-txt-mute py-10 text-center">Loading your students…</p></asta-card>
     } @else {
       @if (dash(); as d) {
+      <!-- Compact command header -->
+      <header class="asta-page-command-header">
+        <div class="min-w-0">
+          <h1 class="text-[26px] leading-tight mb-2 grad-flow">Mentor Room</h1>
+          <span class="goal-pill"><span class="dot"></span>{{ d.students.length }} assigned · {{ d.atRiskCount }} need attention</span>
+        </div>
+        <div class="flex gap-2.5 shrink-0">
+          <div class="hstat"><span class="hstat-n" [astaCount]="d.students.length"></span><span class="hstat-l">Students</span></div>
+          <div class="hstat"><span class="hstat-n" style="color:var(--coral-deep)" [astaCount]="d.atRiskCount"></span><span class="hstat-l">At risk</span></div>
+          <div class="hstat"><span class="hstat-n" [astaCount]="d.pendingReviews.length"></span><span class="hstat-l">Reviews</span></div>
+        </div>
+      </header>
+
       @if (d.students.length === 0 && d.pendingReviews.length === 0) {
         <asta-card><asta-empty-state title="No students assigned yet" description="You'll see students from organizations where you're a mentor, instructor or admin. Ask an org admin to add you, or invite students to your org." /></asta-card>
       } @else {
-        <!-- weekly actions + stats -->
-        <div class="grid gap-4 md:grid-cols-3 mb-5">
-          <asta-card accentVar="var(--peri)" class="md:col-span-2">
-            <p class="kicker mb-2" style="color:var(--peri-deep)">This week</p>
-            <ul class="space-y-1.5 text-sm text-txt-soft">
-              @for (a of d.weeklyActions; track a) { <li class="flex gap-2"><span style="color:var(--peri-deep)">→</span>{{ a }}</li> }
-            </ul>
-          </asta-card>
-          <div class="grid grid-cols-3 gap-3">
-            <div class="card stat"><p class="font-display text-2xl">{{ d.students.length }}</p><p class="lbl">Students</p></div>
-            <div class="card stat"><p class="font-display text-2xl" style="color:var(--coral-deep)">{{ d.atRiskCount }}</p><p class="lbl">At risk</p></div>
-            <div class="card stat"><p class="font-display text-2xl">{{ d.pendingReviews.length }}</p><p class="lbl">Reviews</p></div>
+        <!-- weekly actions -->
+        <asta-card accentVar="var(--peri)" class="block mb-5" astaTilt [tiltMax]="3" [astaReveal]="0">
+          <div class="panel-head">
+            <p class="kicker" style="color:var(--peri-deep)">This week</p>
+            <span class="panel-ico peri" aria-hidden="true">
+              <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+            </span>
           </div>
-        </div>
+          <ul class="space-y-1.5 text-sm text-txt-soft mt-3">
+            @for (a of d.weeklyActions; track a) { <li class="flex gap-2"><span class="arr" style="color:var(--peri-deep)">→</span><span>{{ a }}</span></li> }
+          </ul>
+        </asta-card>
 
         <div class="grid gap-5 lg:grid-cols-[minmax(280px,360px)_1fr]">
           <!-- student list -->
-          <div class="card" style="padding:14px">
+          <div class="card" style="padding:14px" [astaReveal]="1">
             <p class="kicker mb-3">Your students</p>
             <div class="space-y-2">
               @for (s of d.students; track s.userId) {
@@ -70,7 +88,7 @@ interface ReviewDraft {
           <!-- detail -->
           <div>
             @if (detail(); as det) {
-              <asta-card class="block mb-4">
+              <asta-card class="block mb-4" astaTilt [tiltMax]="4">
                 <div class="flex items-start gap-4">
                   <asta-ring [value]="det.summary.health" [size]="76" />
                   <div class="flex-1 min-w-0">
@@ -90,7 +108,12 @@ interface ReviewDraft {
               <!-- submissions -->
               @if (det.projects.length) {
                 <asta-card class="block mb-4">
-                  <p class="kicker mb-3">Project submissions</p>
+                  <div class="panel-head mb-3">
+                    <p class="kicker">Project submissions</p>
+                    <span class="panel-ico green" aria-hidden="true">
+                      <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="m9 15 2 2 4-4"/></svg>
+                    </span>
+                  </div>
                   <div class="space-y-3">
                     @for (p of det.projects; track p.projectId) {
                       <div class="sub">
@@ -107,7 +130,7 @@ interface ReviewDraft {
                           <input type="number" class="input" style="width:80px" min="0" max="100" placeholder="score" [ngModel]="draftFor(p.projectId).score" (ngModelChange)="setScore(p.projectId, $event)" />
                         </div>
                         <textarea class="input mb-2" rows="2" placeholder="Feedback for the student…" [ngModel]="draftFor(p.projectId).feedback" (ngModelChange)="setFeedback(p.projectId, $event)"></textarea>
-                        <asta-btn variant="accent" size="sm" [disabled]="!draftFor(p.projectId).feedback.trim()" (click)="submitReview(p)">Submit review</asta-btn>
+                        <asta-btn variant="accent" size="sm" astaMagnetic [disabled]="!draftFor(p.projectId).feedback.trim()" (click)="submitReview(p)">Submit review <span class="arr">→</span></asta-btn>
                       </div>
                     }
                   </div>
@@ -116,10 +139,15 @@ interface ReviewDraft {
 
               <!-- notes -->
               <asta-card>
-                <p class="kicker mb-3">Mentor notes</p>
+                <div class="panel-head mb-3">
+                  <p class="kicker">Mentor notes</p>
+                  <span class="panel-ico" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
+                  </span>
+                </div>
                 <div class="flex items-end gap-2 mb-3">
                   <textarea class="input" rows="2" placeholder="Add a private note about this student…" [(ngModel)]="noteDraft"></textarea>
-                  <asta-btn variant="accent" size="sm" [disabled]="!noteDraft.trim()" (click)="addNote(det.summary.userId)">Add</asta-btn>
+                  <asta-btn variant="accent" size="sm" astaMagnetic [disabled]="!noteDraft.trim()" (click)="addNote(det.summary.userId)">Add</asta-btn>
                 </div>
                 @if (det.notes.length === 0) { <p class="text-sm text-txt-mute">No notes yet.</p> }
                 <div class="space-y-2">

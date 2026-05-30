@@ -6,21 +6,26 @@ import { ButtonComponent } from '../../shared/ui/button.component';
 import { CardComponent } from '../../shared/ui/card.component';
 import { EmptyStateComponent } from '../../shared/ui/empty-state.component';
 import { SkeletonComponent } from '../../shared/ui/skeleton.component';
+import { RevealDirective } from '../../shared/directives/reveal.directive';
+import { MagneticDirective } from '../../shared/directives/magnetic.directive';
 import { RoadmapCardComponent } from './components/roadmap-card.component';
 
 @Component({
   selector: 'asta-roadmap-list',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink, ButtonComponent, CardComponent, EmptyStateComponent, SkeletonComponent, RoadmapCardComponent],
+  imports: [RouterLink, ButtonComponent, CardComponent, EmptyStateComponent, SkeletonComponent, RevealDirective, MagneticDirective, RoadmapCardComponent],
   template: `
-    <div class="flex flex-wrap items-center justify-between gap-3 mb-6">
-      <div>
-        <h1 class="text-[28px] mb-1">My Roadmaps</h1>
-        <p class="text-txt-soft">Your active path and past plans.</p>
+    <!-- Command header -->
+    <header class="asta-page-command-header">
+      <div class="min-w-0">
+        <h1 class="text-[26px] leading-tight mb-2 grad-flow">My Roadmaps</h1>
+        <span class="goal-pill"><span class="dot"></span>{{ active().length }} active · {{ past().length }} archived</span>
       </div>
-      <asta-btn variant="accent" routerLink="/app/roadmap/generate">Generate new</asta-btn>
-    </div>
+      <div class="flex gap-2.5 shrink-0">
+        <asta-btn variant="accent" astaMagnetic routerLink="/app/roadmap/generate">Generate new</asta-btn>
+      </div>
+    </header>
 
     @if (loading()) {
       <div class="grid gap-5 md:grid-cols-2">
@@ -36,20 +41,20 @@ import { RoadmapCardComponent } from './components/roadmap-card.component';
     } @else if (roadmaps().length === 0) {
       <asta-card>
         <asta-empty-state title="No roadmaps yet" description="Generate your first personalized roadmap to start your path.">
-          <asta-btn variant="accent" routerLink="/app/roadmap/generate">Build my roadmap</asta-btn>
+          <asta-btn variant="accent" astaMagnetic routerLink="/app/roadmap/generate">Build my roadmap</asta-btn>
         </asta-empty-state>
       </asta-card>
     } @else {
       @if (active().length) {
         <p class="kicker mb-3">Active</p>
         <div class="grid gap-5 md:grid-cols-2 mb-8">
-          @for (r of active(); track r.id) { <asta-roadmap-card [roadmap]="r" /> }
+          @for (r of active(); track r.id; let i = $index) { <asta-roadmap-card [astaReveal]="i" [roadmap]="r" /> }
         </div>
       }
       @if (past().length) {
         <p class="kicker mb-3">Past &amp; archived</p>
         <div class="grid gap-5 md:grid-cols-2">
-          @for (r of past(); track r.id) { <asta-roadmap-card [roadmap]="r" /> }
+          @for (r of past(); track r.id; let i = $index) { <asta-roadmap-card [astaReveal]="i" [roadmap]="r" /> }
         </div>
       }
     }

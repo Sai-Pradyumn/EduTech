@@ -7,6 +7,8 @@ import { ASSIGNABLE_ORG_ROLES, OrgMember, OrgRole, PERM } from '../../core/model
 import { ButtonComponent } from '../../shared/ui/button.component';
 import { CardComponent } from '../../shared/ui/card.component';
 import { EmptyStateComponent } from '../../shared/ui/empty-state.component';
+import { RevealDirective } from '../../shared/directives/reveal.directive';
+import { TiltDirective } from '../../shared/directives/tilt.directive';
 
 type Tab = 'overview' | 'members' | 'settings';
 
@@ -14,19 +16,20 @@ type Tab = 'overview' | 'members' | 'settings';
   selector: 'asta-org-admin',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormsModule, ButtonComponent, CardComponent, EmptyStateComponent],
+  imports: [FormsModule, ButtonComponent, CardComponent, EmptyStateComponent, RevealDirective, TiltDirective],
   template: `
-    <div class="flex flex-wrap items-center justify-between gap-3 mb-6">
-      <div>
-        <h1 class="text-[26px] mb-1">Organization</h1>
-        <p class="text-sm text-txt-mute">Manage your workspace, members and settings.</p>
+    <!-- Command header -->
+    <header class="asta-page-command-header">
+      <div class="min-w-0">
+        <h1 class="text-[26px] leading-tight mb-2 grad-flow">Organization</h1>
+        <span class="goal-pill"><span class="dot"></span>Manage your workspace, members &amp; settings</span>
       </div>
       @if (ctx.orgs().length > 1) {
-        <select class="input" style="max-width:240px" [ngModel]="ctx.activeOrgId()" (ngModelChange)="switch($event)">
+        <select class="input shrink-0" style="max-width:240px" [ngModel]="ctx.activeOrgId()" (ngModelChange)="switch($event)">
           @for (o of ctx.orgs(); track o.id) { <option [value]="o.id">{{ o.name }} · {{ o.orgRole }}</option> }
         </select>
       }
-    </div>
+    </header>
 
     @if (!active(); as _) {
       <asta-card>
@@ -46,7 +49,7 @@ type Tab = 'overview' | 'members' | 'settings';
         @switch (tab()) {
           @case ('overview') {
             <div class="grid gap-5 md:grid-cols-3">
-              <asta-card class="md:col-span-2">
+              <asta-card class="md:col-span-2" [astaReveal]="0">
                 <p class="kicker mb-2">{{ org.type }}</p>
                 <h2 class="text-[20px] mb-1">{{ org.name }}</h2>
                 <p class="text-sm text-txt-soft mb-3">{{ org.description || 'No description yet.' }}</p>
@@ -56,7 +59,7 @@ type Tab = 'overview' | 'members' | 'settings';
                   <span class="pill">your role: {{ ctx.context()?.orgRole }}</span>
                 </div>
               </asta-card>
-              <asta-card>
+              <asta-card astaTilt [tiltMax]="4" [astaReveal]="1">
                 <p class="kicker mb-3">Your access</p>
                 <ul class="text-sm text-txt-soft space-y-1">
                   @for (p of ctx.permissions(); track p) { <li class="flex gap-2"><span style="color:var(--green-deep)">✓</span>{{ p }}</li> }

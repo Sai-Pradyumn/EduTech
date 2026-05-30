@@ -28,6 +28,7 @@ import {
 import { ButtonComponent } from '../../shared/ui/button.component';
 import { ChipInputComponent } from '../../shared/ui/chip-input.component';
 import { LogoComponent } from '../../shared/ui/logo.component';
+import { MagneticDirective } from '../../shared/directives/magnetic.directive';
 
 interface Draft {
   fullName: string;
@@ -50,7 +51,7 @@ const TOTAL_STEPS = 7;
   selector: 'asta-onboarding',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormsModule, ButtonComponent, ChipInputComponent, LogoComponent],
+  imports: [FormsModule, ButtonComponent, ChipInputComponent, LogoComponent, MagneticDirective],
   template: `
     <div class="min-h-screen flex flex-col items-center px-5 py-8">
       <header class="w-full flex justify-center mb-8"><asta-logo /></header>
@@ -183,9 +184,9 @@ const TOTAL_STEPS = 7;
           <div class="flex justify-between mt-8">
             <asta-btn variant="ghost" (click)="back()" [disabled]="step() === 1">Back</asta-btn>
             @if (step() < totalSteps) {
-              <asta-btn variant="accent" (click)="next()" [disabled]="!canAdvance()">Continue</asta-btn>
+              <asta-btn variant="accent" astaMagnetic (click)="next()" [disabled]="!canAdvance()">Continue</asta-btn>
             } @else {
-              <asta-btn variant="accent" (click)="finish()" [loading]="saving()" [disabled]="!isComplete()">Save &amp; continue</asta-btn>
+              <asta-btn variant="accent" astaMagnetic (click)="finish()" [loading]="saving()" [disabled]="!isComplete()">Save &amp; continue</asta-btn>
             }
           </div>
         </div>

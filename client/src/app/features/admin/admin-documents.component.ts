@@ -6,6 +6,7 @@ import { AdminDocumentRow } from '../../core/models';
 import { SkeletonComponent } from '../../shared/ui/skeleton.component';
 import { EmptyStateComponent } from '../../shared/ui/empty-state.component';
 import { DonutChartComponent, ChartDatum } from '../../shared/charts';
+import { RevealDirective } from '../../shared/directives/reveal.directive';
 
 /**
  * `/admin/documents` (B1) — platform-wide knowledge document browser. Lists every
@@ -16,8 +17,16 @@ import { DonutChartComponent, ChartDatum } from '../../shared/charts';
   selector: 'asta-admin-documents',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [DatePipe, FormsModule, SkeletonComponent, EmptyStateComponent, DonutChartComponent],
+  imports: [DatePipe, FormsModule, SkeletonComponent, EmptyStateComponent, DonutChartComponent, RevealDirective],
   template: `
+    <!-- Command header -->
+    <header class="asta-page-command-header">
+      <div class="min-w-0">
+        <h1 class="text-[26px] leading-tight mb-2 grad-flow">Documents</h1>
+        <span class="goal-pill"><span class="dot"></span>Platform-wide knowledge base · ingestion status &amp; chunks</span>
+      </div>
+    </header>
+
     @if (loading()) {
       <div class="card" style="padding:16px">
         @for (n of [1,2,3,4,5,6]; track n) { <div class="py-2"><asta-skeleton h="16px" /></div> }
@@ -28,14 +37,14 @@ import { DonutChartComponent, ChartDatum } from '../../shared/charts';
       </asta-empty-state>
     } @else {
       @if (all().length) {
-        <div class="card mb-4" style="padding:18px">
+        <div class="card mb-4" style="padding:18px" [astaReveal]="0">
           <p class="kicker mb-3" style="color:var(--peri-deep)">Ingestion status</p>
           <asta-donut-chart [data]="statusMix()" centerLabel="docs" label="Documents by ingestion status" />
         </div>
       }
       <input class="input mb-4" style="max-width:320px" placeholder="Search title, owner or topic…"
         [(ngModel)]="query" (ngModelChange)="q.set($event)" />
-      <div class="card" style="padding:0;overflow:auto">
+      <div class="card" style="padding:0;overflow:auto" [astaReveal]="1">
         <table>
           <thead><tr><th>Document</th><th>Owner</th><th>Source</th><th>Status</th><th>Chunks</th><th>Tokens</th><th>Lang</th><th>Added</th></tr></thead>
           <tbody>

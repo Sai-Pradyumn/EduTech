@@ -7,28 +7,35 @@ import { Organization } from '../../core/models';
 import { ButtonComponent } from '../../shared/ui/button.component';
 import { CardComponent } from '../../shared/ui/card.component';
 import { EmptyStateComponent } from '../../shared/ui/empty-state.component';
+import { RevealDirective } from '../../shared/directives/reveal.directive';
+import { TiltDirective } from '../../shared/directives/tilt.directive';
 
 @Component({
   selector: 'asta-platform-orgs',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormsModule, ButtonComponent, CardComponent, EmptyStateComponent],
+  imports: [FormsModule, ButtonComponent, CardComponent, EmptyStateComponent, RevealDirective, TiltDirective],
   template: `
-    <h1 class="text-[26px] mb-1">Platform · Organizations</h1>
-    <p class="text-sm text-txt-mute mb-6">Every tenant on the platform. Operator-only.</p>
+    <!-- Command header -->
+    <header class="asta-page-command-header">
+      <div class="min-w-0">
+        <h1 class="text-[26px] leading-tight mb-2 grad-flow">Platform · Organizations</h1>
+        <span class="goal-pill"><span class="dot"></span>Every tenant on the platform · operator-only</span>
+      </div>
+    </header>
 
     @if (!ctx.isPlatformAdmin()) {
       <asta-card><asta-empty-state title="Operators only" description="This area is restricted to platform administrators." /></asta-card>
     } @else {
       @if (stats(); as s) {
         <div class="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-5">
-          <div class="card stat"><p class="font-display text-2xl">{{ s.organizations }}</p><p class="lbl">Organizations</p></div>
-          <div class="card stat"><p class="font-display text-2xl">{{ s.totalMembers }}</p><p class="lbl">Total members</p></div>
-          <div class="card stat"><p class="font-display text-2xl">{{ typeCount(s.byType) }}</p><p class="lbl">Org types</p></div>
+          <div class="card stat" astaTilt [tiltMax]="4" [astaReveal]="0"><p class="font-display text-2xl">{{ s.organizations }}</p><p class="lbl">Organizations</p></div>
+          <div class="card stat" astaTilt [tiltMax]="4" [astaReveal]="1"><p class="font-display text-2xl">{{ s.totalMembers }}</p><p class="lbl">Total members</p></div>
+          <div class="card stat" astaTilt [tiltMax]="4" [astaReveal]="2"><p class="font-display text-2xl">{{ typeCount(s.byType) }}</p><p class="lbl">Org types</p></div>
         </div>
       }
 
-      <div class="card" style="padding:16px;margin-bottom:20px">
+      <div class="card" style="padding:16px;margin-bottom:20px" [astaReveal]="3">
         <p class="kicker mb-3">Create organization</p>
         <div class="flex flex-wrap items-end gap-2">
           <input class="input" style="max-width:260px" placeholder="Organization name" [(ngModel)]="name" />
@@ -42,7 +49,7 @@ import { EmptyStateComponent } from '../../shared/ui/empty-state.component';
         </div>
       </div>
 
-      <div class="card" style="padding:16px">
+      <div class="card" style="padding:16px" [astaReveal]="4">
         <p class="kicker mb-3">All organizations</p>
         @if (orgs().length === 0) { <p class="text-sm text-txt-mute py-6 text-center">No organizations yet.</p> }
         <div class="space-y-2">

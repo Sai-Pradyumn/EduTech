@@ -6,6 +6,8 @@ import { AdminQuizRow } from '../../core/models';
 import { SkeletonComponent } from '../../shared/ui/skeleton.component';
 import { EmptyStateComponent } from '../../shared/ui/empty-state.component';
 import { BarChartComponent, ChartDatum } from '../../shared/charts';
+import { RevealDirective } from '../../shared/directives/reveal.directive';
+import { TiltDirective } from '../../shared/directives/tilt.directive';
 
 /**
  * `/admin/assessments` (B1) — read-only browser of every generated quiz across
@@ -16,8 +18,16 @@ import { BarChartComponent, ChartDatum } from '../../shared/charts';
   selector: 'asta-admin-assessments',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [DatePipe, FormsModule, SkeletonComponent, EmptyStateComponent, BarChartComponent],
+  imports: [DatePipe, FormsModule, SkeletonComponent, EmptyStateComponent, BarChartComponent, RevealDirective, TiltDirective],
   template: `
+    <!-- Command header -->
+    <header class="asta-page-command-header">
+      <div class="min-w-0">
+        <h1 class="text-[26px] leading-tight mb-2 grad-flow">Assessments</h1>
+        <span class="goal-pill"><span class="dot"></span>Every generated quiz across students · difficulty &amp; attempts</span>
+      </div>
+    </header>
+
     @if (loading()) {
       <div class="card" style="padding:16px">
         @for (n of [1,2,3,4,5,6]; track n) { <div class="py-2"><asta-skeleton h="16px" /></div> }
@@ -29,9 +39,9 @@ import { BarChartComponent, ChartDatum } from '../../shared/charts';
     } @else {
       @if (all().length) {
         <div class="grid gap-4 md:grid-cols-3 mb-4">
-          <div class="card stat"><span class="num">{{ all().length }}</span><span class="lbl">Quizzes</span></div>
-          <div class="card stat"><span class="num">{{ totalAttempts() }}</span><span class="lbl">Total attempts</span></div>
-          <div class="card" style="padding:14px 16px">
+          <div class="card stat" astaTilt [tiltMax]="4" [astaReveal]="0"><span class="num">{{ all().length }}</span><span class="lbl">Quizzes</span></div>
+          <div class="card stat" astaTilt [tiltMax]="4" [astaReveal]="1"><span class="num">{{ totalAttempts() }}</span><span class="lbl">Total attempts</span></div>
+          <div class="card" style="padding:14px 16px" [astaReveal]="2">
             <p class="kicker mb-2">By difficulty</p>
             <asta-bar-chart tone="peri" [data]="difficultyMix()" [height]="96" label="Quizzes by difficulty" />
           </div>
@@ -39,7 +49,7 @@ import { BarChartComponent, ChartDatum } from '../../shared/charts';
       }
       <input class="input mb-4" style="max-width:320px" placeholder="Search title, topic or owner…"
         [(ngModel)]="query" (ngModelChange)="q.set($event)" />
-      <div class="card" style="padding:0;overflow:auto">
+      <div class="card" style="padding:0;overflow:auto" [astaReveal]="3">
         <table>
           <thead><tr><th>Quiz</th><th>Owner</th><th>Topic</th><th>Difficulty</th><th>Source</th><th>Qs</th><th>Attempts</th><th>Best</th><th>Created</th></tr></thead>
           <tbody>

@@ -8,6 +8,7 @@ import { AuthService } from '../../core/services/auth.service';
 import { OrgContextService } from '../../core/services/org-context.service';
 import { ToastService } from '../../core/services/toast.service';
 import { CommunityChannel, CommunityReply, CommunityThread, Project, ThreadKind } from '../../core/models';
+import { RevealDirective } from '../../shared/directives/reveal.directive';
 
 /**
  * Community + discussion (B9). Org-scoped channels (General / Help / Showcase), threads
@@ -18,8 +19,16 @@ import { CommunityChannel, CommunityReply, CommunityThread, Project, ThreadKind 
   selector: 'asta-community',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormsModule, DatePipe, RouterLink],
+  imports: [FormsModule, DatePipe, RouterLink, RevealDirective],
   template: `
+    <!-- Command header -->
+    <header class="asta-page-command-header">
+      <div class="min-w-0">
+        <h1 class="text-[26px] leading-tight mb-2 grad-flow">Community</h1>
+        <span class="goal-pill"><span class="dot"></span>Ask, discuss & showcase across your org channels</span>
+      </div>
+    </header>
+
     <div class="grid gap-5 lg:grid-cols-[minmax(260px,320px)_1fr]">
       <!-- Left: channels + thread list -->
       <div class="space-y-4">
@@ -96,7 +105,7 @@ import { CommunityChannel, CommunityReply, CommunityThread, Project, ThreadKind 
           </div>
         }
         @if (activeThread(); as t) {
-          <div class="card" style="padding:22px">
+          <div class="card" style="padding:22px" [astaReveal]="0">
             <div class="flex items-start gap-4">
               <button class="vote" [class.vote-on]="t.hasUpvoted" (click)="upvoteThread(t.id)">
                 <span>▲</span><b>{{ t.upvotes }}</b>

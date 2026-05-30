@@ -83,7 +83,16 @@ interface DockMsg {
   `,
   styles: [
     `
-      :host { position: fixed; right: 22px; bottom: 22px; z-index: 70; }
+      /* Sits above the mobile bottom-nav (which is hidden ≥lg). The bottom offset
+         clears the ~62px bar + its safe-area inset on phones/tablets, then drops
+         back to a tight 22px on desktop where no bottom-nav exists. */
+      :host {
+        position: fixed;
+        right: 22px;
+        bottom: calc(76px + env(safe-area-inset-bottom));
+        z-index: 70;
+      }
+      @media (min-width: 1024px) { :host { bottom: 22px; } }
       .orb {
         width: 26px; height: 26px; border-radius: 50%;
         background: radial-gradient(circle at 35% 30%, var(--green), var(--peri) 70%, var(--coral));
@@ -108,7 +117,9 @@ interface DockMsg {
 
       .panel {
         width: min(390px, calc(100vw - 36px));
-        height: min(560px, calc(100vh - 110px));
+        /* Anchored at the host's bottom (raised above the mobile bottom-nav) and
+           grows upward — cap height so it never runs off the top of the viewport. */
+        height: min(560px, calc(100dvh - 120px - env(safe-area-inset-bottom)));
         display: flex; flex-direction: column;
         background: var(--paper); border: 1px solid var(--paper-3);
         border-radius: var(--r-lg); box-shadow: var(--shadow-lg); overflow: hidden;

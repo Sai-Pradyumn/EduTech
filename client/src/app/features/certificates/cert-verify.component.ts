@@ -4,13 +4,14 @@ import { ActivatedRoute, RouterLink } from '@angular/router';
 import { LogoComponent } from '../../shared/ui/logo.component';
 import { CertificateService } from '../../core/services/certificate.service';
 import { VerificationResult } from '../../core/models';
+import { RevealDirective } from '../../shared/directives/reveal.directive';
 
 /** Public certificate verification page (B7) — no auth, no app shell. */
 @Component({
   selector: 'asta-cert-verify',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [DatePipe, RouterLink, LogoComponent],
+  imports: [DatePipe, RouterLink, LogoComponent, RevealDirective],
   template: `
     <div class="min-h-screen grid place-items-center px-5" style="background:var(--paper)">
       <div class="w-full" style="max-width:520px">
@@ -21,7 +22,7 @@ import { VerificationResult } from '../../core/models';
         }
         @if (loaded() && result(); as r) {
           @if (r.valid) {
-            <div class="card relative overflow-hidden" style="padding:36px;text-align:center">
+            <div class="card relative overflow-hidden" style="padding:36px;text-align:center" [astaReveal]="0">
               <div class="absolute inset-0 pointer-events-none" style="background:radial-gradient(120% 80% at 50% 0%, oklch(0.8 0.16 150 / .12), transparent 60%)"></div>
               <div class="relative">
                 <span class="inline-grid place-items-center rounded-full mb-4" style="width:56px;height:56px;background:color-mix(in oklch, var(--green) 18%, transparent);color:var(--green-deep)">

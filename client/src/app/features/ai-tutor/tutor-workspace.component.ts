@@ -5,9 +5,12 @@ import { ToastService } from '../../core/services/toast.service';
 import { AgentAction, AgentStreamEvent, VisualBlock, WorkflowStepView } from '../../core/models';
 import { MarkdownPipe } from '../../shared/pipes/markdown.pipe';
 import { ButtonComponent } from '../../shared/ui/button.component';
+import { CardComponent } from '../../shared/ui/card.component';
 import { ComposerComponent, ComposerSubmit } from '../../shared/ui/composer.component';
 import { AiAgentActivityFeedComponent } from '../../shared/components/ai/ai-agent-activity-feed.component';
 import { VisualBlockRendererComponent } from '../../shared/components/ai/visual-block-renderer.component';
+import { RevealDirective } from '../../shared/directives/reveal.directive';
+import { TiltDirective } from '../../shared/directives/tilt.directive';
 
 interface ChatMsg {
   role: 'user' | 'assistant';
@@ -35,17 +38,31 @@ const STARTERS = [
   selector: 'asta-tutor-workspace',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormsModule, MarkdownPipe, ButtonComponent, ComposerComponent, AiAgentActivityFeedComponent, VisualBlockRendererComponent],
+  imports: [FormsModule, MarkdownPipe, ButtonComponent, CardComponent, ComposerComponent, AiAgentActivityFeedComponent, VisualBlockRendererComponent, RevealDirective, TiltDirective],
   template: `
-    <div class="grid gap-5 lg:grid-cols-[1fr_minmax(320px,420px)]" style="min-height:calc(100vh - 130px)">
+    <!-- Command header -->
+    <header class="asta-page-command-header">
+      <div class="min-w-0">
+        <h1 class="text-[26px] leading-tight mb-2 grad-flow">AI Tutor</h1>
+        <span class="goal-pill"><span class="dot"></span>Cognitive studio · learns from your weak areas</span>
+      </div>
+      <div class="flex gap-2.5 shrink-0">
+        @if (messages().length) { <asta-btn variant="ghost" size="sm" (click)="newChat()">New chat</asta-btn> }
+      </div>
+    </header>
+
+    <div class="grid gap-5 lg:grid-cols-[1fr_minmax(320px,400px)]" style="min-height:calc(100dvh - 230px)">
       <!-- LEFT: chat -->
       <div class="flex flex-col card" style="padding:0;overflow:hidden">
-        <div class="flex items-center justify-between px-5 py-3" style="border-bottom:1px solid var(--paper-3)">
-          <div>
-            <h2 class="text-[18px] font-display font-semibold">AI Tutor Workspace</h2>
-            <p class="text-xs text-txt-mute">Learns from your profile, roadmap & weak areas</p>
+        <div class="flex items-center justify-between gap-3 px-5 py-3.5" style="border-bottom:1px solid var(--asta-line, color-mix(in oklch, var(--paper-3) 60%, transparent))">
+          <div class="flex items-center gap-3 min-w-0">
+            <span class="tutor-orb" [class.busy]="busy()" aria-hidden="true"></span>
+            <div class="min-w-0">
+              <p class="text-[15px] font-display font-semibold leading-tight">Asta Tutor</p>
+              <p class="text-[11px] font-mono text-txt-mute">{{ busy() ? 'Thinking…' : 'Ready' }} · {{ mode() }}</p>
+            </div>
           </div>
-          <div class="flex flex-wrap gap-1.5 justify-end" style="max-width:60%">
+          <div class="flex flex-wrap gap-1.5 justify-end" style="max-width:62%">
             @for (m of modes; track m) {
               <button class="mode-pill" [class.mode-on]="mode() === m" (click)="mode.set(m)">{{ m }}</button>
             }
@@ -53,33 +70,39 @@ const STARTERS = [
         </div>
 
         <!-- thread -->
-        <div class="flex-1 overflow-y-auto px-5 py-5 space-y-5" style="max-height:calc(100vh - 320px)">
+        <div class="flex-1 overflow-y-auto scroll-area px-5 py-5 space-y-5" style="max-height:calc(100dvh - 400px)">
           @if (messages().length === 0) {
-            <div class="text-center py-10">
-              <p class="text-txt-soft mb-4">Ask anything — pick a mode, or try a starter.</p>
-              <div class="flex flex-wrap gap-2 justify-center">
-                @for (s of starters; track s) { <button class="pill" style="cursor:pointer" (click)="send(s)">{{ s }}</button> }
+            <div class="grid place-items-center text-center py-12">
+              <span class="tutor-orb big mb-4" aria-hidden="true"></span>
+              <p class="t-h-card mb-1">How can I help you learn?</p>
+              <p class="text-txt-soft text-sm mb-5">Pick a mode, or start with one of these.</p>
+              <div class="flex flex-wrap gap-2 justify-center max-w-[520px]">
+                @for (s of starters; track s) { <button class="starter-chip" (click)="send(s)">{{ s }}</button> }
               </div>
             </div>
           }
           @for (msg of messages(); track $index) {
             @if (msg.role === 'user') {
-              <div class="flex justify-end">
-                <div class="px-4 py-2.5 text-ink" style="background:var(--green);border-radius:16px 16px 4px 16px;max-width:80%">{{ msg.content }}</div>
+              <div class="flex justify-end motion-fade-up">
+                <div class="user-bubble">{{ msg.content }}</div>
               </div>
             } @else {
-              <div class="flex gap-3">
-                <span class="grid place-items-center shrink-0 rounded-[10px] text-ink font-display font-semibold" style="width:32px;height:32px;background:var(--peri)">A</span>
+              <div class="flex gap-3 motion-fade-up">
+                <span class="msg-orb shrink-0" [class.busy]="msg.streaming" aria-hidden="true"></span>
                 <div class="min-w-0 flex-1">
                   <p class="font-mono text-[11px] text-txt-mute mb-1">{{ msg.agentType || 'tutor' }} · {{ mode() }}</p>
                   <div class="prose-asta text-[15px]" [innerHTML]="msg.content | markdown"></div>
                   @if (msg.streaming) { <span class="stream-cursor"></span> }
                   @if (!msg.streaming && msg.role === 'assistant') {
-                    <div class="flex items-center gap-3 mt-2">
-                      <button class="text-txt-mute hover:text-txt" title="Helpful" (click)="feedback('up', msg)">▲</button>
-                      <button class="text-txt-mute hover:text-txt" title="Not helpful" (click)="feedback('down', msg)">▼</button>
+                    <div class="flex items-center flex-wrap gap-2 mt-2.5">
+                      <button class="fb-btn" title="Helpful" (click)="feedback('up', msg)">
+                        <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 10v12M15 5.88 14 10h5.83a2 2 0 0 1 1.92 2.56l-2.33 8A2 2 0 0 1 17.5 22H4a2 2 0 0 1-2-2v-8a2 2 0 0 1 2-2h2.76a2 2 0 0 0 1.79-1.11L12 2a3.13 3.13 0 0 1 3 3.88Z"/></svg>
+                      </button>
+                      <button class="fb-btn" title="Not helpful" (click)="feedback('down', msg)">
+                        <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="transform:rotate(180deg)"><path d="M7 10v12M15 5.88 14 10h5.83a2 2 0 0 1 1.92 2.56l-2.33 8A2 2 0 0 1 17.5 22H4a2 2 0 0 1-2-2v-8a2 2 0 0 1 2-2h2.76a2 2 0 0 0 1.79-1.11L12 2a3.13 3.13 0 0 1 3 3.88Z"/></svg>
+                      </button>
                       @for (f of msg.followUps.slice(0, 2); track f) {
-                        <button class="text-xs pill" style="cursor:pointer" (click)="send(f)">{{ f }}</button>
+                        <button class="starter-chip sm" (click)="send(f)">{{ f }}</button>
                       }
                     </div>
                   }
@@ -90,46 +113,83 @@ const STARTERS = [
         </div>
 
         <!-- composer -->
-        <div class="px-4 py-3" style="border-top:1px solid var(--paper-3)">
+        <div class="px-4 py-3" style="border-top:1px solid color-mix(in oklch, var(--paper-3) 60%, transparent)">
           <asta-composer [disabled]="busy()" placeholder="Ask the tutor… (Enter to send · Shift+Enter for a new line)" (submit)="onComposer($event)" />
         </div>
       </div>
 
-      <!-- RIGHT: visual board + activity + next actions -->
+      <!-- RIGHT: agent rail -->
       <div class="space-y-5">
-        <ai-agent-activity-feed [steps]="steps()" [running]="busy()" />
+        <div [astaReveal]="0"><ai-agent-activity-feed [steps]="steps()" [running]="busy()" /></div>
 
         @if (latestActions().length) {
-          <div class="card" style="padding:14px 16px">
-            <p class="kicker mb-3">Quick actions</p>
-            <div class="flex flex-wrap gap-2">
-              @for (a of latestActions(); track a.id) {
-                <button class="pill" style="cursor:pointer" (click)="runAction(a)">{{ a.label }}</button>
-              }
+          <asta-card astaTilt [tiltMax]="4" [astaReveal]="1" pad="16px 18px">
+            <div class="panel-head">
+              <p class="kicker">Quick actions</p>
+              <span class="panel-ico green" aria-hidden="true"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2 3 14h9l-1 8 10-12h-9z"/></svg></span>
             </div>
-          </div>
+            <div class="flex flex-wrap gap-2 mt-3">
+              @for (a of latestActions(); track a.id) { <button class="act-chip" (click)="runAction(a)">{{ a.label }}</button> }
+            </div>
+          </asta-card>
         }
 
         @for (block of latestBlocks(); track $index) {
-          <ai-visual-block [block_]="block" />
+          <div [astaReveal]="2"><ai-visual-block [block_]="block" /></div>
         }
 
         @if (latestRecommended().length) {
-          <div class="card" style="padding:14px 16px">
-            <p class="kicker mb-3" style="color:var(--green-deep)">Recommended next</p>
-            <ul class="space-y-1.5 text-sm text-txt-soft">
-              @for (r of latestRecommended(); track r) { <li class="flex gap-2"><span style="color:var(--green-deep)">→</span>{{ r }}</li> }
+          <asta-card astaTilt [tiltMax]="4" [astaReveal]="3" pad="16px 18px">
+            <div class="panel-head">
+              <p class="kicker" style="color:var(--green-deep)">Recommended next</p>
+              <span class="panel-ico green" aria-hidden="true"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
+            </div>
+            <ul class="space-y-2 text-sm text-txt-soft mt-3">
+              @for (r of latestRecommended(); track r) { <li class="rec-item" (click)="send(r)"><span class="arr" style="color:var(--green-deep)">→</span><span>{{ r }}</span></li> }
             </ul>
-          </div>
+          </asta-card>
         }
       </div>
     </div>
   `,
   styles: [
     `
-      .mode-pill { font-family: var(--mono); font-size: 11px; text-transform: uppercase; letter-spacing: .04em; padding: 4px 10px; border-radius: 100px; border: 1px solid var(--paper-3); background: var(--paper); color: var(--text-soft); cursor: pointer; }
-      .mode-pill:hover { border-color: var(--peri); }
-      .mode-on { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+      /* Agent orb — calm conic gradient; spins + glows while the tutor thinks. */
+      .tutor-orb, .msg-orb {
+        border-radius: 999px;
+        background:
+          radial-gradient(circle at 34% 28%, #fff, transparent 26%),
+          conic-gradient(from 140deg, var(--green), var(--asta-cyan), var(--peri), var(--green));
+        box-shadow: 0 0 16px var(--asta-accent-glow);
+      }
+      .tutor-orb { width: 34px; height: 34px; }
+      .tutor-orb.big { width: 64px; height: 64px; box-shadow: 0 0 28px var(--asta-accent-glow), 0 0 60px var(--asta-glow-cyan); animation: astaOrbitSpin 18s linear infinite; }
+      .msg-orb { width: 30px; height: 30px; }
+      .tutor-orb.busy, .msg-orb.busy { animation: astaOrbitSpin 3s linear infinite; }
+
+      .mode-pill { font-family: var(--mono); font-size: 11px; text-transform: uppercase; letter-spacing: .05em; padding: 5px 11px; border-radius: 999px; border: 1px solid color-mix(in oklch, var(--paper-3) 60%, transparent); background: color-mix(in oklch, var(--paper-2) 50%, transparent); color: var(--text-soft); cursor: pointer; transition: transform .18s var(--ease-spring), border-color .18s var(--ease), color .18s var(--ease), background .18s var(--ease); }
+      .mode-pill:hover { color: var(--text); border-color: color-mix(in oklch, var(--green) 35%, transparent); transform: translateY(-1px); }
+      .mode-on { background: linear-gradient(135deg, var(--green), var(--green-deep)); color: #06100a; border-color: transparent; box-shadow: 0 6px 16px var(--asta-accent-glow); }
+
+      .user-bubble { padding: 10px 15px; color: #06100a; max-width: 80%; border-radius: 16px 16px 4px 16px; background: linear-gradient(135deg, var(--green), var(--green-deep)); box-shadow: 0 8px 22px var(--asta-accent-glow); }
+
+      .starter-chip { font-size: 13.5px; padding: 8px 14px; border-radius: 999px; border: 1px solid color-mix(in oklch, var(--paper-3) 60%, transparent); background: color-mix(in oklch, var(--paper-2) 50%, transparent); color: var(--text-soft); cursor: pointer; transition: transform .18s var(--ease-spring), border-color .18s var(--ease), color .18s var(--ease); }
+      .starter-chip.sm { font-size: 12px; padding: 5px 11px; }
+      .starter-chip:hover { transform: translateY(-2px); color: var(--text); border-color: color-mix(in oklch, var(--green) 40%, transparent); }
+
+      .act-chip { font-family: var(--mono); font-size: 12px; padding: 7px 12px; border-radius: 999px; border: 1px solid color-mix(in oklch, var(--paper-3) 60%, transparent); background: transparent; color: var(--text-soft); cursor: pointer; transition: transform .16s var(--ease-spring), background .16s var(--ease), color .16s var(--ease); }
+      .act-chip:hover { background: var(--asta-accent-glow); color: var(--text); transform: translateY(-1px); }
+
+      .fb-btn { display: grid; place-items: center; width: 28px; height: 28px; border-radius: 8px; color: var(--text-mute); transition: color .15s var(--ease), background .15s var(--ease), transform .12s var(--ease-spring); }
+      .fb-btn:hover { color: var(--green-deep); background: var(--asta-accent-glow); transform: translateY(-1px); }
+
+      .rec-item { display: flex; gap: 8px; align-items: flex-start; cursor: pointer; padding: 4px 6px; margin: 0 -6px; border-radius: 8px; transition: background .16s var(--ease), color .16s var(--ease); }
+      .rec-item:hover { background: color-mix(in oklch, var(--paper-2) 55%, transparent); color: var(--text); }
+
+      .panel-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+      .panel-ico { width: 32px; height: 32px; flex-shrink: 0; display: grid; place-items: center; border-radius: 10px; color: var(--green-deep); background: color-mix(in oklch, var(--green) 13%, transparent); transition: transform .4s var(--ease-spring); }
+      asta-card:hover .panel-ico { transform: scale(1.14) rotate(-8deg); }
+
       .prose-asta :is(h3) { font-family: var(--display); font-size: 18px; margin: 4px 0 8px; }
       .prose-asta :is(p) { margin: 6px 0; }
       .prose-asta :is(ul, ol) { margin: 6px 0; padding-left: 20px; }
@@ -154,6 +214,14 @@ export class TutorWorkspaceComponent {
   draft = '';
   private sessionId?: string;
   private lastTopic = '';
+
+  /** Reset the conversation for a fresh session. */
+  newChat(): void {
+    this.messages.set([]);
+    this.steps.set([]);
+    this.sessionId = undefined;
+    this.lastTopic = '';
+  }
 
   readonly latest = computed(() => {
     const m = this.messages();

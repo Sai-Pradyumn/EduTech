@@ -4,13 +4,15 @@ import { LogoComponent } from '../../shared/ui/logo.component';
 import { ThemeToggleComponent } from '../../shared/ui/theme-toggle.component';
 import { BillingService } from '../../core/services/billing.service';
 import { Plan } from '../../core/models';
+import { RevealDirective } from '../../shared/directives/reveal.directive';
+import { TiltDirective } from '../../shared/directives/tilt.directive';
 
 /** Public pricing page (B5). Reads the plan catalog; CTAs route to register. */
 @Component({
   selector: 'asta-pricing',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink, LogoComponent, ThemeToggleComponent],
+  imports: [RouterLink, LogoComponent, ThemeToggleComponent, RevealDirective, TiltDirective],
   template: `
     <div style="background:var(--paper);color:var(--text);min-height:100vh">
       <nav class="flex items-center justify-between px-6 py-4 mx-auto" style="max-width:var(--maxw,1240px)">
@@ -28,8 +30,8 @@ import { Plan } from '../../core/models';
       </header>
 
       <div class="grid gap-4 md:grid-cols-3 px-6 pb-20 mx-auto" style="max-width:1040px">
-        @for (p of plans(); track p.id) {
-          <div class="card relative" style="padding:24px" [style.borderColor]="p.highlight ? 'var(--green)' : null" [style.boxShadow]="p.highlight ? 'var(--shadow-lg)' : null">
+        @for (p of plans(); track p.id; let i = $index) {
+          <div class="card relative" style="padding:24px" astaTilt [tiltMax]="4" [astaReveal]="i" [style.borderColor]="p.highlight ? 'var(--green)' : null" [style.boxShadow]="p.highlight ? 'var(--shadow-lg)' : null">
             @if (p.highlight) { <span class="pill absolute" style="top:-12px;right:18px;background:var(--green);color:var(--ink);border:0">Popular</span> }
             <h3 class="font-display text-2xl">{{ p.name }}</h3>
             <p class="mt-1"><span class="font-display text-4xl">₹{{ p.priceInr }}</span><span class="text-txt-mute">/mo</span></p>

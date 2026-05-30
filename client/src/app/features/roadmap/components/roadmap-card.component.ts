@@ -4,15 +4,16 @@ import { RoadmapSummary } from '../../../core/models';
 import { CardComponent } from '../../../shared/ui/card.component';
 import { BadgeComponent } from '../../../shared/ui/badge.component';
 import { ProgressComponent } from '../../../shared/ui/progress.component';
+import { TiltDirective } from '../../../shared/directives/tilt.directive';
 
 /** Compact roadmap card for the list view. */
 @Component({
   selector: 'asta-roadmap-card',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink, CardComponent, BadgeComponent, ProgressComponent],
+  imports: [RouterLink, CardComponent, BadgeComponent, ProgressComponent, TiltDirective],
   template: `
-    <asta-card [accentVar]="active ? 'var(--green)' : null">
+    <asta-card astaTilt [tiltMax]="4">
       <div class="flex items-start justify-between gap-3 mb-2">
         <h3 class="text-[19px] leading-snug">{{ roadmap.title }}</h3>
         <asta-badge [tone]="statusTone">{{ roadmap.status }}</asta-badge>
@@ -29,7 +30,7 @@ import { ProgressComponent } from '../../../shared/ui/progress.component';
       </div>
       <a [routerLink]="['/app/roadmap', roadmap.id]"
         class="inline-flex items-center gap-1.5 text-sm font-semibold" style="color:var(--green-deep)">
-        View roadmap →
+        View roadmap <span class="arr">→</span>
       </a>
     </asta-card>
   `,

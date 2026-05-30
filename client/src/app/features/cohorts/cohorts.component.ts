@@ -6,6 +6,8 @@ import { OrgService } from '../../core/services/org.service';
 import { OrgContextService } from '../../core/services/org-context.service';
 import { ToastService } from '../../core/services/toast.service';
 import { CohortDetail, CohortStatus, CohortView, LeaderboardRow, OrgMember } from '../../core/models';
+import { ProgressComponent } from '../../shared/ui/progress.component';
+import { RevealDirective } from '../../shared/directives/reveal.directive';
 
 /**
  * Cohort-based learning (B3). Students see the cohorts they belong to; org admins
@@ -16,8 +18,16 @@ import { CohortDetail, CohortStatus, CohortView, LeaderboardRow, OrgMember } fro
   selector: 'asta-cohorts',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormsModule, DatePipe],
+  imports: [FormsModule, DatePipe, ProgressComponent, RevealDirective],
   template: `
+    <!-- Command header -->
+    <header class="asta-page-command-header">
+      <div class="min-w-0">
+        <h1 class="text-[26px] leading-tight mb-2 grad-flow">Cohorts</h1>
+        <span class="goal-pill"><span class="dot"></span>Learn together · leaderboards, announcements & members</span>
+      </div>
+    </header>
+
     <div class="grid gap-5 lg:grid-cols-[minmax(280px,360px)_1fr]">
       <!-- Left: lists + create -->
       <div class="space-y-5">
@@ -82,7 +92,7 @@ import { CohortDetail, CohortStatus, CohortView, LeaderboardRow, OrgMember } fro
         }
         @if (selected(); as c) {
           <div class="space-y-5">
-            <div class="card" style="padding:20px">
+            <div class="card" style="padding:20px" [astaReveal]="0">
               <div class="flex items-start justify-between gap-3 flex-wrap">
                 <div>
                   <h2 class="font-display text-2xl">{{ c.name }}</h2>
@@ -103,20 +113,18 @@ import { CohortDetail, CohortStatus, CohortView, LeaderboardRow, OrgMember } fro
             </div>
 
             <!-- Leaderboard -->
-            <div class="card" style="padding:18px">
+            <div class="card" style="padding:18px" [astaReveal]="1">
               <p class="kicker mb-3" style="color:var(--green-deep)">Leaderboard</p>
               @if (leaderboard().length === 0) {
                 <p class="text-sm text-txt-mute">No students yet — add some to populate the leaderboard.</p>
               }
-              <div class="space-y-2">
+              <div class="space-y-2.5">
                 @for (r of leaderboard(); track r.userId) {
                   <div class="flex items-center gap-3">
                     <span class="font-display text-lg w-7 text-center" [style.color]="r.rank <= 3 ? 'var(--green-deep)' : 'var(--text-mute)'">{{ r.rank }}</span>
                     <div class="flex-1 min-w-0">
-                      <div class="flex justify-between text-sm"><span class="truncate">{{ r.name }}</span><span class="font-mono text-txt-mute">{{ r.health }}%</span></div>
-                      <div class="mt-1 h-1.5 rounded-full" style="background:var(--paper-3)">
-                        <div class="h-full rounded-full" [style.width.%]="r.health" style="background:var(--green)"></div>
-                      </div>
+                      <div class="flex justify-between text-sm mb-1"><span class="truncate">{{ r.name }}</span><span class="font-mono text-txt-mute">{{ r.health }}%</span></div>
+                      <asta-progress [value]="r.health" />
                     </div>
                   </div>
                 }
@@ -124,7 +132,7 @@ import { CohortDetail, CohortStatus, CohortView, LeaderboardRow, OrgMember } fro
             </div>
 
             <!-- Announcements -->
-            <div class="card" style="padding:18px">
+            <div class="card" style="padding:18px" [astaReveal]="2">
               <p class="kicker mb-3">Announcements</p>
               @if (canManage()) {
                 <div class="mb-4">
@@ -148,7 +156,7 @@ import { CohortDetail, CohortStatus, CohortView, LeaderboardRow, OrgMember } fro
             </div>
 
             <!-- Members -->
-            <div class="card" style="padding:18px">
+            <div class="card" style="padding:18px" [astaReveal]="3">
               <p class="kicker mb-3">Members</p>
               <div class="grid sm:grid-cols-2 gap-4">
                 <div>

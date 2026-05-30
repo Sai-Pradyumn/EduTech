@@ -7,6 +7,8 @@ import { SkeletonComponent } from '../../shared/ui/skeleton.component';
 import { EmptyStateComponent } from '../../shared/ui/empty-state.component';
 import { ProgressComponent } from '../../shared/ui/progress.component';
 import { DonutChartComponent, ChartDatum } from '../../shared/charts';
+import { RevealDirective } from '../../shared/directives/reveal.directive';
+import { TiltDirective } from '../../shared/directives/tilt.directive';
 
 /**
  * `/admin/roadmaps` (B1) — read-only browser of every generated roadmap across
@@ -17,8 +19,16 @@ import { DonutChartComponent, ChartDatum } from '../../shared/charts';
   selector: 'asta-admin-roadmaps',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [DatePipe, FormsModule, SkeletonComponent, EmptyStateComponent, ProgressComponent, DonutChartComponent],
+  imports: [DatePipe, FormsModule, SkeletonComponent, EmptyStateComponent, ProgressComponent, DonutChartComponent, RevealDirective, TiltDirective],
   template: `
+    <!-- Command header -->
+    <header class="asta-page-command-header">
+      <div class="min-w-0">
+        <h1 class="text-[26px] leading-tight mb-2 grad-flow">Roadmaps</h1>
+        <span class="goal-pill"><span class="dot"></span>Every generated path across students · progress &amp; status</span>
+      </div>
+    </header>
+
     @if (loading()) {
       <div class="card" style="padding:16px">
         @for (n of [1,2,3,4,5,6]; track n) { <div class="py-2"><asta-skeleton h="16px" /></div> }
@@ -30,9 +40,9 @@ import { DonutChartComponent, ChartDatum } from '../../shared/charts';
     } @else {
       @if (all().length) {
         <div class="grid gap-4 md:grid-cols-3 mb-4">
-          <div class="card stat"><span class="num">{{ all().length }}</span><span class="lbl">Roadmaps</span></div>
-          <div class="card stat"><span class="num">{{ avgProgress() }}%</span><span class="lbl">Avg progress</span></div>
-          <div class="card" style="padding:14px 16px">
+          <div class="card stat" astaTilt [tiltMax]="4" [astaReveal]="0"><span class="num">{{ all().length }}</span><span class="lbl">Roadmaps</span></div>
+          <div class="card stat" astaTilt [tiltMax]="4" [astaReveal]="1"><span class="num">{{ avgProgress() }}%</span><span class="lbl">Avg progress</span></div>
+          <div class="card" style="padding:14px 16px" [astaReveal]="2">
             <p class="kicker mb-2" style="color:var(--green-deep)">By status</p>
             <asta-donut-chart [data]="statusMix()" [size]="92" [thickness]="14" centerLabel="total" label="Roadmaps by status" />
           </div>
@@ -40,7 +50,7 @@ import { DonutChartComponent, ChartDatum } from '../../shared/charts';
       }
       <input class="input mb-4" style="max-width:320px" placeholder="Search title, goal or owner…"
         [(ngModel)]="query" (ngModelChange)="q.set($event)" />
-      <div class="card" style="padding:0;overflow:auto">
+      <div class="card" style="padding:0;overflow:auto" [astaReveal]="3">
         <table>
           <thead><tr><th>Roadmap</th><th>Owner</th><th>Status</th><th style="min-width:160px">Progress</th><th>Weeks</th><th>Created</th></tr></thead>
           <tbody>

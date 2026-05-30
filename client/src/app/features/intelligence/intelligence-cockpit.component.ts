@@ -9,20 +9,26 @@ import { SkeletonComponent } from '../../shared/ui/skeleton.component';
 import { EmptyStateComponent } from '../../shared/ui/empty-state.component';
 import { AiSkillRadarComponent, RadarAxis } from '../../shared/components/ai/ai-skill-radar.component';
 import { LineChartComponent, ChartDatum } from '../../shared/charts';
+import { RevealDirective } from '../../shared/directives/reveal.directive';
+import { TiltDirective } from '../../shared/directives/tilt.directive';
+import { MagneticDirective } from '../../shared/directives/magnetic.directive';
 
 @Component({
   selector: 'asta-intelligence-cockpit',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink, ButtonComponent, CardComponent, RingComponent, SkeletonComponent, EmptyStateComponent, AiSkillRadarComponent, LineChartComponent],
+  imports: [RouterLink, ButtonComponent, CardComponent, RingComponent, SkeletonComponent, EmptyStateComponent, AiSkillRadarComponent, LineChartComponent, RevealDirective, TiltDirective, MagneticDirective],
   template: `
-    <div class="flex items-center justify-between gap-4 mb-6">
-      <div>
-        <h1 class="text-[26px] mb-1">Learning Intelligence</h1>
-        <p class="text-sm text-txt-mute">Your skill map, weak spots and readiness — from everything you do in Asta.</p>
+    <!-- Command header -->
+    <header class="asta-page-command-header">
+      <div class="min-w-0">
+        <h1 class="text-[26px] leading-tight mb-2 grad-flow">Learning Intelligence</h1>
+        <span class="goal-pill"><span class="dot"></span>Skill map · weak spots · readiness — from everything you do in Asta</span>
       </div>
-      <button class="text-xs text-txt-mute hover:text-txt" (click)="load()">Refresh</button>
-    </div>
+      <div class="flex gap-2.5 shrink-0">
+        <asta-btn variant="ghost" size="sm" astaMagnetic (click)="load()">Refresh</asta-btn>
+      </div>
+    </header>
 
     @if (loading()) {
       <div class="grid gap-5 md:grid-cols-3">
@@ -40,7 +46,7 @@ import { LineChartComponent, ChartDatum } from '../../shared/charts';
         </asta-card>
       } @else {
         <!-- headline + scores -->
-        <asta-card accentVar="var(--green)" class="block mb-5">
+        <asta-card [astaReveal]="0" class="block mb-5">
           <div class="flex flex-wrap items-center gap-6">
             <div class="flex items-center gap-5">
               <div class="text-center"><asta-ring [value]="d.healthScore" [size]="104" /><p class="kicker mt-2">Learning health</p></div>
@@ -51,8 +57,8 @@ import { LineChartComponent, ChartDatum } from '../../shared/charts';
         </asta-card>
 
         <div class="grid gap-4 grid-cols-2 lg:grid-cols-4 mb-5">
-          @for (s of d.scores; track s.label) {
-            <asta-card>
+          @for (s of d.scores; track s.label; let i = $index) {
+            <asta-card astaTilt [tiltMax]="4" [astaReveal]="i + 1">
               <p class="kicker mb-2">{{ s.label }}</p>
               <p class="font-display text-[26px] leading-none">{{ s.value }}<span class="text-base text-txt-mute">%</span></p>
               <div class="bar mt-2"><div class="bar-fill" [style.width.%]="s.value"></div></div>
@@ -63,7 +69,7 @@ import { LineChartComponent, ChartDatum } from '../../shared/charts';
 
         <div class="grid gap-5 lg:grid-cols-2 mb-5">
           <!-- radar -->
-          <asta-card>
+          <asta-card [astaReveal]="5">
             <p class="kicker mb-3">Skill radar</p>
             @if (radarAxes().length >= 3) {
               <div class="grid place-items-center"><ai-skill-radar [data]="radarAxes()" /></div>
@@ -83,7 +89,7 @@ import { LineChartComponent, ChartDatum } from '../../shared/charts';
           </asta-card>
 
           <!-- weakness heatmap -->
-          <asta-card accentVar="var(--coral)">
+          <asta-card [astaReveal]="6">
             <p class="kicker mb-3" style="color:var(--coral-deep)">Weakness heatmap</p>
             @if (d.weaknesses.length) {
               <div class="space-y-2.5">
@@ -95,7 +101,7 @@ import { LineChartComponent, ChartDatum } from '../../shared/charts';
                   </div>
                 }
               </div>
-              <asta-btn variant="ghost" size="sm" class="mt-3 inline-block" routerLink="/app/quizzes">Drill these in Quiz Studio →</asta-btn>
+              <asta-btn variant="ghost" size="sm" astaMagnetic class="mt-3 inline-block" routerLink="/app/quizzes">Drill these in Quiz Studio →</asta-btn>
             } @else {
               <p class="text-sm text-txt-soft py-6 text-center">No weak spots flagged yet — take a quiz to map your gaps.</p>
             }
@@ -104,7 +110,7 @@ import { LineChartComponent, ChartDatum } from '../../shared/charts';
 
         <div class="grid gap-5 lg:grid-cols-3 mb-5">
           <!-- momentum -->
-          <asta-card>
+          <asta-card astaTilt [tiltMax]="4" [astaReveal]="7">
             <p class="kicker mb-3">Momentum</p>
             <div class="grid grid-cols-2 gap-3">
               <div><p class="font-display text-2xl">{{ d.momentum.streak }}🔥</p><p class="text-xs text-txt-mute">day streak</p></div>
@@ -116,7 +122,7 @@ import { LineChartComponent, ChartDatum } from '../../shared/charts';
           </asta-card>
 
           <!-- trend -->
-          <asta-card>
+          <asta-card astaTilt [tiltMax]="4" [astaReveal]="8">
             <p class="kicker mb-3">Quiz trend</p>
             @if (trendData().length >= 2) {
               <asta-line-chart [area]="true" tone="green" [data]="trendData()" [height]="92"
@@ -130,16 +136,16 @@ import { LineChartComponent, ChartDatum } from '../../shared/charts';
           </asta-card>
 
           <!-- recommendations -->
-          <asta-card accentVar="var(--peri)">
+          <asta-card astaTilt [tiltMax]="4" [astaReveal]="9">
             <p class="kicker mb-3" style="color:var(--peri-deep)">Recommended next</p>
             <ul class="space-y-2 text-sm text-txt-soft">
-              @for (r of d.recommendations; track r) { <li class="flex gap-2"><span style="color:var(--peri-deep)">→</span>{{ r }}</li> }
+              @for (r of d.recommendations; track r) { <li class="flex gap-2"><span class="arr" style="color:var(--peri-deep)">→</span>{{ r }}</li> }
             </ul>
           </asta-card>
         </div>
 
         <!-- timeline -->
-        <asta-card>
+        <asta-card [astaReveal]="10">
           <p class="kicker mb-3">Recent activity</p>
           @if (d.timeline.length) {
             <ol class="space-y-2.5">

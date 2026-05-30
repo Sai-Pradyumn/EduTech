@@ -14,9 +14,14 @@ import {
 } from '../../core/models';
 import { MarkdownPipe } from '../../shared/pipes/markdown.pipe';
 import { ButtonComponent } from '../../shared/ui/button.component';
+import { CardComponent } from '../../shared/ui/card.component';
 import { ComposerComponent, ComposerSubmit } from '../../shared/ui/composer.component';
 import { AiAgentActivityFeedComponent } from '../../shared/components/ai/ai-agent-activity-feed.component';
 import { VisualBlockRendererComponent } from '../../shared/components/ai/visual-block-renderer.component';
+import { RevealDirective } from '../../shared/directives/reveal.directive';
+import { MagneticDirective } from '../../shared/directives/magnetic.directive';
+import { TiltDirective } from '../../shared/directives/tilt.directive';
+import { CountDirective } from '../../shared/directives/count.directive';
 
 interface ChatMsg {
   role: 'user' | 'assistant';
@@ -39,18 +44,38 @@ const STARTERS = [
   selector: 'asta-knowledge-hub',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormsModule, MarkdownPipe, ButtonComponent, ComposerComponent, AiAgentActivityFeedComponent, VisualBlockRendererComponent],
+  imports: [FormsModule, MarkdownPipe, ButtonComponent, CardComponent, ComposerComponent, AiAgentActivityFeedComponent, VisualBlockRendererComponent, RevealDirective, MagneticDirective, TiltDirective, CountDirective],
   template: `
-    <div class="grid gap-5 lg:grid-cols-[minmax(300px,360px)_1fr]" style="min-height:calc(100vh - 130px)">
+    <!-- Compact command header -->
+    <header class="asta-page-command-header">
+      <div class="min-w-0">
+        <h1 class="text-[26px] leading-tight mb-2 grad-flow">Knowledge Hub</h1>
+        <span class="goal-pill"><span class="dot"></span>Grounded answers from your docs — {{ scopeLabel() }}</span>
+      </div>
+      <div class="flex gap-2.5 shrink-0">
+        <asta-btn variant="accent" astaMagnetic size="sm" (click)="fileInput.click()" [disabled]="uploading()">Add document</asta-btn>
+        <asta-btn variant="ghost" size="sm" (click)="refresh()">Refresh</asta-btn>
+      </div>
+    </header>
+
+    <div class="grid gap-5 lg:grid-cols-[minmax(300px,360px)_1fr]" style="min-height:calc(100dvh - 230px)">
       <!-- LEFT: upload + library -->
       <div class="space-y-5">
-        <div class="card" style="padding:16px">
-          <p class="kicker mb-3">Add to your knowledge base</p>
-          <div class="drop" [class.drop-over]="dragOver()"
+        <asta-card astaTilt [tiltMax]="4" [astaReveal]="0" pad="16px 18px">
+          <div class="panel-head">
+            <p class="kicker">Add to knowledge base</p>
+            <span class="panel-ico green" aria-hidden="true">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+            </span>
+          </div>
+          <div class="drop mt-3" [class.drop-over]="dragOver()"
             (dragover)="onDragOver($event)" (dragleave)="dragOver.set(false)" (drop)="onDrop($event)">
             <input #fileInput type="file" class="hidden" accept=".txt,.md,.markdown,.json,.pdf,.docx,text/*"
               (change)="onFilePicked($event)" />
-            <p class="text-sm text-txt-soft mb-2">Drop a file or</p>
+            <span class="drop-glyph" aria-hidden="true">
+              <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+            </span>
+            <p class="text-sm text-txt-soft mt-2 mb-2">Drop a file here or</p>
             <asta-btn variant="ghost" size="sm" (click)="fileInput.click()" [disabled]="uploading()">Choose file</asta-btn>
             <p class="text-[11px] text-txt-mute mt-2">.txt .md .json · .pdf/.docx if supported · ≤ 10 MB</p>
           </div>
@@ -65,17 +90,22 @@ const STARTERS = [
                 (click)="submitText()">Add document</asta-btn>
             </div>
           }
-        </div>
+        </asta-card>
 
-        <div class="card" style="padding:16px">
-          <div class="flex items-center justify-between mb-3">
+        <asta-card [astaReveal]="1" pad="16px 18px">
+          <div class="panel-head">
             <p class="kicker">Your documents</p>
-            <button class="text-xs text-txt-mute hover:text-txt" (click)="refresh()">Refresh</button>
+            <span class="panel-ico peri" aria-hidden="true">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+            </span>
           </div>
           @if (docs().length === 0) {
-            <p class="text-sm text-txt-mute py-6 text-center">No documents yet. Add one above to start asking grounded questions.</p>
+            <div class="text-center py-7">
+              <p class="text-sm text-txt-soft mb-3">No documents yet. Add one to start asking grounded questions.</p>
+              <asta-btn variant="ghost" size="sm" (click)="fileInput.click()" [disabled]="uploading()">Upload your first doc <span class="arr">→</span></asta-btn>
+            </div>
           }
-          <div class="space-y-2.5">
+          <div class="space-y-2.5 mt-3">
             @for (d of docs(); track d.id) {
               <div class="doc" [class.doc-on]="isSelected(d.id)">
                 <div class="flex items-start gap-2">
@@ -85,7 +115,7 @@ const STARTERS = [
                     <p class="text-sm font-medium truncate">{{ d.title }}</p>
                     <div class="flex items-center gap-2 mt-1">
                       <span class="status" [attr.data-s]="d.status">{{ statusLabel(d) }}</span>
-                      @if (d.status === 'ready') { <span class="text-[11px] text-txt-mute">{{ d.chunkCount }} chunks</span> }
+                      @if (d.status === 'ready') { <span class="text-[11px] text-txt-mute"><span [astaCount]="d.chunkCount"></span> chunks</span> }
                     </div>
                     @if (d.tags.length) {
                       <div class="flex flex-wrap gap-1 mt-1.5">@for (t of d.tags.slice(0,4); track t) { <span class="tag">{{ t }}</span> }</div>
@@ -104,20 +134,23 @@ const STARTERS = [
               </div>
             }
           </div>
-        </div>
+        </asta-card>
       </div>
 
       <!-- RIGHT: grounded chat -->
       <div class="flex flex-col card" style="padding:0;overflow:hidden">
-        <div class="flex items-center justify-between px-5 py-3" style="border-bottom:1px solid var(--paper-3)">
-          <div>
-            <h2 class="text-[18px] font-display font-semibold">Knowledge Hub</h2>
-            <p class="text-xs text-txt-mute">Grounded answers with citations — {{ scopeLabel() }}</p>
+        <div class="flex items-center justify-between gap-3 px-5 py-3.5" style="border-bottom:1px solid color-mix(in oklch, var(--paper-3) 60%, transparent)">
+          <div class="flex items-center gap-3 min-w-0">
+            <span class="rag-orb" [class.busy]="busy()" aria-hidden="true"></span>
+            <div class="min-w-0">
+              <p class="text-[15px] font-display font-semibold leading-tight">Grounded chat</p>
+              <p class="text-[11px] font-mono text-txt-mute">{{ busy() ? 'Retrieving…' : 'Ready' }} · {{ scopeLabel() }}</p>
+            </div>
           </div>
         </div>
 
         @if (panel(); as p) {
-          <div class="px-5 py-3" style="border-bottom:1px solid var(--paper-3);background:var(--paper-2)">
+          <div class="px-5 py-3" style="border-bottom:1px solid color-mix(in oklch, var(--paper-3) 60%, transparent);background:color-mix(in oklch, var(--paper-2) 50%, transparent)">
             <div class="flex items-center justify-between mb-2">
               <p class="kicker">{{ p.title }}</p>
               <button class="text-xs text-txt-mute hover:text-txt" (click)="panel.set(null)">Close</button>
@@ -140,28 +173,34 @@ const STARTERS = [
           </div>
         }
 
-        <div class="flex-1 overflow-y-auto px-5 py-5 space-y-5" style="max-height:calc(100vh - 360px)">
+        <div class="flex-1 overflow-y-auto scroll-area px-5 py-5 space-y-5" style="max-height:calc(100dvh - 400px)">
           @if (messages().length === 0) {
-            <div class="text-center py-10">
-              <p class="text-txt-soft mb-4">Ask a question grounded in your documents. I cite every claim and say "I don't know" when your docs don't cover it.</p>
-              <div class="flex flex-wrap gap-2 justify-center">
-                @for (s of starters; track s) { <button class="pill" style="cursor:pointer" (click)="send(s)" [disabled]="!canAsk()">{{ s }}</button> }
+            <div class="grid place-items-center text-center py-12">
+              <span class="rag-orb big mb-4" aria-hidden="true"></span>
+              <p class="t-h-card mb-1">Ask your documents</p>
+              <p class="text-txt-soft text-sm mb-5 max-w-[460px]">I cite every claim and say "I don't know" when your docs don't cover it.</p>
+              <div class="flex flex-wrap gap-2 justify-center max-w-[520px]">
+                @for (s of starters; track s) { <button class="starter-chip" (click)="send(s)" [disabled]="!canAsk()">{{ s }}</button> }
               </div>
-              @if (!canAsk()) { <p class="text-xs text-txt-mute mt-3">Add a document first (and wait for it to be “ready”).</p> }
+              @if (!canAsk()) { <p class="text-xs text-txt-mute mt-4">Add a document first (and wait for it to be "ready").</p> }
             </div>
           }
           @for (msg of messages(); track $index) {
             @if (msg.role === 'user') {
-              <div class="flex justify-end">
-                <div class="px-4 py-2.5 text-ink" style="background:var(--green);border-radius:16px 16px 4px 16px;max-width:80%">{{ msg.content }}</div>
+              <div class="flex justify-end motion-fade-up">
+                <div class="user-bubble">{{ msg.content }}</div>
               </div>
             } @else {
-              <div class="flex gap-3">
-                <span class="grid place-items-center shrink-0 rounded-[10px] text-ink font-display font-semibold" style="width:32px;height:32px;background:var(--peri)">R</span>
+              <div class="flex gap-3 motion-fade-up">
+                <span class="msg-orb shrink-0" [class.busy]="msg.streaming" aria-hidden="true"></span>
                 <div class="min-w-0 flex-1">
-                  <p class="font-mono text-[11px] text-txt-mute mb-1">
-                    rag
-                    @if (!msg.streaming) { · <span [style.color]="confColor(msg.confidence)">{{ confLabel(msg.confidence) }} · {{ pct(msg.confidence) }}%</span> }
+                  <p class="font-mono text-[11px] text-txt-mute mb-1 flex items-center gap-1.5">
+                    <span>rag</span>
+                    @if (!msg.streaming) {
+                      <span class="conf-pill" [style.color]="confColor(msg.confidence)" [style.background]="confBg(msg.confidence)">
+                        <span class="conf-dot" [style.background]="confColor(msg.confidence)"></span>{{ confLabel(msg.confidence) }} · <span [astaCount]="pct(msg.confidence)" suffix="%"></span>
+                      </span>
+                    }
                   </p>
                   <div class="prose-asta text-[15px]" [innerHTML]="msg.content | markdown"></div>
                   @if (msg.streaming) { <span class="stream-cursor"></span> }
@@ -173,11 +212,15 @@ const STARTERS = [
                     </div>
                   }
                   @if (!msg.streaming && msg.role === 'assistant') {
-                    <div class="flex items-center gap-3 mt-2">
-                      <button class="text-txt-mute hover:text-txt" title="Helpful" (click)="feedback('up', msg)">▲</button>
-                      <button class="text-txt-mute hover:text-txt" title="Not helpful" (click)="feedback('down', msg)">▼</button>
+                    <div class="flex items-center flex-wrap gap-2 mt-2.5">
+                      <button class="fb-btn" title="Helpful" (click)="feedback('up', msg)">
+                        <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 10v12M15 5.88 14 10h5.83a2 2 0 0 1 1.92 2.56l-2.33 8A2 2 0 0 1 17.5 22H4a2 2 0 0 1-2-2v-8a2 2 0 0 1 2-2h2.76a2 2 0 0 0 1.79-1.11L12 2a3.13 3.13 0 0 1 3 3.88Z"/></svg>
+                      </button>
+                      <button class="fb-btn" title="Not helpful" (click)="feedback('down', msg)">
+                        <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="transform:rotate(180deg)"><path d="M7 10v12M15 5.88 14 10h5.83a2 2 0 0 1 1.92 2.56l-2.33 8A2 2 0 0 1 17.5 22H4a2 2 0 0 1-2-2v-8a2 2 0 0 1 2-2h2.76a2 2 0 0 0 1.79-1.11L12 2a3.13 3.13 0 0 1 3 3.88Z"/></svg>
+                      </button>
                       @for (f of msg.followUps.slice(0, 2); track f) {
-                        <button class="text-xs pill" style="cursor:pointer" (click)="send(f)">{{ f }}</button>
+                        <button class="starter-chip sm" (click)="send(f)">{{ f }}</button>
                       }
                     </div>
                   }
@@ -191,7 +234,7 @@ const STARTERS = [
           @if (busy()) { <ai-agent-activity-feed [steps]="steps()" [running]="busy()" /> }
         </div>
 
-        <div class="px-4 py-3" style="border-top:1px solid var(--paper-3)">
+        <div class="px-4 py-3" style="border-top:1px solid color-mix(in oklch, var(--paper-3) 60%, transparent)">
           <asta-composer [disabled]="busy() || !canAsk()" placeholder="Ask your documents… (Enter to send · Shift+Enter for a new line)" (submit)="onComposer($event)" />
         </div>
       </div>
@@ -457,6 +500,13 @@ export class KnowledgeHubComponent implements OnInit, OnDestroy {
   }
   confColor(c: number): string {
     return c > 0.6 ? 'var(--green-deep)' : c >= 0.35 ? 'var(--peri-deep)' : 'var(--coral-deep)';
+  }
+  confBg(c: number): string {
+    return c > 0.6
+      ? 'color-mix(in oklch, var(--green) 14%, transparent)'
+      : c >= 0.35
+        ? 'color-mix(in oklch, var(--peri) 14%, transparent)'
+        : 'color-mix(in oklch, var(--coral) 14%, transparent)';
   }
   pct(c: number): number {
     return Math.round(c * 100);

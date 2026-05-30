@@ -25,12 +25,31 @@ import { ChangeDetectionStrategy, Component, Input } from '@angular/core';
   `,
   styles: [
     `
+      button { position: relative; overflow: hidden; }
       button:not(:disabled):hover {
         transform: translateY(-2px);
         box-shadow: var(--shadow-md);
       }
       button:active {
         transform: translateY(0);
+      }
+      /* Signature shine sweep on primary CTAs. */
+      .btn-accent::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: -65%;
+        width: 45%;
+        height: 100%;
+        background: linear-gradient(100deg, transparent, rgba(255, 255, 255, 0.5), transparent);
+        transform: skewX(-18deg);
+        pointer-events: none;
+      }
+      button.btn-accent:not(:disabled):hover::before {
+        animation: btnShine 0.8s var(--ease);
+      }
+      @keyframes btnShine {
+        to { left: 125%; }
       }
     `,
   ],
@@ -54,7 +73,7 @@ export class ButtonComponent {
       case 'ghost':
         return 'bg-transparent text-txt border-paper-3 hover:bg-paper-2';
       default:
-        return 'bg-green text-ink';
+        return 'bg-green text-ink btn-accent';
     }
   }
 }

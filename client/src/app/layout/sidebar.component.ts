@@ -84,8 +84,18 @@ import { TranslationKey } from '../core/i18n/translations';
         width: 3px;
         border-radius: 3px;
         background: var(--green);
+        box-shadow: 0 0 8px color-mix(in oklch, var(--green) 55%, transparent);
+        transform-origin: center;
+        animation: navGlide 0.3s var(--ease-spring);
+      }
+      @keyframes navGlide {
+        from { opacity: 0; transform: scaleY(0.25); }
+        to { opacity: 1; transform: scaleY(1); }
       }
       .nav-active svg { color: var(--green); }
+      @media (prefers-reduced-motion: reduce) {
+        .nav-active::before { animation: none; }
+      }
     `,
   ],
 })

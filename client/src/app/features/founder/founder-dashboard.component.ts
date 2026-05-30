@@ -18,6 +18,14 @@ import { RevealDirective } from '../../shared/directives/reveal.directive';
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [DatePipe, SkeletonComponent, LineChartComponent, BarChartComponent, CountDirective, RevealDirective],
   template: `
+    <!-- Command header -->
+    <header class="asta-page-command-header">
+      <div class="min-w-0">
+        <h1 class="text-[26px] leading-tight mb-2 grad-flow">Founder</h1>
+        <span class="goal-pill"><span class="dot"></span>Platform-wide growth, revenue, AI cost &amp; system health</span>
+      </div>
+    </header>
+
     @if (data(); as d) {
       <!-- headline metrics -->
       <div class="grid gap-3 sm:grid-cols-3 lg:grid-cols-5 mb-5">
@@ -32,7 +40,7 @@ import { RevealDirective } from '../../shared/directives/reveal.directive';
 
       <div class="grid gap-5 lg:grid-cols-2">
         <!-- AI cost + agents -->
-        <div class="card" style="padding:18px">
+        <div class="card" style="padding:18px" [astaReveal]="5">
           <p class="kicker mb-3" style="color:var(--peri-deep)">AI usage & cost</p>
           <div class="flex gap-5 mb-3">
             <div><p class="num2">{{ d.ai.totalCalls }}</p><p class="lbl">calls</p></div>
@@ -45,7 +53,7 @@ import { RevealDirective } from '../../shared/directives/reveal.directive';
         </div>
 
         <!-- feature adoption -->
-        <div class="card" style="padding:18px">
+        <div class="card" style="padding:18px" [astaReveal]="6">
           <p class="kicker mb-3" style="color:var(--green-deep)">Feature adoption</p>
           <div class="space-y-3">
             @for (f of d.adoption; track f.feature) {
@@ -62,7 +70,7 @@ import { RevealDirective } from '../../shared/directives/reveal.directive';
         </div>
 
         <!-- top cohorts -->
-        <div class="card" style="padding:18px">
+        <div class="card" style="padding:18px" [astaReveal]="7">
           <p class="kicker mb-3">Top cohorts</p>
           @if (d.topCohorts.length === 0) { <p class="text-sm text-txt-mute">No cohorts yet.</p> }
           <div class="space-y-2">
@@ -76,7 +84,7 @@ import { RevealDirective } from '../../shared/directives/reveal.directive';
         </div>
 
         <!-- signups + health -->
-        <div class="card" style="padding:18px">
+        <div class="card" style="padding:18px" [astaReveal]="8">
           <p class="kicker mb-3">Signups (14d)</p>
           <div class="mb-4">
             <asta-line-chart [area]="true" tone="peri" [data]="signupData()" [height]="96" label="Signups over the last 14 days" />

@@ -9,12 +9,15 @@ import { StudentProfile, TARGET_TIMELINES, TIME_PER_DAY, TargetTimeline, TimePer
 import { ButtonComponent } from '../../shared/ui/button.component';
 import { CardComponent } from '../../shared/ui/card.component';
 import { SkeletonComponent } from '../../shared/ui/skeleton.component';
+import { RevealDirective } from '../../shared/directives/reveal.directive';
+import { TiltDirective } from '../../shared/directives/tilt.directive';
+import { MagneticDirective } from '../../shared/directives/magnetic.directive';
 
 @Component({
   selector: 'asta-roadmap-generate',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormsModule, RouterLink, UpperCasePipe, ButtonComponent, CardComponent, SkeletonComponent],
+  imports: [FormsModule, RouterLink, UpperCasePipe, ButtonComponent, CardComponent, SkeletonComponent, RevealDirective, TiltDirective, MagneticDirective],
   template: `
     <div class="mx-auto" style="max-width:var(--max-w-app,720px)">
       @if (generating()) {
@@ -48,11 +51,15 @@ import { SkeletonComponent } from '../../shared/ui/skeleton.component';
           </div>
         </asta-card>
       } @else {
-        <h1 class="text-[28px] mb-1">Generate your roadmap</h1>
-        <p class="text-txt-soft mb-6">Asta will build a personalized, week-by-week plan from your profile.</p>
+        <header class="asta-page-command-header">
+          <div class="min-w-0">
+            <h1 class="text-[26px] leading-tight mb-2 grad-flow">Generate your roadmap</h1>
+            <span class="goal-pill"><span class="dot"></span>A personalized, week-by-week plan from your profile</span>
+          </div>
+        </header>
 
         @if (profile(); as p) {
-          <asta-card>
+          <asta-card astaTilt [tiltMax]="4" [astaReveal]="0">
             <p class="kicker mb-3">Your profile</p>
             <div class="flex flex-wrap gap-2 mb-2">
               <span class="pill">{{ p.currentSkillLevel }}</span>
@@ -95,7 +102,7 @@ import { SkeletonComponent } from '../../shared/ui/skeleton.component';
             }
 
             <div class="flex gap-3">
-              <asta-btn variant="accent" (click)="generate()" [loading]="generating()" [disabled]="!goal.trim()">Generate roadmap</asta-btn>
+              <asta-btn variant="accent" astaMagnetic (click)="generate()" [loading]="generating()" [disabled]="!goal.trim()">Generate roadmap</asta-btn>
               <asta-btn variant="ghost" routerLink="/app/roadmap">My roadmaps</asta-btn>
             </div>
           </div>

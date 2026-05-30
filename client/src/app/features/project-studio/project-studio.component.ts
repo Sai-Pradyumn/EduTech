@@ -8,6 +8,11 @@ import { AiProjectReview, Difficulty, Project, ProjectTask, TaskStatus } from '.
 import { ButtonComponent } from '../../shared/ui/button.component';
 import { CardComponent } from '../../shared/ui/card.component';
 import { RingComponent } from '../../shared/ui/ring.component';
+import { ProgressComponent } from '../../shared/ui/progress.component';
+import { TiltDirective } from '../../shared/directives/tilt.directive';
+import { RevealDirective } from '../../shared/directives/reveal.directive';
+import { MagneticDirective } from '../../shared/directives/magnetic.directive';
+import { CountDirective } from '../../shared/directives/count.directive';
 
 type View = 'home' | 'board';
 const COLUMNS: { key: TaskStatus; label: string }[] = [
@@ -21,13 +26,29 @@ const DIFFS: Difficulty[] = ['beginner', 'intermediate', 'advanced'];
   selector: 'asta-project-studio',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormsModule, ButtonComponent, CardComponent, RingComponent],
+  imports: [
+    FormsModule, ButtonComponent, CardComponent, RingComponent, ProgressComponent,
+    TiltDirective, RevealDirective, MagneticDirective, CountDirective,
+  ],
   template: `
     @switch (view()) {
       @case ('home') {
+        <!-- Compact command header -->
+        <header class="asta-page-command-header">
+          <div class="min-w-0">
+            <h1 class="text-[26px] leading-tight mb-2 grad-flow">Project Studio</h1>
+            <span class="goal-pill"><span class="dot"></span>Project Forge · blueprint, board &amp; AI review</span>
+          </div>
+        </header>
+
         <div class="space-y-5">
-          <div class="card" style="padding:18px">
-            <p class="kicker mb-3">Plan a new project</p>
+          <asta-card accentVar="var(--green)" astaTilt [tiltMax]="4" [astaReveal]="0">
+            <div class="panel-head mb-3">
+              <p class="kicker">Plan a new project</p>
+              <span class="panel-ico" aria-hidden="true">
+                <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
+              </span>
+            </div>
             <p class="text-sm text-txt-soft mb-3">Describe what you want to build — Asta designs a full blueprint: tech stack, features, a phased Kanban board and milestones, scaled to your level.</p>
             <input class="input mb-3" placeholder="e.g. a realtime chat app, an e-commerce store, a REST API for a blog" [(ngModel)]="goal" (keydown.enter)="generate()" />
             <div class="flex flex-wrap items-center gap-3">
@@ -35,12 +56,17 @@ const DIFFS: Difficulty[] = ['beginner', 'intermediate', 'advanced'];
                 @for (d of diffs; track d) { <button class="chip" [class.chip-on]="difficulty() === d" (click)="difficulty.set(d)">{{ d }}</button> }
                 <button class="chip" [class.chip-on]="difficulty() === null" (click)="difficulty.set(null)">auto</button>
               </div>
-              <asta-btn variant="accent" size="sm" [loading]="generating()" [disabled]="goal.trim().length < 3" (click)="generate()">Generate blueprint</asta-btn>
+              <asta-btn variant="accent" size="sm" astaMagnetic [loading]="generating()" [disabled]="goal.trim().length < 3" (click)="generate()">Generate blueprint <span class="arr">→</span></asta-btn>
             </div>
-          </div>
+          </asta-card>
 
-          <div class="card" style="padding:18px">
-            <p class="kicker mb-3">Your projects</p>
+          <asta-card astaTilt [tiltMax]="4" [astaReveal]="1">
+            <div class="panel-head mb-3">
+              <p class="kicker">Your projects</p>
+              <span class="panel-ico" aria-hidden="true">
+                <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7h18M3 12h18M3 17h18"/></svg>
+              </span>
+            </div>
             @if (projects().length === 0) {
               <p class="text-sm text-txt-mute py-6 text-center">No projects yet — plan one above.</p>
             }
@@ -52,31 +78,37 @@ const DIFFS: Difficulty[] = ['beginner', 'intermediate', 'advanced'];
                     <span class="status" [attr.data-s]="p.status">{{ p.status }}</span>
                   </div>
                   <div class="flex flex-wrap gap-1 my-2">@for (t of p.techStack; track t) { <span class="tag">{{ t }}</span> }</div>
-                  <div class="bar"><div class="bar-fill" [style.width.%]="p.progressPercentage"></div></div>
-                  <p class="text-[11px] text-txt-mute mt-1.5">{{ p.progressPercentage }}% · {{ p.difficulty }} · {{ p.estimatedWeeks }}w</p>
+                  <asta-progress [value]="p.progressPercentage" />
+                  <p class="text-[11px] text-txt-mute mt-1.5"><span [astaCount]="p.progressPercentage" suffix="%"></span> · {{ p.difficulty }} · {{ p.estimatedWeeks }}w</p>
                 </button>
               }
             </div>
-          </div>
+          </asta-card>
         </div>
       }
 
       @case ('board') {
         @if (project(); as p) {
-          <div class="flex items-center justify-between gap-3 mb-4">
-            <div>
-              <button class="text-xs text-txt-mute hover:text-txt mb-1" (click)="backHome()">← All projects</button>
-              <h1 class="text-[24px] leading-tight">{{ p.title }}</h1>
+          <!-- Compact command header -->
+          <header class="asta-page-command-header">
+            <div class="min-w-0">
+              <button class="back-link mb-1" (click)="backHome()"><span class="arr-back">←</span> All projects</button>
+              <h1 class="text-[26px] leading-tight grad-flow">{{ p.title }}</h1>
             </div>
-            <div class="flex items-center gap-3">
+            <div class="flex items-center gap-3 shrink-0">
               <asta-ring [value]="p.progressPercentage" [size]="64" />
             </div>
-          </div>
+          </header>
 
           <!-- blueprint header -->
-          <div class="grid gap-5 lg:grid-cols-3 mb-5">
-            <asta-card class="lg:col-span-2">
-              <p class="kicker mb-2">Blueprint</p>
+          <div class="grid gap-5 lg:grid-cols-3 mb-5" [astaReveal]="0">
+            <asta-card class="lg:col-span-2" astaTilt [tiltMax]="4">
+              <div class="panel-head mb-2">
+                <p class="kicker">Blueprint</p>
+                <span class="panel-ico" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+                </span>
+              </div>
               <p class="text-sm text-txt-soft mb-3">{{ p.summary }}</p>
               <div class="flex flex-wrap gap-1.5 mb-3">@for (t of p.techStack; track t) { <span class="pill">{{ t }}</span> }</div>
               <p class="text-[12px] text-txt-mute mb-1">Features</p>
@@ -85,8 +117,13 @@ const DIFFS: Difficulty[] = ['beginner', 'intermediate', 'advanced'];
               <div class="flex flex-wrap gap-1.5">@for (l of p.learningGoals; track l) { <span class="tag">{{ l }}</span> }</div>
             </asta-card>
 
-            <asta-card accentVar="var(--peri)">
-              <p class="kicker mb-3" style="color:var(--peri-deep)">Milestones</p>
+            <asta-card accentVar="var(--peri)" astaTilt [tiltMax]="4">
+              <div class="panel-head mb-3">
+                <p class="kicker" style="color:var(--peri-deep)">Milestones</p>
+                <span class="panel-ico peri" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg>
+                </span>
+              </div>
               <ol class="space-y-2.5">
                 @for (m of p.milestones; track m.title) {
                   <li class="flex items-start gap-2.5">
@@ -99,7 +136,7 @@ const DIFFS: Difficulty[] = ['beginner', 'intermediate', 'advanced'];
           </div>
 
           <!-- kanban -->
-          <div class="grid gap-4 md:grid-cols-3 mb-5">
+          <div class="grid gap-4 md:grid-cols-3 mb-5" [astaReveal]="1">
             @for (col of columns; track col.key) {
               <div class="kcol">
                 <div class="flex items-center justify-between mb-2">
@@ -134,8 +171,13 @@ const DIFFS: Difficulty[] = ['beginner', 'intermediate', 'advanced'];
           </div>
 
           <!-- submit -->
-          <asta-card accentVar="var(--green)">
-            <p class="kicker mb-3">@if (p.submission?.submittedAt) { Submission } @else { Submit your project }</p>
+          <asta-card accentVar="var(--green)" astaTilt [tiltMax]="4" [astaReveal]="2">
+            <div class="panel-head mb-3">
+              <p class="kicker">@if (p.submission?.submittedAt) { Submission } @else { Submit your project }</p>
+              <span class="panel-ico" aria-hidden="true">
+                <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2 11 13M22 2l-7 20-4-9-9-4z"/></svg>
+              </span>
+            </div>
             @if (p.submission?.submittedAt) {
               <p class="text-sm text-txt-soft mb-2">Submitted {{ ago(p.submission!.submittedAt!) }} ago.</p>
               <div class="flex flex-wrap gap-3 text-sm">
@@ -151,28 +193,33 @@ const DIFFS: Difficulty[] = ['beginner', 'intermediate', 'advanced'];
                 <input class="input" placeholder="Video URL" [(ngModel)]="sub.videoUrl" />
               </div>
               <textarea class="input mb-2" rows="2" placeholder="Notes: what you built, decisions, what you'd improve…" [(ngModel)]="sub.notes"></textarea>
-              <asta-btn variant="accent" size="sm" [loading]="submitting()" (click)="submit()">Mark complete & submit</asta-btn>
+              <asta-btn variant="accent" size="sm" astaMagnetic [loading]="submitting()" (click)="submit()">Mark complete &amp; submit <span class="arr">→</span></asta-btn>
               <p class="text-[11px] text-txt-mute mt-2">Submitting marks every task done, completes the project, and runs an instant AI review.</p>
             }
           </asta-card>
 
           <!-- AI review (B8) -->
           @if (p.submission?.submittedAt) {
-            <asta-card accentVar="var(--peri)" class="mt-5">
-              <div class="flex items-center justify-between gap-3 mb-3">
-                <p class="kicker" style="color:var(--peri-deep)">AI review</p>
+            <asta-card accentVar="var(--peri)" astaTilt [tiltMax]="4" class="mt-5">
+              <div class="panel-head mb-3">
+                <div class="flex items-center gap-3">
+                  <span class="panel-ico peri" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a7 7 0 0 0-4 12.7V17a2 2 0 0 0 2 2h4a2 2 0 0 0 2-2v-2.3A7 7 0 0 0 12 2z"/><path d="M9 21h6"/></svg>
+                  </span>
+                  <p class="kicker" style="color:var(--peri-deep)">AI review</p>
+                </div>
                 <button class="text-[11px] text-txt-mute hover:text-txt" [disabled]="reviewing()" (click)="rerunReview()">{{ reviewing() ? 'Reviewing…' : '↻ Re-run' }}</button>
               </div>
               @if (p.aiReview; as r) {
-                <div class="flex items-center gap-4 mb-3">
-                  <asta-ring [value]="r.overallScore" [size]="58" />
+                <div class="flex items-center gap-4 mb-4">
+                  <asta-ring [value]="r.overallScore" [size]="58" tone="peri" />
                   <p class="text-sm text-txt-soft">{{ r.summary }}</p>
                 </div>
-                <div class="grid sm:grid-cols-2 gap-x-5 gap-y-2 mb-4">
+                <div class="grid sm:grid-cols-2 gap-x-5 gap-y-3 mb-4">
                   @for (s of scoreRows(r); track s.label) {
                     <div>
-                      <div class="flex justify-between text-[11px] text-txt-mute mb-0.5"><span>{{ s.label }}</span><span>{{ s.value }}</span></div>
-                      <div class="bar"><div class="bar-fill" [style.width.%]="s.value" style="background:var(--peri)"></div></div>
+                      <div class="flex justify-between text-[11px] text-txt-mute mb-1"><span>{{ s.label }}</span><span [astaCount]="s.value"></span></div>
+                      <asta-progress [value]="s.value" tone="peri" />
                     </div>
                   }
                 </div>
@@ -201,8 +248,13 @@ const DIFFS: Difficulty[] = ['beginner', 'intermediate', 'advanced'];
 
           <!-- Mentor review (B2) -->
           @if (p.mentorReview; as mr) {
-            <asta-card accentVar="var(--green)" class="mt-5">
-              <p class="kicker mb-2">Mentor review</p>
+            <asta-card accentVar="var(--green)" astaTilt [tiltMax]="4" class="mt-5">
+              <div class="panel-head mb-2">
+                <p class="kicker">Mentor review</p>
+                <span class="panel-ico" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                </span>
+              </div>
               <div class="flex items-center gap-2 mb-2">
                 <span class="status" [attr.data-s]="mr.decision === 'approved' ? 'completed' : 'in_progress'">{{ mr.decision === 'approved' ? 'Approved' : 'Changes requested' }}</span>
                 @if (mr.score != null) { <span class="text-[12px] text-txt-mute">{{ mr.score }}/100</span> }
@@ -217,8 +269,10 @@ const DIFFS: Difficulty[] = ['beginner', 'intermediate', 'advanced'];
   `,
   styles: [
     `
-      .chip { font-family: var(--mono); font-size: 11px; text-transform: uppercase; padding: 4px 10px; border-radius: 100px; border: 1px solid var(--paper-3); background: var(--paper); color: var(--text-soft); }
-      .chip-on { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+      .chip { font-family: var(--mono); font-size: 11px; text-transform: uppercase; padding: 5px 11px; border-radius: 100px; border: 1px solid color-mix(in oklch, var(--paper-3) 70%, transparent); background: color-mix(in oklch, var(--paper-2) 55%, transparent); color: var(--text-soft); cursor: pointer; transition: transform .15s var(--ease-spring), border-color .15s var(--ease), color .15s var(--ease); }
+      .chip:hover { color: var(--text); border-color: color-mix(in oklch, var(--green) 38%, transparent); transform: translateY(-1px); }
+      .chip-on { background: linear-gradient(135deg, var(--green), var(--green-deep)); color: #06100a; border-color: transparent; box-shadow: 0 4px 12px var(--asta-accent-glow); }
+      .chip-on:hover { color: #06100a; transform: translateY(-1px); }
       .proj { text-align: left; border: 1px solid var(--paper-3); border-radius: 14px; padding: 14px; background: var(--paper); transition: border-color .15s; }
       .proj:hover { border-color: var(--green); }
       .status { font-family: var(--mono); font-size: 10px; text-transform: uppercase; padding: 1px 7px; border-radius: 100px; background: var(--paper-2); color: var(--text-soft); }

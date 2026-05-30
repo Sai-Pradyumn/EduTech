@@ -4,18 +4,28 @@ import { BillingService } from '../../core/services/billing.service';
 import { ToastService } from '../../core/services/toast.service';
 import { Plan, PlanId, SubscriptionView, TransactionView, UsageView } from '../../core/models';
 import { GaugeComponent } from '../../shared/charts';
+import { RevealDirective } from '../../shared/directives/reveal.directive';
+import { TiltDirective } from '../../shared/directives/tilt.directive';
 
 /** Billing & usage (B5/B6): current plan, AI usage meter, plan upgrade (mock checkout), invoices. */
 @Component({
   selector: 'asta-billing',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [DatePipe, GaugeComponent],
+  imports: [DatePipe, GaugeComponent, RevealDirective, TiltDirective],
   template: `
+    <!-- Command header -->
+    <header class="asta-page-command-header max-w-app mx-auto">
+      <div class="min-w-0">
+        <h1 class="text-[26px] leading-tight mb-2 grad-flow">Billing &amp; usage</h1>
+        <span class="goal-pill"><span class="dot"></span>Your plan, AI usage meter &amp; invoices</span>
+      </div>
+    </header>
+
     <div class="max-w-app mx-auto space-y-6">
       <!-- Current plan + usage -->
       <div class="grid gap-5 md:grid-cols-2">
-        <div class="card" style="padding:20px">
+        <div class="card" style="padding:20px" [astaReveal]="0">
           <p class="kicker mb-3" style="color:var(--green-deep)">Current plan</p>
           @if (sub(); as s) {
             <div class="flex items-baseline gap-2">
@@ -29,7 +39,7 @@ import { GaugeComponent } from '../../shared/charts';
           }
         </div>
 
-        <div class="card" style="padding:20px">
+        <div class="card" style="padding:20px" [astaReveal]="1">
           <p class="kicker mb-3">AI usage this month</p>
           @if (usage(); as u) {
             <div class="flex items-center gap-5">
@@ -58,8 +68,8 @@ import { GaugeComponent } from '../../shared/charts';
       <div>
         <p class="kicker mb-4">Plans</p>
         <div class="grid gap-4 md:grid-cols-3">
-          @for (p of plans(); track p.id) {
-            <div class="card relative" style="padding:22px"
+          @for (p of plans(); track p.id; let i = $index) {
+            <div class="card relative" style="padding:22px" astaTilt [tiltMax]="4" [astaReveal]="i"
               [style.borderColor]="p.highlight ? 'var(--green)' : null"
               [style.boxShadow]="p.highlight ? 'var(--shadow-md)' : null">
               @if (p.highlight) { <span class="pill absolute" style="top:-12px;right:16px;background:var(--green);color:var(--ink);border:0">Popular</span> }
@@ -83,7 +93,7 @@ import { GaugeComponent } from '../../shared/charts';
 
       <!-- Invoices -->
       @if (txns().length) {
-        <div class="card" style="padding:18px">
+        <div class="card" style="padding:18px" [astaReveal]="0">
           <p class="kicker mb-3">Invoices</p>
           <div class="space-y-1.5">
             @for (t of txns(); track t.id) {

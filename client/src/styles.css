@@ -61,6 +61,9 @@
   --ease-spring: cubic-bezier(.22, 1.2, .36, 1);
   --sidebar-w: 240px;
   --skeleton-hi: oklch(1 0 0 / .6);
+  /* Card surface highlight — a thin top light-bloom layered over the soft shadow,
+     so cards read as lit paper sheets rather than hard-bordered boxes. */
+  --card-hi: oklch(1 0 0 / .55);
   color-scheme: light;
 }
 
@@ -100,6 +103,8 @@
   --shadow-lg: 0 10px 30px oklch(0 0 0 / .5), 0 36px 90px oklch(0 0 0 / .6);
   --shadow-ink: 0 20px 60px oklch(0 0 0 / .55);
   --skeleton-hi: oklch(1 0 0 / .07);
+  /* On dark, the top bloom is barely-there — just enough to define the upper edge. */
+  --card-hi: oklch(1 0 0 / .05);
   color-scheme: dark;
 }
 
@@ -165,21 +170,63 @@
   }
   .kicker::before { content: ''; width: 22px; height: 1.5px; background: currentColor; display: inline-block; }
 
-  /* Card */
+  /* Card — depth comes from LIGHT, never from border strips. A soft corner
+     light-bloom reads as a lit sheet; the hairline is barely-there. No top/side
+     accent rule anywhere (banned). The cursor spotlight lives in `asta-card`. */
   .card {
-    background: var(--paper); border: 1px solid var(--paper-3);
-    border-radius: var(--r-md); box-shadow: var(--shadow-sm);
+    position: relative;
+    background:
+      radial-gradient(135% 95% at 0% 0%, color-mix(in oklch, var(--paper-2) 60%, transparent), transparent 56%),
+      var(--paper);
+    /* Hairline carries separation on dark (where shadows are near-invisible on a
+       near-black ground). Uniform 1px — NOT an accent strip. */
+    border: 1px solid color-mix(in oklch, var(--paper-3) 75%, transparent);
+    border-radius: var(--r-md);
+    box-shadow: var(--shadow-sm);
   }
-  .dark-surface .card, .card.on-dark { background: var(--ink-2); border-color: var(--ink-3); box-shadow: none; }
+  /* On dark, lift the card surface a step above the page so edges + gaps read. */
+  :root[data-theme='dark'] .card {
+    background:
+      radial-gradient(135% 95% at 0% 0%, oklch(1 0 0 / .05), transparent 56%),
+      var(--paper-2);
+    border-color: color-mix(in oklch, var(--paper-3) 92%, transparent);
+  }
+  .dark-surface .card, .card.on-dark {
+    background:
+      radial-gradient(135% 95% at 0% 0%, oklch(1 0 0 / .04), transparent 56%),
+      var(--ink-2);
+    border-color: color-mix(in oklch, var(--ink-3) 70%, transparent);
+  }
+  /* Accent card — NO strip. Identity = a soft corner bloom in the accent hue +
+     a faintly accent-tinted hairline. --accent-c is set per-instance. */
+  .card-accent {
+    background:
+      radial-gradient(150% 100% at 100% 0%, color-mix(in oklch, var(--accent-c, var(--accent)) 14%, transparent), transparent 52%),
+      radial-gradient(135% 95% at 0% 0%, color-mix(in oklch, var(--paper-2) 52%, transparent), transparent 56%),
+      var(--paper);
+    border-color: color-mix(in oklch, var(--accent-c, var(--accent)) 24%, var(--paper-3));
+  }
 
-  /* Standardized interaction states (D1) — opt-in utilities so application is
-     mechanical. Clickable cards (anchors/buttons) lift on hover automatically.
-     The global reduced-motion rule neutralizes all of these. */
-  a.card, button.card, .hover-lift {
-    transition: transform .2s var(--ease), box-shadow .2s var(--ease), border-color .2s var(--ease);
+  /* Cursor spotlight + content layer for `asta-card` (set via Renderer, no CD). */
+  .card-spot {
+    position: absolute; inset: 0; border-radius: inherit; pointer-events: none;
+    opacity: var(--spot, 0); transition: opacity .35s var(--ease); z-index: 0;
+    background: radial-gradient(240px circle at var(--mx, 50%) var(--my, 50%),
+      color-mix(in oklch, var(--accent-c, var(--green)) 20%, transparent), transparent 64%);
+  }
+  .card-body { position: relative; z-index: 1; height: 100%; }
+
+  /* Interaction states (D1) — clickable cards lift + gain an accent glow-ring on
+     hover (no border strip). Reduced-motion neutralizes transform/opacity. */
+  a.card, button.card, .hover-lift, .card {
+    transition: transform .22s var(--ease), box-shadow .22s var(--ease), border-color .22s var(--ease);
   }
   a.card:hover, button.card:hover, .hover-lift:hover {
-    transform: translateY(-2px); box-shadow: var(--shadow-md);
+    transform: translateY(-3px);
+    border-color: color-mix(in oklch, var(--green) 28%, transparent);
+    box-shadow: var(--shadow-md),
+      0 0 0 1px color-mix(in oklch, var(--green) 26%, transparent),
+      0 22px 60px var(--asta-accent-glow);
   }
   .pressable { transition: transform .12s var(--ease-spring); }
   .pressable:active { transform: scale(.97); }
@@ -245,3 +292,232 @@
   color: transparent; background: linear-gradient(100deg, var(--green-deep), var(--green));
   -webkit-background-clip: text; background-clip: text;
 }
+
+/* ============================================================
+   ASTA SYNAPSE DESIGN SYSTEM
+   A metaphor-driven layer (mission control, learning rivers, agent
+   orbits, knowledge shards, mastery rings, signal timelines, voice
+   orbs) built ON TOP of the existing OKLCH brand tokens — additive,
+   non-breaking. Dual palette: the student app keeps the warm brand
+   green as its identity; admin "observatory" surfaces flip cool via
+   the `.asta-observatory` scope. Full spec:
+   client/src/app/shared/design/ASTA_SYNAPSE_DESIGN_SYSTEM.md
+   ============================================================ */
+:root {
+  /* Synapse hue ramp — semantic accents for agents, AI states, voice.
+     Kept as raw values so glows read identically across light/dark. */
+  --asta-blue: #4f8cff;
+  --asta-cyan: #22d3ee;
+  --asta-violet: #8b5cf6;
+  --asta-emerald: #34d399;
+  --asta-amber: #fbbf24;
+  --asta-rose: #fb7185;
+  --asta-indigo: #6366f1;
+  --asta-glow-blue: rgba(79, 140, 255, 0.28);
+  --asta-glow-cyan: rgba(34, 211, 238, 0.22);
+  --asta-glow-violet: rgba(139, 92, 246, 0.24);
+  --asta-glow-emerald: rgba(52, 211, 153, 0.22);
+
+  /* Contextual accent — STUDENT app = warm brand green (identity).
+     `.asta-observatory` overrides this to the cool command-center palette. */
+  --asta-accent: var(--green-deep);
+  --asta-accent-2: var(--green);
+  --asta-accent-glow: color-mix(in oklch, var(--green) 42%, transparent);
+
+  /* Cinematic hero ink — always dark, both themes (heroes are lit panels). */
+  --asta-hero-1: oklch(0.20 0.035 264);
+  --asta-hero-2: oklch(0.26 0.045 264);
+  --asta-hero-3: oklch(0.16 0.03 264);
+
+  --asta-ease: var(--ease);
+  --asta-ease-spring: var(--ease-spring);
+}
+
+/* Observatory scope (admin / founder / reports) — flips the contextual
+   accent to the cool blue→violet command-center palette. Apply on the
+   page-shell wrapper of admin Synapse screens. */
+.asta-observatory {
+  --asta-accent: var(--asta-blue);
+  --asta-accent-2: var(--asta-violet);
+  --asta-accent-glow: var(--asta-glow-blue);
+}
+
+/* --- Synapse field background (optional per-page; the app shell already
+   mounts an ambient aurora, so this is for standalone/public surfaces) --- */
+.asta-synapse-bg {
+  position: relative;
+  background:
+    radial-gradient(circle at 8% 10%, var(--asta-accent-glow), transparent 30%),
+    radial-gradient(circle at 88% 12%, var(--asta-glow-violet), transparent 34%),
+    radial-gradient(circle at 52% 96%, var(--asta-glow-cyan), transparent 36%),
+    var(--paper);
+}
+
+/* ---------- Command button system ---------- */
+.asta-primary-command {
+  position: relative;
+  overflow: hidden;
+  border: 0;
+  border-radius: 999px;
+  padding: 12px 20px;
+  font-family: var(--body);
+  font-weight: 700;
+  font-size: 15px;
+  color: #fff;
+  cursor: pointer;
+  background:
+    radial-gradient(circle at 30% 0%, rgba(255, 255, 255, 0.32), transparent 36%),
+    linear-gradient(135deg, var(--asta-accent), var(--asta-accent-2));
+  box-shadow: 0 14px 34px var(--asta-accent-glow), inset 0 1px 0 rgba(255, 255, 255, 0.22);
+  transition: transform 0.22s var(--asta-ease), box-shadow 0.22s var(--asta-ease);
+}
+.asta-primary-command:hover { transform: translateY(-2px); box-shadow: 0 20px 48px var(--asta-accent-glow), inset 0 1px 0 rgba(255, 255, 255, 0.26); }
+.asta-primary-command:active { transform: translateY(0) scale(0.97); }
+.asta-primary-command:disabled { opacity: 0.55; cursor: not-allowed; transform: none; box-shadow: none; }
+
+.asta-secondary-command {
+  border: 0;
+  border-radius: 999px;
+  padding: 12px 20px;
+  font-family: var(--body);
+  font-weight: 700;
+  font-size: 15px;
+  cursor: pointer;
+  color: var(--text);
+  background: color-mix(in oklch, var(--paper) 78%, transparent);
+  box-shadow: inset 0 1px 0 var(--card-hi), 0 10px 28px oklch(0.2 0.03 264 / 0.08);
+  backdrop-filter: blur(16px);
+  transition: transform 0.22s var(--asta-ease), background 0.22s var(--asta-ease);
+}
+.asta-secondary-command:hover { transform: translateY(-2px); background: var(--paper); }
+.asta-secondary-command:active { transform: scale(0.97); }
+
+.asta-action-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border: 0;
+  border-radius: 999px;
+  padding: 9px 14px;
+  font-family: var(--body);
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+  color: var(--text-soft);
+  background: color-mix(in oklch, var(--text-mute) 12%, transparent);
+  transition: background 0.18s var(--asta-ease), transform 0.18s var(--asta-ease), color 0.18s var(--asta-ease);
+}
+.asta-action-chip:hover { background: var(--asta-accent-glow); color: var(--text); transform: translateY(-1px); }
+.asta-action-chip:active { transform: scale(0.96); }
+
+/* ---------- Motion system ---------- (globally reduced-motion-safe) */
+.motion-lift { transition: transform 0.22s var(--asta-ease), box-shadow 0.22s var(--asta-ease); }
+.motion-lift:hover { transform: translateY(-4px); box-shadow: var(--shadow-md); }
+.motion-press { transition: transform 0.12s var(--asta-ease-spring); }
+.motion-press:active { transform: scale(0.97); }
+.motion-reveal { animation: astaRevealUp 0.46s var(--asta-ease) both; }
+.motion-soft-pop { animation: astaSoftPop 0.36s var(--asta-ease-spring) both; }
+.motion-stagger > * { animation: astaRevealUp 0.46s var(--asta-ease) both; }
+.motion-stagger > *:nth-child(2) { animation-delay: 0.06s; }
+.motion-stagger > *:nth-child(3) { animation-delay: 0.12s; }
+.motion-stagger > *:nth-child(4) { animation-delay: 0.18s; }
+.motion-stagger > *:nth-child(5) { animation-delay: 0.24s; }
+.motion-stagger > *:nth-child(6) { animation-delay: 0.30s; }
+
+@keyframes astaRevealUp {
+  from { opacity: 0; transform: translateY(14px) scale(0.985); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+@keyframes astaSoftPop {
+  from { opacity: 0; transform: scale(0.94); }
+  to { opacity: 1; transform: scale(1); }
+}
+@keyframes astaPulse {
+  0%, 100% { box-shadow: 0 0 0 0 var(--asta-accent-glow); }
+  50% { box-shadow: 0 0 0 12px transparent; }
+}
+@keyframes astaOrbitSpin { to { transform: rotate(360deg); } }
+@keyframes astaVoiceWave {
+  0% { opacity: 0.52; transform: scale(0.78); }
+  100% { opacity: 0; transform: scale(1.28); }
+}
+@keyframes astaRiverDraw { to { stroke-dashoffset: 0; } }
+
+/* ---------- Noir Cockpit — compact product utilities ----------
+   The product surface is COMPACT and dense, never marketing/hero. The existing
+   `.card` IS the Noir panel (subtle hairline + top light-bloom); `.kicker` is the
+   panel kicker (green dash + uppercase micro-label). These add only the compact
+   command header + goal pill + metric-card hover that screens need. */
+.asta-page-command-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px 24px;
+  margin-bottom: 22px;
+}
+.goal-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border-radius: 999px;
+  padding: 7px 13px;
+  background: color-mix(in oklch, var(--paper-2) 70%, transparent);
+  border: 1px solid var(--paper-3);
+  color: var(--text-mute);
+  font-family: var(--mono);
+  font-size: 11.5px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+.goal-pill .dot { width: 7px; height: 7px; border-radius: 999px; background: var(--green); box-shadow: 0 0 14px var(--asta-accent-glow); }
+
+/* Compact metric card (analytics / observatory) — subtle outline, lift on hover. */
+.metric-card {
+  min-height: 88px;
+  padding: 16px 18px;
+  border-radius: var(--r-md);
+  background: var(--paper);
+  border: 1px solid color-mix(in oklch, var(--paper-3) 58%, transparent);
+  box-shadow: var(--shadow-sm), inset 0 1px 0 0 var(--card-hi);
+  transition: transform 0.18s var(--ease), border-color 0.18s var(--ease), box-shadow 0.18s var(--ease);
+}
+.metric-card:hover {
+  transform: translateY(-2px);
+  border-color: color-mix(in oklch, var(--green) 30%, transparent);
+  box-shadow: var(--shadow-md), inset 0 1px 0 0 var(--card-hi);
+}
+
+.motion-fade-up { animation: astaRevealUp 0.36s var(--asta-ease) both; }
+
+/* Panel header pattern (global so every screen renders it correctly even if its
+   component didn't define the styles): kicker left, glyph chip right. */
+.panel-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+.panel-ico {
+  width: 32px; height: 32px; flex-shrink: 0;
+  display: grid; place-items: center;
+  border-radius: 10px;
+  color: var(--green-deep);
+  background: color-mix(in oklch, var(--green) 13%, transparent);
+  transition: transform 0.4s var(--asta-ease-spring);
+}
+.panel-ico.peri { color: var(--peri-deep); background: color-mix(in oklch, var(--peri) 15%, transparent); }
+.panel-ico.coral { color: var(--coral-deep); background: color-mix(in oklch, var(--coral) 15%, transparent); }
+asta-card:hover .panel-ico { transform: scale(1.14) rotate(-8deg); }
+
+/* Arrow that nudges right when its card / link / button is hovered. */
+.arr { display: inline-block; transition: transform 0.22s var(--asta-ease); will-change: transform; }
+a:hover .arr, button:hover .arr, .card:hover .arr, .hover-lift:hover .arr { transform: translateX(5px); }
+
+/* Living gradient headline — a green sheen drifts through the text. */
+.grad-flow {
+  background: linear-gradient(100deg, var(--text) 28%, var(--green) 50%, var(--text) 72%);
+  background-size: 220% 100%;
+  -webkit-background-clip: text; background-clip: text;
+  color: transparent;
+  animation: astaGradFlow 9s var(--asta-ease) infinite;
+}
+@keyframes astaGradFlow { 0%, 100% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } }
+
+/* Goal-pill dot breathing pulse. */
+.goal-pill .dot { animation: astaPulse 2.6s ease-in-out infinite; }

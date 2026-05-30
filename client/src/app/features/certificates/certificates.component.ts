@@ -3,14 +3,24 @@ import { DatePipe } from '@angular/common';
 import { CertificateService } from '../../core/services/certificate.service';
 import { ToastService } from '../../core/services/toast.service';
 import { CertificateView } from '../../core/models';
+import { TiltDirective } from '../../shared/directives/tilt.directive';
+import { RevealDirective } from '../../shared/directives/reveal.directive';
 
 /** My certificates (B7): credential cards with a public verification link. */
 @Component({
   selector: 'asta-certificates',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [DatePipe],
+  imports: [DatePipe, TiltDirective, RevealDirective],
   template: `
+    <!-- Command header -->
+    <header class="asta-page-command-header">
+      <div class="min-w-0">
+        <h1 class="text-[26px] leading-tight mb-2 grad-flow">Certificates</h1>
+        <span class="goal-pill"><span class="dot"></span>Your verifiable credentials · share or verify any time</span>
+      </div>
+    </header>
+
     <div class="max-w-app mx-auto">
       @if (loaded() && certs().length === 0) {
         <div class="card grid place-items-center text-center" style="padding:60px 24px">
@@ -21,8 +31,8 @@ import { CertificateView } from '../../core/models';
         </div>
       }
       <div class="grid gap-4 md:grid-cols-2">
-        @for (c of certs(); track c.id) {
-          <div class="card relative overflow-hidden" style="padding:22px">
+        @for (c of certs(); track c.id; let i = $index) {
+          <div class="card relative overflow-hidden" style="padding:22px" astaTilt [tiltMax]="4" [astaReveal]="i">
             <div class="absolute inset-0 pointer-events-none" style="background:radial-gradient(120% 80% at 100% 0%, oklch(0.8 0.16 150 / .10), transparent 60%)"></div>
             <div class="relative">
               <p class="kicker mb-2" style="color:var(--green-deep)">Certificate</p>

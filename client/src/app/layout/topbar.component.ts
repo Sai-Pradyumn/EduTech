@@ -3,6 +3,7 @@ import { RouterLink } from '@angular/router';
 import { ThemeToggleComponent } from '../shared/ui/theme-toggle.component';
 import { DropdownComponent } from '../shared/ui/dropdown.component';
 import { NotificationService } from '../core/services/notification.service';
+import { VoiceActivationService } from '../core/services/voice-activation.service';
 import { I18nService } from '../core/services/i18n.service';
 import { TranslatePipe } from '../shared/pipes/translate.pipe';
 import { Locale } from '../core/i18n/translations';
@@ -57,6 +58,19 @@ import { Locale } from '../core/i18n/translations';
         </div>
       </asta-dropdown>
 
+      @if (voice.supported) {
+        <button class="text-txt-soft hover:text-txt relative" (click)="voice.activate()"
+          title="Talk to Asta (⌘⇧A)" aria-label="Talk to Asta">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor"
+            stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 2a3 3 0 0 0-3 3v6a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z" /><path d="M5 11a7 7 0 0 0 14 0M12 18v3" />
+          </svg>
+          @if (voice.wakeEnabled()) {
+            <span class="absolute -top-0.5 -right-0.5 rounded-full" style="width:7px;height:7px;background:var(--green);box-shadow:0 0 6px var(--green)"></span>
+          }
+        </button>
+      }
+
       <asta-theme-toggle />
 
       <asta-dropdown align="right">
@@ -104,6 +118,7 @@ export class TopbarComponent implements OnInit {
   @Output() toggleMenu = new EventEmitter<void>();
 
   readonly notify = inject(NotificationService);
+  readonly voice = inject(VoiceActivationService);
   readonly i18n = inject(I18nService);
 
   ngOnInit(): void {

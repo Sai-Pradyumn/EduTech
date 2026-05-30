@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { FineTuningApiService } from '../../core/services/lab.service';
 import { ToastService } from '../../core/services/toast.service';
 import { FineTuningJob } from '../../core/models';
+import { RevealDirective } from '../../shared/directives/reveal.directive';
 
 /**
  * Fine-Tuning Lab (A8). LoRA job records orchestrating the ml-service (simulated progress).
@@ -13,8 +14,16 @@ import { FineTuningJob } from '../../core/models';
   selector: 'asta-fine-tuning',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [DatePipe, FormsModule],
+  imports: [DatePipe, FormsModule, RevealDirective],
   template: `
+    <!-- Command header -->
+    <header class="asta-page-command-header">
+      <div class="min-w-0">
+        <h1 class="text-[26px] leading-tight mb-2 grad-flow">Fine-Tuning Lab</h1>
+        <span class="goal-pill"><span class="dot"></span>Launch &amp; monitor LoRA jobs · live progress &amp; metrics</span>
+      </div>
+    </header>
+
     @if (enabled() === false) {
       <div class="card grid place-items-center text-center" style="padding:48px 24px;min-height:240px">
         <div>
@@ -43,8 +52,8 @@ import { FineTuningJob } from '../../core/models';
           <p class="kicker mb-3">Jobs</p>
           @if (jobs().length === 0) { <p class="text-sm text-txt-mute">No jobs yet.</p> }
           <div class="space-y-3">
-            @for (j of jobs(); track j.id) {
-              <div class="card" style="padding:16px">
+            @for (j of jobs(); track j.id; let i = $index) {
+              <div class="card" style="padding:16px" [astaReveal]="i">
                 <div class="flex items-center justify-between gap-2 mb-2">
                   <b class="font-display">{{ j.name }}</b>
                   <span class="pill" [style.color]="statusColor(j.status)">{{ j.status }}</span>

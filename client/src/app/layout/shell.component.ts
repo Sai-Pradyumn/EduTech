@@ -14,7 +14,7 @@ import { toSignal } from '@angular/core/rxjs-interop';
 import { SidebarComponent } from './sidebar.component';
 import { TopbarComponent } from './topbar.component';
 import { AuroraComponent } from '../shared/components/aurora.component';
-import { DotGridComponent } from '../shared/components/dot-grid.component';
+import { ConstellationComponent } from '../shared/components/constellation.component';
 import { RouteTransitionDirective } from '../shared/directives/route-transition.directive';
 import { AuthService } from '../core/services/auth.service';
 import { OrgContextService } from '../core/services/org-context.service';
@@ -26,7 +26,7 @@ import { ADMIN_NAV, STUDENT_NAV, workspaceNav } from '../core/constants/nav';
   selector: 'asta-shell',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterOutlet, RouterLink, RouterLinkActive, RouteTransitionDirective, SidebarComponent, TopbarComponent, AuroraComponent, DotGridComponent],
+  imports: [RouterOutlet, RouterLink, RouterLinkActive, RouteTransitionDirective, SidebarComponent, TopbarComponent, AuroraComponent, ConstellationComponent],
   template: `
     <!-- Skip link (a11y §9) — first focusable; jumps past the nav to main content. -->
     <a href="#main-content" class="skip-link">Skip to content</a>
@@ -57,7 +57,7 @@ import { ADMIN_NAV, STUDENT_NAV, workspaceNav } from '../core/constants/nav';
              with sidebar scroll) and tinted per-route via --bg-accent-* (A3). -->
         <div class="ambient" aria-hidden="true" [style]="ambientTint()">
           <asta-aurora [intensity]="0.5" scrollSelector="[data-asta-scroll]" />
-          <asta-dot-grid [opacity]="0.4" [gap]="26" [speed]="80" [parallax]="true" />
+          <asta-constellation [opacity]="0.4" />
         </div>
 
         <asta-topbar
@@ -119,20 +119,27 @@ import { ADMIN_NAV, STUDENT_NAV, workspaceNav } from '../core/constants/nav';
         transition: transform 0.18s var(--ease);
       }
       .skip-link:focus { transform: translateY(0); }
-      /* Mobile bottom navigation (PWA) */
-      .botnav {
-        position: fixed;
-        bottom: 0;
-        left: 0;
-        right: 0;
-        z-index: 40;
-        display: flex;
-        justify-content: space-around;
-        align-items: stretch;
-        background: color-mix(in oklch, var(--paper) 92%, transparent);
-        backdrop-filter: blur(12px);
-        border-top: 1px solid var(--paper-3);
-        padding: 6px 4px calc(6px + env(safe-area-inset-bottom));
+      /* Mobile bottom navigation (PWA). MUST be hidden on desktop: the component
+         style here outranks Tailwind's lg:hidden (scoped attr selector wins on
+         specificity), so we own the hide/show entirely via this media query. */
+      .botnav { display: none; }
+      @media (max-width: 1023.98px) {
+        .botnav {
+          display: flex;
+          justify-content: space-around;
+          align-items: stretch;
+          position: fixed;
+          left: 12px;
+          right: 12px;
+          bottom: calc(12px + env(safe-area-inset-bottom));
+          z-index: 70;
+          padding: 8px 6px;
+          border-radius: 999px;
+          background: color-mix(in oklch, var(--ink) 90%, transparent);
+          backdrop-filter: blur(20px);
+          border: 1px solid var(--paper-3);
+          box-shadow: 0 20px 60px oklch(0 0 0 / 0.42);
+        }
       }
       .bn {
         display: flex;

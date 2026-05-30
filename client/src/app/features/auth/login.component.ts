@@ -5,12 +5,13 @@ import { AuthService } from '../../core/services/auth.service';
 import { ToastService } from '../../core/services/toast.service';
 import { ButtonComponent } from '../../shared/ui/button.component';
 import { FieldComponent } from '../../shared/ui/field.component';
+import { MagneticDirective } from '../../shared/directives/magnetic.directive';
 
 @Component({
   selector: 'asta-login',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ReactiveFormsModule, RouterLink, ButtonComponent, FieldComponent],
+  imports: [ReactiveFormsModule, RouterLink, ButtonComponent, FieldComponent, MagneticDirective],
   template: `
     <h1 class="text-[30px] mb-1">Welcome back</h1>
     <p class="text-txt-soft mb-7">Log in to continue your path.</p>
@@ -23,7 +24,7 @@ import { FieldComponent } from '../../shared/ui/field.component';
         <input class="input" type="password" formControlName="password" autocomplete="current-password" placeholder="••••••••" />
       </asta-field>
 
-      <asta-btn type="submit" [full]="true" [loading]="loading()" variant="accent">Log in</asta-btn>
+      <asta-btn type="submit" astaMagnetic [full]="true" [loading]="loading()" variant="accent">Log in</asta-btn>
     </form>
 
     <p class="text-sm text-txt-soft mt-6 text-center">

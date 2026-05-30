@@ -7,6 +7,7 @@ import { CohortService } from '../../core/services/cohort.service';
 import { OrgContextService } from '../../core/services/org-context.service';
 import { ToastService } from '../../core/services/toast.service';
 import { CohortView, LiveSessionStatus, SessionDetail, SessionView } from '../../core/models';
+import { RevealDirective } from '../../shared/directives/reveal.directive';
 
 /**
  * Live session system (B4). Students see sessions for their cohorts, mark attendance and
@@ -17,8 +18,16 @@ import { CohortView, LiveSessionStatus, SessionDetail, SessionView } from '../..
   selector: 'asta-live-sessions',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormsModule, DatePipe, RouterLink],
+  imports: [FormsModule, DatePipe, RouterLink, RevealDirective],
   template: `
+    <!-- Command header -->
+    <header class="asta-page-command-header">
+      <div class="min-w-0">
+        <h1 class="text-[26px] leading-tight mb-2 grad-flow">Live Sessions</h1>
+        <span class="goal-pill"><span class="dot"></span>Join live · mark attendance · read the AI recap</span>
+      </div>
+    </header>
+
     <div class="grid gap-5 lg:grid-cols-[minmax(280px,360px)_1fr]">
       <!-- Left: create + lists -->
       <div class="space-y-5">
@@ -89,7 +98,7 @@ import { CohortView, LiveSessionStatus, SessionDetail, SessionView } from '../..
         }
         @if (selected(); as s) {
           <div class="space-y-5">
-            <div class="card" style="padding:20px">
+            <div class="card" style="padding:20px" [astaReveal]="0">
               <div class="flex items-start justify-between gap-3 flex-wrap">
                 <div>
                   <div class="flex items-center gap-2">
@@ -127,7 +136,7 @@ import { CohortView, LiveSessionStatus, SessionDetail, SessionView } from '../..
 
             <!-- AI recap -->
             @if (s.recap; as r) {
-              <div class="card" style="padding:18px;border-left:3px solid var(--peri)">
+              <div class="card card-accent" style="padding:18px;--accent-c:var(--peri)" [astaReveal]="1">
                 <p class="kicker mb-2" style="color:var(--peri-deep)">AI recap</p>
                 <p class="text-sm text-txt-soft mb-3">{{ r.summary }}</p>
                 @if (r.keyPoints.length) {
@@ -143,7 +152,7 @@ import { CohortView, LiveSessionStatus, SessionDetail, SessionView } from '../..
             }
 
             <!-- Attendance -->
-            <div class="card" style="padding:18px">
+            <div class="card" style="padding:18px" [astaReveal]="2">
               <p class="kicker mb-3">Attendance ({{ s.attendees.length }})</p>
               @if (s.attendees.length === 0) { <p class="text-sm text-txt-mute">No one has joined yet.</p> }
               <div class="grid sm:grid-cols-2 gap-x-4 gap-y-1.5">

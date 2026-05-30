@@ -5,6 +5,8 @@ import { ToastService } from '../../core/services/toast.service';
 import { AiUsageReport, StudentOutcomesReport, WeakTopicRow } from '../../core/models';
 import { BarChartComponent, DonutChartComponent, ChartDatum } from '../../shared/charts';
 import { CountDirective } from '../../shared/directives/count.directive';
+import { RevealDirective } from '../../shared/directives/reveal.directive';
+import { TiltDirective } from '../../shared/directives/tilt.directive';
 
 type Tab = 'students' | 'weak-topics' | 'ai-usage';
 
@@ -16,15 +18,23 @@ type Tab = 'students' | 'weak-topics' | 'ai-usage';
   selector: 'asta-reports',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [DatePipe, BarChartComponent, DonutChartComponent, CountDirective],
+  imports: [DatePipe, BarChartComponent, DonutChartComponent, CountDirective, RevealDirective, TiltDirective],
   template: `
-    <div class="flex items-center justify-between gap-3 mb-4 flex-wrap">
-      <div class="flex gap-1.5">
-        @for (t of tabs; track t.key) {
-          <button class="chip" [class.chip-on]="tab() === t.key" (click)="switch(t.key)">{{ t.label }}</button>
-        }
+    <!-- Command header -->
+    <header class="asta-page-command-header">
+      <div class="min-w-0">
+        <h1 class="text-[26px] leading-tight mb-2 grad-flow">Reports</h1>
+        <span class="goal-pill"><span class="dot"></span>Outcomes, weak topics &amp; AI usage · exportable to CSV</span>
       </div>
-      <button class="btn-go" [disabled]="downloading()" (click)="download()">{{ downloading() ? 'Exporting…' : '⬇ Export CSV' }}</button>
+      <div class="flex gap-2.5 shrink-0">
+        <button class="btn-go" [disabled]="downloading()" (click)="download()">{{ downloading() ? 'Exporting…' : '⬇ Export CSV' }}</button>
+      </div>
+    </header>
+
+    <div class="flex gap-1.5 mb-4 flex-wrap">
+      @for (t of tabs; track t.key) {
+        <button class="chip" [class.chip-on]="tab() === t.key" (click)="switch(t.key)">{{ t.label }}</button>
+      }
     </div>
 
     @if (denied()) {
@@ -37,11 +47,11 @@ type Tab = 'students' | 'weak-topics' | 'ai-usage';
       @case ('students') {
         @if (students(); as r) {
           <div class="grid sm:grid-cols-3 gap-3 mb-4">
-            <div class="card stat"><span class="num" [astaCount]="r.studentCount">0</span><span class="lbl">Students</span></div>
-            <div class="card stat"><span class="num" [astaCount]="r.avgHealth">0</span><span class="lbl">Avg health</span></div>
-            <div class="card stat"><span class="num" [astaCount]="r.avgReadiness">0</span><span class="lbl">Avg readiness</span></div>
+            <div class="card stat" astaTilt [tiltMax]="4" [astaReveal]="0"><span class="num" [astaCount]="r.studentCount">0</span><span class="lbl">Students</span></div>
+            <div class="card stat" astaTilt [tiltMax]="4" [astaReveal]="1"><span class="num" [astaCount]="r.avgHealth">0</span><span class="lbl">Avg health</span></div>
+            <div class="card stat" astaTilt [tiltMax]="4" [astaReveal]="2"><span class="num" [astaCount]="r.avgReadiness">0</span><span class="lbl">Avg readiness</span></div>
           </div>
-          <div class="card" style="padding:0;overflow:auto">
+          <div class="card" style="padding:0;overflow:auto" [astaReveal]="3">
             <table>
               <thead><tr><th>Name</th><th>Health</th><th>Readiness</th><th>Quizzes</th><th>Projects</th><th>Active days</th><th>Top weakness</th></tr></thead>
               <tbody>
@@ -60,12 +70,12 @@ type Tab = 'students' | 'weak-topics' | 'ai-usage';
       }
       @case ('weak-topics') {
         @if (weakTopics().length) {
-          <div class="card mb-4" style="padding:18px">
+          <div class="card mb-4" style="padding:18px" [astaReveal]="0">
             <p class="kicker mb-3" style="color:var(--coral-deep)">Avg severity by topic</p>
             <asta-bar-chart [horizontal]="true" tone="coral" [data]="weakTopicData()" label="Average weakness severity by topic" />
           </div>
         }
-        <div class="card" style="padding:0;overflow:auto">
+        <div class="card" style="padding:0;overflow:auto" [astaReveal]="1">
           <table>
             <thead><tr><th>Topic</th><th>Affected students</th><th>Avg severity</th></tr></thead>
             <tbody>
@@ -88,17 +98,17 @@ type Tab = 'students' | 'weak-topics' | 'ai-usage';
       @case ('ai-usage') {
         @if (aiUsage(); as r) {
           <div class="grid sm:grid-cols-3 gap-3 mb-4">
-            <div class="card stat"><span class="num" [astaCount]="r.totalCalls">0</span><span class="lbl">Total AI calls</span></div>
-            <div class="card stat"><span class="num" [astaCount]="r.totalTokens">0</span><span class="lbl">Tokens</span></div>
-            <div class="card stat"><span class="num" [astaCount]="r.avgLatencyMs" suffix="ms">0</span><span class="lbl">Avg latency</span></div>
+            <div class="card stat" astaTilt [tiltMax]="4" [astaReveal]="0"><span class="num" [astaCount]="r.totalCalls">0</span><span class="lbl">Total AI calls</span></div>
+            <div class="card stat" astaTilt [tiltMax]="4" [astaReveal]="1"><span class="num" [astaCount]="r.totalTokens">0</span><span class="lbl">Tokens</span></div>
+            <div class="card stat" astaTilt [tiltMax]="4" [astaReveal]="2"><span class="num" [astaCount]="r.avgLatencyMs" suffix="ms">0</span><span class="lbl">Avg latency</span></div>
           </div>
           @if (aiAgentData().length) {
-            <div class="card mb-4" style="padding:18px">
+            <div class="card mb-4" style="padding:18px" [astaReveal]="3">
               <p class="kicker mb-3" style="color:var(--peri-deep)">Calls by agent</p>
               <asta-donut-chart [data]="aiAgentData()" centerLabel="calls" label="AI calls by agent" />
             </div>
           }
-          <div class="card" style="padding:0;overflow:auto">
+          <div class="card" style="padding:0;overflow:auto" [astaReveal]="4">
             <table>
               <thead><tr><th>Agent</th><th>Calls</th></tr></thead>
               <tbody>

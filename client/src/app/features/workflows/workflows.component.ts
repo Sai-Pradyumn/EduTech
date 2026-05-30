@@ -3,6 +3,7 @@ import { FormsModule } from '@angular/forms';
 import { AgentGraphApiService } from '../../core/services/lab.service';
 import { ToastService } from '../../core/services/toast.service';
 import { GraphRun, GraphTemplate } from '../../core/models';
+import { RevealDirective } from '../../shared/directives/reveal.directive';
 
 /**
  * Agent-graph workflows (A9). Run a LangGraph-style multi-step workflow (explain → quiz →
@@ -13,8 +14,16 @@ import { GraphRun, GraphTemplate } from '../../core/models';
   selector: 'asta-workflows',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormsModule],
+  imports: [FormsModule, RevealDirective],
   template: `
+    <!-- Command header -->
+    <header class="asta-page-command-header">
+      <div class="min-w-0">
+        <h1 class="text-[26px] leading-tight mb-2 grad-flow">Workflows</h1>
+        <span class="goal-pill"><span class="dot"></span>Multi-agent chains · explain → quiz → project, end to end</span>
+      </div>
+    </header>
+
     @if (enabled() === false) {
       <div class="card grid place-items-center text-center" style="padding:48px 24px;min-height:240px">
         <div>
@@ -50,7 +59,7 @@ import { GraphRun, GraphTemplate } from '../../core/models';
           }
 
           @if (active(); as r) {
-            <div class="card" style="padding:18px">
+            <div class="card" style="padding:18px" [astaReveal]="0">
               <div class="flex items-center justify-between mb-3">
                 <p class="kicker">Run result <span class="text-txt-mute">· {{ r.input }}</span></p>
                 <span class="pill" [style.color]="r.status === 'succeeded' ? 'var(--green-deep)' : 'var(--coral-deep)'">{{ r.status }} · {{ r.latencyMs }}ms</span>
