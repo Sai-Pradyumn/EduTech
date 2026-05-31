@@ -1,0 +1,86 @@
+import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
+import { Router } from '@angular/router';
+import { ButtonComponent } from '../../shared/ui/button.component';
+import { CardComponent } from '../../shared/ui/card.component';
+import { EmptyStateComponent } from '../../shared/ui/empty-state.component';
+import { SkeletonComponent } from '../../shared/ui/skeleton.component';
+import { ToastService } from '../../core/services/toast.service';
+import { MarketplaceService, Template } from '../../core/services/marketplace.service';
+
+const TYPES = ['', 'flow', 'roadmap', 'quiz', 'project', 'simulation', 'interview', 'course', 'study_space', 'visual'];
+
+@Component({
+  selector: 'asta-marketplace',
+  standalone: true,
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [ButtonComponent, CardComponent, EmptyStateComponent, SkeletonComponent],
+  template: `
+    <header class="asta-page-command-header">
+      <div class="min-w-0">
+        <h1 class="text-[26px] leading-tight mb-2 grad-flow">Marketplace</h1>
+        <span class="goal-pill"><span class="dot"></span>Reusable learning assets from mentors &amp; creators</span>
+      </div>
+      <div class="shrink-0"><asta-btn variant="ghost" size="sm" (click)="go('/app/creator-studio')">Creator Studio →</asta-btn></div>
+    </header>
+
+    <div class="chips mb-4">
+      @for (t of types; track t) {
+        <button class="chip" [class.active]="filter() === t" (click)="setFilter(t)">{{ t || 'All' }}</button>
+      }
+    </div>
+
+    @if (loading()) { <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">@for (i of [1,2,3,4,5,6]; track i) { <asta-card><asta-skeleton h="130px" /></asta-card> }</div> }
+    @else if (templates().length) {
+      <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 motion-row-2">
+        @for (t of templates(); track t.id) {
+          <asta-card class="block motion-card-reveal tpl">
+            <div class="flex items-center justify-between"><span class="type">{{ t.type }}</span><span class="uses">{{ t.usageCount }} uses</span></div>
+            <p class="t-title">{{ t.title }}</p>
+            <p class="t-desc">{{ t.description }}</p>
+            <div class="flex flex-wrap gap-1 mt-2">@for (tag of t.tags.slice(0,4); track tag) { <span class="tag">{{ tag }}</span> }</div>
+            <div class="flex items-center justify-between mt-3">
+              <span class="creator">by {{ t.creatorName }}</span>
+              <asta-btn variant="accent" size="sm" (click)="use(t)">Use template</asta-btn>
+            </div>
+          </asta-card>
+        }
+      </div>
+    } @else { <asta-card><asta-empty-state title="No templates yet" description="Published templates appear here. Create one in the Creator Studio and submit it for review."><asta-btn variant="accent" (click)="go('/app/creator-studio')">Open Creator Studio</asta-btn></asta-empty-state></asta-card> }
+  `,
+  styles: [`
+    :host { display: block; }
+    .chips { display: flex; flex-wrap: wrap; gap: 6px; }
+    .chip { font-size: 12px; padding: 5px 11px; border-radius: 999px; border: 1px solid var(--paper-3); background: var(--paper-2); color: var(--text-soft); cursor: pointer; text-transform: capitalize; }
+    .chip.active { border-color: color-mix(in oklab, var(--green) 50%, var(--paper-3)); color: var(--green-deep); background: color-mix(in oklab, var(--green) 12%, transparent); }
+    .tpl { display: flex; flex-direction: column; }
+    .type { font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: var(--peri, #8aa6ff); }
+    .uses { font-size: 10.5px; color: var(--text-mute); }
+    .t-title { font-size: 14px; font-weight: 600; margin-top: 6px; }
+    .t-desc { font-size: 12.5px; color: var(--text-soft); margin-top: 3px; }
+    .tag { font-size: 10.5px; padding: 1px 7px; border-radius: 999px; background: var(--paper-3); color: var(--text-soft); }
+    .creator { font-size: 11.5px; color: var(--text-mute); }
+  `],
+})
+export class MarketplaceComponent {
+  private readonly api = inject(MarketplaceService);
+  private readonly toast = inject(ToastService);
+  private readonly router = inject(Router);
+  readonly types = TYPES;
+  readonly filter = signal('');
+  readonly templates = signal<Template[]>([]);
+  readonly loading = signal(true);
+
+  constructor() { this.load(); }
+  load(): void {
+    this.loading.set(true);
+    this.api.list(this.filter() || undefined).subscribe({ next: (t) => { this.templates.set(t); this.loading.set(false); }, error: () => this.loading.set(false) });
+  }
+  setFilter(t: string): void { this.filter.set(t); this.load(); }
+  use(t: Template): void {
+    this.api.use(t.id).subscribe({
+      next: (r) => { this.toast.success(`Using "${t.title}" — opening ${t.type}`); this.router.navigate([r.cloneRoute]); },
+      error: () => this.toast.error('Could not use template'),
+    });
+  }
+  go(route: string): void { this.router.navigate([route]); }
+}

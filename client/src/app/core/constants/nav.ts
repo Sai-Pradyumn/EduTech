@@ -108,6 +108,15 @@ export const STUDENT_NAV: NavGroup[] = [
     ],
   },
   {
+    heading: 'Ecosystem',
+    items: [
+      { label: 'Mentors', route: '/app/mentors', icon: I.mentor },
+      { label: 'Marketplace', route: '/app/marketplace', icon: I.spaces },
+      { label: 'Creator Studio', route: '/app/creator-studio', icon: I.course },
+      { label: 'Institution', route: '/app/institution', icon: I.org },
+    ],
+  },
+  {
     heading: 'Account',
     items: [
       { label: 'Certificates', route: '/app/certificates', icon: I.certificate },

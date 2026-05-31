@@ -312,6 +312,36 @@ export const routes: Routes = [
         loadComponent: () => import('./features/applications/applications.component').then((m) => m.ApplicationsComponent),
       },
       {
+        path: 'mentors',
+        title: 'Mentors',
+        data: { title: 'Mentors' },
+        loadComponent: () => import('./features/mentor-marketplace/mentors.component').then((m) => m.MentorsComponent),
+      },
+      {
+        path: 'mentor-sessions',
+        title: 'Mentor Sessions',
+        data: { title: 'Mentor Sessions' },
+        loadComponent: () => import('./features/mentor-marketplace/mentors.component').then((m) => m.MentorsComponent),
+      },
+      {
+        path: 'marketplace',
+        title: 'Marketplace',
+        data: { title: 'Template Marketplace' },
+        loadComponent: () => import('./features/marketplace/marketplace.component').then((m) => m.MarketplaceComponent),
+      },
+      {
+        path: 'creator-studio',
+        title: 'Creator Studio',
+        data: { title: 'Creator Studio' },
+        loadComponent: () => import('./features/creator-studio/creator-studio.component').then((m) => m.CreatorStudioComponent),
+      },
+      {
+        path: 'institution',
+        title: 'Institution',
+        data: { title: 'Institution Outcomes' },
+        loadComponent: () => import('./features/institution/institution.component').then((m) => m.InstitutionComponent),
+      },
+      {
         path: 'replay',
         title: 'Learning Replay',
         data: { title: 'Learning Replay' },

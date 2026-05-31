@@ -55,6 +55,9 @@ import { OutcomeCouncilModule } from './modules/outcome-council/outcome-council.
 import { PortfolioModule } from './modules/portfolio/portfolio.module';
 import { InterviewModule } from './modules/interview/interview.module';
 import { ResumeModule } from './modules/resume/resume.module';
+import { MentorMarketplaceModule } from './modules/mentor-marketplace/mentor-marketplace.module';
+import { MarketplaceModule } from './modules/marketplace/marketplace.module';
+import { InstitutionModule } from './modules/institution/institution.module';
 import { SocketsModule } from './sockets/sockets.module';
 
 @Module({
@@ -111,6 +114,9 @@ import { SocketsModule } from './sockets/sockets.module';
     PortfolioModule,
     InterviewModule,
     ResumeModule,
+    MentorMarketplaceModule,
+    MarketplaceModule,
+    InstitutionModule,
     SocketsModule,
   ],
   controllers: [HealthController],
