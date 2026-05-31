@@ -3,7 +3,9 @@ import * as Joi from 'joi';
 /** Validates process.env at boot; fails fast on misconfiguration. */
 export const validationSchema = Joi.object({
   PORT: Joi.number().default(3000),
-  NODE_ENV: Joi.string().valid('development', 'production', 'test').default('development'),
+  NODE_ENV: Joi.string()
+    .valid('development', 'production', 'test')
+    .default('development'),
   CLIENT_ORIGIN: Joi.string().uri().default('http://localhost:4200'),
 
   // Optional: defaults to local standalone; replica-set URIs auto-fall-back to standalone.
@@ -19,9 +21,13 @@ export const validationSchema = Joi.object({
 
   // 'auto' = first configured provider in LLM_PROVIDERS, else mock. Or pin a provider name.
   AI_PROVIDER: Joi.string().default('auto'),
-  LLM_STRATEGY: Joi.string().valid('fallback', 'parallel', 'refine').default('fallback'),
+  LLM_STRATEGY: Joi.string()
+    .valid('fallback', 'parallel', 'refine')
+    .default('fallback'),
   // Comma-separated priority order (auto-select + fallback chain).
-  LLM_PROVIDERS: Joi.string().default('groq,gemini,mistral,openrouter,deepseek,openai,claude'),
+  LLM_PROVIDERS: Joi.string().default(
+    'groq,gemini,mistral,openrouter,deepseek,openai,claude',
+  ),
   AI_REQUEST_TIMEOUT_MS: Joi.number().default(45000),
   AI_MAX_OUTPUT_TOKENS: Joi.number().default(2048),
   AI_USER_RATE_PER_MIN: Joi.number().default(20),
@@ -54,7 +60,9 @@ export const validationSchema = Joi.object({
   ENABLE_FINE_TUNING: Joi.string().valid('true', 'false').default('false'),
 
   VECTOR_BACKEND: Joi.string().valid('keyword', 'atlas').default('keyword'),
-  VECTOR_STORE_PROVIDER: Joi.string().valid('keyword', 'atlas').default('keyword'),
+  VECTOR_STORE_PROVIDER: Joi.string()
+    .valid('keyword', 'atlas')
+    .default('keyword'),
 
   RAG_TOP_K: Joi.number().min(1).max(20).default(6),
   RAG_MIN_SCORE: Joi.number().min(0).max(1).default(0.15),

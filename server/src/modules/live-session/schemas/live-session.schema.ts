@@ -39,7 +39,12 @@ const SessionRecapSchema = SchemaFactory.createForClass(SessionRecap);
  */
 @Schema({ timestamps: true, collection: 'live_sessions' })
 export class LiveSession {
-  @Prop({ type: Types.ObjectId, ref: 'Organization', required: true, index: true })
+  @Prop({
+    type: Types.ObjectId,
+    ref: 'Organization',
+    required: true,
+    index: true,
+  })
   organization!: Types.ObjectId;
 
   @Prop({ type: Types.ObjectId, ref: 'Cohort', index: true })
@@ -63,7 +68,11 @@ export class LiveSession {
   @Prop({ default: 60 })
   durationMins!: number;
 
-  @Prop({ type: String, enum: LiveSessionStatus, default: LiveSessionStatus.Scheduled })
+  @Prop({
+    type: String,
+    enum: LiveSessionStatus,
+    default: LiveSessionStatus.Scheduled,
+  })
   status!: LiveSessionStatus;
 
   /** Placeholder meeting link (real Meet/Zoom integration is 🧱). */

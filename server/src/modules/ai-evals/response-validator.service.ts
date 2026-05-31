@@ -15,13 +15,17 @@ export class ResponseValidatorService {
     candidate: Partial<AgentResponse> | undefined,
     fallback: { agentType: AgentType; intent: Intent; answer: string },
   ): AgentResponse {
-    if (!candidate || typeof candidate.answer !== 'string' || candidate.answer.trim() === '') {
+    if (
+      !candidate ||
+      typeof candidate.answer !== 'string' ||
+      candidate.answer.trim() === ''
+    ) {
       this.logger.warn('Agent response missing/empty answer — using fallback.');
       candidate = { ...candidate, answer: fallback.answer };
     }
 
     const visualBlocks = Array.isArray(candidate?.visualBlocks)
-      ? (candidate!.visualBlocks.filter((b) => this.isVisualBlock(b)) as VisualBlock[])
+      ? candidate.visualBlocks.filter((b) => this.isVisualBlock(b))
       : [];
 
     return {
@@ -29,19 +33,25 @@ export class ResponseValidatorService {
       intent: candidate?.intent ?? fallback.intent,
       mode: candidate?.mode ?? (visualBlocks.length ? 'mixed' : 'text'),
       answer: candidate?.answer ?? fallback.answer,
-      actions: Array.isArray(candidate?.actions) ? candidate!.actions : [],
+      actions: Array.isArray(candidate?.actions) ? candidate.actions : [],
       visualBlocks,
-      sources: Array.isArray(candidate?.sources) ? candidate!.sources : [],
+      sources: Array.isArray(candidate?.sources) ? candidate.sources : [],
       confidence: this.clamp(candidate?.confidence ?? 0.8),
-      followUpQuestions: Array.isArray(candidate?.followUpQuestions) ? candidate!.followUpQuestions : [],
+      followUpQuestions: Array.isArray(candidate?.followUpQuestions)
+        ? candidate.followUpQuestions
+        : [],
       recommendedNextActions: Array.isArray(candidate?.recommendedNextActions)
-        ? candidate!.recommendedNextActions
+        ? candidate.recommendedNextActions
         : [],
     };
   }
 
   private isVisualBlock(b: unknown): b is VisualBlock {
-    return typeof b === 'object' && b !== null && typeof (b as { type?: unknown }).type === 'string';
+    return (
+      typeof b === 'object' &&
+      b !== null &&
+      typeof (b as { type?: unknown }).type === 'string'
+    );
   }
 
   private clamp(n: number): number {

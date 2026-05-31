@@ -1,8 +1,15 @@
-import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  ConflictException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { UsersService } from '../users/users.service';
-import { StudentProfile, StudentProfileDocument } from './schemas/student-profile.schema';
+import {
+  StudentProfile,
+  StudentProfileDocument,
+} from './schemas/student-profile.schema';
 import { CreateStudentProfileDto } from './dto/create-student-profile.dto';
 import { UpdateStudentProfileDto } from './dto/update-student-profile.dto';
 
@@ -20,20 +27,30 @@ export class StudentProfileService {
 
   async findByUserOrThrow(userId: string): Promise<StudentProfileDocument> {
     const profile = await this.findByUser(userId);
-    if (!profile) throw new NotFoundException('Student profile not found. Complete onboarding first.');
+    if (!profile)
+      throw new NotFoundException(
+        'Student profile not found. Complete onboarding first.',
+      );
     return profile;
   }
 
-  async getOnboardingStatus(userId: string): Promise<{ onboardingCompleted: boolean }> {
+  async getOnboardingStatus(
+    userId: string,
+  ): Promise<{ onboardingCompleted: boolean }> {
     const profile = await this.findByUser(userId);
     return { onboardingCompleted: profile?.onboardingCompleted ?? false };
   }
 
   /** Create the profile once; completing it marks onboarding done on both profile and user. */
-  async create(userId: string, dto: CreateStudentProfileDto): Promise<StudentProfileDocument> {
+  async create(
+    userId: string,
+    dto: CreateStudentProfileDto,
+  ): Promise<StudentProfileDocument> {
     const existing = await this.findByUser(userId);
     if (existing) {
-      throw new ConflictException('Profile already exists. Use PATCH to update it.');
+      throw new ConflictException(
+        'Profile already exists. Use PATCH to update it.',
+      );
     }
     const profile = await this.model.create({
       ...dto,
@@ -66,11 +83,19 @@ export class StudentProfileService {
     await profile.save();
   }
 
-  async update(userId: string, dto: UpdateStudentProfileDto): Promise<StudentProfileDocument> {
+  async update(
+    userId: string,
+    dto: UpdateStudentProfileDto,
+  ): Promise<StudentProfileDocument> {
     const profile = await this.model
-      .findOneAndUpdate({ user: new Types.ObjectId(userId) }, dto, { new: true })
+      .findOneAndUpdate({ user: new Types.ObjectId(userId) }, dto, {
+        new: true,
+      })
       .exec();
-    if (!profile) throw new NotFoundException('Student profile not found. Complete onboarding first.');
+    if (!profile)
+      throw new NotFoundException(
+        'Student profile not found. Complete onboarding first.',
+      );
     return profile;
   }
 }

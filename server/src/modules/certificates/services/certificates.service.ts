@@ -3,7 +3,10 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { randomUUID } from 'crypto';
 import { UsersService } from '../../users/users.service';
-import { Certificate, CertificateDocument } from '../schemas/certificate.schema';
+import {
+  Certificate,
+  CertificateDocument,
+} from '../schemas/certificate.schema';
 
 export interface CertificateView {
   id: string;
@@ -30,13 +33,21 @@ export interface VerificationResult {
 @Injectable()
 export class CertificatesService {
   constructor(
-    @InjectModel(Certificate.name) private readonly certs: Model<CertificateDocument>,
+    @InjectModel(Certificate.name)
+    private readonly certs: Model<CertificateDocument>,
     private readonly users: UsersService,
   ) {}
 
   async issue(
     issuerId: string,
-    input: { userId: string; title: string; skill?: string; score?: number; projectId?: string; organizationId?: string | null },
+    input: {
+      userId: string;
+      title: string;
+      skill?: string;
+      score?: number;
+      projectId?: string;
+      organizationId?: string | null;
+    },
   ): Promise<CertificateView> {
     const issuer = await this.users.findByIdOrThrow(issuerId);
     const cert = await this.certs.create({
@@ -44,8 +55,12 @@ export class CertificatesService {
       title: input.title,
       skill: input.skill ?? '',
       score: input.score ?? 0,
-      project: input.projectId ? new Types.ObjectId(input.projectId) : undefined,
-      organization: input.organizationId ? new Types.ObjectId(input.organizationId) : undefined,
+      project: input.projectId
+        ? new Types.ObjectId(input.projectId)
+        : undefined,
+      organization: input.organizationId
+        ? new Types.ObjectId(input.organizationId)
+        : undefined,
       issuerName: issuer.name,
       verificationId: `ASTA-${randomUUID().slice(0, 8).toUpperCase()}`,
       revoked: false,
@@ -54,7 +69,11 @@ export class CertificatesService {
   }
 
   async listMine(userId: string): Promise<CertificateView[]> {
-    const list = await this.certs.find({ user: new Types.ObjectId(userId) }).sort({ createdAt: -1 }).lean<CertificateDocument[]>().exec();
+    const list = await this.certs
+      .find({ user: new Types.ObjectId(userId) })
+      .sort({ createdAt: -1 })
+      .lean<CertificateDocument[]>()
+      .exec();
     return list.map((c) => this.toView(c));
   }
 
@@ -68,7 +87,8 @@ export class CertificatesService {
     if (!cert || cert.revoked) return { valid: false };
     return {
       valid: true,
-      holderName: (cert.user as { name?: string } | undefined)?.name ?? 'A learner',
+      holderName:
+        (cert.user as { name?: string } | undefined)?.name ?? 'A learner',
       title: cert.title,
       skill: cert.skill,
       score: cert.score,
@@ -79,8 +99,11 @@ export class CertificatesService {
   }
 
   async revoke(id: string): Promise<{ ok: true }> {
-    const res = await this.certs.updateOne({ _id: id }, { $set: { revoked: true } }).exec();
-    if (res.matchedCount === 0) throw new NotFoundException('Certificate not found');
+    const res = await this.certs
+      .updateOne({ _id: id }, { $set: { revoked: true } })
+      .exec();
+    if (res.matchedCount === 0)
+      throw new NotFoundException('Certificate not found');
     return { ok: true };
   }
 
@@ -93,7 +116,9 @@ export class CertificatesService {
       issuerName: c.issuerName,
       verificationId: c.verificationId,
       revoked: c.revoked,
-      issuedAt: (c as { createdAt?: Date }).createdAt?.toISOString() ?? new Date().toISOString(),
+      issuedAt:
+        (c as { createdAt?: Date }).createdAt?.toISOString() ??
+        new Date().toISOString(),
     };
   }
 }

@@ -20,7 +20,12 @@ import { OrgContext } from './rbac.types';
 import { OrganizationsService } from './services/organizations.service';
 import { MembershipService } from './services/membership.service';
 import { TenantService } from './services/tenant.service';
-import { AddMemberDto, CreateOrgDto, UpdateMemberRoleDto, UpdateOrgDto } from './dto/tenancy.dto';
+import {
+  AddMemberDto,
+  CreateOrgDto,
+  UpdateMemberRoleDto,
+  UpdateOrgDto,
+} from './dto/tenancy.dto';
 
 @Controller('organizations')
 export class OrganizationsController {
@@ -45,7 +50,10 @@ export class OrganizationsController {
 
   /** Effective tenant context (active org + permissions) for the frontend to gate UI. */
   @Get('context')
-  context(@CurrentUser() user: AuthUser, @Headers('x-org-id') orgId?: string): Promise<OrgContext> {
+  context(
+    @CurrentUser() user: AuthUser,
+    @Headers('x-org-id') orgId?: string,
+  ): Promise<OrgContext> {
     return this.tenant.resolve(user, orgId);
   }
 
@@ -58,7 +66,11 @@ export class OrganizationsController {
 
   @Patch(':id')
   @Permissions(Permission.OrgManage)
-  async update(@CurrentOrg() ctx: OrgContext, @Param('id') id: string, @Body() dto: UpdateOrgDto) {
+  async update(
+    @CurrentOrg() ctx: OrgContext,
+    @Param('id') id: string,
+    @Body() dto: UpdateOrgDto,
+  ) {
     this.assertOrg(ctx, id);
     const org = await this.orgs.update(id, {
       name: dto.name,
@@ -78,14 +90,24 @@ export class OrganizationsController {
 
   @Post(':id/members')
   @Permissions(Permission.MemberManage)
-  addMember(@CurrentUser() user: AuthUser, @CurrentOrg() ctx: OrgContext, @Param('id') id: string, @Body() dto: AddMemberDto) {
+  addMember(
+    @CurrentUser() user: AuthUser,
+    @CurrentOrg() ctx: OrgContext,
+    @Param('id') id: string,
+    @Body() dto: AddMemberDto,
+  ) {
     this.assertOrg(ctx, id);
     return this.members.addMember(id, dto.email, dto.orgRole, user.id);
   }
 
   @Patch(':id/members/:userId')
   @Permissions(Permission.MemberManage)
-  async updateMember(@CurrentOrg() ctx: OrgContext, @Param('id') id: string, @Param('userId') userId: string, @Body() dto: UpdateMemberRoleDto) {
+  async updateMember(
+    @CurrentOrg() ctx: OrgContext,
+    @Param('id') id: string,
+    @Param('userId') userId: string,
+    @Body() dto: UpdateMemberRoleDto,
+  ) {
     this.assertOrg(ctx, id);
     await this.members.updateRole(id, userId, dto.orgRole);
     return { ok: true };
@@ -93,7 +115,12 @@ export class OrganizationsController {
 
   @Delete(':id/members/:userId')
   @Permissions(Permission.MemberManage)
-  async removeMember(@CurrentUser() user: AuthUser, @CurrentOrg() ctx: OrgContext, @Param('id') id: string, @Param('userId') userId: string) {
+  async removeMember(
+    @CurrentUser() user: AuthUser,
+    @CurrentOrg() ctx: OrgContext,
+    @Param('id') id: string,
+    @Param('userId') userId: string,
+  ) {
     this.assertOrg(ctx, id);
     await this.members.removeMember(id, userId, user.id);
     return { ok: true };
@@ -102,7 +129,9 @@ export class OrganizationsController {
   /** Tenant isolation: a non-platform caller may only act on the org they hold the permission in. */
   private assertOrg(ctx: OrgContext, id: string): void {
     if (!ctx.isPlatform && ctx.organizationId !== id) {
-      throw new ForbiddenException('You do not have access to this organization.');
+      throw new ForbiddenException(
+        'You do not have access to this organization.',
+      );
     }
   }
 }

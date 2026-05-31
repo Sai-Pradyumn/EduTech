@@ -14,7 +14,12 @@ export type CommunityReplyDocument = HydratedDocument<CommunityReply>;
  */
 @Schema({ timestamps: true, collection: 'community_channels' })
 export class CommunityChannel {
-  @Prop({ type: Types.ObjectId, ref: 'Organization', required: true, index: true })
+  @Prop({
+    type: Types.ObjectId,
+    ref: 'Organization',
+    required: true,
+    index: true,
+  })
   organization!: Types.ObjectId;
 
   @Prop({ required: true })
@@ -26,7 +31,11 @@ export class CommunityChannel {
   @Prop({ default: '' })
   description!: string;
 
-  @Prop({ type: String, enum: ['discussion', 'help', 'showcase'], default: 'discussion' })
+  @Prop({
+    type: String,
+    enum: ['discussion', 'help', 'showcase'],
+    default: 'discussion',
+  })
   kind!: ChannelKind;
 
   @Prop({ default: 0 })
@@ -35,15 +44,26 @@ export class CommunityChannel {
   @Prop({ type: Types.ObjectId, ref: 'User' })
   createdBy?: Types.ObjectId;
 }
-export const CommunityChannelSchema = SchemaFactory.createForClass(CommunityChannel);
+export const CommunityChannelSchema =
+  SchemaFactory.createForClass(CommunityChannel);
 CommunityChannelSchema.index({ organization: 1, slug: 1 }, { unique: true });
 
 @Schema({ timestamps: true, collection: 'community_threads' })
 export class CommunityThread {
-  @Prop({ type: Types.ObjectId, ref: 'CommunityChannel', required: true, index: true })
+  @Prop({
+    type: Types.ObjectId,
+    ref: 'CommunityChannel',
+    required: true,
+    index: true,
+  })
   channel!: Types.ObjectId;
 
-  @Prop({ type: Types.ObjectId, ref: 'Organization', required: true, index: true })
+  @Prop({
+    type: Types.ObjectId,
+    ref: 'Organization',
+    required: true,
+    index: true,
+  })
   organization!: Types.ObjectId;
 
   @Prop({ type: Types.ObjectId, ref: 'User', required: true })
@@ -58,7 +78,11 @@ export class CommunityThread {
   @Prop({ default: '' })
   body!: string;
 
-  @Prop({ type: String, enum: ['discussion', 'question', 'showcase'], default: 'discussion' })
+  @Prop({
+    type: String,
+    enum: ['discussion', 'question', 'showcase'],
+    default: 'discussion',
+  })
   kind!: ThreadKind;
 
   @Prop({ type: [String], default: [] })
@@ -84,12 +108,18 @@ export class CommunityThread {
   @Prop({ default: false })
   pinned!: boolean;
 }
-export const CommunityThreadSchema = SchemaFactory.createForClass(CommunityThread);
+export const CommunityThreadSchema =
+  SchemaFactory.createForClass(CommunityThread);
 CommunityThreadSchema.index({ channel: 1, pinned: -1, updatedAt: -1 });
 
 @Schema({ timestamps: true, collection: 'community_replies' })
 export class CommunityReply {
-  @Prop({ type: Types.ObjectId, ref: 'CommunityThread', required: true, index: true })
+  @Prop({
+    type: Types.ObjectId,
+    ref: 'CommunityThread',
+    required: true,
+    index: true,
+  })
   thread!: Types.ObjectId;
 
   @Prop({ type: Types.ObjectId, ref: 'User', required: true })
@@ -108,5 +138,6 @@ export class CommunityReply {
   @Prop({ default: false })
   isAnswer!: boolean;
 }
-export const CommunityReplySchema = SchemaFactory.createForClass(CommunityReply);
+export const CommunityReplySchema =
+  SchemaFactory.createForClass(CommunityReply);
 CommunityReplySchema.index({ thread: 1, isAnswer: -1, createdAt: 1 });

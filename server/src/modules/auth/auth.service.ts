@@ -1,4 +1,8 @@
-import { Injectable, UnauthorizedException, ConflictException } from '@nestjs/common';
+import {
+  Injectable,
+  UnauthorizedException,
+  ConflictException,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcryptjs';
@@ -41,10 +45,15 @@ export class AuthService {
 
   async register(dto: RegisterDto): Promise<AuthResult> {
     const existing = await this.users.findByEmail(dto.email);
-    if (existing) throw new ConflictException('An account with this email already exists');
+    if (existing)
+      throw new ConflictException('An account with this email already exists');
 
     const passwordHash = await bcrypt.hash(dto.password, SALT_ROUNDS);
-    const user = await this.users.create({ name: dto.name, email: dto.email, passwordHash });
+    const user = await this.users.create({
+      name: dto.name,
+      email: dto.email,
+      passwordHash,
+    });
     return this.issueSession(user);
   }
 
@@ -70,7 +79,8 @@ export class AuthService {
     }
 
     const user = await this.users.findByIdWithRefresh(payload.sub);
-    if (!user || !user.refreshTokenHash) throw new UnauthorizedException('Session expired');
+    if (!user || !user.refreshTokenHash)
+      throw new UnauthorizedException('Session expired');
 
     const matches = await bcrypt.compare(refreshToken, user.refreshTokenHash);
     if (!matches) throw new UnauthorizedException('Session expired');
@@ -93,7 +103,11 @@ export class AuthService {
   }
 
   private async rotateTokens(user: UserDocument): Promise<AuthTokens> {
-    const payload: JwtPayload = { sub: user.id, email: user.email, role: user.role };
+    const payload: JwtPayload = {
+      sub: user.id,
+      email: user.email,
+      role: user.role,
+    };
 
     const accessToken = await this.jwt.signAsync(payload, {
       secret: this.config.get('jwt.secret', { infer: true }),
@@ -104,7 +118,10 @@ export class AuthService {
       expiresIn: this.config.get('jwt.refreshExpiresIn', { infer: true }),
     });
 
-    await this.users.setRefreshTokenHash(user.id, await bcrypt.hash(refreshToken, SALT_ROUNDS));
+    await this.users.setRefreshTokenHash(
+      user.id,
+      await bcrypt.hash(refreshToken, SALT_ROUNDS),
+    );
     return { accessToken, refreshToken };
   }
 
@@ -120,7 +137,9 @@ export class AuthService {
       role: user.role,
       isOnboarded: user.isOnboarded,
       platformRole: user.platformRole,
-      primaryOrganization: user.primaryOrganization ? String(user.primaryOrganization) : undefined,
+      primaryOrganization: user.primaryOrganization
+        ? String(user.primaryOrganization)
+        : undefined,
       isPlatformAdmin,
     };
   }

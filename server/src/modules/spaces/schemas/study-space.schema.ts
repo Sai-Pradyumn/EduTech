@@ -14,7 +14,12 @@ export const SPACE_SOURCE_TYPES = [
 ] as const;
 export type SpaceSourceType = (typeof SPACE_SOURCE_TYPES)[number];
 
-export const SPACE_ARTIFACT_KINDS = ['summary', 'flashcards', 'audio_overview', 'concept_map'] as const;
+export const SPACE_ARTIFACT_KINDS = [
+  'summary',
+  'flashcards',
+  'audio_overview',
+  'concept_map',
+] as const;
 export type SpaceArtifactKind = (typeof SPACE_ARTIFACT_KINDS)[number];
 
 @Schema({ _id: false })
@@ -57,7 +62,8 @@ export class StudySpace {
   @Prop({ default: '' }) description!: string;
 
   @Prop({ type: [SpaceSourceSchema], default: [] }) sources!: SpaceSource[];
-  @Prop({ type: [SpaceArtifactSchema], default: [] }) artifacts!: SpaceArtifact[];
+  @Prop({ type: [SpaceArtifactSchema], default: [] })
+  artifacts!: SpaceArtifact[];
 
   @Prop({ type: [String], default: [] }) linkedFlowIds!: string[];
   @Prop({ type: [String], default: [] }) linkedVisualIds!: string[];

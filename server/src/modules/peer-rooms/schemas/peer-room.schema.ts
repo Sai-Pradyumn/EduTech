@@ -9,7 +9,8 @@ export type PeerMessageKind = (typeof PEER_MESSAGE_KINDS)[number];
 
 @Schema({ _id: false })
 export class PeerMember {
-  @Prop({ type: Types.ObjectId, ref: 'User', required: true }) user!: Types.ObjectId;
+  @Prop({ type: Types.ObjectId, ref: 'User', required: true })
+  user!: Types.ObjectId;
   @Prop({ required: true }) name!: string;
   @Prop({ type: String, enum: ['host', 'member', 'mentor'], default: 'member' })
   role!: 'host' | 'member' | 'mentor';

@@ -1,11 +1,21 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { LiveSessionStatus } from '../../../common/enums';
 import { CohortService } from '../../cohort/services/cohort.service';
 import { NotificationsService } from '../../notifications/notifications.service';
-import { LiveSession, LiveSessionDocument } from '../schemas/live-session.schema';
-import { CreateLiveSessionDto, UpdateLiveSessionDto } from '../dto/live-session.dto';
+import {
+  LiveSession,
+  LiveSessionDocument,
+} from '../schemas/live-session.schema';
+import {
+  CreateLiveSessionDto,
+  UpdateLiveSessionDto,
+} from '../dto/live-session.dto';
 
 export interface SessionView {
   id: string;
@@ -38,12 +48,18 @@ export interface SessionDetail extends SessionView {
 @Injectable()
 export class LiveSessionService {
   constructor(
-    @InjectModel(LiveSession.name) private readonly sessions: Model<LiveSessionDocument>,
+    @InjectModel(LiveSession.name)
+    private readonly sessions: Model<LiveSessionDocument>,
     private readonly cohorts: CohortService,
     private readonly notifications: NotificationsService,
   ) {}
 
-  async create(orgId: string, hostId: string, hostName: string, dto: CreateLiveSessionDto): Promise<SessionDetail> {
+  async create(
+    orgId: string,
+    hostId: string,
+    hostName: string,
+    dto: CreateLiveSessionDto,
+  ): Promise<SessionDetail> {
     const session = await this.sessions.create({
       organization: new Types.ObjectId(orgId),
       cohort: dto.cohortId ? new Types.ObjectId(dto.cohortId) : undefined,
@@ -58,7 +74,12 @@ export class LiveSessionService {
       createdBy: new Types.ObjectId(hostId),
     });
     // B13: notify cohort students that a session is scheduled.
-    if (dto.cohortId) await this.notifyCohort(dto.cohortId, session.title, session.scheduledStart);
+    if (dto.cohortId)
+      await this.notifyCohort(
+        dto.cohortId,
+        session.title,
+        session.scheduledStart,
+      );
     return this.detail(session);
   }
 
@@ -93,14 +114,21 @@ export class LiveSessionService {
   }
 
   async orgIdOf(id: string): Promise<string> {
-    const s = await this.sessions.findById(id).select('organization').lean<{ organization: Types.ObjectId }>().exec();
+    const s = await this.sessions
+      .findById(id)
+      .select('organization')
+      .lean<{ organization: Types.ObjectId }>()
+      .exec();
     if (!s) throw new NotFoundException('Session not found');
     return String(s.organization);
   }
 
   async start(id: string): Promise<SessionDetail> {
     const s = await this.owned(id);
-    if (s.status === LiveSessionStatus.Ended || s.status === LiveSessionStatus.Cancelled) {
+    if (
+      s.status === LiveSessionStatus.Ended ||
+      s.status === LiveSessionStatus.Cancelled
+    ) {
       throw new BadRequestException('This session has already finished.');
     }
     s.status = LiveSessionStatus.Live;
@@ -120,7 +148,12 @@ export class LiveSessionService {
     if (s.attendees.length) {
       await this.notifications.createMany(
         s.attendees.map((a) => String(a.user)),
-        { type: 'session', title: `Recap ready: ${s.title}`, body: s.recap.assignmentTitle, link: '/app/live-sessions' },
+        {
+          type: 'session',
+          title: `Recap ready: ${s.title}`,
+          body: s.recap.assignmentTitle,
+          link: '/app/live-sessions',
+        },
       );
     }
     return this.detail(s);
@@ -128,10 +161,15 @@ export class LiveSessionService {
 
   async join(id: string, userId: string, name: string): Promise<SessionDetail> {
     const s = await this.owned(id);
-    if (s.status === LiveSessionStatus.Cancelled) throw new BadRequestException('This session was cancelled.');
+    if (s.status === LiveSessionStatus.Cancelled)
+      throw new BadRequestException('This session was cancelled.');
     const already = s.attendees.some((a) => String(a.user) === userId);
     if (!already) {
-      s.attendees.push({ user: new Types.ObjectId(userId), name, joinedAt: new Date() });
+      s.attendees.push({
+        user: new Types.ObjectId(userId),
+        name,
+        joinedAt: new Date(),
+      });
       await s.save();
     }
     return this.detail(s);
@@ -141,10 +179,13 @@ export class LiveSessionService {
     const set: Record<string, unknown> = {};
     if (dto.title !== undefined) set['title'] = dto.title;
     if (dto.description !== undefined) set['description'] = dto.description;
-    if (dto.scheduledStart !== undefined) set['scheduledStart'] = new Date(dto.scheduledStart);
+    if (dto.scheduledStart !== undefined)
+      set['scheduledStart'] = new Date(dto.scheduledStart);
     if (dto.durationMins !== undefined) set['durationMins'] = dto.durationMins;
     if (dto.status !== undefined) set['status'] = dto.status;
-    const s = await this.sessions.findByIdAndUpdate(id, { $set: set }, { new: true }).exec();
+    const s = await this.sessions
+      .findByIdAndUpdate(id, { $set: set }, { new: true })
+      .exec();
     if (!s) throw new NotFoundException('Session not found');
     return this.detail(s);
   }
@@ -156,18 +197,28 @@ export class LiveSessionService {
 
   // ── helpers ──────────────────────────────────────────────────────────────
   private async owned(id: string): Promise<LiveSessionDocument> {
-    if (!Types.ObjectId.isValid(id)) throw new NotFoundException('Session not found');
+    if (!Types.ObjectId.isValid(id))
+      throw new NotFoundException('Session not found');
     const s = await this.sessions.findById(id);
     if (!s) throw new NotFoundException('Session not found');
     return s;
   }
 
-  private async notifyCohort(cohortId: string, title: string, when: Date): Promise<void> {
+  private async notifyCohort(
+    cohortId: string,
+    title: string,
+    when: Date,
+  ): Promise<void> {
     try {
       const detail = await this.cohorts.getDetail(cohortId);
       await this.notifications.createMany(
         detail.students.map((s) => s.userId),
-        { type: 'session', title: `Live session: ${title}`, body: `Scheduled for ${when.toUTCString()}`, link: '/app/live-sessions' },
+        {
+          type: 'session',
+          title: `Live session: ${title}`,
+          body: `Scheduled for ${when.toUTCString()}`,
+          link: '/app/live-sessions',
+        },
       );
     } catch {
       // best-effort — a missing cohort shouldn't block scheduling.
@@ -175,7 +226,10 @@ export class LiveSessionService {
   }
 
   /** Deterministic AI recap from free-text notes (summary + key points + assignment). */
-  private buildRecap(title: string, notes: string): NonNullable<LiveSessionDocument['recap']> {
+  private buildRecap(
+    title: string,
+    notes: string,
+  ): NonNullable<LiveSessionDocument['recap']> {
     const clean = (notes ?? '').replace(/\s+/g, ' ').trim();
     const sentences = clean
       .split(/(?<=[.!?])\s+/)
@@ -236,7 +290,9 @@ export class LiveSessionService {
             assignmentTitle: s.recap.assignmentTitle,
             assignmentDescription: s.recap.assignmentDescription,
             suggestedQuizTopic: s.recap.suggestedQuizTopic,
-            generatedAt: s.recap.generatedAt ? new Date(s.recap.generatedAt).toISOString() : undefined,
+            generatedAt: s.recap.generatedAt
+              ? new Date(s.recap.generatedAt).toISOString()
+              : undefined,
           }
         : null,
     };

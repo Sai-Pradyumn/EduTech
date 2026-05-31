@@ -30,7 +30,13 @@ export const LEDGER_KINDS = [
 export type LedgerKind = (typeof LEDGER_KINDS)[number];
 
 /** How strongly a proof event is verified — drives the trust badge in the Skill Passport. */
-export const VERIFICATION_LEVELS = ['self', 'ai', 'system', 'mentor', 'certificate'] as const;
+export const VERIFICATION_LEVELS = [
+  'self',
+  'ai',
+  'system',
+  'mentor',
+  'certificate',
+] as const;
 export type VerificationLevel = (typeof VERIFICATION_LEVELS)[number];
 
 export type LedgerEntryDocument = HydratedDocument<LedgerEntry>;
@@ -54,7 +60,8 @@ export class LedgerEntry {
   /** Skill tags this event is evidence for (powers the Skill Passport skill graph). */
   @Prop({ type: [String], default: [] }) skills!: string[];
   /** How verified the event is — self < ai < system < mentor < certificate. */
-  @Prop({ type: String, enum: VERIFICATION_LEVELS, default: 'system' }) verificationLevel!: VerificationLevel;
+  @Prop({ type: String, enum: VERIFICATION_LEVELS, default: 'system' })
+  verificationLevel!: VerificationLevel;
   /** Whether the learner allows this event to appear on the public Skill Passport. */
   @Prop({ default: true }) visibleOnPassport!: boolean;
 

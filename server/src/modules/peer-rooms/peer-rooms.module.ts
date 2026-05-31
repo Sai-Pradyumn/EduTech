@@ -13,7 +13,9 @@ import { PeerRoomsService } from './peer-rooms.service';
  */
 @Module({
   imports: [
-    MongooseModule.forFeature([{ name: PeerRoom.name, schema: PeerRoomSchema }]),
+    MongooseModule.forFeature([
+      { name: PeerRoom.name, schema: PeerRoomSchema },
+    ]),
     AgentsModule,
     FlowsModule,
   ],

@@ -56,7 +56,10 @@ export class ClaudeProvider implements IAIProvider {
     }));
   }
 
-  async generateText(messages: AIMessage[], opts?: GenOptions): Promise<string> {
+  async generateText(
+    messages: AIMessage[],
+    opts?: GenOptions,
+  ): Promise<string> {
     const client = this.ensure();
     const { system, turns } = splitSystem(messages, opts?.system);
     const model = opts?.model ?? this.defaultModel;
@@ -74,7 +77,10 @@ export class ClaudeProvider implements IAIProvider {
         { signal: opts?.signal },
       );
       opts?.onUsage?.(
-        { promptTokens: res.usage.input_tokens, completionTokens: res.usage.output_tokens },
+        {
+          promptTokens: res.usage.input_tokens,
+          completionTokens: res.usage.output_tokens,
+        },
         { provider: this.name, model },
       );
       return res.content
@@ -86,7 +92,10 @@ export class ClaudeProvider implements IAIProvider {
     }
   }
 
-  async *streamText(messages: AIMessage[], opts?: GenOptions): AsyncIterable<string> {
+  async *streamText(
+    messages: AIMessage[],
+    opts?: GenOptions,
+  ): AsyncIterable<string> {
     const client = this.ensure();
     const { system, turns } = splitSystem(messages, opts?.system);
     const model = opts?.model ?? this.defaultModel;
@@ -104,13 +113,19 @@ export class ClaudeProvider implements IAIProvider {
         { signal: opts?.signal },
       );
       for await (const event of stream) {
-        if (event.type === 'content_block_delta' && event.delta.type === 'text_delta') {
+        if (
+          event.type === 'content_block_delta' &&
+          event.delta.type === 'text_delta'
+        ) {
           yield event.delta.text;
         }
       }
       const final = await stream.finalMessage();
       opts?.onUsage?.(
-        { promptTokens: final.usage.input_tokens, completionTokens: final.usage.output_tokens },
+        {
+          promptTokens: final.usage.input_tokens,
+          completionTokens: final.usage.output_tokens,
+        },
         { provider: this.name, model },
       );
     } catch (err) {
@@ -137,7 +152,8 @@ export class ClaudeProvider implements IAIProvider {
           tools: [
             {
               name: 'respond',
-              description: 'Return the structured response in the required schema.',
+              description:
+                'Return the structured response in the required schema.',
               input_schema: schema as Anthropic.Tool.InputSchema,
             },
           ],
@@ -146,7 +162,10 @@ export class ClaudeProvider implements IAIProvider {
         { signal: opts?.signal },
       );
       opts?.onUsage?.(
-        { promptTokens: res.usage.input_tokens, completionTokens: res.usage.output_tokens },
+        {
+          promptTokens: res.usage.input_tokens,
+          completionTokens: res.usage.output_tokens,
+        },
         { provider: this.name, model },
       );
       const toolUse = res.content.find(
@@ -160,7 +179,11 @@ export class ClaudeProvider implements IAIProvider {
   }
 
   async generateEmbedding(_text: string): Promise<number[]> {
-    throw new AIProviderCallError('claude', 'Claude does not provide embeddings.', 501);
+    throw new AIProviderCallError(
+      'claude',
+      'Claude does not provide embeddings.',
+      501,
+    );
   }
 
   private wrap(err: unknown): AIProviderCallError {

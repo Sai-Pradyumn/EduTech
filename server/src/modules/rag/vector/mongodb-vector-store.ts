@@ -1,5 +1,9 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { ChunkHit, RetrievalScope, VectorQuery } from './vector-store.interface';
+import {
+  ChunkHit,
+  RetrievalScope,
+  VectorQuery,
+} from './vector-store.interface';
 import { KeywordVectorStore } from './keyword-vector-store';
 
 /**
@@ -19,7 +23,11 @@ export class MongoDbVectorStore extends KeywordVectorStore {
   private readonly log = new Logger(MongoDbVectorStore.name);
   private atlasUnavailable = false;
 
-  override async search(query: VectorQuery, scope: RetrievalScope, k: number): Promise<ChunkHit[]> {
+  override async search(
+    query: VectorQuery,
+    scope: RetrievalScope,
+    k: number,
+  ): Promise<ChunkHit[]> {
     if (this.atlasUnavailable) return super.search(query, scope, k);
     try {
       const filter = this.scopeFilter(scope);

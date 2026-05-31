@@ -44,9 +44,8 @@ export class EventsGateway implements OnGatewayConnection {
 
   async handleConnection(client: Socket): Promise<void> {
     try {
-      const token = (client.handshake.auth?.['token'] ?? client.handshake.headers['authorization']) as
-        | string
-        | undefined;
+      const token = (client.handshake.auth?.['token'] ??
+        client.handshake.headers['authorization']) as string | undefined;
       const clean = token?.replace(/^Bearer\s+/i, '');
       if (!clean) return this.reject(client);
       const payload = await this.jwt.verifyAsync<JwtPayload>(clean, {
@@ -94,7 +93,9 @@ export class EventsGateway implements OnGatewayConnection {
     }
   }
 
-  private buildContext(payload: AgentSendPayload): Record<string, unknown> | undefined {
+  private buildContext(
+    payload: AgentSendPayload,
+  ): Record<string, unknown> | undefined {
     const ctx: Record<string, unknown> = {};
     if (payload.mode) ctx['mode'] = payload.mode;
     if (payload.documentIds?.length) ctx['documentIds'] = payload.documentIds;
@@ -107,7 +108,11 @@ export class EventsGateway implements OnGatewayConnection {
   }
 
   private reject(client: Socket): void {
-    client.emit('agent.event', { type: 'error', messageId: '', message: 'Unauthorized socket' });
+    client.emit('agent.event', {
+      type: 'error',
+      messageId: '',
+      message: 'Unauthorized socket',
+    });
     client.disconnect(true);
   }
 }

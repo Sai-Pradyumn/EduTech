@@ -13,15 +13,23 @@ export interface CreateUserInput {
 
 @Injectable()
 export class UsersService {
-  constructor(@InjectModel(User.name) private readonly userModel: Model<UserDocument>) {}
+  constructor(
+    @InjectModel(User.name) private readonly userModel: Model<UserDocument>,
+  ) {}
 
   async create(input: CreateUserInput): Promise<UserDocument> {
-    return this.userModel.create({ ...input, role: input.role ?? Role.Student });
+    return this.userModel.create({
+      ...input,
+      role: input.role ?? Role.Student,
+    });
   }
 
   /** Includes passwordHash (normally select:false) for credential verification. */
   findByEmailWithSecret(email: string): Promise<UserDocument | null> {
-    return this.userModel.findOne({ email: email.toLowerCase() }).select('+passwordHash').exec();
+    return this.userModel
+      .findOne({ email: email.toLowerCase() })
+      .select('+passwordHash')
+      .exec();
   }
 
   findByEmail(email: string): Promise<UserDocument | null> {
@@ -44,7 +52,9 @@ export class UsersService {
   }
 
   async setRefreshTokenHash(id: string, hash: string | null): Promise<void> {
-    await this.userModel.updateOne({ _id: id }, { refreshTokenHash: hash ?? undefined }).exec();
+    await this.userModel
+      .updateOne({ _id: id }, { refreshTokenHash: hash ?? undefined })
+      .exec();
   }
 
   async markOnboarded(id: string): Promise<void> {
@@ -52,10 +62,17 @@ export class UsersService {
   }
 
   async touchLastActive(id: string): Promise<void> {
-    await this.userModel.updateOne({ _id: id }, { lastActiveAt: new Date() }).exec();
+    await this.userModel
+      .updateOne({ _id: id }, { lastActiveAt: new Date() })
+      .exec();
   }
 
   async setPrimaryOrganization(id: string, orgId: string): Promise<void> {
-    await this.userModel.updateOne({ _id: id }, { primaryOrganization: new Types.ObjectId(orgId) }).exec();
+    await this.userModel
+      .updateOne(
+        { _id: id },
+        { primaryOrganization: new Types.ObjectId(orgId) },
+      )
+      .exec();
   }
 }

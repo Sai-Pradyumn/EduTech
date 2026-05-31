@@ -6,7 +6,10 @@ import { AssessmentModule } from '../assessment/assessment.module';
 import { VoiceController } from './voice.controller';
 import { VoiceService } from './voice.service';
 import { MockVoiceProvider, VOICE_PROVIDER_TOKEN } from './voice.provider';
-import { VoiceSession, VoiceSessionSchema } from './schemas/voice-session.schema';
+import {
+  VoiceSession,
+  VoiceSessionSchema,
+} from './schemas/voice-session.schema';
 
 /**
  * Voice Room (Phase 8 · complete voice-native learning). Persisted multi-turn sessions across 8 modes
@@ -19,10 +22,15 @@ import { VoiceSession, VoiceSessionSchema } from './schemas/voice-session.schema
     AgentsModule,
     FlowsModule,
     AssessmentModule,
-    MongooseModule.forFeature([{ name: VoiceSession.name, schema: VoiceSessionSchema }]),
+    MongooseModule.forFeature([
+      { name: VoiceSession.name, schema: VoiceSessionSchema },
+    ]),
   ],
   controllers: [VoiceController],
-  providers: [VoiceService, { provide: VOICE_PROVIDER_TOKEN, useClass: MockVoiceProvider }],
+  providers: [
+    VoiceService,
+    { provide: VOICE_PROVIDER_TOKEN, useClass: MockVoiceProvider },
+  ],
   exports: [VoiceService],
 })
 export class VoiceModule {}

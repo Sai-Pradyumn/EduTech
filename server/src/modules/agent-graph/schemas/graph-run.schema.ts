@@ -31,7 +31,11 @@ export class GraphRun {
   @Prop({ default: '' })
   input!: string;
 
-  @Prop({ type: String, enum: ['running', 'succeeded', 'failed'], default: 'running' })
+  @Prop({
+    type: String,
+    enum: ['running', 'succeeded', 'failed'],
+    default: 'running',
+  })
   status!: GraphRunStatus;
 
   @Prop({ type: [GraphStepResultSchema], default: [] })

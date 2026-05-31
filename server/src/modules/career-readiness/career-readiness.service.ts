@@ -5,8 +5,17 @@ import { SkillTwinService, SkillTwin } from '../skill-twin/skill-twin.service';
 import { LedgerService } from '../ledger/ledger.service';
 import { ProjectsService } from '../projects/services/projects.service';
 import { StudentProfileService } from '../student-profile/student-profile.service';
-import { CAREER_ROLES, CareerRole, findRole, matchRoleFromGoal, RequiredSkill } from './career-roles';
-import { CareerReadinessState, CareerReadinessStateDocument } from './schemas/career-readiness.schema';
+import {
+  CAREER_ROLES,
+  CareerRole,
+  findRole,
+  matchRoleFromGoal,
+  RequiredSkill,
+} from './career-roles';
+import {
+  CareerReadinessState,
+  CareerReadinessStateDocument,
+} from './schemas/career-readiness.schema';
 import { CareerReadinessAgent } from './career-readiness.agent';
 
 export interface SkillGap {
@@ -35,7 +44,14 @@ export interface PlanItem {
   title: string;
   reason: string;
   route: string;
-  kind: 'flow' | 'quiz' | 'project' | 'simulation' | 'interview' | 'mistake' | 'visual';
+  kind:
+    | 'flow'
+    | 'quiz'
+    | 'project'
+    | 'simulation'
+    | 'interview'
+    | 'mistake'
+    | 'visual';
 }
 
 export interface ReadinessAnalysis {
@@ -49,7 +65,12 @@ export interface ReadinessAnalysis {
   portfolioChecklist: { item: string; done: boolean }[];
   blockers: { title: string; impact: string }[];
   weekPlan: PlanItem[];
-  recommendations: { flows: string[]; quizzes: string[]; projects: string[]; simulations: string[] };
+  recommendations: {
+    flows: string[];
+    quizzes: string[];
+    projects: string[];
+    simulations: string[];
+  };
   explanation: string;
   lastAnalyzedAt: string;
 }
@@ -63,7 +84,8 @@ export interface ReadinessAnalysis {
 @Injectable()
 export class CareerReadinessService {
   constructor(
-    @InjectModel(CareerReadinessState.name) private readonly stateModel: Model<CareerReadinessStateDocument>,
+    @InjectModel(CareerReadinessState.name)
+    private readonly stateModel: Model<CareerReadinessStateDocument>,
     private readonly twin: SkillTwinService,
     private readonly ledger: LedgerService,
     private readonly projects: ProjectsService,
@@ -82,14 +104,22 @@ export class CareerReadinessService {
   }
 
   async getState(userId: string): Promise<CareerReadinessStateDocument> {
-    const existing = await this.stateModel.findOne({ user: new Types.ObjectId(userId) }).exec();
+    const existing = await this.stateModel
+      .findOne({ user: new Types.ObjectId(userId) })
+      .exec();
     if (existing) return existing;
     const profile = await this.profiles.findByUser(userId);
     const role = matchRoleFromGoal(profile?.mainGoal ?? '');
-    return this.stateModel.create({ user: new Types.ObjectId(userId), targetRoleId: role.id });
+    return this.stateModel.create({
+      user: new Types.ObjectId(userId),
+      targetRoleId: role.id,
+    });
   }
 
-  async setTargetRole(userId: string, roleId: string): Promise<ReadinessAnalysis> {
+  async setTargetRole(
+    userId: string,
+    roleId: string,
+  ): Promise<ReadinessAnalysis> {
     const role = findRole(roleId);
     const state = await this.getState(userId);
     state.targetRoleId = role ? role.id : state.targetRoleId;
@@ -111,24 +141,41 @@ export class CareerReadinessService {
       this.ledger.list(userId, 200),
     ]);
 
-    const kindCount = (k: string) => summary.byKind.find((b) => b.kind === k)?.count ?? 0;
-
     // ── skills dimension (radar mastery blended with proven ledger evidence) ──
     const ledgerSkillScore = this.ledgerSkillScores(ledgerEntries);
     const masteryFor = this.masteryLookup(twin, ledgerSkillScore);
     const skillGaps: SkillGap[] = role.requiredSkills.map((rs) => {
       const current = masteryFor(rs.name);
-      return { skill: rs.name, current, target: rs.target, gap: Math.max(0, rs.target - current), met: current >= rs.target };
+      return {
+        skill: rs.name,
+        current,
+        target: rs.target,
+        gap: Math.max(0, rs.target - current),
+        met: current >= rs.target,
+      };
     });
-    const skillsScore = this.weightedSkillScore(role.requiredSkills, masteryFor);
+    const skillsScore = this.weightedSkillScore(
+      role.requiredSkills,
+      masteryFor,
+    );
 
     // ── projects dimension ──
     const completed = projects.filter((p) => p.status === 'completed').length;
     const reviewed = projects.filter((p) => p.aiReview?.overallScore);
-    const avgReview = reviewed.length ? Math.round(reviewed.reduce((s, p) => s + (p.aiReview?.overallScore ?? 0), 0) / reviewed.length) : 0;
-    const coverage = Math.min(1, completed / Math.max(1, role.projectExpectations.minProjects));
+    const avgReview = reviewed.length
+      ? Math.round(
+          reviewed.reduce((s, p) => s + (p.aiReview?.overallScore ?? 0), 0) /
+            reviewed.length,
+        )
+      : 0;
+    const coverage = Math.min(
+      1,
+      completed / Math.max(1, role.projectExpectations.minProjects),
+    );
     const quality = avgReview ? avgReview / 100 : projects.length ? 0.55 : 0;
-    const projectsScore = clamp(Math.round((coverage * 0.6 + quality * 0.4) * 100));
+    const projectsScore = clamp(
+      Math.round((coverage * 0.6 + quality * 0.4) * 100),
+    );
 
     // ── interview dimension ──
     const interviewScore = this.interviewScoreFrom(ledgerEntries);
@@ -139,9 +186,13 @@ export class CareerReadinessService {
     // ── portfolio dimension ──
     const hasDemo = projects.some((p) => p.submission?.demoUrl);
     const hasRepo = projects.some((p) => p.submission?.githubUrl);
-    const certs = summary.byKind.find((b) => b.kind === 'certificate_earned')?.count ?? 0;
+    const certs =
+      summary.byKind.find((b) => b.kind === 'certificate_earned')?.count ?? 0;
     const portfolioScore = clamp(
-      (completed >= 1 ? 30 : 0) + (hasDemo ? 25 : 0) + (hasRepo ? 20 : 0) + Math.min(25, certs * 12),
+      (completed >= 1 ? 30 : 0) +
+        (hasDemo ? 25 : 0) +
+        (hasRepo ? 20 : 0) +
+        Math.min(25, certs * 12),
     );
 
     const dims: Record<ReadinessDimension['key'], number> = {
@@ -153,17 +204,48 @@ export class CareerReadinessService {
     };
     const r = role.readinessRubric;
     const readinessScore = clamp(
-      Math.round(dims.skills * r.skills + dims.projects * r.projects + dims.interview * r.interview + dims.consistency * r.consistency + dims.portfolio * r.portfolio),
+      Math.round(
+        dims.skills * r.skills +
+          dims.projects * r.projects +
+          dims.interview * r.interview +
+          dims.consistency * r.consistency +
+          dims.portfolio * r.portfolio,
+      ),
     );
 
-    const dimensions = this.buildDimensions(role, dims, skillGaps, completed, avgReview, interviewScore, twin, hasDemo, hasRepo, certs);
+    const dimensions = this.buildDimensions(
+      role,
+      dims,
+      skillGaps,
+      completed,
+      avgReview,
+      interviewScore,
+      twin,
+      hasDemo,
+      hasRepo,
+      certs,
+    );
 
     // ── gaps / blockers / plan ──
-    const sortedGaps = [...skillGaps].filter((g) => !g.met).sort((a, b) => b.gap - a.gap);
-    const projectGap = { have: completed, need: role.projectExpectations.minProjects, note: role.projectExpectations.note, met: completed >= role.projectExpectations.minProjects };
-    const interviewGap = { score: interviewScore, expectations: role.interviewExpectations, met: interviewScore >= 60 };
+    const sortedGaps = [...skillGaps]
+      .filter((g) => !g.met)
+      .sort((a, b) => b.gap - a.gap);
+    const projectGap = {
+      have: completed,
+      need: role.projectExpectations.minProjects,
+      note: role.projectExpectations.note,
+      met: completed >= role.projectExpectations.minProjects,
+    };
+    const interviewGap = {
+      score: interviewScore,
+      expectations: role.interviewExpectations,
+      met: interviewScore >= 60,
+    };
     const portfolioChecklist = [
-      { item: `${role.projectExpectations.minProjects}+ completed projects`, done: projectGap.met },
+      {
+        item: `${role.projectExpectations.minProjects}+ completed projects`,
+        done: projectGap.met,
+      },
       { item: 'A deployed / live demo', done: hasDemo },
       { item: 'Public GitHub repos', done: hasRepo },
       { item: 'Skill Passport published', done: false },
@@ -179,7 +261,14 @@ export class CareerReadinessService {
       simulations: interviewGap.met ? [] : [`Mock ${role.title} interview`],
     };
 
-    const band: ReadinessAnalysis['band'] = readinessScore >= 82 ? 'ready' : readinessScore >= 65 ? 'close' : readinessScore >= 45 ? 'building' : 'early';
+    const band: ReadinessAnalysis['band'] =
+      readinessScore >= 82
+        ? 'ready'
+        : readinessScore >= 65
+          ? 'close'
+          : readinessScore >= 45
+            ? 'building'
+            : 'early';
 
     const explanation = await this.agent.explain(userId, {
       role,
@@ -197,7 +286,12 @@ export class CareerReadinessService {
     await state.save();
 
     return {
-      role: { id: role.id, title: role.title, level: role.level, summary: role.summary },
+      role: {
+        id: role.id,
+        title: role.title,
+        level: role.level,
+        summary: role.summary,
+      },
       readinessScore,
       band,
       dimensions,
@@ -216,7 +310,9 @@ export class CareerReadinessService {
   // ───────────────────────── helpers ─────────────────────────
 
   /** Average score per skill from scored ledger evidence (quizzes, reviews, vivas, sims). */
-  private ledgerSkillScores(entries: { skills?: string[]; score?: number; kind: string }[]): Map<string, number> {
+  private ledgerSkillScores(
+    entries: { skills?: string[]; score?: number; kind: string }[],
+  ): Map<string, number> {
     const acc = new Map<string, { sum: number; n: number }>();
     for (const e of entries) {
       if (typeof e.score !== 'number' || e.kind === 'quiz_failed') continue;
@@ -234,10 +330,17 @@ export class CareerReadinessService {
   }
 
   /** Best mastery for a role skill: the higher of radar mastery and proven ledger evidence. */
-  private masteryLookup(twin: SkillTwin, ledgerScore: Map<string, number>): (name: string) => number {
-    const map = twin.skills.map((s) => ({ key: s.skill.toLowerCase(), mastery: s.mastery }));
+  private masteryLookup(
+    twin: SkillTwin,
+    ledgerScore: Map<string, number>,
+  ): (name: string) => number {
+    const map = twin.skills.map((s) => ({
+      key: s.skill.toLowerCase(),
+      mastery: s.mastery,
+    }));
     const ledger = [...ledgerScore.entries()];
-    const match = (n: string, key: string) => key === n || key.includes(n) || n.includes(key);
+    const match = (n: string, key: string) =>
+      key === n || key.includes(n) || n.includes(key);
     return (name: string) => {
       const n = name.toLowerCase();
       const radar = map.find((m) => match(n, m.key))?.mastery ?? 0;
@@ -246,7 +349,10 @@ export class CareerReadinessService {
     };
   }
 
-  private weightedSkillScore(required: RequiredSkill[], masteryFor: (n: string) => number): number {
+  private weightedSkillScore(
+    required: RequiredSkill[],
+    masteryFor: (n: string) => number,
+  ): number {
     const totalW = required.reduce((s, r) => s + r.weight, 0) || 1;
     const sum = required.reduce((s, rs) => {
       const ratio = Math.min(100, (masteryFor(rs.name) / rs.target) * 100);
@@ -256,12 +362,24 @@ export class CareerReadinessService {
   }
 
   /** Average score of interview/simulation/viva ledger events; 0 when none. */
-  private interviewScoreFrom(entries: { kind: string; score?: number }[]): number {
+  private interviewScoreFrom(
+    entries: { kind: string; score?: number }[],
+  ): number {
     const scored = entries.filter(
-      (e) => ['simulation_finished', 'interview_completed', 'interview_passed', 'voice_viva_passed'].includes(e.kind) && typeof e.score === 'number',
+      (e) =>
+        [
+          'simulation_finished',
+          'interview_completed',
+          'interview_passed',
+          'voice_viva_passed',
+        ].includes(e.kind) && typeof e.score === 'number',
     );
     if (!scored.length) return 0;
-    return clamp(Math.round(scored.reduce((s, e) => s + (e.score ?? 0), 0) / scored.length));
+    return clamp(
+      Math.round(
+        scored.reduce((s, e) => s + (e.score ?? 0), 0) / scored.length,
+      ),
+    );
   }
 
   private buildDimensions(
@@ -285,27 +403,51 @@ export class CareerReadinessService {
         label: 'Core skills',
         score: dims.skills,
         weight: r.skills,
-        supports: met.length ? [`At target on ${met.slice(0, 4).join(', ')}`] : ['Some foundations in place'],
-        missing: unmet.slice(0, 3).map((g) => `${g.skill}: ${g.current}/${g.target}`),
-        fastestAction: unmet[0] ? `Drill ${unmet[0].skill} — the biggest single skill gap.` : 'Keep all skills above target.',
+        supports: met.length
+          ? [`At target on ${met.slice(0, 4).join(', ')}`]
+          : ['Some foundations in place'],
+        missing: unmet
+          .slice(0, 3)
+          .map((g) => `${g.skill}: ${g.current}/${g.target}`),
+        fastestAction: unmet[0]
+          ? `Drill ${unmet[0].skill} — the biggest single skill gap.`
+          : 'Keep all skills above target.',
       },
       {
         key: 'projects',
         label: 'Project evidence',
         score: dims.projects,
         weight: r.projects,
-        supports: completed ? [`${completed} completed project${completed > 1 ? 's' : ''}${avgReview ? `, avg review ${avgReview}/100` : ''}`] : [],
-        missing: completed >= role.projectExpectations.minProjects ? [] : [`Need ${role.projectExpectations.minProjects - completed} more strong project(s)`],
-        fastestAction: completed >= role.projectExpectations.minProjects ? 'Polish a project and request a review.' : 'Build a role-relevant project and submit it for review.',
+        supports: completed
+          ? [
+              `${completed} completed project${completed > 1 ? 's' : ''}${avgReview ? `, avg review ${avgReview}/100` : ''}`,
+            ]
+          : [],
+        missing:
+          completed >= role.projectExpectations.minProjects
+            ? []
+            : [
+                `Need ${role.projectExpectations.minProjects - completed} more strong project(s)`,
+              ],
+        fastestAction:
+          completed >= role.projectExpectations.minProjects
+            ? 'Polish a project and request a review.'
+            : 'Build a role-relevant project and submit it for review.',
       },
       {
         key: 'interview',
         label: 'Interview readiness',
         score: dims.interview,
         weight: r.interview,
-        supports: interviewScore ? [`Mock-interview score ${interviewScore}/100`] : [],
-        missing: interviewScore >= 60 ? [] : ['No strong mock-interview evidence yet'],
-        fastestAction: interviewScore >= 60 ? 'Run a harder mock to stretch your ceiling.' : 'Run a mock interview for this role to get a baseline.',
+        supports: interviewScore
+          ? [`Mock-interview score ${interviewScore}/100`]
+          : [],
+        missing:
+          interviewScore >= 60 ? [] : ['No strong mock-interview evidence yet'],
+        fastestAction:
+          interviewScore >= 60
+            ? 'Run a harder mock to stretch your ceiling.'
+            : 'Run a mock interview for this role to get a baseline.',
       },
       {
         key: 'consistency',
@@ -313,7 +455,10 @@ export class CareerReadinessService {
         score: dims.consistency,
         weight: r.consistency,
         supports: twin.retentionRisk < 40 ? ['Steady, recent activity'] : [],
-        missing: twin.retentionRisk >= 40 ? ['Activity has dipped — retention risk is rising'] : [],
+        missing:
+          twin.retentionRisk >= 40
+            ? ['Activity has dipped — retention risk is rising']
+            : [],
         fastestAction: 'Complete your daily plan a few days in a row.',
       },
       {
@@ -321,34 +466,122 @@ export class CareerReadinessService {
         label: 'Portfolio',
         score: dims.portfolio,
         weight: r.portfolio,
-        supports: [hasRepo ? 'Has public repos' : '', hasDemo ? 'Has a live demo' : '', certs ? `${certs} certificate(s)` : ''].filter(Boolean),
-        missing: [!hasDemo ? 'No live demo yet' : '', !hasRepo ? 'No public repo linked' : ''].filter(Boolean),
-        fastestAction: !hasDemo ? 'Deploy one project and add the demo link.' : 'Publish your Skill Passport / portfolio.',
+        supports: [
+          hasRepo ? 'Has public repos' : '',
+          hasDemo ? 'Has a live demo' : '',
+          certs ? `${certs} certificate(s)` : '',
+        ].filter(Boolean),
+        missing: [
+          !hasDemo ? 'No live demo yet' : '',
+          !hasRepo ? 'No public repo linked' : '',
+        ].filter(Boolean),
+        fastestAction: !hasDemo
+          ? 'Deploy one project and add the demo link.'
+          : 'Publish your Skill Passport / portfolio.',
       },
     ];
   }
 
-  private blockers(gaps: SkillGap[], projectGap: { met: boolean; need: number; have: number }, interviewGap: { met: boolean }, twin: SkillTwin): { title: string; impact: string }[] {
+  private blockers(
+    gaps: SkillGap[],
+    projectGap: { met: boolean; need: number; have: number },
+    interviewGap: { met: boolean },
+    twin: SkillTwin,
+  ): { title: string; impact: string }[] {
     const out: { title: string; impact: string }[] = [];
-    if (gaps[0]) out.push({ title: `Skill gap: ${gaps[0].skill}`, impact: `${gaps[0].current}/${gaps[0].target} — closing this lifts your skills score most.` });
-    if (!projectGap.met) out.push({ title: 'Not enough project proof', impact: `${projectGap.have}/${projectGap.need} role-relevant projects — recruiters look for this first.` });
-    if (!interviewGap.met) out.push({ title: 'Untested in interviews', impact: 'No strong mock-interview evidence — a low ceiling here blocks offers.' });
-    if (out.length < 3 && twin.weaknessRoots[0]) out.push({ title: `Open weakness: ${twin.weaknessRoots[0].concept}`, impact: 'A recurring gap that keeps resurfacing in your work.' });
-    if (out.length < 3 && gaps[1]) out.push({ title: `Skill gap: ${gaps[1].skill}`, impact: `${gaps[1].current}/${gaps[1].target} — your second-biggest lever.` });
+    if (gaps[0])
+      out.push({
+        title: `Skill gap: ${gaps[0].skill}`,
+        impact: `${gaps[0].current}/${gaps[0].target} — closing this lifts your skills score most.`,
+      });
+    if (!projectGap.met)
+      out.push({
+        title: 'Not enough project proof',
+        impact: `${projectGap.have}/${projectGap.need} role-relevant projects — recruiters look for this first.`,
+      });
+    if (!interviewGap.met)
+      out.push({
+        title: 'Untested in interviews',
+        impact:
+          'No strong mock-interview evidence — a low ceiling here blocks offers.',
+      });
+    if (out.length < 3 && twin.weaknessRoots[0])
+      out.push({
+        title: `Open weakness: ${twin.weaknessRoots[0].concept}`,
+        impact: 'A recurring gap that keeps resurfacing in your work.',
+      });
+    if (out.length < 3 && gaps[1])
+      out.push({
+        title: `Skill gap: ${gaps[1].skill}`,
+        impact: `${gaps[1].current}/${gaps[1].target} — your second-biggest lever.`,
+      });
     return out.slice(0, 3);
   }
 
-  private weekPlan(gaps: SkillGap[], projectGap: { met: boolean }, interviewGap: { met: boolean }, twin: SkillTwin): PlanItem[] {
+  private weekPlan(
+    gaps: SkillGap[],
+    projectGap: { met: boolean },
+    interviewGap: { met: boolean },
+    twin: SkillTwin,
+  ): PlanItem[] {
     const plan: PlanItem[] = [];
     let day = 1;
-    if (twin.weaknessRoots[0]) plan.push({ day: day++, title: `Repair "${twin.weaknessRoots[0].concept}"`, reason: 'Clear your highest-severity open gap first.', route: '/app/mistakes', kind: 'mistake' });
-    if (gaps[0]) plan.push({ day: day++, title: `Learn ${gaps[0].skill}`, reason: `Biggest skill gap (${gaps[0].current}/${gaps[0].target}).`, route: '/app/flows', kind: 'flow' });
-    if (gaps[0]) plan.push({ day: day++, title: `Quiz yourself on ${gaps[0].skill}`, reason: 'Lock in what you just studied with active recall.', route: '/app/quizzes', kind: 'quiz' });
-    if (gaps[1]) plan.push({ day: day++, title: `Learn ${gaps[1].skill}`, reason: `Second-biggest skill gap (${gaps[1].current}/${gaps[1].target}).`, route: '/app/flows', kind: 'flow' });
-    if (!projectGap.met) plan.push({ day: day++, title: 'Build a role-relevant project', reason: 'Project proof is what recruiters scan for first.', route: '/app/projects', kind: 'project' });
-    if (!interviewGap.met) plan.push({ day: day++, title: 'Run a mock interview', reason: 'Get a baseline interview score for this role.', route: '/app/interview', kind: 'interview' });
+    if (twin.weaknessRoots[0])
+      plan.push({
+        day: day++,
+        title: `Repair "${twin.weaknessRoots[0].concept}"`,
+        reason: 'Clear your highest-severity open gap first.',
+        route: '/app/mistakes',
+        kind: 'mistake',
+      });
+    if (gaps[0])
+      plan.push({
+        day: day++,
+        title: `Learn ${gaps[0].skill}`,
+        reason: `Biggest skill gap (${gaps[0].current}/${gaps[0].target}).`,
+        route: '/app/flows',
+        kind: 'flow',
+      });
+    if (gaps[0])
+      plan.push({
+        day: day++,
+        title: `Quiz yourself on ${gaps[0].skill}`,
+        reason: 'Lock in what you just studied with active recall.',
+        route: '/app/quizzes',
+        kind: 'quiz',
+      });
+    if (gaps[1])
+      plan.push({
+        day: day++,
+        title: `Learn ${gaps[1].skill}`,
+        reason: `Second-biggest skill gap (${gaps[1].current}/${gaps[1].target}).`,
+        route: '/app/flows',
+        kind: 'flow',
+      });
+    if (!projectGap.met)
+      plan.push({
+        day: day++,
+        title: 'Build a role-relevant project',
+        reason: 'Project proof is what recruiters scan for first.',
+        route: '/app/projects',
+        kind: 'project',
+      });
+    if (!interviewGap.met)
+      plan.push({
+        day: day++,
+        title: 'Run a mock interview',
+        reason: 'Get a baseline interview score for this role.',
+        route: '/app/interview',
+        kind: 'interview',
+      });
     while (plan.length < 7) {
-      plan.push({ day: day++, title: 'Advance your active flow', reason: 'Keep momentum toward your goal.', route: '/app/flows', kind: 'flow' });
+      plan.push({
+        day: day++,
+        title: 'Advance your active flow',
+        reason: 'Keep momentum toward your goal.',
+        route: '/app/flows',
+        kind: 'flow',
+      });
     }
     return plan.slice(0, 7);
   }

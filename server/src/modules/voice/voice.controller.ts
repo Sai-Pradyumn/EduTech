@@ -1,9 +1,28 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post } from '@nestjs/common';
-import { IsIn, IsNumber, IsOptional, IsString, MaxLength, MinLength } from 'class-validator';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  Patch,
+  Post,
+} from '@nestjs/common';
+import {
+  IsIn,
+  IsNumber,
+  IsOptional,
+  IsString,
+  MaxLength,
+  MinLength,
+} from 'class-validator';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { AuthUser } from '../../common/interfaces';
 import { VoiceService } from './voice.service';
-import { VOICE_MODES, VoiceMode, VoiceSessionDocument } from './schemas/voice-session.schema';
+import {
+  VOICE_MODES,
+  VoiceMode,
+  VoiceSessionDocument,
+} from './schemas/voice-session.schema';
 
 class VoiceAskDto {
   @IsString() @MinLength(1) @MaxLength(2000) transcript!: string;
@@ -12,7 +31,7 @@ class VoiceAskDto {
 }
 
 class CreateSessionDto {
-  @IsIn(VOICE_MODES as unknown as string[]) mode!: VoiceMode;
+  @IsIn(VOICE_MODES) mode!: VoiceMode;
 }
 
 class TurnDto {
@@ -32,7 +51,11 @@ function toView(s: VoiceSessionDocument) {
     id: String(s._id),
     mode: s.mode,
     title: s.title,
-    transcript: s.transcript.map((t) => ({ role: t.role, text: t.text, at: t.at?.toISOString() ?? '' })),
+    transcript: s.transcript.map((t) => ({
+      role: t.role,
+      text: t.text,
+      at: t.at?.toISOString() ?? '',
+    })),
     summary: s.summary,
     extractedActions: s.extractedActions,
     linkedFlowId: s.linkedFlowId ?? null,
@@ -41,7 +64,10 @@ function toView(s: VoiceSessionDocument) {
     linkedProjectId: s.linkedProjectId ?? null,
     durationMs: s.durationMs,
     status: s.status,
-    createdAt: (s as VoiceSessionDocument & { createdAt?: Date }).createdAt?.toISOString() ?? '',
+    createdAt:
+      (
+        s as VoiceSessionDocument & { createdAt?: Date }
+      ).createdAt?.toISOString() ?? '',
   };
 }
 
@@ -58,12 +84,21 @@ export class VoiceController {
   // legacy single-shot (Ask Asta dock)
   @Post('ask')
   ask(@CurrentUser() user: AuthUser, @Body() dto: VoiceAskDto) {
-    return this.voice.converse(user.id, user.role, dto.transcript, dto.sessionId, dto.mode ?? 'tutor');
+    return this.voice.converse(
+      user.id,
+      user.role,
+      dto.transcript,
+      dto.sessionId,
+      dto.mode ?? 'tutor',
+    );
   }
 
   // ── sessions ──
   @Post('sessions')
-  async createSession(@CurrentUser() user: AuthUser, @Body() dto: CreateSessionDto) {
+  async createSession(
+    @CurrentUser() user: AuthUser,
+    @Body() dto: CreateSessionDto,
+  ) {
     return toView(await this.voice.createSession(user.id, dto.mode));
   }
 
@@ -78,12 +113,20 @@ export class VoiceController {
   }
 
   @Post('sessions/:id/turn')
-  turn(@CurrentUser() user: AuthUser, @Param('id') id: string, @Body() dto: TurnDto) {
+  turn(
+    @CurrentUser() user: AuthUser,
+    @Param('id') id: string,
+    @Body() dto: TurnDto,
+  ) {
     return this.voice.addTurn(user.id, user.role, id, dto.transcript);
   }
 
   @Patch('sessions/:id')
-  async patch(@CurrentUser() user: AuthUser, @Param('id') id: string, @Body() dto: PatchSessionDto) {
+  async patch(
+    @CurrentUser() user: AuthUser,
+    @Param('id') id: string,
+    @Body() dto: PatchSessionDto,
+  ) {
     return toView(await this.voice.patch(user.id, id, dto));
   }
 
@@ -110,7 +153,11 @@ export class VoiceController {
   }
 
   @Post('sessions/:id/end')
-  async end(@CurrentUser() user: AuthUser, @Param('id') id: string, @Body() dto: EndSessionDto) {
+  async end(
+    @CurrentUser() user: AuthUser,
+    @Param('id') id: string,
+    @Body() dto: EndSessionDto,
+  ) {
     return toView(await this.voice.end(user.id, id, dto.durationMs));
   }
 

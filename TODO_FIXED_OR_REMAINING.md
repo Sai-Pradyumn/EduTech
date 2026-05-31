@@ -1,5 +1,25 @@
 # Asta — Fixed / Remaining
 
+## ✅ Shipped — Phase 9 · Outcome Network (Priority 1 + Outcome Council)
+Full detail in [`PHASE_9_OUTCOME_NETWORK_OS.md`](PHASE_9_OUTCOME_NETWORK_OS.md). "From learning to **verified outcomes**."
+- **Skill Passport** `server/src/modules/skill-passport/` + `features/skill-passport/`: living verified
+  profile (computed from Skill Twin + ledger + certs + projects + manual evidence); identity, skill graph,
+  proof tiles, project evidence, timeline w/ per-event public toggle, privacy controls, manual evidence.
+  Public profile `/u/:username` (unauth, privacy-respecting) + in-app public preview. 9 endpoints.
+- **Proof-of-Learning Ledger 2.0**: extended schema (skill tags, verification levels, passport visibility)
+  + 10 new event kinds + `summary` + manual events + visibility toggle. Base path `/proof-ledger`.
+- **Career Readiness Engine** `server/src/modules/career-readiness/`: 11-role rubric catalog, explainable
+  5-dimension score (**proof-based** — credits ledger evidence), skill-gap matrix, top-3 blockers, 7-day
+  plan, portfolio checklist, `CareerReadinessAgent` (LLM + fallback). `/app/career-readiness`.
+- **AI Outcome Council** `server/src/modules/outcome-council/`: 6 specialist perspectives → impact-ranked
+  best action + alternatives + narrated verdict (`OutcomeCouncilAgent`). `/app/outcome-council`.
+- **Dashboard 3.0**: outcome cockpit strip (readiness + passport) + new **Outcome** nav group.
+- **Seed**: published passport, skill evidence, readiness state, enriched ledger. Builds green (server +
+  Angular-strict client); seed runs clean; runtime-smoked incl. unauthenticated public passport.
+- **Remaining (scaffolded backlog)**: Portfolio Builder, Project Review 2.0, Interview OS, Resume/Application
+  assistant, Mentor/Template marketplaces, Institution outcome layer, Nudge engine, Privacy settings page —
+  all reuse the shipped passport/ledger/readiness services. See Phase 9 doc.
+
 ## ✅ Shipped — Phase 8 · PRIORITY 4 breakthroughs — PHASE 8 COMPLETE
 The breakthrough features, end-to-end. Full detail in [`PHASE_8_MULTIMODAL_LEARNING_OS.md`](PHASE_8_MULTIMODAL_LEARNING_OS.md).
 - **Proof-of-Learning Ledger** `server/src/modules/ledger/` + `client/.../features/ledger/`: append-only

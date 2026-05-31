@@ -2,7 +2,10 @@ import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { SkillTwinModule } from '../skill-twin/skill-twin.module';
 import { CareerReadinessModule } from '../career-readiness/career-readiness.module';
-import { CouncilRecommendation, CouncilRecommendationSchema } from './schemas/council-recommendation.schema';
+import {
+  CouncilRecommendation,
+  CouncilRecommendationSchema,
+} from './schemas/council-recommendation.schema';
 import { OutcomeCouncilController } from './outcome-council.controller';
 import { OutcomeCouncilService } from './outcome-council.service';
 import { OutcomeCouncilAgent } from './outcome-council.agent';
@@ -14,7 +17,9 @@ import { OutcomeCouncilAgent } from './outcome-council.agent';
  */
 @Module({
   imports: [
-    MongooseModule.forFeature([{ name: CouncilRecommendation.name, schema: CouncilRecommendationSchema }]),
+    MongooseModule.forFeature([
+      { name: CouncilRecommendation.name, schema: CouncilRecommendationSchema },
+    ]),
     SkillTwinModule,
     CareerReadinessModule,
   ],

@@ -28,4 +28,5 @@ export class PaymentTransaction {
   reference!: string;
 }
 
-export const PaymentTransactionSchema = SchemaFactory.createForClass(PaymentTransaction);
+export const PaymentTransactionSchema =
+  SchemaFactory.createForClass(PaymentTransaction);

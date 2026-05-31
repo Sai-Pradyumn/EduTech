@@ -15,7 +15,9 @@ import { SimulationsService } from './simulations.service';
  */
 @Module({
   imports: [
-    MongooseModule.forFeature([{ name: Simulation.name, schema: SimulationSchema }]),
+    MongooseModule.forFeature([
+      { name: Simulation.name, schema: SimulationSchema },
+    ]),
     AgentsModule,
     MistakesModule,
     FlowsModule,

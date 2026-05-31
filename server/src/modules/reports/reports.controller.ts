@@ -49,7 +49,8 @@ export class ReportsController {
   }
 
   private orgOrThrow(ctx: OrgContext): string {
-    if (!ctx.organizationId) throw new BadRequestException('Select an organization (x-org-id) first.');
+    if (!ctx.organizationId)
+      throw new BadRequestException('Select an organization (x-org-id) first.');
     return ctx.organizationId;
   }
 

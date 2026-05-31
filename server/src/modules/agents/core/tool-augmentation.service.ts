@@ -7,13 +7,17 @@ const TOOL_SCHEMA = {
   type: 'object',
   properties: {
     tool: { type: 'string', description: 'tool name to call, or "none"' },
-    query: { type: 'string', description: 'search query if the tool needs one' },
+    query: {
+      type: 'string',
+      description: 'search query if the tool needs one',
+    },
   },
   required: ['tool'],
 } as const;
 
 // Only spend a tool-selection call when the message plausibly needs live data.
-const HINT = /\b(my notes|my doc|my pdf|uploaded|my progress|my mastery|how am i doing|my weak|according to my)\b/i;
+const HINT =
+  /\b(my notes|my doc|my pdf|uploaded|my progress|my mastery|how am i doing|my weak|according to my)\b/i;
 
 /**
  * The actor→critic→execute loop (read-only): when a live LLM is configured and the message
@@ -37,7 +41,10 @@ export class ToolAugmentationService {
     if (!available.length) return null;
 
     try {
-      const choice = await this.ai.generateStructuredOutput<{ tool: string; query?: string }>(
+      const choice = await this.ai.generateStructuredOutput<{
+        tool: string;
+        query?: string;
+      }>(
         [
           {
             role: 'system',
@@ -48,11 +55,16 @@ export class ToolAugmentationService {
           },
           { role: 'user', content: ctx.request.message },
         ],
-        TOOL_SCHEMA as unknown as Record<string, unknown>,
+        TOOL_SCHEMA,
         { temperature: 0 },
       );
 
-      if (!choice?.tool || choice.tool === 'none' || !this.tools.has(choice.tool)) return null;
+      if (
+        !choice?.tool ||
+        choice.tool === 'none' ||
+        !this.tools.has(choice.tool)
+      )
+        return null;
 
       // Static critic enforces the allowlist + injects the trusted userId.
       const result = await this.tools.safeCall(
@@ -60,9 +72,19 @@ export class ToolAugmentationService {
         { query: choice.query },
         { userId: ctx.request.userId },
       );
-      ctx.emit({ type: 'tool_call', messageId: '', tool: choice.tool, label: `Using ${choice.tool.replace(/_/g, ' ')}` });
+      ctx.emit({
+        type: 'tool_call',
+        messageId: '',
+        tool: choice.tool,
+        label: `Using ${choice.tool.replace(/_/g, ' ')}`,
+      });
       const summary = JSON.stringify(result).slice(0, 1200);
-      ctx.emit({ type: 'tool_result', messageId: '', tool: choice.tool, summary: 'Fetched live context' });
+      ctx.emit({
+        type: 'tool_result',
+        messageId: '',
+        tool: choice.tool,
+        summary: 'Fetched live context',
+      });
       return `TOOL RESULT (${choice.tool}): ${summary}\nUse this real data in your answer; cite the student's sources where relevant.`;
     } catch (err) {
       this.logger.warn(`Tool augmentation skipped: ${(err as Error).message}`);

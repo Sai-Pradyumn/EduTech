@@ -19,8 +19,10 @@ export class AgentSessionService {
   private readonly logger = new Logger(AgentSessionService.name);
 
   constructor(
-    @InjectModel(AgentSession.name) private readonly sessions: Model<AgentSessionDocument>,
-    @InjectModel(AgentMessage.name) private readonly messages: Model<AgentMessageDocument>,
+    @InjectModel(AgentSession.name)
+    private readonly sessions: Model<AgentSessionDocument>,
+    @InjectModel(AgentMessage.name)
+    private readonly messages: Model<AgentMessageDocument>,
     private readonly ai: AiService,
   ) {}
 
@@ -31,7 +33,10 @@ export class AgentSessionService {
   async maybeSummarize(userId: string, sessionId: string): Promise<void> {
     if (!this.ai.isLive || !Types.ObjectId.isValid(sessionId)) return;
     try {
-      const count = await this.messages.countDocuments({ session: sessionId, user: new Types.ObjectId(userId) });
+      const count = await this.messages.countDocuments({
+        session: sessionId,
+        user: new Types.ObjectId(userId),
+      });
       if (count <= SUMMARIZE_AT) return;
       const older = await this.messages
         .find({ session: sessionId, user: new Types.ObjectId(userId) })
@@ -39,24 +44,50 @@ export class AgentSessionService {
         .limit(count - RECENT_WINDOW)
         .exec();
       const transcript = older
-        .map((m) => `${m.role === 'assistant' ? 'Asta' : 'Student'}: ${m.content.slice(0, 600)}`)
+        .map(
+          (m) =>
+            `${m.role === 'assistant' ? 'Asta' : 'Student'}: ${m.content.slice(0, 600)}`,
+        )
         .join('\n');
       const summary = await this.ai.generateText(
         [
-          { role: 'system', content: 'Summarize this tutoring conversation in 4-6 sentences: topics covered, the student’s understanding/struggles, and any decisions. Be specific and concise.' },
+          {
+            role: 'system',
+            content:
+              'Summarize this tutoring conversation in 4-6 sentences: topics covered, the student’s understanding/struggles, and any decisions. Be specific and concise.',
+          },
           { role: 'user', content: transcript },
         ],
-        { temperature: 0.2, maxTokens: 320, meta: { userId, agentType: AgentType.Tutor, operation: 'session.summary' } },
+        {
+          temperature: 0.2,
+          maxTokens: 320,
+          meta: {
+            userId,
+            agentType: AgentType.Tutor,
+            operation: 'session.summary',
+          },
+        },
       );
       if (summary.trim()) {
-        await this.sessions.updateOne({ _id: sessionId }, { $set: { summary: summary.trim().slice(0, 1500) } }).exec();
+        await this.sessions
+          .updateOne(
+            { _id: sessionId },
+            { $set: { summary: summary.trim().slice(0, 1500) } },
+          )
+          .exec();
       }
     } catch (err) {
-      this.logger.warn(`Session summarization failed: ${(err as Error).message}`);
+      this.logger.warn(
+        `Session summarization failed: ${(err as Error).message}`,
+      );
     }
   }
 
-  async ensureSession(userId: string, sessionId?: string, source = 'chat'): Promise<AgentSessionDocument> {
+  async ensureSession(
+    userId: string,
+    sessionId?: string,
+    source = 'chat',
+  ): Promise<AgentSessionDocument> {
     if (sessionId && Types.ObjectId.isValid(sessionId)) {
       const existing = await this.sessions.findOne({
         _id: sessionId,
@@ -75,7 +106,10 @@ export class AgentSessionService {
       .exec();
   }
 
-  async getMessages(userId: string, sessionId: string): Promise<AgentMessageDocument[]> {
+  async getMessages(
+    userId: string,
+    sessionId: string,
+  ): Promise<AgentMessageDocument[]> {
     if (!Types.ObjectId.isValid(sessionId)) return [];
     return this.messages
       .find({ session: sessionId, user: new Types.ObjectId(userId) })
@@ -99,15 +133,18 @@ export class AgentSessionService {
       .sort({ createdAt: -1 })
       .limit(limit)
       .exec();
-    return docs
-      .reverse()
-      .map((m) => ({
-        role: m.role === 'assistant' ? ('assistant' as const) : ('user' as const),
-        content: m.content.length > 1500 ? `${m.content.slice(0, 1500)}…` : m.content,
-      }));
+    return docs.reverse().map((m) => ({
+      role: m.role === 'assistant' ? ('assistant' as const) : ('user' as const),
+      content:
+        m.content.length > 1500 ? `${m.content.slice(0, 1500)}…` : m.content,
+    }));
   }
 
-  async addUserMessage(userId: string, sessionId: string, content: string): Promise<AgentMessageDocument> {
+  async addUserMessage(
+    userId: string,
+    sessionId: string,
+    content: string,
+  ): Promise<AgentMessageDocument> {
     return this.messages.create({
       session: new Types.ObjectId(sessionId),
       user: new Types.ObjectId(userId),
@@ -137,7 +174,11 @@ export class AgentSessionService {
     });
     await this.sessions.updateOne(
       { _id: sessionId },
-      { lastMessageAt: new Date(), agentType: response.agentType, ...(await this.maybeTitle(sessionId)) },
+      {
+        lastMessageAt: new Date(),
+        agentType: response.agentType,
+        ...(await this.maybeTitle(sessionId)),
+      },
     );
     return msg;
   }
@@ -154,7 +195,14 @@ export class AgentSessionService {
     return {};
   }
 
-  setSessionAgent(sessionId: string, agentType: AgentType, intent: Intent): Promise<unknown> {
-    return this.sessions.updateOne({ _id: sessionId }, { agentType }).exec().then(() => intent);
+  setSessionAgent(
+    sessionId: string,
+    agentType: AgentType,
+    intent: Intent,
+  ): Promise<unknown> {
+    return this.sessions
+      .updateOne({ _id: sessionId }, { agentType })
+      .exec()
+      .then(() => intent);
   }
 }

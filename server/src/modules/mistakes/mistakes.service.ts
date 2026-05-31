@@ -2,11 +2,18 @@ import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { OnEvent } from '@nestjs/event-emitter';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
-import { PROGRESSION_EVENTS, QuizGradedEvent } from '../progression/progression.events';
+import {
+  PROGRESSION_EVENTS,
+  QuizGradedEvent,
+} from '../progression/progression.events';
 import { FlowsService } from '../flows/flows.service';
 import { LedgerService } from '../ledger/ledger.service';
 import { ProjectsService } from '../projects/services/projects.service';
-import { Mistake, MistakeDocument, MistakeStatus } from './schemas/mistake.schema';
+import {
+  Mistake,
+  MistakeDocument,
+  MistakeStatus,
+} from './schemas/mistake.schema';
 import { buildRepairPlan, severityToType } from './mistake-repair.generator';
 import { CaptureMistakeDto } from './dto/mistake.dto';
 
@@ -29,7 +36,10 @@ export class MistakesService {
     try {
       const topics =
         ev.topicScores?.filter((t) => t.severity >= 40) ??
-        ev.weakTopics.map((t) => ({ topic: t, severity: Math.max(50, 100 - ev.score) }));
+        ev.weakTopics.map((t) => ({
+          topic: t,
+          severity: Math.max(50, 100 - ev.score),
+        }));
       for (const t of topics) {
         await this.upsert(ev.userId, t.topic, t.severity, 'quiz', ev.quizId);
       }
@@ -43,10 +53,19 @@ export class MistakesService {
     userId: string,
     concept: string,
     severity: number,
-    source: 'quiz' | 'tutor' | 'voice' | 'project' | 'rag' | 'roadmap' | 'manual',
+    source:
+      | 'quiz'
+      | 'tutor'
+      | 'voice'
+      | 'project'
+      | 'rag'
+      | 'roadmap'
+      | 'manual',
     sourceId?: string,
   ): Promise<MistakeDocument> {
-    const existing = await this.model.findOne({ user: new Types.ObjectId(userId), concept }).exec();
+    const existing = await this.model
+      .findOne({ user: new Types.ObjectId(userId), concept })
+      .exec();
     if (existing) {
       existing.frequency += 1;
       existing.severity = Math.round((existing.severity + severity) / 2);
@@ -73,22 +92,38 @@ export class MistakesService {
     });
   }
 
-  captureManual(userId: string, dto: CaptureMistakeDto): Promise<MistakeDocument> {
-    return this.upsert(userId, dto.concept.trim(), dto.severity ?? 60, dto.source ?? 'manual', dto.sourceId);
+  captureManual(
+    userId: string,
+    dto: CaptureMistakeDto,
+  ): Promise<MistakeDocument> {
+    return this.upsert(
+      userId,
+      dto.concept.trim(),
+      dto.severity ?? 60,
+      dto.source ?? 'manual',
+      dto.sourceId,
+    );
   }
 
   // ───────────────────────── reads ─────────────────────────
 
   list(userId: string, status?: MistakeStatus): Promise<MistakeDocument[]> {
-    const filter: Record<string, unknown> = { user: new Types.ObjectId(userId) };
+    const filter: Record<string, unknown> = {
+      user: new Types.ObjectId(userId),
+    };
     if (status) filter['status'] = status;
-    return this.model.find(filter).sort({ status: 1, severity: -1, frequency: -1 }).exec();
+    return this.model
+      .find(filter)
+      .sort({ status: 1, severity: -1, frequency: -1 })
+      .exec();
   }
 
   async get(userId: string, id: string): Promise<MistakeDocument> {
-    if (!Types.ObjectId.isValid(id)) throw new NotFoundException('Mistake not found');
+    if (!Types.ObjectId.isValid(id))
+      throw new NotFoundException('Mistake not found');
     const m = await this.model.findById(id).exec();
-    if (!m || m.user.toString() !== userId) throw new NotFoundException('Mistake not found');
+    if (!m || m.user.toString() !== userId)
+      throw new NotFoundException('Mistake not found');
     return m;
   }
 
@@ -98,15 +133,26 @@ export class MistakesService {
     resolved: number;
     avgSeverity: number;
     topFocus: { id: string; concept: string; severity: number } | null;
-    heatmap: { topic: string; severity: number; frequency: number; status: MistakeStatus }[];
+    heatmap: {
+      topic: string;
+      severity: number;
+      frequency: number;
+      status: MistakeStatus;
+    }[];
   }> {
-    const all = await this.model.find({ user: new Types.ObjectId(userId) }).exec();
+    const all = await this.model
+      .find({ user: new Types.ObjectId(userId) })
+      .exec();
     const open = all.filter((m) => m.status === 'open');
     const repairing = all.filter((m) => m.status === 'repairing');
     const resolved = all.filter((m) => m.status === 'resolved');
-    const unresolved = [...open, ...repairing].sort((a, b) => b.severity - a.severity);
+    const unresolved = [...open, ...repairing].sort(
+      (a, b) => b.severity - a.severity,
+    );
     const avgSeverity = unresolved.length
-      ? Math.round(unresolved.reduce((s, m) => s + m.severity, 0) / unresolved.length)
+      ? Math.round(
+          unresolved.reduce((s, m) => s + m.severity, 0) / unresolved.length,
+        )
       : 0;
     const top = unresolved[0];
     return {
@@ -114,11 +160,18 @@ export class MistakesService {
       repairing: repairing.length,
       resolved: resolved.length,
       avgSeverity,
-      topFocus: top ? { id: String(top._id), concept: top.concept, severity: top.severity } : null,
+      topFocus: top
+        ? { id: String(top._id), concept: top.concept, severity: top.severity }
+        : null,
       heatmap: all
         .sort((a, b) => b.severity - a.severity)
         .slice(0, 12)
-        .map((m) => ({ topic: m.concept, severity: m.severity, frequency: m.frequency, status: m.status })),
+        .map((m) => ({
+          topic: m.concept,
+          severity: m.severity,
+          frequency: m.frequency,
+          status: m.status,
+        })),
     };
   }
 
@@ -134,28 +187,46 @@ export class MistakesService {
     return m.save();
   }
 
-  async updateStatus(userId: string, id: string, status: MistakeStatus): Promise<MistakeDocument> {
+  async updateStatus(
+    userId: string,
+    id: string,
+    status: MistakeStatus,
+  ): Promise<MistakeDocument> {
     const m = await this.get(userId, id);
     const wasResolved = m.status === 'resolved';
     m.status = status;
     m.resolvedAt = status === 'resolved' ? new Date() : undefined;
     const saved = await m.save();
     if (status === 'resolved' && !wasResolved) {
-      await this.ledger.record(userId, { kind: 'mistake_resolved', title: `Resolved: ${m.concept}`, detail: `Closed a ${m.mistakeType.replace('_', ' ')} gap.` });
+      await this.ledger.record(userId, {
+        kind: 'mistake_resolved',
+        title: `Resolved: ${m.concept}`,
+        detail: `Closed a ${m.mistakeType.replace('_', ' ')} gap.`,
+      });
     }
     return saved;
   }
 
   /** Weakness-to-Project: generate a tiny project targeting this exact weak concept. */
-  async repairProject(userId: string, id: string): Promise<{ mistake: MistakeDocument; projectId: string }> {
+  async repairProject(
+    userId: string,
+    id: string,
+  ): Promise<{ mistake: MistakeDocument; projectId: string }> {
     const m = await this.get(userId, id);
-    const project = await this.projects.generate(userId, { goal: `Tiny project to master ${m.concept}` });
+    const project = await this.projects.generate(userId, {
+      goal: `Tiny project to master ${m.concept}`,
+    });
     if (m.status === 'open') m.status = 'repairing';
     await m.save();
     return { mistake: m, projectId: String(project._id) };
   }
 
-  async toggleAction(userId: string, id: string, actionId: string, done: boolean): Promise<MistakeDocument> {
+  async toggleAction(
+    userId: string,
+    id: string,
+    actionId: string,
+    done: boolean,
+  ): Promise<MistakeDocument> {
     const m = await this.get(userId, id);
     const a = m.repairActions.find((x) => x.id === actionId);
     if (!a) throw new NotFoundException('Repair action not found');
@@ -170,11 +241,22 @@ export class MistakesService {
   }
 
   /** Add a weak-area repair node for this mistake to the learner's active flow. */
-  async repairFlow(userId: string, id: string): Promise<{ mistake: MistakeDocument; flowId: string | null; nodeId: string | null }> {
+  async repairFlow(
+    userId: string,
+    id: string,
+  ): Promise<{
+    mistake: MistakeDocument;
+    flowId: string | null;
+    nodeId: string | null;
+  }> {
     const m = await this.get(userId, id);
     const active = await this.flows.findActive(userId);
     if (!active) return { mistake: m, flowId: null, nodeId: null };
-    const { flow, nodeId } = await this.flows.addRepairNode(userId, String(active._id), m.concept);
+    const { flow, nodeId } = await this.flows.addRepairNode(
+      userId,
+      String(active._id),
+      m.concept,
+    );
     m.linkedFlowId = String(flow._id);
     if (m.status === 'open') m.status = 'repairing';
     const action = m.repairActions.find((a) => a.kind === 'flow_repair_node');
@@ -192,7 +274,9 @@ export class MistakesService {
 
   /** Wipe all mistakes for a user (Phase 8 · Skill Twin "reset learning memory"). Returns count. */
   async clearForUser(userId: string): Promise<number> {
-    const res = await this.model.deleteMany({ user: new Types.ObjectId(userId) }).exec();
+    const res = await this.model
+      .deleteMany({ user: new Types.ObjectId(userId) })
+      .exec();
     return res.deletedCount ?? 0;
   }
 }

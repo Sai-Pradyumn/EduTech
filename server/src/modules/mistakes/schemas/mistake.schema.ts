@@ -14,13 +14,27 @@ export const MISTAKE_TYPES = [
 ] as const;
 export type MistakeType = (typeof MISTAKE_TYPES)[number];
 
-export const MISTAKE_SOURCES = ['quiz', 'tutor', 'voice', 'project', 'rag', 'roadmap', 'manual'] as const;
+export const MISTAKE_SOURCES = [
+  'quiz',
+  'tutor',
+  'voice',
+  'project',
+  'rag',
+  'roadmap',
+  'manual',
+] as const;
 export type MistakeSource = (typeof MISTAKE_SOURCES)[number];
 
 export const MISTAKE_STATUSES = ['open', 'repairing', 'resolved'] as const;
 export type MistakeStatus = (typeof MISTAKE_STATUSES)[number];
 
-export const REPAIR_ACTION_KINDS = ['micro_quiz', 'visual_correction', 'tutor_explanation', 'voice_viva', 'flow_repair_node'] as const;
+export const REPAIR_ACTION_KINDS = [
+  'micro_quiz',
+  'visual_correction',
+  'tutor_explanation',
+  'voice_viva',
+  'flow_repair_node',
+] as const;
 export type RepairActionKind = (typeof REPAIR_ACTION_KINDS)[number];
 
 @Schema({ _id: false })
@@ -66,7 +80,8 @@ export class Mistake {
   @Prop({ type: String, enum: MISTAKE_STATUSES, default: 'open' })
   status!: MistakeStatus;
 
-  @Prop({ type: [RepairActionSchema], default: [] }) repairActions!: RepairAction[];
+  @Prop({ type: [RepairActionSchema], default: [] })
+  repairActions!: RepairAction[];
 
   @Prop() linkedQuizId?: string;
   @Prop() linkedFlowId?: string;

@@ -1,4 +1,8 @@
-import { Injectable, InternalServerErrorException, Logger } from '@nestjs/common';
+import {
+  Injectable,
+  InternalServerErrorException,
+  Logger,
+} from '@nestjs/common';
 import { AgentType } from '../../../common/enums';
 import { AiService } from '../../ai/ai.service';
 import { AIMessage } from '../../ai/interfaces/ai-provider.interface';
@@ -18,7 +22,10 @@ const FLOW_SCHEMA: Record<string, unknown> = {
     title: { type: 'string' },
     goal: { type: 'string' },
     description: { type: 'string' },
-    difficulty: { type: 'string', enum: ['beginner', 'intermediate', 'advanced'] },
+    difficulty: {
+      type: 'string',
+      enum: ['beginner', 'intermediate', 'advanced'],
+    },
     nodes: {
       type: 'array',
       items: {
@@ -26,7 +33,10 @@ const FLOW_SCHEMA: Record<string, unknown> = {
         required: ['id', 'type', 'title'],
         properties: {
           id: { type: 'string' },
-          type: { type: 'string', enum: FLOW_NODE_TYPES as unknown as string[] },
+          type: {
+            type: 'string',
+            enum: FLOW_NODE_TYPES as unknown as string[],
+          },
           title: { type: 'string' },
           summary: { type: 'string' },
           objective: { type: 'string' },
@@ -45,7 +55,10 @@ const FLOW_SCHEMA: Record<string, unknown> = {
         properties: {
           source: { type: 'string' },
           target: { type: 'string' },
-          relation: { type: 'string', enum: FLOW_EDGE_RELATIONS as unknown as string[] },
+          relation: {
+            type: 'string',
+            enum: FLOW_EDGE_RELATIONS as unknown as string[],
+          },
           strength: { type: 'number' },
           explanation: { type: 'string' },
         },
@@ -61,7 +74,10 @@ export class FlowArchitectService {
 
   constructor(private readonly ai: AiService) {}
 
-  async generate(userId: string, input: FlowBlueprintInput): Promise<GeneratedFlow> {
+  async generate(
+    userId: string,
+    input: FlowBlueprintInput,
+  ): Promise<GeneratedFlow> {
     const startedAt = Date.now();
     const messages: AIMessage[] = [
       { role: 'system', content: this.systemPrompt() },
@@ -70,10 +86,18 @@ export class FlowArchitectService {
 
     let flow: GeneratedFlow;
     try {
-      flow = await this.ai.generateStructuredOutput<GeneratedFlow>(messages, FLOW_SCHEMA, {
-        mockFactory: () => buildFlowBlueprint(input),
-        meta: { userId, agentType: AgentType.Roadmap, operation: 'flow.generate' },
-      });
+      flow = await this.ai.generateStructuredOutput<GeneratedFlow>(
+        messages,
+        FLOW_SCHEMA,
+        {
+          mockFactory: () => buildFlowBlueprint(input),
+          meta: {
+            userId,
+            agentType: AgentType.Roadmap,
+            operation: 'flow.generate',
+          },
+        },
+      );
       // Real-provider output may omit layout/derived fields — repair against the blueprint.
       flow = this.normalize(flow, input);
     } catch (err) {
@@ -82,10 +106,14 @@ export class FlowArchitectService {
     }
 
     if (!this.isValid(flow)) {
-      this.logger.warn('Flow output failed validation — using deterministic blueprint.');
+      this.logger.warn(
+        'Flow output failed validation — using deterministic blueprint.',
+      );
       flow = buildFlowBlueprint(input);
       if (!this.isValid(flow)) {
-        throw new InternalServerErrorException('Could not generate a valid flow. Please try again.');
+        throw new InternalServerErrorException(
+          'Could not generate a valid flow. Please try again.',
+        );
       }
     }
 
@@ -101,8 +129,12 @@ export class FlowArchitectService {
   }
 
   /** Ensure LLM output has valid layout + statuses; fall back per-field to the blueprint. */
-  private normalize(flow: GeneratedFlow, input: FlowBlueprintInput): GeneratedFlow {
-    if (!Array.isArray(flow?.nodes) || flow.nodes.length === 0) return buildFlowBlueprint(input);
+  private normalize(
+    flow: GeneratedFlow,
+    input: FlowBlueprintInput,
+  ): GeneratedFlow {
+    if (!Array.isArray(flow?.nodes) || flow.nodes.length === 0)
+      return buildFlowBlueprint(input);
     const blueprint = buildFlowBlueprint(input);
     const COL_W = 280;
     const ROW_H = 150;
@@ -124,7 +156,9 @@ export class FlowArchitectService {
         prerequisites: n.prerequisites ?? [],
         stage,
         status: n.status ?? (stage === 0 ? 'available' : 'locked'),
-        position: hasPos ? n.position : { x: 120 + stage * COL_W, y: 120 + lane * ROW_H },
+        position: hasPos
+          ? n.position
+          : { x: 120 + stage * COL_W, y: 120 + lane * ROW_H },
       };
     });
     return {
@@ -150,11 +184,11 @@ export class FlowArchitectService {
   private isValid(f: GeneratedFlow | undefined): boolean {
     return Boolean(
       f &&
-        typeof f.title === 'string' &&
-        f.title.length > 0 &&
-        Array.isArray(f.nodes) &&
-        f.nodes.length >= 3 &&
-        Array.isArray(f.edges),
+      typeof f.title === 'string' &&
+      f.title.length > 0 &&
+      Array.isArray(f.nodes) &&
+      f.nodes.length >= 3 &&
+      Array.isArray(f.edges),
     );
   }
 
@@ -164,7 +198,7 @@ export class FlowArchitectService {
       `Use node types: ${FLOW_NODE_TYPES.join(', ')}.`,
       `Use edge relations: ${FLOW_EDGE_RELATIONS.join(', ')}.`,
       'Sequence from prerequisites → concepts → practice → checkpoints → project → voice viva → mastery_gate.',
-      'Add weak_area_repair nodes for the learner\'s weak areas. Give every node a unique id, a stage index, and prerequisites referencing earlier node ids.',
+      "Add weak_area_repair nodes for the learner's weak areas. Give every node a unique id, a stage index, and prerequisites referencing earlier node ids.",
       'Stage 0 nodes start "available"; the rest start "locked". Return strictly the GeneratedFlow JSON shape.',
     ].join(' ');
   }

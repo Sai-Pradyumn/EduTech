@@ -19,7 +19,8 @@ export class ToolsRegistrarService implements OnModuleInit {
   onModuleInit(): void {
     this.registry.register({
       name: 'search_my_notes',
-      description: 'Search the student’s own uploaded documents and return a grounded, cited snippet.',
+      description:
+        'Search the student’s own uploaded documents and return a grounded, cited snippet.',
       readOnly: true,
       argKeys: ['query'],
       run: async (args) => {
@@ -30,14 +31,17 @@ export class ToolsRegistrarService implements OnModuleInit {
         return {
           found: r.groundedness !== 'insufficient',
           answer: r.answer.slice(0, 800),
-          sources: r.citations.slice(0, 3).map((c) => `${c.documentTitle} — ${c.locator}`),
+          sources: r.citations
+            .slice(0, 3)
+            .map((c) => `${c.documentTitle} — ${c.locator}`),
         };
       },
     });
 
     this.registry.register({
       name: 'get_learner_snapshot',
-      description: 'Get the student’s topic mastery and weakest topics from their quiz history.',
+      description:
+        'Get the student’s topic mastery and weakest topics from their quiz history.',
       readOnly: true,
       argKeys: [],
       run: async (args) => {
@@ -46,8 +50,13 @@ export class ToolsRegistrarService implements OnModuleInit {
         const mastery = await this.assessment.topicMastery(userId);
         const sorted = [...mastery].sort((a, b) => a.mastery - b.mastery);
         return {
-          weakest: sorted.slice(0, 3).map((m) => ({ topic: m.topic, mastery: m.mastery })),
-          strongest: [...sorted].reverse().slice(0, 3).map((m) => ({ topic: m.topic, mastery: m.mastery })),
+          weakest: sorted
+            .slice(0, 3)
+            .map((m) => ({ topic: m.topic, mastery: m.mastery })),
+          strongest: [...sorted]
+            .reverse()
+            .slice(0, 3)
+            .map((m) => ({ topic: m.topic, mastery: m.mastery })),
         };
       },
     });

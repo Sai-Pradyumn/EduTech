@@ -10,7 +10,12 @@ import { GraphExecutorService } from './graph-executor.service';
  * Gated by ENABLE_LANGGRAPH. Reuses the orchestrator; records runs in `agent_graph_runs`.
  */
 @Module({
-  imports: [MongooseModule.forFeature([{ name: GraphRun.name, schema: GraphRunSchema }]), AgentsModule],
+  imports: [
+    MongooseModule.forFeature([
+      { name: GraphRun.name, schema: GraphRunSchema },
+    ]),
+    AgentsModule,
+  ],
   controllers: [AgentGraphController],
   providers: [GraphExecutorService],
   exports: [GraphExecutorService],

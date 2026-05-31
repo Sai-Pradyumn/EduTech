@@ -1,6 +1,9 @@
 import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
-import { FineTuningJob, FineTuningJobSchema } from './schemas/fine-tuning-job.schema';
+import {
+  FineTuningJob,
+  FineTuningJobSchema,
+} from './schemas/fine-tuning-job.schema';
 import { FineTuningController } from './fine-tuning.controller';
 import { FineTuningService } from './fine-tuning.service';
 
@@ -9,7 +12,11 @@ import { FineTuningService } from './fine-tuning.service';
  * simulated from elapsed time (ml-service not wired). Gated by ENABLE_FINE_TUNING.
  */
 @Module({
-  imports: [MongooseModule.forFeature([{ name: FineTuningJob.name, schema: FineTuningJobSchema }])],
+  imports: [
+    MongooseModule.forFeature([
+      { name: FineTuningJob.name, schema: FineTuningJobSchema },
+    ]),
+  ],
   controllers: [FineTuningController],
   providers: [FineTuningService],
   exports: [FineTuningService],

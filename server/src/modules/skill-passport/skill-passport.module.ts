@@ -6,8 +6,14 @@ import { CertificatesModule } from '../certificates/certificates.module';
 import { ProjectsModule } from '../projects/projects.module';
 import { StudentProfileModule } from '../student-profile/student-profile.module';
 import { UsersModule } from '../users/users.module';
-import { SkillPassport, SkillPassportSchema } from './schemas/skill-passport.schema';
-import { SkillEvidence, SkillEvidenceSchema } from './schemas/skill-evidence.schema';
+import {
+  SkillPassport,
+  SkillPassportSchema,
+} from './schemas/skill-passport.schema';
+import {
+  SkillEvidence,
+  SkillEvidenceSchema,
+} from './schemas/skill-evidence.schema';
 import { SkillPassportController } from './skill-passport.controller';
 import { SkillPassportService } from './skill-passport.service';
 

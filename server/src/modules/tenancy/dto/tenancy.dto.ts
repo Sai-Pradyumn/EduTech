@@ -1,4 +1,13 @@
-import { IsEmail, IsEnum, IsHexColor, IsIn, IsOptional, IsString, MaxLength, MinLength } from 'class-validator';
+import {
+  IsEmail,
+  IsEnum,
+  IsHexColor,
+  IsIn,
+  IsOptional,
+  IsString,
+  MaxLength,
+  MinLength,
+} from 'class-validator';
 import { OrgRole, OrgType } from '../../../common/enums';
 
 export class CreateOrgDto {
@@ -44,7 +53,13 @@ export class UpdateOrgDto {
 }
 
 /** Org roles an admin may assign (platform roles are not assignable via this API). */
-const ASSIGNABLE_ROLES = [OrgRole.OrgAdmin, OrgRole.Mentor, OrgRole.Instructor, OrgRole.Student, OrgRole.Guest];
+const ASSIGNABLE_ROLES = [
+  OrgRole.OrgAdmin,
+  OrgRole.Mentor,
+  OrgRole.Instructor,
+  OrgRole.Student,
+  OrgRole.Guest,
+];
 
 export class AddMemberDto {
   @IsEmail()

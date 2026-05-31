@@ -90,7 +90,10 @@ export const ROLE_PERMISSIONS: Record<OrgRole, Permission[]> = {
   [OrgRole.Guest]: [Permission.OrgView],
 };
 
-export const PLATFORM_ORG_ROLES: OrgRole[] = [OrgRole.SuperAdmin, OrgRole.PlatformAdmin];
+export const PLATFORM_ORG_ROLES: OrgRole[] = [
+  OrgRole.SuperAdmin,
+  OrgRole.PlatformAdmin,
+];
 
 export enum MembershipStatus {
   Active = 'active',

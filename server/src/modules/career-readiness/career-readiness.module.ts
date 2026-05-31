@@ -4,7 +4,10 @@ import { SkillTwinModule } from '../skill-twin/skill-twin.module';
 import { LedgerModule } from '../ledger/ledger.module';
 import { ProjectsModule } from '../projects/projects.module';
 import { StudentProfileModule } from '../student-profile/student-profile.module';
-import { CareerReadinessState, CareerReadinessStateSchema } from './schemas/career-readiness.schema';
+import {
+  CareerReadinessState,
+  CareerReadinessStateSchema,
+} from './schemas/career-readiness.schema';
 import { CareerReadinessController } from './career-readiness.controller';
 import { CareerReadinessService } from './career-readiness.service';
 import { CareerReadinessAgent } from './career-readiness.agent';
@@ -16,7 +19,9 @@ import { CareerReadinessAgent } from './career-readiness.agent';
  */
 @Module({
   imports: [
-    MongooseModule.forFeature([{ name: CareerReadinessState.name, schema: CareerReadinessStateSchema }]),
+    MongooseModule.forFeature([
+      { name: CareerReadinessState.name, schema: CareerReadinessStateSchema },
+    ]),
     SkillTwinModule,
     LedgerModule,
     ProjectsModule,

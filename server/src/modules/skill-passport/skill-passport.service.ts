@@ -7,13 +7,19 @@ import { CertificatesService } from '../certificates/services/certificates.servi
 import { ProjectsService } from '../projects/services/projects.service';
 import { StudentProfileService } from '../student-profile/student-profile.service';
 import { UsersService } from '../users/users.service';
-import { LedgerEntryDocument, VerificationLevel } from '../ledger/schemas/ledger-entry.schema';
+import {
+  LedgerEntryDocument,
+  VerificationLevel,
+} from '../ledger/schemas/ledger-entry.schema';
 import {
   PassportVisibility,
   SkillPassport,
   SkillPassportDocument,
 } from './schemas/skill-passport.schema';
-import { SkillEvidence, SkillEvidenceDocument } from './schemas/skill-evidence.schema';
+import {
+  SkillEvidence,
+  SkillEvidenceDocument,
+} from './schemas/skill-evidence.schema';
 import { AddEvidenceDto, UpdatePassportDto } from './dto/skill-passport.dto';
 
 export interface PassportSkill {
@@ -75,8 +81,23 @@ export interface PassportView {
     mistakesResolved: number;
   };
   projects: PassportProject[];
-  certificates: { id: string; title: string; skill: string; score: number; verificationId: string; issuedAt: string }[];
-  manualEvidence: { id: string; skill: string; sourceType: string; summary: string; score: number | null; url: string | null; verificationLevel: string }[];
+  certificates: {
+    id: string;
+    title: string;
+    skill: string;
+    score: number;
+    verificationId: string;
+    issuedAt: string;
+  }[];
+  manualEvidence: {
+    id: string;
+    skill: string;
+    sourceType: string;
+    summary: string;
+    score: number | null;
+    url: string | null;
+    verificationLevel: string;
+  }[];
   timeline: PassportTimelineItem[];
   visibility: PassportVisibility;
   publicSettings: SkillPassport['publicSettings'];
@@ -92,8 +113,10 @@ export interface PassportView {
 @Injectable()
 export class SkillPassportService {
   constructor(
-    @InjectModel(SkillPassport.name) private readonly passportModel: Model<SkillPassportDocument>,
-    @InjectModel(SkillEvidence.name) private readonly evidenceModel: Model<SkillEvidenceDocument>,
+    @InjectModel(SkillPassport.name)
+    private readonly passportModel: Model<SkillPassportDocument>,
+    @InjectModel(SkillEvidence.name)
+    private readonly evidenceModel: Model<SkillEvidenceDocument>,
     private readonly twin: SkillTwinService,
     private readonly ledger: LedgerService,
     private readonly certs: CertificatesService,
@@ -106,7 +129,9 @@ export class SkillPassportService {
 
   /** Find-or-create the passport doc for a user, generating a unique public username. */
   async ensure(userId: string): Promise<SkillPassportDocument> {
-    const existing = await this.passportModel.findOne({ user: new Types.ObjectId(userId) }).exec();
+    const existing = await this.passportModel
+      .findOne({ user: new Types.ObjectId(userId) })
+      .exec();
     if (existing) return existing;
     const user = await this.users.findByIdOrThrow(userId);
     const profile = await this.profiles.findByUser(userId);
@@ -114,19 +139,22 @@ export class SkillPassportService {
     return this.passportModel.create({
       user: new Types.ObjectId(userId),
       username,
-      headline: profile?.mainGoal ? this.toHeadline(profile.mainGoal) : `Aspiring ${profile?.careerTarget ?? 'developer'}`,
+      headline: profile?.mainGoal
+        ? this.toHeadline(profile.mainGoal)
+        : `Aspiring ${profile?.careerTarget ?? 'developer'}`,
       targetRole: this.deriveTargetRole(profile),
       visibility: 'private',
     });
   }
 
   private async uniqueUsername(name: string, userId: string): Promise<string> {
-    const base = (name || 'learner')
-      .toLowerCase()
-      .normalize('NFKD')
-      .replace(/[^a-z0-9]+/g, '-')
-      .replace(/^-+|-+$/g, '')
-      .slice(0, 28) || 'learner';
+    const base =
+      (name || 'learner')
+        .toLowerCase()
+        .normalize('NFKD')
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/^-+|-+$/g, '')
+        .slice(0, 28) || 'learner';
     const suffix = userId.slice(-4);
     let candidate = `${base}-${suffix}`;
     let n = 1;
@@ -143,7 +171,9 @@ export class SkillPassportService {
 
   private deriveTargetRole(profile: { mainGoal?: string } | null): string {
     const goal = profile?.mainGoal ?? '';
-    const m = goal.match(/(full[- ]?stack|mern|backend|frontend|ai engineer|data analyst|devops|mobile)[a-z ]*developer?/i);
+    const m = goal.match(
+      /(full[- ]?stack|mern|backend|frontend|ai engineer|data analyst|devops|mobile)[a-z ]*developer?/i,
+    );
     if (m) return this.titleCase(m[0]);
     if (/mern/i.test(goal)) return 'MERN Developer';
     return 'Full Stack Developer';
@@ -157,13 +187,29 @@ export class SkillPassportService {
   }
 
   async getPublicByUsername(username: string): Promise<PassportView> {
-    const doc = await this.passportModel.findOne({ username: username.toLowerCase().trim() }).exec();
-    if (!doc || doc.visibility === 'private') throw new NotFoundException('This profile is private or does not exist.');
+    const doc = await this.passportModel
+      .findOne({ username: username.toLowerCase().trim() })
+      .exec();
+    if (!doc || doc.visibility === 'private')
+      throw new NotFoundException('This profile is private or does not exist.');
     return this.buildView(String(doc.user), doc, true);
   }
 
-  private async buildView(userId: string, doc: SkillPassportDocument, publicOnly: boolean): Promise<PassportView> {
-    const [twin, ledgerEntries, summary, certificates, projects, profile, user, manualEvidence] = await Promise.all([
+  private async buildView(
+    userId: string,
+    doc: SkillPassportDocument,
+    publicOnly: boolean,
+  ): Promise<PassportView> {
+    const [
+      twin,
+      ledgerEntries,
+      summary,
+      certificates,
+      projects,
+      profile,
+      user,
+      manualEvidence,
+    ] = await Promise.all([
       this.twin.compute(userId),
       publicOnly ? this.ledger.listPublic(userId) : this.ledger.list(userId),
       this.ledger.summary(userId),
@@ -171,13 +217,19 @@ export class SkillPassportService {
       this.projects.list(userId),
       this.profiles.findByUser(userId),
       this.users.findByIdOrThrow(userId),
-      this.evidenceModel.find({ user: new Types.ObjectId(userId) }).sort({ createdAt: -1 }).exec(),
+      this.evidenceModel
+        .find({ user: new Types.ObjectId(userId) })
+        .sort({ createdAt: -1 })
+        .exec(),
     ]);
 
     const verifiedOnly = publicOnly && doc.publicSettings.verifiedOnly;
 
     // ── skill graph ──
-    const skillEvidence = new Map<string, { count: number; last: Date | null }>();
+    const skillEvidence = new Map<
+      string,
+      { count: number; last: Date | null }
+    >();
     for (const e of ledgerEntries) {
       for (const sk of e.skills ?? []) {
         const cur = skillEvidence.get(sk) ?? { count: 0, last: null };
@@ -191,11 +243,17 @@ export class SkillPassportService {
       cur.count += 1;
       skillEvidence.set(ev.skill, cur);
     }
-    const riskByConcept = new Map(twin.weaknessRoots.map((w) => [w.concept.toLowerCase(), w.severity]));
+    const riskByConcept = new Map(
+      twin.weaknessRoots.map((w) => [w.concept.toLowerCase(), w.severity]),
+    );
     let skills: PassportSkill[] = twin.skills.map((s) => {
       const ev = skillEvidence.get(s.skill) ?? { count: 0, last: null };
       const severity = riskByConcept.get(s.skill.toLowerCase()) ?? 0;
-      const confidence = clamp(Math.round(s.mastery * 0.6 + Math.min(ev.count, 5) * 8 - severity * 0.2));
+      const confidence = clamp(
+        Math.round(
+          s.mastery * 0.6 + Math.min(ev.count, 5) * 8 - severity * 0.2,
+        ),
+      );
       return {
         skill: s.skill,
         mastery: s.mastery,
@@ -208,15 +266,19 @@ export class SkillPassportService {
     if (verifiedOnly) skills = skills.filter((s) => s.evidenceCount > 0);
 
     // ── proof summary ──
-    const kindCount = (k: string) => summary.byKind.find((b) => b.kind === k)?.count ?? 0;
+    const kindCount = (k: string) =>
+      summary.byKind.find((b) => b.kind === k)?.count ?? 0;
     const proofSummary = {
       totalEvents: summary.total,
       verifiedEvents: summary.verifiedCount,
       quizzesPassed: kindCount('quiz_passed'),
-      projectsCompleted: projects.filter((p) => p.status === 'completed').length,
+      projectsCompleted: projects.filter((p) => p.status === 'completed')
+        .length,
       simulationsPassed: kindCount('simulation_finished'),
       certificatesIssued: certificates.length,
-      mentorApprovals: kindCount('project_mentor_approved') + kindCount('mentor_feedback_added'),
+      mentorApprovals:
+        kindCount('project_mentor_approved') +
+        kindCount('mentor_feedback_added'),
       vivaPassed: kindCount('voice_viva_passed'),
       mistakesResolved: kindCount('mistake_resolved'),
     };
@@ -230,25 +292,35 @@ export class SkillPassportService {
       difficulty: p.difficulty,
       status: p.status,
       aiScore: p.aiReview?.overallScore ?? null,
-      mentorStatus: p.mentorReview ? p.mentorReview.decision : p.submission?.submittedAt ? 'pending' : null,
+      mentorStatus: p.mentorReview
+        ? p.mentorReview.decision
+        : p.submission?.submittedAt
+          ? 'pending'
+          : null,
       githubUrl: p.submission?.githubUrl ?? null,
       demoUrl: p.submission?.demoUrl ?? null,
     }));
     if (publicOnly && !doc.publicSettings.showProjects) projectViews = [];
 
     // ── timeline ──
-    let timeline: PassportTimelineItem[] = ledgerEntries.map((e: LedgerEntryDocument) => ({
-      id: String(e._id),
-      kind: e.kind,
-      title: e.title,
-      detail: e.detail,
-      score: e.score ?? null,
-      verificationLevel: e.verificationLevel,
-      visibleOnPassport: e.visibleOnPassport,
-      at: e.at.toISOString(),
-    }));
-    if (verifiedOnly) timeline = timeline.filter((t) => t.verificationLevel !== 'self' && t.verificationLevel !== 'ai');
-    if (publicOnly && !doc.publicSettings.showTimeline) timeline = timeline.slice(0, 0);
+    let timeline: PassportTimelineItem[] = ledgerEntries.map(
+      (e: LedgerEntryDocument) => ({
+        id: String(e._id),
+        kind: e.kind,
+        title: e.title,
+        detail: e.detail,
+        score: e.score ?? null,
+        verificationLevel: e.verificationLevel,
+        visibleOnPassport: e.visibleOnPassport,
+        at: e.at.toISOString(),
+      }),
+    );
+    if (verifiedOnly)
+      timeline = timeline.filter(
+        (t) => t.verificationLevel !== 'self' && t.verificationLevel !== 'ai',
+      );
+    if (publicOnly && !doc.publicSettings.showTimeline)
+      timeline = timeline.slice(0, 0);
 
     let certViews = certificates.map((c) => ({
       id: c.id,
@@ -261,7 +333,11 @@ export class SkillPassportService {
     if (publicOnly && !doc.publicSettings.showCertificates) certViews = [];
 
     let manualViews = manualEvidence
-      .filter((e) => (!publicOnly || e.visibleOnPassport) && (!verifiedOnly || e.verificationLevel !== 'self'))
+      .filter(
+        (e) =>
+          (!publicOnly || e.visibleOnPassport) &&
+          (!verifiedOnly || e.verificationLevel !== 'self'),
+      )
       .map((e) => ({
         id: String(e._id),
         skill: e.skill,
@@ -281,7 +357,10 @@ export class SkillPassportService {
       currentLevel: profile?.currentSkillLevel ?? 'beginner',
       readinessScore: hideScores ? 0 : twin.readinessScore,
       healthScore: hideScores ? 0 : twin.healthScore,
-      topSkills: [...skills].sort((a, b) => b.mastery - a.mastery).slice(0, 6).map((s) => s.skill),
+      topSkills: [...skills]
+        .sort((a, b) => b.mastery - a.mastery)
+        .slice(0, 6)
+        .map((s) => s.skill),
       pace: twin.pace,
       projectedDaysToGoal: twin.projectedDaysToGoal,
     };
@@ -313,7 +392,8 @@ export class SkillPassportService {
     if (dto.headline !== undefined) doc.headline = dto.headline;
     if (dto.targetRole !== undefined) doc.targetRole = dto.targetRole;
     if (dto.visibility !== undefined) doc.visibility = dto.visibility;
-    if (dto.publicSettings) Object.assign(doc.publicSettings, dto.publicSettings);
+    if (dto.publicSettings)
+      Object.assign(doc.publicSettings, dto.publicSettings);
     await doc.save();
     return this.buildView(userId, doc, false);
   }
@@ -322,24 +402,41 @@ export class SkillPassportService {
     const doc = await this.ensure(userId);
     const twin = await this.twin.compute(userId);
     doc.readinessScore = twin.readinessScore;
-    doc.skillSnapshots = twin.skills.map((s) => ({ skill: s.skill, mastery: s.mastery, confidence: clamp(Math.round(s.mastery * 0.7)), evidence: 0 }));
+    doc.skillSnapshots = twin.skills.map((s) => ({
+      skill: s.skill,
+      mastery: s.mastery,
+      confidence: clamp(Math.round(s.mastery * 0.7)),
+      evidence: 0,
+    }));
     doc.lastComputedAt = new Date();
     await doc.save();
     return this.buildView(userId, doc, false);
   }
 
-  async setVisibility(userId: string, visibility: PassportVisibility): Promise<PassportView> {
+  async setVisibility(
+    userId: string,
+    visibility: PassportVisibility,
+  ): Promise<PassportView> {
     const doc = await this.ensure(userId);
     doc.visibility = visibility;
-    if (visibility !== 'private' && !doc.publishedAt) doc.publishedAt = new Date();
+    if (visibility !== 'private' && !doc.publishedAt)
+      doc.publishedAt = new Date();
     await doc.save();
     return this.buildView(userId, doc, false);
   }
 
   // ───────────────────────── manual evidence ─────────────────────────
 
-  async addEvidence(userId: string, dto: AddEvidenceDto): Promise<SkillEvidenceDocument> {
-    const verificationLevel = dto.sourceType === 'certificate' ? 'certificate' : dto.sourceType === 'mentor' ? 'mentor' : 'self';
+  async addEvidence(
+    userId: string,
+    dto: AddEvidenceDto,
+  ): Promise<SkillEvidenceDocument> {
+    const verificationLevel =
+      dto.sourceType === 'certificate'
+        ? 'certificate'
+        : dto.sourceType === 'mentor'
+          ? 'mentor'
+          : 'self';
     const created = await this.evidenceModel.create({
       user: new Types.ObjectId(userId),
       skill: dto.skill,
@@ -355,17 +452,26 @@ export class SkillPassportService {
       detail: dto.summary,
       score: dto.score,
       skills: [dto.skill],
-      verificationLevel: verificationLevel === 'certificate' ? 'certificate' : 'self',
+      verificationLevel:
+        verificationLevel === 'certificate' ? 'certificate' : 'self',
     });
     return created;
   }
 
   listEvidence(userId: string): Promise<SkillEvidenceDocument[]> {
-    return this.evidenceModel.find({ user: new Types.ObjectId(userId) }).sort({ createdAt: -1 }).exec();
+    return this.evidenceModel
+      .find({ user: new Types.ObjectId(userId) })
+      .sort({ createdAt: -1 })
+      .exec();
   }
 
   async removeEvidence(userId: string, id: string): Promise<{ ok: true }> {
-    await this.evidenceModel.deleteOne({ _id: new Types.ObjectId(id), user: new Types.ObjectId(userId) }).exec();
+    await this.evidenceModel
+      .deleteOne({
+        _id: new Types.ObjectId(id),
+        user: new Types.ObjectId(userId),
+      })
+      .exec();
     return { ok: true };
   }
 

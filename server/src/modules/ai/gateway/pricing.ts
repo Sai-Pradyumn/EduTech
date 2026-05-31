@@ -20,10 +20,16 @@ const RATES: { match: RegExp; rate: Rate }[] = [
 const FALLBACK: Rate = { in: 0.5, out: 1.5 };
 
 /** Estimated USD cost for a call (0 for mock / unknown free models). */
-export function estimateCostUsd(model: string, promptTokens: number, completionTokens: number): number {
+export function estimateCostUsd(
+  model: string,
+  promptTokens: number,
+  completionTokens: number,
+): number {
   if (!model || model === 'mock') return 0;
   const rate = RATES.find((r) => r.match.test(model))?.rate ?? FALLBACK;
-  const cost = (promptTokens / 1_000_000) * rate.in + (completionTokens / 1_000_000) * rate.out;
+  const cost =
+    (promptTokens / 1_000_000) * rate.in +
+    (completionTokens / 1_000_000) * rate.out;
   return Math.round(cost * 1e6) / 1e6; // 6dp
 }
 

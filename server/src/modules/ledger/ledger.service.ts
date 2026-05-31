@@ -48,7 +48,10 @@ export interface LedgerSummary {
 export class LedgerService {
   private readonly logger = new Logger(LedgerService.name);
 
-  constructor(@InjectModel(LedgerEntry.name) private readonly model: Model<LedgerEntryDocument>) {}
+  constructor(
+    @InjectModel(LedgerEntry.name)
+    private readonly model: Model<LedgerEntryDocument>,
+  ) {}
 
   async record(userId: string, entry: LedgerRecord): Promise<void> {
     try {
@@ -101,7 +104,11 @@ export class LedgerService {
   }
 
   list(userId: string, limit = 100): Promise<LedgerEntryDocument[]> {
-    return this.model.find({ user: new Types.ObjectId(userId) }).sort({ at: -1 }).limit(limit).exec();
+    return this.model
+      .find({ user: new Types.ObjectId(userId) })
+      .sort({ at: -1 })
+      .limit(limit)
+      .exec();
   }
 
   /** Only the events the learner has chosen to publish on their Skill Passport / public profile. */
@@ -113,21 +120,41 @@ export class LedgerService {
       .exec();
   }
 
-  async setVisibility(userId: string, id: string, visible: boolean): Promise<{ ok: true }> {
+  async setVisibility(
+    userId: string,
+    id: string,
+    visible: boolean,
+  ): Promise<{ ok: true }> {
     await this.model
-      .updateOne({ _id: new Types.ObjectId(id), user: new Types.ObjectId(userId) }, { $set: { visibleOnPassport: visible } })
+      .updateOne(
+        { _id: new Types.ObjectId(id), user: new Types.ObjectId(userId) },
+        { $set: { visibleOnPassport: visible } },
+      )
       .exec();
     return { ok: true };
   }
 
-  async stats(userId: string): Promise<{ total: number; byKind: { kind: string; count: number }[]; activeDays: number; latestAt: string | null }> {
+  async stats(userId: string): Promise<{
+    total: number;
+    byKind: { kind: string; count: number }[];
+    activeDays: number;
+    latestAt: string | null;
+  }> {
     const s = await this.summary(userId);
-    return { total: s.total, byKind: s.byKind, activeDays: s.activeDays, latestAt: s.latestAt };
+    return {
+      total: s.total,
+      byKind: s.byKind,
+      activeDays: s.activeDays,
+      latestAt: s.latestAt,
+    };
   }
 
   /** Rich aggregate for the Skill Passport / Proof Ledger cockpit. */
   async summary(userId: string): Promise<LedgerSummary> {
-    const all = await this.model.find({ user: new Types.ObjectId(userId) }).sort({ at: -1 }).exec();
+    const all = await this.model
+      .find({ user: new Types.ObjectId(userId) })
+      .sort({ at: -1 })
+      .exec();
     const byKindMap = new Map<string, number>();
     const byVerMap = new Map<VerificationLevel, number>();
     const skillMap = new Map<string, number>();
@@ -136,27 +163,52 @@ export class LedgerService {
     let publicCount = 0;
     all.forEach((e) => {
       byKindMap.set(e.kind, (byKindMap.get(e.kind) ?? 0) + 1);
-      byVerMap.set(e.verificationLevel, (byVerMap.get(e.verificationLevel) ?? 0) + 1);
+      byVerMap.set(
+        e.verificationLevel,
+        (byVerMap.get(e.verificationLevel) ?? 0) + 1,
+      );
       days.add(e.at.toISOString().slice(0, 10));
-      (e.skills ?? []).forEach((sk) => skillMap.set(sk, (skillMap.get(sk) ?? 0) + 1));
-      if (e.verificationLevel === 'mentor' || e.verificationLevel === 'certificate' || e.verificationLevel === 'system') verifiedCount += 1;
+      (e.skills ?? []).forEach((sk) =>
+        skillMap.set(sk, (skillMap.get(sk) ?? 0) + 1),
+      );
+      if (
+        e.verificationLevel === 'mentor' ||
+        e.verificationLevel === 'certificate' ||
+        e.verificationLevel === 'system'
+      )
+        verifiedCount += 1;
       if (e.visibleOnPassport) publicCount += 1;
     });
     return {
       total: all.length,
-      byKind: [...byKindMap.entries()].map(([kind, count]) => ({ kind, count })).sort((a, b) => b.count - a.count),
-      byVerification: [...byVerMap.entries()].map(([level, count]) => ({ level, count })).sort((a, b) => b.count - a.count),
+      byKind: [...byKindMap.entries()]
+        .map(([kind, count]) => ({ kind, count }))
+        .sort((a, b) => b.count - a.count),
+      byVerification: [...byVerMap.entries()]
+        .map(([level, count]) => ({ level, count }))
+        .sort((a, b) => b.count - a.count),
       activeDays: days.size,
       latestAt: all[0]?.at.toISOString() ?? null,
       verifiedCount,
       publicCount,
-      skills: [...skillMap.entries()].map(([skill, count]) => ({ skill, count })).sort((a, b) => b.count - a.count).slice(0, 12),
+      skills: [...skillMap.entries()]
+        .map(([skill, count]) => ({ skill, count }))
+        .sort((a, b) => b.count - a.count)
+        .slice(0, 12),
     };
   }
 
   /** Recent entries (for Learning Replay). */
-  recent(userId: string, sinceMs: number, limit = 12): Promise<LedgerEntryDocument[]> {
+  recent(
+    userId: string,
+    sinceMs: number,
+    limit = 12,
+  ): Promise<LedgerEntryDocument[]> {
     const since = new Date(Date.now() - sinceMs);
-    return this.model.find({ user: new Types.ObjectId(userId), at: { $gte: since } }).sort({ at: -1 }).limit(limit).exec();
+    return this.model
+      .find({ user: new Types.ObjectId(userId), at: { $gte: since } })
+      .sort({ at: -1 })
+      .limit(limit)
+      .exec();
   }
 }

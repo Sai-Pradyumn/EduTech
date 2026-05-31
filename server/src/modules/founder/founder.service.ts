@@ -4,8 +4,14 @@ import { Connection, Model, Types } from 'mongoose';
 import { Role } from '../../common/enums';
 import { planById } from '../billing/plans';
 import { User, UserDocument } from '../users/schemas/user.schema';
-import { Organization, OrganizationDocument } from '../tenancy/schemas/organization.schema';
-import { Subscription, SubscriptionDocument } from '../billing/schemas/subscription.schema';
+import {
+  Organization,
+  OrganizationDocument,
+} from '../tenancy/schemas/organization.schema';
+import {
+  Subscription,
+  SubscriptionDocument,
+} from '../billing/schemas/subscription.schema';
 import { Cohort, CohortDocument } from '../cohort/schemas/cohort.schema';
 import { Project, ProjectDocument } from '../projects/schemas/project.schema';
 import { Quiz, QuizDocument } from '../assessment/schemas/quiz.schema';
@@ -33,7 +39,12 @@ export interface FounderDashboard {
     byAgent: { agentType: string; count: number }[];
   };
   adoption: { feature: string; users: number; pct: number }[];
-  topCohorts: { name: string; organization: string; students: number; mentors: number }[];
+  topCohorts: {
+    name: string;
+    organization: string;
+    students: number;
+    mentors: number;
+  }[];
   signups: { date: string; count: number }[];
   churnRisk: { inactiveStudents: number; thresholdDays: number };
   systemHealth: { db: string; uptimeSec: number; memoryMb: number };
@@ -52,24 +63,29 @@ const SIGNUP_WINDOW_DAYS = 14;
 export class FounderService {
   constructor(
     @InjectModel(User.name) private readonly users: Model<UserDocument>,
-    @InjectModel(Organization.name) private readonly orgs: Model<OrganizationDocument>,
-    @InjectModel(Subscription.name) private readonly subs: Model<SubscriptionDocument>,
+    @InjectModel(Organization.name)
+    private readonly orgs: Model<OrganizationDocument>,
+    @InjectModel(Subscription.name)
+    private readonly subs: Model<SubscriptionDocument>,
     @InjectModel(Cohort.name) private readonly cohorts: Model<CohortDocument>,
-    @InjectModel(Project.name) private readonly projects: Model<ProjectDocument>,
+    @InjectModel(Project.name)
+    private readonly projects: Model<ProjectDocument>,
     @InjectModel(Quiz.name) private readonly quizzes: Model<QuizDocument>,
-    @InjectModel(Roadmap.name) private readonly roadmaps: Model<RoadmapDocument>,
+    @InjectModel(Roadmap.name)
+    private readonly roadmaps: Model<RoadmapDocument>,
     @InjectConnection() private readonly connection: Connection,
     private readonly ai: AiService,
   ) {}
 
   async overview(): Promise<FounderDashboard> {
-    const [organizations, users, students, mentors, cohortCount] = await Promise.all([
-      this.orgs.countDocuments().exec(),
-      this.users.countDocuments().exec(),
-      this.users.countDocuments({ role: Role.Student }).exec(),
-      this.users.countDocuments({ role: Role.Mentor }).exec(),
-      this.cohorts.countDocuments().exec(),
-    ]);
+    const [organizations, users, students, mentors, cohortCount] =
+      await Promise.all([
+        this.orgs.countDocuments().exec(),
+        this.users.countDocuments().exec(),
+        this.users.countDocuments({ role: Role.Student }).exec(),
+        this.users.countDocuments({ role: Role.Mentor }).exec(),
+        this.cohorts.countDocuments().exec(),
+      ]);
 
     const subscriptions = await this.subscriptionStats();
     const aiSummary = await this.ai.usageSummary();
@@ -80,7 +96,10 @@ export class FounderService {
     const inactiveStudents = await this.users
       .countDocuments({
         role: Role.Student,
-        $or: [{ lastActiveAt: { $exists: false } }, { lastActiveAt: { $lt: this.daysAgo(CHURN_THRESHOLD_DAYS) } }],
+        $or: [
+          { lastActiveAt: { $exists: false } },
+          { lastActiveAt: { $lt: this.daysAgo(CHURN_THRESHOLD_DAYS) } },
+        ],
       })
       .exec();
 
@@ -91,7 +110,10 @@ export class FounderService {
       ai: {
         totalCalls: aiSummary.totalCalls,
         totalTokens: aiSummary.totalTokens,
-        estCostUsd: Math.round((aiSummary.totalTokens / 1000) * COST_PER_1K_TOKENS_USD * 100) / 100,
+        estCostUsd:
+          Math.round(
+            (aiSummary.totalTokens / 1000) * COST_PER_1K_TOKENS_USD * 100,
+          ) / 100,
         byAgent: aiSummary.byAgent,
       },
       adoption,
@@ -99,25 +121,37 @@ export class FounderService {
       signups,
       churnRisk: { inactiveStudents, thresholdDays: CHURN_THRESHOLD_DAYS },
       systemHealth: {
-        db: ['disconnected', 'connected', 'connecting', 'disconnecting'][this.connection.readyState] ?? 'unknown',
+        db:
+          ['disconnected', 'connected', 'connecting', 'disconnecting'][
+            this.connection.readyState
+          ] ?? 'unknown',
         uptimeSec: Math.round(process.uptime()),
         memoryMb: Math.round(process.memoryUsage().rss / 1024 / 1024),
       },
     };
   }
 
-  private async subscriptionStats(): Promise<FounderDashboard['subscriptions']> {
-    const byPlanRaw = await this.subs.aggregate<{ _id: string; count: number }>([
-      { $match: { status: 'active' } },
-      { $group: { _id: '$plan', count: { $sum: 1 } } },
-    ]);
+  private async subscriptionStats(): Promise<
+    FounderDashboard['subscriptions']
+  > {
+    const byPlanRaw = await this.subs.aggregate<{ _id: string; count: number }>(
+      [
+        { $match: { status: 'active' } },
+        { $group: { _id: '$plan', count: { $sum: 1 } } },
+      ],
+    );
     const byPlan = byPlanRaw.map((p) => ({ plan: p._id, count: p.count }));
     const active = byPlan.reduce((sum, p) => sum + p.count, 0);
-    const estMrrInr = byPlan.reduce((sum, p) => sum + planById(p.plan).priceInr * p.count, 0);
+    const estMrrInr = byPlan.reduce(
+      (sum, p) => sum + planById(p.plan).priceInr * p.count,
+      0,
+    );
     return { active, estMrrInr, byPlan };
   }
 
-  private async adoption(studentCount: number): Promise<FounderDashboard['adoption']> {
+  private async adoption(
+    studentCount: number,
+  ): Promise<FounderDashboard['adoption']> {
     const [roadmapUsers, quizUsers, projectUsers] = await Promise.all([
       this.roadmaps.distinct('user').exec(),
       this.quizzes.distinct('user').exec(),
@@ -125,9 +159,21 @@ export class FounderService {
     ]);
     const pct = (n: number) => Math.round((n / studentCount) * 100);
     return [
-      { feature: 'Roadmap', users: roadmapUsers.length, pct: pct(roadmapUsers.length) },
-      { feature: 'Quizzes', users: quizUsers.length, pct: pct(quizUsers.length) },
-      { feature: 'Projects', users: projectUsers.length, pct: pct(projectUsers.length) },
+      {
+        feature: 'Roadmap',
+        users: roadmapUsers.length,
+        pct: pct(roadmapUsers.length),
+      },
+      {
+        feature: 'Quizzes',
+        users: quizUsers.length,
+        pct: pct(quizUsers.length),
+      },
+      {
+        feature: 'Projects',
+        users: projectUsers.length,
+        pct: pct(projectUsers.length),
+      },
     ];
   }
 
@@ -140,7 +186,8 @@ export class FounderService {
     return list
       .map((c) => ({
         name: c.name,
-        organization: (c.organization as { name?: string } | undefined)?.name ?? '—',
+        organization:
+          (c.organization as { name?: string } | undefined)?.name ?? '—',
         students: (c.students as Types.ObjectId[] | undefined)?.length ?? 0,
         mentors: (c.mentors as Types.ObjectId[] | undefined)?.length ?? 0,
       }))
@@ -152,7 +199,12 @@ export class FounderService {
     const since = this.daysAgo(SIGNUP_WINDOW_DAYS);
     const raw = await this.users.aggregate<{ _id: string; count: number }>([
       { $match: { createdAt: { $gte: since } } },
-      { $group: { _id: { $dateToString: { format: '%Y-%m-%d', date: '$createdAt' } }, count: { $sum: 1 } } },
+      {
+        $group: {
+          _id: { $dateToString: { format: '%Y-%m-%d', date: '$createdAt' } },
+          count: { $sum: 1 },
+        },
+      },
       { $sort: { _id: 1 } },
     ]);
     return raw.map((r) => ({ date: r._id, count: r.count }));

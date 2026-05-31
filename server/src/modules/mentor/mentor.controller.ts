@@ -4,7 +4,11 @@ import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { Permissions } from '../../common/decorators/permissions.decorator';
 import { AuthUser } from '../../common/interfaces';
 import { MentorService } from './services/mentor.service';
-import { AddNoteDto, ReviewProjectDto, UpdateMentorProfileDto } from './dto/mentor.dto';
+import {
+  AddNoteDto,
+  ReviewProjectDto,
+  UpdateMentorProfileDto,
+} from './dto/mentor.dto';
 
 /** Mentor surface — org-scoped via B1 memberships; gated by StudentView / ProjectReview. */
 @Controller('mentor')
@@ -31,14 +35,28 @@ export class MentorController {
 
   @Post('students/:id/notes')
   @Permissions(Permission.StudentView)
-  addNote(@CurrentUser() user: AuthUser, @Param('id') id: string, @Body() dto: AddNoteDto) {
+  addNote(
+    @CurrentUser() user: AuthUser,
+    @Param('id') id: string,
+    @Body() dto: AddNoteDto,
+  ) {
     return this.mentor.addNote(user.id, id, dto.content);
   }
 
   @Post('projects/:id/review')
   @Permissions(Permission.ProjectReview)
-  review(@CurrentUser() user: AuthUser, @Param('id') id: string, @Body() dto: ReviewProjectDto) {
-    return this.mentor.reviewProject(user.id, id, dto.decision, dto.feedback, dto.score);
+  review(
+    @CurrentUser() user: AuthUser,
+    @Param('id') id: string,
+    @Body() dto: ReviewProjectDto,
+  ) {
+    return this.mentor.reviewProject(
+      user.id,
+      id,
+      dto.decision,
+      dto.feedback,
+      dto.score,
+    );
   }
 
   @Get('profile')
@@ -47,7 +65,10 @@ export class MentorController {
   }
 
   @Put('profile')
-  upsertProfile(@CurrentUser() user: AuthUser, @Body() dto: UpdateMentorProfileDto) {
+  upsertProfile(
+    @CurrentUser() user: AuthUser,
+    @Body() dto: UpdateMentorProfileDto,
+  ) {
     return this.mentor.upsertProfile(user.id, dto);
   }
 }

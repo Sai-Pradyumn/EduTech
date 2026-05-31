@@ -5,7 +5,13 @@ export type MentorProfileDocument = HydratedDocument<MentorProfile>;
 
 @Schema({ timestamps: true, collection: 'mentor_profiles' })
 export class MentorProfile {
-  @Prop({ type: Types.ObjectId, ref: 'User', required: true, unique: true, index: true })
+  @Prop({
+    type: Types.ObjectId,
+    ref: 'User',
+    required: true,
+    unique: true,
+    index: true,
+  })
   user!: Types.ObjectId;
 
   @Prop({ default: '' })

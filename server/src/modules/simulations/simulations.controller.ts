@@ -1,4 +1,14 @@
-import { Body, Controller, Delete, ForbiddenException, Get, HttpCode, HttpStatus, Param, Post } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  ForbiddenException,
+  Get,
+  HttpCode,
+  HttpStatus,
+  Param,
+  Post,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { AuthUser } from '../../common/interfaces';
@@ -14,8 +24,16 @@ function toView(s: SimulationDocument) {
     difficulty: s.difficulty,
     role: s.role,
     scenario: s.scenario,
-    rubric: s.rubric.map((c) => ({ criterion: c.criterion, weight: c.weight, score: c.score })),
-    transcript: s.transcript.map((t) => ({ role: t.role, text: t.text, at: t.at?.toISOString() ?? '' })),
+    rubric: s.rubric.map((c) => ({
+      criterion: c.criterion,
+      weight: c.weight,
+      score: c.score,
+    })),
+    transcript: s.transcript.map((t) => ({
+      role: t.role,
+      text: t.text,
+      at: t.at?.toISOString() ?? '',
+    })),
     score: s.score,
     feedback: s.feedback,
     improvementPlan: s.improvementPlan,
@@ -23,7 +41,10 @@ function toView(s: SimulationDocument) {
     linkedMistakeIds: s.linkedMistakeIds,
     linkedFlowId: s.linkedFlowId ?? null,
     status: s.status,
-    createdAt: (s as SimulationDocument & { createdAt?: Date }).createdAt?.toISOString() ?? '',
+    createdAt:
+      (
+        s as SimulationDocument & { createdAt?: Date }
+      ).createdAt?.toISOString() ?? '',
   };
 }
 
@@ -35,8 +56,12 @@ export class SimulationsController {
   ) {}
 
   private assertEnabled(): void {
-    if (this.config.get<{ simulations?: boolean }>('flags')?.simulations === false) {
-      throw new ForbiddenException('Simulation Labs is disabled on this deployment.');
+    if (
+      this.config.get<{ simulations?: boolean }>('flags')?.simulations === false
+    ) {
+      throw new ForbiddenException(
+        'Simulation Labs is disabled on this deployment.',
+      );
     }
   }
 
@@ -58,7 +83,11 @@ export class SimulationsController {
   }
 
   @Post(':id/respond')
-  async respond(@CurrentUser() user: AuthUser, @Param('id') id: string, @Body() dto: RespondDto) {
+  async respond(
+    @CurrentUser() user: AuthUser,
+    @Param('id') id: string,
+    @Body() dto: RespondDto,
+  ) {
     return toView(await this.sims.respond(user.id, user.role, id, dto.message));
   }
 
@@ -68,13 +97,20 @@ export class SimulationsController {
   }
 
   @Post(':id/retry')
-  async retry(@CurrentUser() user: AuthUser, @Param('id') id: string, @Body() dto: RetryDto) {
+  async retry(
+    @CurrentUser() user: AuthUser,
+    @Param('id') id: string,
+    @Body() dto: RetryDto,
+  ) {
     return toView(await this.sims.retry(user.id, id, dto.harder));
   }
 
   @Post(':id/create-repair-flow')
   async repairFlow(@CurrentUser() user: AuthUser, @Param('id') id: string) {
-    const { simulation, flowId, nodeId } = await this.sims.createRepairFlow(user.id, id);
+    const { simulation, flowId, nodeId } = await this.sims.createRepairFlow(
+      user.id,
+      id,
+    );
     return { simulation: toView(simulation), flowId, nodeId };
   }
 

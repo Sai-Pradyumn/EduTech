@@ -12,8 +12,14 @@ import {
   MinLength,
   ValidateNested,
 } from 'class-validator';
-import { PASSPORT_VISIBILITY, PassportVisibility } from '../schemas/skill-passport.schema';
-import { EVIDENCE_SOURCE_TYPES, EvidenceSourceType } from '../schemas/skill-evidence.schema';
+import {
+  PASSPORT_VISIBILITY,
+  PassportVisibility,
+} from '../schemas/skill-passport.schema';
+import {
+  EVIDENCE_SOURCE_TYPES,
+  EvidenceSourceType,
+} from '../schemas/skill-evidence.schema';
 
 class PublicSettingsDto {
   @IsOptional() @IsBoolean() showScores?: boolean;
@@ -26,13 +32,19 @@ class PublicSettingsDto {
 export class UpdatePassportDto {
   @IsOptional() @IsString() @MaxLength(160) headline?: string;
   @IsOptional() @IsString() @MaxLength(80) targetRole?: string;
-  @IsOptional() @IsIn(PASSPORT_VISIBILITY as unknown as string[]) visibility?: PassportVisibility;
-  @IsOptional() @ValidateNested() @Type(() => PublicSettingsDto) publicSettings?: PublicSettingsDto;
+  @IsOptional()
+  @IsIn(PASSPORT_VISIBILITY)
+  visibility?: PassportVisibility;
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => PublicSettingsDto)
+  publicSettings?: PublicSettingsDto;
 }
 
 export class AddEvidenceDto {
   @IsString() @MinLength(1) @MaxLength(80) skill!: string;
-  @IsIn(EVIDENCE_SOURCE_TYPES as unknown as string[]) sourceType!: EvidenceSourceType;
+  @IsIn(EVIDENCE_SOURCE_TYPES)
+  sourceType!: EvidenceSourceType;
   @IsString() @MinLength(2) @MaxLength(280) summary!: string;
   @IsOptional() @IsNumber() @Min(0) @Max(100) score?: number;
   @IsOptional() @IsUrl() url?: string;

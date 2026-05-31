@@ -45,10 +45,19 @@ export class KnowledgeController {
     @UploadedFile() file: UploadedFileLike | undefined,
     @Body() body: { title?: string },
   ) {
-    if (!file) throw new BadRequestException('No file uploaded (field name must be "file").');
-    if (file.size > MAX_BYTES) throw new BadRequestException('File exceeds the 10 MB limit.');
-    if (!ALLOWED.test(file.mimetype) && !/\.(txt|md|markdown|json|pdf|docx)$/i.test(file.originalname)) {
-      throw new BadRequestException(`Unsupported file type: ${file.mimetype || file.originalname}.`);
+    if (!file)
+      throw new BadRequestException(
+        'No file uploaded (field name must be "file").',
+      );
+    if (file.size > MAX_BYTES)
+      throw new BadRequestException('File exceeds the 10 MB limit.');
+    if (
+      !ALLOWED.test(file.mimetype) &&
+      !/\.(txt|md|markdown|json|pdf|docx)$/i.test(file.originalname)
+    ) {
+      throw new BadRequestException(
+        `Unsupported file type: ${file.mimetype || file.originalname}.`,
+      );
     }
     const result = await this.ingestion.ingest({
       userId: user.id,
@@ -100,6 +109,9 @@ export class KnowledgeController {
 
   @Post('ask')
   ask(@CurrentUser() user: AuthUser, @Body() dto: AskDto) {
-    return this.ragAnswer.answer(dto.question, { userId: user.id, documentIds: dto.documentIds });
+    return this.ragAnswer.answer(dto.question, {
+      userId: user.id,
+      documentIds: dto.documentIds,
+    });
   }
 }

@@ -1,4 +1,7 @@
-import { AgentMessageDocument, AgentSessionDocument } from '../schemas/agent-session.schema';
+import {
+  AgentMessageDocument,
+  AgentSessionDocument,
+} from '../schemas/agent-session.schema';
 
 export interface AgentSessionSummary {
   id: string;
@@ -21,7 +24,9 @@ export interface AgentMessageView {
   createdAt: string;
 }
 
-export function toSessionSummary(doc: AgentSessionDocument): AgentSessionSummary {
+export function toSessionSummary(
+  doc: AgentSessionDocument,
+): AgentSessionSummary {
   const d = doc as unknown as { updatedAt: Date };
   return {
     id: doc.id,

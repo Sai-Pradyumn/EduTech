@@ -33,9 +33,18 @@ export class ReplayService {
       this.twin.compute(userId),
     ]);
 
-    const did = recent.map((e) => ({ kind: e.kind, title: e.title, detail: e.detail, at: e.at.toISOString() }));
-    const struggled = twin.weaknessRoots.slice(0, 3).map((w) => ({ concept: w.concept, severity: w.severity }));
-    const nextActions = twin.nextBestActions.slice(0, 3).map((a) => ({ label: a.label, reason: a.reason, route: a.route }));
+    const did = recent.map((e) => ({
+      kind: e.kind,
+      title: e.title,
+      detail: e.detail,
+      at: e.at.toISOString(),
+    }));
+    const struggled = twin.weaknessRoots
+      .slice(0, 3)
+      .map((w) => ({ concept: w.concept, severity: w.severity }));
+    const nextActions = twin.nextBestActions
+      .slice(0, 3)
+      .map((a) => ({ label: a.label, reason: a.reason, route: a.route }));
 
     return {
       generatedAt: new Date().toISOString(),
@@ -46,7 +55,14 @@ export class ReplayService {
       did,
       struggled,
       nextActions,
-      recapScript: this.script(did, struggled, twin.readinessScore, twin.pace, nextActions, twin.modality.modality),
+      recapScript: this.script(
+        did,
+        struggled,
+        twin.readinessScore,
+        twin.pace,
+        nextActions,
+        twin.modality.modality,
+      ),
     };
   }
 
@@ -59,13 +75,18 @@ export class ReplayService {
     modality: string,
   ): string {
     const didLine = did.length
-      ? `Here's your recap. Recently you ${did.slice(0, 4).map((d) => d.title.toLowerCase()).join(', ')}.`
+      ? `Here's your recap. Recently you ${did
+          .slice(0, 4)
+          .map((d) => d.title.toLowerCase())
+          .join(', ')}.`
       : `Here's your recap. It's been quiet lately — a good moment to restart.`;
     const struggleLine = struggled.length
       ? ` You're still wrestling with ${struggled.map((s) => s.concept).join(' and ')}.`
       : ` No major sticking points right now — nice.`;
     const stateLine = ` Your readiness is ${readiness} out of 100 and you're on a ${pace} pace.`;
-    const nextLine = next[0] ? ` Best next move: ${next[0].label.toLowerCase()}. Asta suggests learning by ${modality} right now.` : '';
+    const nextLine = next[0]
+      ? ` Best next move: ${next[0].label.toLowerCase()}. Asta suggests learning by ${modality} right now.`
+      : '';
     return `${didLine}${struggleLine}${stateLine}${nextLine} That's your three-minute recap — keep going.`;
   }
 }

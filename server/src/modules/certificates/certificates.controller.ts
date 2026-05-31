@@ -27,8 +27,15 @@ export class CertificatesController {
 
   @Post('issue')
   @Permissions(Permission.CertificateIssue)
-  issue(@CurrentUser() user: AuthUser, @CurrentOrg() ctx: OrgContext, @Body() dto: IssueCertificateDto) {
-    return this.certs.issue(user.id, { ...dto, organizationId: ctx.organizationId });
+  issue(
+    @CurrentUser() user: AuthUser,
+    @CurrentOrg() ctx: OrgContext,
+    @Body() dto: IssueCertificateDto,
+  ) {
+    return this.certs.issue(user.id, {
+      ...dto,
+      organizationId: ctx.organizationId,
+    });
   }
 
   @Post(':id/revoke')

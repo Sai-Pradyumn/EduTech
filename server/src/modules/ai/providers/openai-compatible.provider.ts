@@ -82,7 +82,10 @@ export class OpenAICompatibleProvider implements IAIProvider {
     return out;
   }
 
-  async generateText(messages: AIMessage[], opts?: GenOptions): Promise<string> {
+  async generateText(
+    messages: AIMessage[],
+    opts?: GenOptions,
+  ): Promise<string> {
     const client = this.ensure();
     const model = opts?.model ?? this.model;
     try {
@@ -104,7 +107,10 @@ export class OpenAICompatibleProvider implements IAIProvider {
     }
   }
 
-  async *streamText(messages: AIMessage[], opts?: GenOptions): AsyncIterable<string> {
+  async *streamText(
+    messages: AIMessage[],
+    opts?: GenOptions,
+  ): AsyncIterable<string> {
     const client = this.ensure();
     const model = opts?.model ?? this.model;
     try {
@@ -142,7 +148,11 @@ export class OpenAICompatibleProvider implements IAIProvider {
       const res = await client.chat.completions.create(
         {
           model,
-          messages: this.mapMessages(messages, opts?.system, jsonSchemaInstruction(schema)),
+          messages: this.mapMessages(
+            messages,
+            opts?.system,
+            jsonSchemaInstruction(schema),
+          ),
           temperature: opts?.temperature,
           max_tokens: opts?.maxTokens ?? this.maxTokens,
           response_format: { type: 'json_object' },
@@ -158,11 +168,18 @@ export class OpenAICompatibleProvider implements IAIProvider {
 
   async generateEmbedding(text: string): Promise<number[]> {
     if (!this.capabilities.embeddings) {
-      throw new AIProviderCallError(this.name, `${this.cfg.label} has no embeddings endpoint.`, 501);
+      throw new AIProviderCallError(
+        this.name,
+        `${this.cfg.label} has no embeddings endpoint.`,
+        501,
+      );
     }
     const client = this.ensure();
     try {
-      const res = await client.embeddings.create({ model: this.embeddingModel, input: text });
+      const res = await client.embeddings.create({
+        model: this.embeddingModel,
+        input: text,
+      });
       return res.data[0]?.embedding ?? [];
     } catch (err) {
       throw this.wrap(err);
@@ -170,13 +187,19 @@ export class OpenAICompatibleProvider implements IAIProvider {
   }
 
   private reportUsage(
-    usage: { prompt_tokens?: number; completion_tokens?: number } | undefined | null,
+    usage:
+      | { prompt_tokens?: number; completion_tokens?: number }
+      | undefined
+      | null,
     opts: GenOptions | undefined,
     model: string,
   ): void {
     if (usage) {
       opts?.onUsage?.(
-        { promptTokens: usage.prompt_tokens ?? 0, completionTokens: usage.completion_tokens ?? 0 },
+        {
+          promptTokens: usage.prompt_tokens ?? 0,
+          completionTokens: usage.completion_tokens ?? 0,
+        },
         { provider: this.name, model },
       );
     }

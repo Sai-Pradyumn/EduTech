@@ -7,9 +7,17 @@ export type DocumentChunkDocument = HydratedDocument<DocumentChunk>;
  * A retrievable unit of a document: its text, embedding vector and provenance
  * (heading path / page / timestamp) used to build human-readable citations.
  */
-@Schema({ timestamps: { createdAt: true, updatedAt: false }, collection: 'document_chunks' })
+@Schema({
+  timestamps: { createdAt: true, updatedAt: false },
+  collection: 'document_chunks',
+})
 export class DocumentChunk {
-  @Prop({ type: Types.ObjectId, ref: 'KnowledgeDocument', required: true, index: true })
+  @Prop({
+    type: Types.ObjectId,
+    ref: 'KnowledgeDocument',
+    required: true,
+    index: true,
+  })
   document!: Types.ObjectId;
 
   @Prop({ type: Types.ObjectId, ref: 'User', required: true, index: true })

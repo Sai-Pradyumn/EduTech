@@ -16,36 +16,89 @@ import { ToolAugmentationService } from '../core/tool-augmentation.service';
 import { personaFor } from '../prompts/personas';
 
 /** Small topic-knowledge library so explanations/analogies feel specific, not generic. */
-const TOPIC_LIBRARY: Record<string, { analogy: string; pillars: string[]; mistakes: string[] }> = {
+const TOPIC_LIBRARY: Record<
+  string,
+  { analogy: string; pillars: string[]; mistakes: string[] }
+> = {
   closure: {
-    analogy: 'A closure is like a backpack a function carries — it keeps the variables it needs even after leaving the place they were created.',
-    pillars: ['Lexical scope', 'Function returning a function', 'Captured variables', 'Private state'],
-    mistakes: ['Assuming the variable is copied (it’s referenced)', 'Creating closures in loops with var', 'Memory leaks from long-lived closures'],
+    analogy:
+      'A closure is like a backpack a function carries — it keeps the variables it needs even after leaving the place they were created.',
+    pillars: [
+      'Lexical scope',
+      'Function returning a function',
+      'Captured variables',
+      'Private state',
+    ],
+    mistakes: [
+      'Assuming the variable is copied (it’s referenced)',
+      'Creating closures in loops with var',
+      'Memory leaks from long-lived closures',
+    ],
   },
   recursion: {
-    analogy: 'Recursion is like Russian nesting dolls — each call opens a smaller version of the same problem until the smallest one (base case).',
-    pillars: ['Base case', 'Recursive case', 'Call stack', 'Reducing the problem'],
-    mistakes: ['Missing/incorrect base case', 'Not reducing toward the base case', 'Stack overflow on deep recursion'],
+    analogy:
+      'Recursion is like Russian nesting dolls — each call opens a smaller version of the same problem until the smallest one (base case).',
+    pillars: [
+      'Base case',
+      'Recursive case',
+      'Call stack',
+      'Reducing the problem',
+    ],
+    mistakes: [
+      'Missing/incorrect base case',
+      'Not reducing toward the base case',
+      'Stack overflow on deep recursion',
+    ],
   },
   promise: {
-    analogy: 'A Promise is a restaurant buzzer — you get a token now and it lights up later when your food (value) is ready or the order fails (rejects).',
-    pillars: ['Pending/fulfilled/rejected', 'then/catch', 'async/await', 'Error propagation'],
-    mistakes: ['Forgetting to return inside then', 'Unhandled rejections', 'Mixing callbacks and promises'],
+    analogy:
+      'A Promise is a restaurant buzzer — you get a token now and it lights up later when your food (value) is ready or the order fails (rejects).',
+    pillars: [
+      'Pending/fulfilled/rejected',
+      'then/catch',
+      'async/await',
+      'Error propagation',
+    ],
+    mistakes: [
+      'Forgetting to return inside then',
+      'Unhandled rejections',
+      'Mixing callbacks and promises',
+    ],
   },
   'react hooks': {
-    analogy: 'Hooks are like labeled drawers React opens for your component in the same order every render — that’s why order matters.',
+    analogy:
+      'Hooks are like labeled drawers React opens for your component in the same order every render — that’s why order matters.',
     pillars: ['useState', 'useEffect & deps', 'Rules of hooks', 'Custom hooks'],
-    mistakes: ['Conditional hooks', 'Wrong/empty dependency arrays', 'Stale closures in effects'],
+    mistakes: [
+      'Conditional hooks',
+      'Wrong/empty dependency arrays',
+      'Stale closures in effects',
+    ],
   },
   sql: {
-    analogy: 'A JOIN is like matching two guest lists by a shared column to see who belongs to both events.',
+    analogy:
+      'A JOIN is like matching two guest lists by a shared column to see who belongs to both events.',
     pillars: ['SELECT/WHERE', 'JOINs', 'Indexes', 'Aggregation & GROUP BY'],
-    mistakes: ['Cartesian joins (missing ON)', 'SELECT * everywhere', 'No indexes on filtered columns'],
+    mistakes: [
+      'Cartesian joins (missing ON)',
+      'SELECT * everywhere',
+      'No indexes on filtered columns',
+    ],
   },
   'big o': {
-    analogy: 'Big-O is the “speed limit sign” of an algorithm — it tells you how cost grows as input grows, ignoring small details.',
-    pillars: ['Time vs space', 'Common classes (O(1)…O(n²))', 'Dominant term', 'Best/avg/worst'],
-    mistakes: ['Counting constants', 'Confusing time and space', 'Ignoring hidden costs (sorting inside a loop)'],
+    analogy:
+      'Big-O is the “speed limit sign” of an algorithm — it tells you how cost grows as input grows, ignoring small details.',
+    pillars: [
+      'Time vs space',
+      'Common classes (O(1)…O(n²))',
+      'Dominant term',
+      'Best/avg/worst',
+    ],
+    mistakes: [
+      'Counting constants',
+      'Confusing time and space',
+      'Ignoring hidden costs (sorting inside a loop)',
+    ],
   },
 };
 
@@ -59,21 +112,44 @@ export class TutorAgentService implements IAgent {
   ) {}
 
   async handle(ctx: AgentRuntimeContext): Promise<AgentResponse> {
-    const mode = (ctx.request.context?.['mode'] as TutorMode) ?? TutorMode.Explain;
+    const mode =
+      (ctx.request.context?.['mode'] as TutorMode) ?? TutorMode.Explain;
     const topic = this.extractTopic(ctx.request.message);
     const know = this.lookup(topic);
 
-    ctx.emit({ type: 'thinking', messageId: '', label: 'Loading your profile & roadmap' });
-    ctx.emit({ type: 'thinking', messageId: '', label: `Reading the question in ${mode} mode` });
+    ctx.emit({
+      type: 'thinking',
+      messageId: '',
+      label: 'Loading your profile & roadmap',
+    });
+    ctx.emit({
+      type: 'thinking',
+      messageId: '',
+      label: `Reading the question in ${mode} mode`,
+    });
 
     // Transparency: show a tool call when we tailor to weak areas.
     const weakHit = this.matchesWeakArea(topic, ctx);
     if (weakHit) {
-      ctx.emit({ type: 'tool_call', messageId: '', tool: 'weakness.analyze', label: `Tailoring to your weak area: ${weakHit}` });
-      ctx.emit({ type: 'tool_result', messageId: '', tool: 'weakness.analyze', summary: `Boosting depth on ${weakHit}` });
+      ctx.emit({
+        type: 'tool_call',
+        messageId: '',
+        tool: 'weakness.analyze',
+        label: `Tailoring to your weak area: ${weakHit}`,
+      });
+      ctx.emit({
+        type: 'tool_result',
+        messageId: '',
+        tool: 'weakness.analyze',
+        summary: `Boosting depth on ${weakHit}`,
+      });
     }
 
-    ctx.emit({ type: 'thinking', messageId: '', label: 'Composing explanation & visual blocks' });
+    ctx.emit({
+      type: 'thinking',
+      messageId: '',
+      label: 'Composing explanation & visual blocks',
+    });
 
     // Deterministic answer is the offline fallback; the composer streams a real LLM answer
     // when a key is configured, grounded in the learner context + this topic seed.
@@ -112,7 +188,9 @@ export class TutorAgentService implements IAgent {
       ],
       recommendedNextActions: [
         `Practice ${topic} with 3 problems`,
-        ctx.roadmap ? `Continue your roadmap: ${ctx.roadmap.currentWeekFocus ?? ctx.roadmap.title}` : 'Generate a roadmap to structure your learning',
+        ctx.roadmap
+          ? `Continue your roadmap: ${ctx.roadmap.currentWeekFocus ?? ctx.roadmap.title}`
+          : 'Generate a roadmap to structure your learning',
       ],
     };
   }
@@ -120,7 +198,10 @@ export class TutorAgentService implements IAgent {
   private extractTopic(message: string): string {
     const cleaned = message
       .toLowerCase()
-      .replace(/^(can you |please )?(explain|teach me|what is|what are|how does|help me with|tell me about)\s+/i, '')
+      .replace(
+        /^(can you |please )?(explain|teach me|what is|what are|how does|help me with|tell me about)\s+/i,
+        '',
+      )
       .replace(/[?.!]+$/, '')
       .trim();
     return cleaned || message.trim() || 'this concept';
@@ -131,9 +212,17 @@ export class TutorAgentService implements IAgent {
     return key ? TOPIC_LIBRARY[key] : null;
   }
 
-  private matchesWeakArea(topic: string, ctx: AgentRuntimeContext): string | null {
+  private matchesWeakArea(
+    topic: string,
+    ctx: AgentRuntimeContext,
+  ): string | null {
     const weak = ctx.profile?.weakAreas ?? [];
-    return weak.find((w) => topic.includes(w.toLowerCase()) || w.toLowerCase().includes(topic)) ?? null;
+    return (
+      weak.find(
+        (w) =>
+          topic.includes(w.toLowerCase()) || w.toLowerCase().includes(topic),
+      ) ?? null
+    );
   }
 
   private buildAnswer(
@@ -167,11 +256,25 @@ export class TutorAgentService implements IAgent {
       ].join('\n');
     }
 
-    const analogy = know?.analogy ?? `Think of **${topic}** as a tool you reach for when a specific kind of problem shows up — let's make that concrete.`;
-    const pillars = (know?.pillars ?? ['Core idea', 'How it works', 'When to use it', 'A worked example'])
+    const analogy =
+      know?.analogy ??
+      `Think of **${topic}** as a tool you reach for when a specific kind of problem shows up — let's make that concrete.`;
+    const pillars = (
+      know?.pillars ?? [
+        'Core idea',
+        'How it works',
+        'When to use it',
+        'A worked example',
+      ]
+    )
       .map((p, i) => `${i + 1}. **${p}**`)
       .join('\n');
-    const mistakes = (know?.mistakes ?? ['Skipping the fundamentals', 'Memorizing instead of understanding'])
+    const mistakes = (
+      know?.mistakes ?? [
+        'Skipping the fundamentals',
+        'Memorizing instead of understanding',
+      ]
+    )
       .map((m) => `- ${m}`)
       .join('\n');
 
@@ -197,7 +300,12 @@ export class TutorAgentService implements IAgent {
     weakHit: string | null,
   ): VisualBlock[] {
     const blocks: VisualBlock[] = [];
-    const pillars = know?.pillars ?? ['Core idea', 'How it works', 'When to use it', 'Example'];
+    const pillars = know?.pillars ?? [
+      'Core idea',
+      'How it works',
+      'When to use it',
+      'Example',
+    ];
 
     const conceptMap: ConceptMapBlock = {
       type: 'concept_map',
@@ -216,8 +324,16 @@ export class TutorAgentService implements IAgent {
       title: `Master ${topic} in 3 sittings`,
       items: [
         { label: `Understand: ${pillars[0]}`, minutes: 20, kind: 'learn' },
-        { label: `Practice: 3 problems on ${topic}`, minutes: 30, kind: 'practice' },
-        { label: `Recall: explain ${topic} from memory`, minutes: 10, kind: 'revision' },
+        {
+          label: `Practice: 3 problems on ${topic}`,
+          minutes: 30,
+          kind: 'practice',
+        },
+        {
+          label: `Recall: explain ${topic} from memory`,
+          minutes: 10,
+          kind: 'revision',
+        },
       ],
     };
     blocks.push(studyPlan);
@@ -238,7 +354,13 @@ export class TutorAgentService implements IAgent {
       const weakness: WeaknessAnalysisBlock = {
         type: 'weakness_analysis',
         title: 'Why we’re going deeper here',
-        weaknesses: [{ topic: weakHit, severity: 70, note: 'Flagged in your profile — extra reps recommended.' }],
+        weaknesses: [
+          {
+            topic: weakHit,
+            severity: 70,
+            note: 'Flagged in your profile — extra reps recommended.',
+          },
+        ],
       };
       blocks.push(weakness);
     }
@@ -268,11 +390,36 @@ export class TutorAgentService implements IAgent {
 
   private buildActions(topic: string): AgentAction[] {
     return [
-      { id: 'visual', label: 'Explain visually', kind: 'explain_visually', payload: { topic } },
-      { id: 'simpler', label: 'Teach in simpler way', kind: 'simpler', payload: { topic } },
-      { id: 'quiz', label: 'Give me a quiz', kind: 'generate_quiz', payload: { topic } },
-      { id: 'interview', label: 'Ask as interviewer', kind: 'ask_interviewer', payload: { topic } },
-      { id: 'notes', label: 'Generate notes', kind: 'generate_notes', payload: { topic } },
+      {
+        id: 'visual',
+        label: 'Explain visually',
+        kind: 'explain_visually',
+        payload: { topic },
+      },
+      {
+        id: 'simpler',
+        label: 'Teach in simpler way',
+        kind: 'simpler',
+        payload: { topic },
+      },
+      {
+        id: 'quiz',
+        label: 'Give me a quiz',
+        kind: 'generate_quiz',
+        payload: { topic },
+      },
+      {
+        id: 'interview',
+        label: 'Ask as interviewer',
+        kind: 'ask_interviewer',
+        payload: { topic },
+      },
+      {
+        id: 'notes',
+        label: 'Generate notes',
+        kind: 'generate_notes',
+        payload: { topic },
+      },
     ];
   }
 

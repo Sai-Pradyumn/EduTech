@@ -1,4 +1,14 @@
-import { IsArray, IsDateString, IsEnum, IsIn, IsOptional, IsString, MaxLength, MinLength, ArrayMaxSize } from 'class-validator';
+import {
+  IsArray,
+  IsDateString,
+  IsEnum,
+  IsIn,
+  IsOptional,
+  IsString,
+  MaxLength,
+  MinLength,
+  ArrayMaxSize,
+} from 'class-validator';
 import { CohortStatus } from '../../../common/enums';
 
 export class CreateCohortDto {

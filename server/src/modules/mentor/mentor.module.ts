@@ -4,7 +4,10 @@ import { UsersModule } from '../users/users.module';
 import { TenancyModule } from '../tenancy/tenancy.module';
 import { ProjectsModule } from '../projects/projects.module';
 import { LearningIntelligenceModule } from '../learning-intelligence/learning-intelligence.module';
-import { MentorProfile, MentorProfileSchema } from './schemas/mentor-profile.schema';
+import {
+  MentorProfile,
+  MentorProfileSchema,
+} from './schemas/mentor-profile.schema';
 import { MentorNote, MentorNoteSchema } from './schemas/mentor-note.schema';
 import { MentorController } from './mentor.controller';
 import { MentorService } from './services/mentor.service';

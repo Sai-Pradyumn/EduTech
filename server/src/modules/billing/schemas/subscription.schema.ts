@@ -7,7 +7,13 @@ export type SubscriptionStatus = 'active' | 'canceled' | 'past_due';
 
 @Schema({ timestamps: true, collection: 'subscriptions' })
 export class Subscription {
-  @Prop({ type: Types.ObjectId, ref: 'User', required: true, unique: true, index: true })
+  @Prop({
+    type: Types.ObjectId,
+    ref: 'User',
+    required: true,
+    unique: true,
+    index: true,
+  })
   user!: Types.ObjectId;
 
   @Prop({ default: 'free' })

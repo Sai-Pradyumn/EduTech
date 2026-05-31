@@ -19,7 +19,11 @@ import { ProjectReviewGenerator } from './services/project-review.generator';
     StudentProfileModule,
   ],
   controllers: [ProjectsController],
-  providers: [ProjectsService, ProjectBlueprintGenerator, ProjectReviewGenerator],
+  providers: [
+    ProjectsService,
+    ProjectBlueprintGenerator,
+    ProjectReviewGenerator,
+  ],
   exports: [ProjectsService],
 })
 export class ProjectsModule {}

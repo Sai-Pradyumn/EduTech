@@ -53,7 +53,8 @@ export class NextActionService {
       return {
         kind: 'roadmap',
         label: 'Generate your learning roadmap',
-        reason: 'You don’t have an active roadmap — a structured path makes progress measurable.',
+        reason:
+          'You don’t have an active roadmap — a structured path makes progress measurable.',
         agentType: AgentType.Roadmap,
         prompt: `Create a learning roadmap for my goal: ${src.profile?.mainGoal ?? 'my goal'}.`,
         route: '/app/roadmap',
@@ -64,7 +65,8 @@ export class NextActionService {
     return {
       kind: 'project',
       label: 'Build a portfolio project',
-      reason: 'Apply what you’ve learned — a small project consolidates skills and strengthens your portfolio.',
+      reason:
+        'Apply what you’ve learned — a small project consolidates skills and strengthens your portfolio.',
       agentType: AgentType.ProjectBuilder,
       prompt: `Suggest a project that fits my goal: ${src.profile?.mainGoal ?? 'my goal'}.`,
       route: '/app/projects',

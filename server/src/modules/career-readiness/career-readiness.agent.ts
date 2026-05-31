@@ -30,7 +30,7 @@ export class CareerReadinessAgent {
     if (!this.ai.isLive) return fallback;
     try {
       const system =
-        'You are Asta\'s career-readiness coach. Explain a learner\'s readiness score for a target role in 3–5 short sentences. ' +
+        "You are Asta's career-readiness coach. Explain a learner's readiness score for a target role in 3–5 short sentences. " +
         'Be specific and grounded ONLY in the numbers provided. Name the biggest lever and the single fastest action. ' +
         'No preamble, no markdown headings, warm but direct.';
       const user =
@@ -44,11 +44,21 @@ export class CareerReadinessAgent {
           { role: 'system', content: system },
           { role: 'user', content: user },
         ],
-        { temperature: 0.4, maxTokens: 280, meta: { userId, agentType: AgentType.Career, operation: 'career_readiness.explain' } },
+        {
+          temperature: 0.4,
+          maxTokens: 280,
+          meta: {
+            userId,
+            agentType: AgentType.Career,
+            operation: 'career_readiness.explain',
+          },
+        },
       );
       return out?.trim() || fallback;
     } catch (err) {
-      this.logger.warn(`Readiness explain failed, using fallback: ${(err as Error).message}`);
+      this.logger.warn(
+        `Readiness explain failed, using fallback: ${(err as Error).message}`,
+      );
       return fallback;
     }
   }

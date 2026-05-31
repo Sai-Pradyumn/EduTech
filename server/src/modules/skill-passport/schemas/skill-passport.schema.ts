@@ -14,7 +14,9 @@ export class PassportPublicSettings {
   /** Only render skills/proof that carry mentor/certificate/system verification. */
   @Prop({ default: false }) verifiedOnly!: boolean;
 }
-const PassportPublicSettingsSchema = SchemaFactory.createForClass(PassportPublicSettings);
+const PassportPublicSettingsSchema = SchemaFactory.createForClass(
+  PassportPublicSettings,
+);
 
 export type SkillPassportDocument = HydratedDocument<SkillPassport>;
 
@@ -25,17 +27,34 @@ export type SkillPassportDocument = HydratedDocument<SkillPassport>;
  */
 @Schema({ timestamps: true, collection: 'skill_passports' })
 export class SkillPassport {
-  @Prop({ type: Types.ObjectId, ref: 'User', required: true, unique: true, index: true })
+  @Prop({
+    type: Types.ObjectId,
+    ref: 'User',
+    required: true,
+    unique: true,
+    index: true,
+  })
   user!: Types.ObjectId;
 
   /** URL slug for the public profile (e.g. /u/aarav-sharma-3f2a). Unique, lower-kebab. */
-  @Prop({ required: true, unique: true, index: true, lowercase: true, trim: true })
+  @Prop({
+    required: true,
+    unique: true,
+    index: true,
+    lowercase: true,
+    trim: true,
+  })
   username!: string;
 
   @Prop({ default: '' }) headline!: string;
   @Prop({ default: '' }) targetRole!: string;
 
-  @Prop({ type: String, enum: PASSPORT_VISIBILITY, default: 'private', index: true })
+  @Prop({
+    type: String,
+    enum: PASSPORT_VISIBILITY,
+    default: 'private',
+    index: true,
+  })
   visibility!: PassportVisibility;
 
   @Prop({ type: PassportPublicSettingsSchema, default: () => ({}) })
@@ -45,8 +64,18 @@ export class SkillPassport {
   @Prop({ default: 0 }) readinessScore!: number;
 
   /** Cached snapshot of the skill graph at last recompute (kept small). */
-  @Prop({ type: [{ skill: String, mastery: Number, confidence: Number, evidence: Number }], default: [] })
-  skillSnapshots!: { skill: string; mastery: number; confidence: number; evidence: number }[];
+  @Prop({
+    type: [
+      { skill: String, mastery: Number, confidence: Number, evidence: Number },
+    ],
+    default: [],
+  })
+  skillSnapshots!: {
+    skill: string;
+    mastery: number;
+    confidence: number;
+    evidence: number;
+  }[];
 
   @Prop() lastComputedAt?: Date;
   @Prop() publishedAt?: Date;

@@ -2,7 +2,14 @@ import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { HydratedDocument, Types } from 'mongoose';
 import { Difficulty } from '../../../common/enums';
 
-export const COURSE_SOURCES = ['goal', 'syllabus', 'space', 'flow', 'roadmap', 'outline'] as const;
+export const COURSE_SOURCES = [
+  'goal',
+  'syllabus',
+  'space',
+  'flow',
+  'roadmap',
+  'outline',
+] as const;
 export type CourseSource = (typeof COURSE_SOURCES)[number];
 
 export const COURSE_STATUSES = ['draft', 'published', 'archived'] as const;
@@ -69,7 +76,8 @@ export class Course {
   visibility!: CourseVisibility;
 
   @Prop({ type: [CourseModuleSchema], default: [] }) modules!: CourseModule[];
-  @Prop({ type: CourseProjectSchema, default: () => ({}) }) project!: CourseProject;
+  @Prop({ type: CourseProjectSchema, default: () => ({}) })
+  project!: CourseProject;
   @Prop({ type: [String], default: [] }) certificateCriteria!: string[];
 
   @Prop() linkedFlowId?: string;

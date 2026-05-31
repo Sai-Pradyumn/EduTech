@@ -47,7 +47,9 @@ export class MentorCouncilService {
     const activeDays = overview.momentum.activeDays;
     const projects = overview.momentum.projects;
     const weakness = overview.weaknesses[0];
-    const nextNode = activeFlow?.nodes.find((n) => n.status === 'available' || n.status === 'in_progress');
+    const nextNode = activeFlow?.nodes.find(
+      (n) => n.status === 'available' || n.status === 'in_progress',
+    );
     const goal = profile?.mainGoal ?? 'your goal';
 
     const members: CouncilProposal[] = [
@@ -55,17 +57,28 @@ export class MentorCouncilService {
         agent: 'Tutor Agent',
         glyph: '🎓',
         stance: 'Understanding comes first.',
-        recommendation: nextNode ? `Learn "${nextNode.title}" next` : `Study the fundamentals of ${weakness?.topic ?? goal}`,
-        rationale: nextNode ? 'It is the next unlocked step in your active flow.' : 'No active flow node — solidify the basics before pushing ahead.',
-        route: nextNode && activeFlow ? `/app/flows/${String(activeFlow._id)}` : '/app/tutor',
+        recommendation: nextNode
+          ? `Learn "${nextNode.title}" next`
+          : `Study the fundamentals of ${weakness?.topic ?? goal}`,
+        rationale: nextNode
+          ? 'It is the next unlocked step in your active flow.'
+          : 'No active flow node — solidify the basics before pushing ahead.',
+        route:
+          nextNode && activeFlow
+            ? `/app/flows/${String(activeFlow._id)}`
+            : '/app/tutor',
         urgency: nextNode ? 55 : 60,
       },
       {
         agent: 'Assessment Agent',
         glyph: '✓',
-        stance: 'Prove it, don\'t assume it.',
-        recommendation: topMistake ? `Repair & re-test "${topMistake.concept}"` : 'Take a mastery quiz on your weakest topic',
-        rationale: topMistake ? `An open ${topMistake.mistakeType.replace('_', ' ')} at severity ${topMistake.severity}/100 — retrieval practice closes it.` : 'Periodic testing keeps recall sharp.',
+        stance: "Prove it, don't assume it.",
+        recommendation: topMistake
+          ? `Repair & re-test "${topMistake.concept}"`
+          : 'Take a mastery quiz on your weakest topic',
+        rationale: topMistake
+          ? `An open ${topMistake.mistakeType.replace('_', ' ')} at severity ${topMistake.severity}/100 — retrieval practice closes it.`
+          : 'Periodic testing keeps recall sharp.',
         route: topMistake ? '/app/mistakes' : '/app/quizzes',
         urgency: topMistake ? 50 + Math.round(topMistake.severity / 2.5) : 45,
       },
@@ -74,7 +87,10 @@ export class MentorCouncilService {
         glyph: '⬢',
         stance: 'You learn by building.',
         recommendation: 'Build a small project that applies what you know',
-        rationale: projects === 0 ? 'You have no projects yet — hands-on work compounds learning and readiness.' : 'Another applied project deepens transfer.',
+        rationale:
+          projects === 0
+            ? 'You have no projects yet — hands-on work compounds learning and readiness.'
+            : 'Another applied project deepens transfer.',
         route: '/app/projects',
         urgency: projects === 0 ? 58 : 35,
       },
@@ -82,7 +98,10 @@ export class MentorCouncilService {
         agent: 'Career Agent',
         glyph: '💼',
         stance: 'Aim at the goal.',
-        recommendation: readiness < 65 ? 'Run a mock interview to expose gaps' : 'Polish your portfolio for the goal',
+        recommendation:
+          readiness < 65
+            ? 'Run a mock interview to expose gaps'
+            : 'Polish your portfolio for the goal',
         rationale: `Readiness for ${goal} is ${readiness}/100${readiness < 65 ? ' — simulations surface what to fix.' : ' — convert mastery into proof.'}`,
         route: '/app/simulations',
         urgency: readiness < 50 ? 62 : readiness < 65 ? 48 : 30,
@@ -91,8 +110,14 @@ export class MentorCouncilService {
         agent: 'Mentor Agent',
         glyph: '🧑‍🏫',
         stance: 'Sustainable pace wins.',
-        recommendation: activeDays <= 2 ? 'Do one small thing today to rebuild momentum' : 'Keep your streak — follow today\'s plan',
-        rationale: activeDays <= 2 ? `Only ${activeDays} active day(s) recently — a tiny win restarts the habit.` : `You have momentum (${activeDays} active days) — protect it.`,
+        recommendation:
+          activeDays <= 2
+            ? 'Do one small thing today to rebuild momentum'
+            : "Keep your streak — follow today's plan",
+        rationale:
+          activeDays <= 2
+            ? `Only ${activeDays} active day(s) recently — a tiny win restarts the habit.`
+            : `You have momentum (${activeDays} active days) — protect it.`,
         route: '/app/today',
         urgency: activeDays <= 1 ? 70 : activeDays <= 2 ? 52 : 33,
       },

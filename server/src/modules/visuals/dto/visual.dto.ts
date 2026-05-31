@@ -1,4 +1,10 @@
-import { IsIn, IsOptional, IsString, MaxLength, MinLength } from 'class-validator';
+import {
+  IsIn,
+  IsOptional,
+  IsString,
+  MaxLength,
+  MinLength,
+} from 'class-validator';
 import {
   VISUAL_SOURCE_TYPES,
   VISUAL_TYPES,
@@ -15,7 +21,7 @@ export class GenerateVisualDto {
   @IsOptional() @IsString() @MaxLength(600) prompt?: string;
 
   @IsOptional()
-  @IsIn(VISUAL_TYPES as unknown as string[])
+  @IsIn(VISUAL_TYPES)
   type?: VisualType;
 
   @IsOptional()
@@ -23,7 +29,7 @@ export class GenerateVisualDto {
   level?: 'beginner' | 'intermediate' | 'advanced';
 
   @IsOptional()
-  @IsIn(VISUAL_SOURCE_TYPES as unknown as string[])
+  @IsIn(VISUAL_SOURCE_TYPES)
   sourceType?: VisualSourceType;
 
   @IsOptional() @IsString() sourceId?: string;
@@ -39,6 +45,6 @@ export class FromFlowNodeDto {
   @IsString() nodeId!: string;
 
   @IsOptional()
-  @IsIn(VISUAL_TYPES as unknown as string[])
+  @IsIn(VISUAL_TYPES)
   type?: VisualType;
 }

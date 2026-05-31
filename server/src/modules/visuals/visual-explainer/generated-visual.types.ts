@@ -1,9 +1,17 @@
-import { VisualContentFormat, VisualType } from '../schemas/visual-asset.schema';
+import {
+  VisualContentFormat,
+  VisualType,
+} from '../schemas/visual-asset.schema';
 
 /** A renderable graph payload (the primary structured format — rendered natively as SVG client-side). */
 export interface VisualGraph {
   layout: 'vertical' | 'radial' | 'layered' | 'horizontal';
-  nodes: { id: string; label: string; group?: string; kind?: 'root' | 'normal' | 'accent' }[];
+  nodes: {
+    id: string;
+    label: string;
+    group?: string;
+    kind?: 'root' | 'normal' | 'accent';
+  }[];
   edges: { from: string; to: string; label?: string }[];
 }
 

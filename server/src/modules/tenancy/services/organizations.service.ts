@@ -1,9 +1,18 @@
-import { BadRequestException, ConflictException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ConflictException,
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { MembershipStatus, OrgRole, OrgType } from '../../../common/enums';
 import { UsersService } from '../../users/users.service';
-import { Organization, OrganizationDocument } from '../schemas/organization.schema';
+import {
+  Organization,
+  OrganizationDocument,
+} from '../schemas/organization.schema';
 import { Membership, MembershipDocument } from '../schemas/membership.schema';
 
 export interface CreateOrgInput {
@@ -28,13 +37,18 @@ export interface OrgView {
 @Injectable()
 export class OrganizationsService {
   constructor(
-    @InjectModel(Organization.name) private readonly orgs: Model<OrganizationDocument>,
-    @InjectModel(Membership.name) private readonly memberships: Model<MembershipDocument>,
+    @InjectModel(Organization.name)
+    private readonly orgs: Model<OrganizationDocument>,
+    @InjectModel(Membership.name)
+    private readonly memberships: Model<MembershipDocument>,
     private readonly users: UsersService,
   ) {}
 
   /** Creates an org and makes the creator its ORG_ADMIN. */
-  async create(creatorId: string, input: CreateOrgInput): Promise<OrganizationDocument> {
+  async create(
+    creatorId: string,
+    input: CreateOrgInput,
+  ): Promise<OrganizationDocument> {
     const slug = await this.uniqueSlug(input.name);
     const org = await this.orgs.create({
       name: input.name.trim(),
@@ -60,24 +74,40 @@ export class OrganizationsService {
 
   /** Platform-wide list (platform admins only — enforced at the controller). */
   async listAll(): Promise<OrgView[]> {
-    const orgs = await this.orgs.find().sort({ createdAt: -1 }).lean<OrganizationDocument[]>().exec();
+    const orgs = await this.orgs
+      .find()
+      .sort({ createdAt: -1 })
+      .lean<OrganizationDocument[]>()
+      .exec();
     return orgs.map((o) => this.toView(o));
   }
 
   /** Orgs the user is an active member of. */
   async listMine(userId: string): Promise<(OrgView & { orgRole: OrgRole })[]> {
     const memberships = await this.memberships
-      .find({ user: new Types.ObjectId(userId), status: MembershipStatus.Active })
+      .find({
+        user: new Types.ObjectId(userId),
+        status: MembershipStatus.Active,
+      })
       .lean<MembershipDocument[]>()
       .exec();
     const orgIds = memberships.map((m) => m.organization);
-    const orgs = await this.orgs.find({ _id: { $in: orgIds } }).lean<OrganizationDocument[]>().exec();
-    const roleByOrg = new Map(memberships.map((m) => [String(m.organization), m.orgRole]));
-    return orgs.map((o) => ({ ...this.toView(o), orgRole: roleByOrg.get(String(o._id)) ?? OrgRole.Student }));
+    const orgs = await this.orgs
+      .find({ _id: { $in: orgIds } })
+      .lean<OrganizationDocument[]>()
+      .exec();
+    const roleByOrg = new Map(
+      memberships.map((m) => [String(m.organization), m.orgRole]),
+    );
+    return orgs.map((o) => ({
+      ...this.toView(o),
+      orgRole: roleByOrg.get(String(o._id)) ?? OrgRole.Student,
+    }));
   }
 
   async getById(id: string): Promise<OrganizationDocument> {
-    if (!Types.ObjectId.isValid(id)) throw new NotFoundException('Organization not found');
+    if (!Types.ObjectId.isValid(id))
+      throw new NotFoundException('Organization not found');
     const org = await this.orgs.findById(id);
     if (!org) throw new NotFoundException('Organization not found');
     return org;
@@ -85,7 +115,12 @@ export class OrganizationsService {
 
   async update(
     id: string,
-    patch: { name?: string; description?: string; type?: OrgType; branding?: Partial<OrgView['branding']> },
+    patch: {
+      name?: string;
+      description?: string;
+      type?: OrgType;
+      branding?: Partial<OrgView['branding']>;
+    },
   ): Promise<OrganizationDocument> {
     const org = await this.getById(id);
     if (patch.name) org.name = patch.name.trim();
@@ -93,7 +128,8 @@ export class OrganizationsService {
     if (patch.type) org.type = patch.type;
     if (patch.branding) {
       org.branding.logoUrl = patch.branding.logoUrl ?? org.branding.logoUrl;
-      org.branding.primaryColor = patch.branding.primaryColor ?? org.branding.primaryColor;
+      org.branding.primaryColor =
+        patch.branding.primaryColor ?? org.branding.primaryColor;
       org.branding.tagline = patch.branding.tagline ?? org.branding.tagline;
     }
     await org.save();
@@ -118,13 +154,26 @@ export class OrganizationsService {
       plan: o.plan,
       status: o.status,
       memberCount: o.memberCount,
-      branding: { logoUrl: o.branding?.logoUrl, primaryColor: o.branding?.primaryColor ?? '#16a34a', tagline: o.branding?.tagline ?? '' },
-      createdAt: (o as OrganizationDocument & { createdAt?: Date }).createdAt?.toISOString() ?? '',
+      branding: {
+        logoUrl: o.branding?.logoUrl,
+        primaryColor: o.branding?.primaryColor ?? '#16a34a',
+        tagline: o.branding?.tagline ?? '',
+      },
+      createdAt:
+        (
+          o as OrganizationDocument & { createdAt?: Date }
+        ).createdAt?.toISOString() ?? '',
     };
   }
 
   private async uniqueSlug(name: string): Promise<string> {
-    const base = name.toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 40) || 'org';
+    const base =
+      name
+        .toLowerCase()
+        .trim()
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/^-+|-+$/g, '')
+        .slice(0, 40) || 'org';
     let slug = base;
     let n = 1;
     while (await this.orgs.exists({ slug })) slug = `${base}-${++n}`;

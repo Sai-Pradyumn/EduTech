@@ -21,7 +21,12 @@ export const PLAN_CATALOG: Plan[] = [
     priceInr: 0,
     aiCallsPerMonth: 100,
     tagline: 'Start your path.',
-    features: ['Personalized roadmap', 'AI tutor & doubt solver', 'Quizzes & projects', '100 AI requests / month'],
+    features: [
+      'Personalized roadmap',
+      'AI tutor & doubt solver',
+      'Quizzes & projects',
+      '100 AI requests / month',
+    ],
   },
   {
     id: 'pro',
@@ -29,7 +34,13 @@ export const PLAN_CATALOG: Plan[] = [
     priceInr: 499,
     aiCallsPerMonth: 2000,
     tagline: 'For serious learners.',
-    features: ['Everything in Free', 'Knowledge base (RAG) on your notes', 'Voice room & mock interviews', 'Certificates', '2,000 AI requests / month'],
+    features: [
+      'Everything in Free',
+      'Knowledge base (RAG) on your notes',
+      'Voice room & mock interviews',
+      'Certificates',
+      '2,000 AI requests / month',
+    ],
     highlight: true,
   },
   {
@@ -38,7 +49,13 @@ export const PLAN_CATALOG: Plan[] = [
     priceInr: 1999,
     aiCallsPerMonth: 10000,
     tagline: 'Colleges & cohorts.',
-    features: ['Everything in Pro', 'Cohorts & leaderboards', 'Mentor ecosystem', 'Org analytics & reports', '10,000 AI requests / month'],
+    features: [
+      'Everything in Pro',
+      'Cohorts & leaderboards',
+      'Mentor ecosystem',
+      'Org analytics & reports',
+      '10,000 AI requests / month',
+    ],
   },
 ];
 

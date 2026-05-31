@@ -10,7 +10,11 @@ import { LedgerService } from './ledger.service';
  * Simulations can log node-completion / mistake-resolution / simulation-finish.
  */
 @Module({
-  imports: [MongooseModule.forFeature([{ name: LedgerEntry.name, schema: LedgerEntrySchema }])],
+  imports: [
+    MongooseModule.forFeature([
+      { name: LedgerEntry.name, schema: LedgerEntrySchema },
+    ]),
+  ],
   controllers: [LedgerController],
   providers: [LedgerService],
   exports: [LedgerService],

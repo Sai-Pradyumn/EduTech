@@ -1,4 +1,8 @@
-import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { Difficulty } from '../../common/enums';
@@ -7,13 +11,30 @@ import { Roadmap, RoadmapDocument } from '../roadmap/schemas/roadmap.schema';
 import { LedgerService } from '../ledger/ledger.service';
 import { FlowArchitectService } from './flow-architect/flow-architect.service';
 import { FlowBlueprintInput } from './flow-architect/generated-flow.types';
-import { Flow, FlowDocument, FlowNode, FlowNodeType } from './schemas/flow.schema';
-import { AddNodeDto, GenerateFlowDto, UpdateFlowDto, UpdateNodeDto } from './dto/flow.dto';
+import {
+  Flow,
+  FlowDocument,
+  FlowNode,
+  FlowNodeType,
+} from './schemas/flow.schema';
+import {
+  AddNodeDto,
+  GenerateFlowDto,
+  UpdateFlowDto,
+  UpdateNodeDto,
+} from './dto/flow.dto';
 
 /** What the client should do when a node is "executed" (start a tutor/quiz/project/voice action). */
 export interface NodeExecution {
   nodeId: string;
-  kind: 'tutor' | 'quiz' | 'project' | 'voice' | 'mentor' | 'knowledge' | 'simulation';
+  kind:
+    | 'tutor'
+    | 'quiz'
+    | 'project'
+    | 'voice'
+    | 'mentor'
+    | 'knowledge'
+    | 'simulation';
   route: string;
   prompt?: string;
   agentType?: string;
@@ -23,7 +44,8 @@ export interface NodeExecution {
 export class FlowsService {
   constructor(
     @InjectModel(Flow.name) private readonly model: Model<FlowDocument>,
-    @InjectModel(Roadmap.name) private readonly roadmaps: Model<RoadmapDocument>,
+    @InjectModel(Roadmap.name)
+    private readonly roadmaps: Model<RoadmapDocument>,
     private readonly profiles: StudentProfileService,
     private readonly architect: FlowArchitectService,
     private readonly ledger: LedgerService,
@@ -35,7 +57,10 @@ export class FlowsService {
     const profile = await this.profiles.findByUser(userId);
     const input: FlowBlueprintInput = {
       goal: dto.goal.trim(),
-      skillLevel: dto.difficulty ?? (profile?.currentSkillLevel as unknown as Difficulty) ?? Difficulty.Beginner,
+      skillLevel:
+        dto.difficulty ??
+        (profile?.currentSkillLevel as unknown as Difficulty) ??
+        Difficulty.Beginner,
       currentSkills: profile?.currentSkills ?? [],
       weakAreas: profile?.weakAreas ?? [],
       targetRole: dto.targetRole ?? profile?.careerTarget,
@@ -53,7 +78,7 @@ export class FlowsService {
       description: generated.description,
       sourceType: generated.sourceType,
       status: 'active',
-      difficulty: generated.difficulty as Difficulty,
+      difficulty: generated.difficulty,
       nodes: generated.nodes,
       edges: generated.edges,
       timeline: generated.timeline,
@@ -64,14 +89,19 @@ export class FlowsService {
   }
 
   async fromRoadmap(userId: string, roadmapId: string): Promise<FlowDocument> {
-    if (!Types.ObjectId.isValid(roadmapId)) throw new NotFoundException('Roadmap not found');
+    if (!Types.ObjectId.isValid(roadmapId))
+      throw new NotFoundException('Roadmap not found');
     const roadmap = await this.roadmaps.findById(roadmapId).exec();
     if (!roadmap) throw new NotFoundException('Roadmap not found');
-    if (roadmap.user.toString() !== userId) throw new ForbiddenException('Not your roadmap');
+    if (roadmap.user.toString() !== userId)
+      throw new ForbiddenException('Not your roadmap');
     const profile = await this.profiles.findByUser(userId);
     const input: FlowBlueprintInput = {
       goal: roadmap.goal,
-      skillLevel: (roadmap.difficulty as Difficulty) ?? (profile?.currentSkillLevel as unknown as Difficulty) ?? Difficulty.Beginner,
+      skillLevel:
+        roadmap.difficulty ??
+        (profile?.currentSkillLevel as unknown as Difficulty) ??
+        Difficulty.Beginner,
       currentSkills: profile?.currentSkills ?? [],
       weakAreas: profile?.weakAreas ?? [],
       preferredStack: [],
@@ -93,7 +123,7 @@ export class FlowsService {
       sourceType: 'roadmap',
       sourceId: roadmapId,
       status: 'active',
-      difficulty: generated.difficulty as Difficulty,
+      difficulty: generated.difficulty,
       nodes: generated.nodes,
       edges: generated.edges,
       timeline: generated.timeline,
@@ -112,7 +142,8 @@ export class FlowsService {
   }
 
   async get(userId: string, id: string): Promise<FlowDocument> {
-    if (!Types.ObjectId.isValid(id)) throw new NotFoundException('Flow not found');
+    if (!Types.ObjectId.isValid(id))
+      throw new NotFoundException('Flow not found');
     const flow = await this.model.findById(id).exec();
     if (!flow) throw new NotFoundException('Flow not found');
     this.assertOwner(flow, userId);
@@ -121,7 +152,11 @@ export class FlowsService {
 
   // ───────────────────────── mutations ─────────────────────────
 
-  async update(userId: string, id: string, dto: UpdateFlowDto): Promise<FlowDocument> {
+  async update(
+    userId: string,
+    id: string,
+    dto: UpdateFlowDto,
+  ): Promise<FlowDocument> {
     const flow = await this.get(userId, id);
     if (dto.title !== undefined) flow.title = dto.title;
     if (dto.description !== undefined) flow.description = dto.description;
@@ -129,10 +164,15 @@ export class FlowsService {
     return flow.save();
   }
 
-  async addNode(userId: string, id: string, dto: AddNodeDto): Promise<FlowDocument> {
+  async addNode(
+    userId: string,
+    id: string,
+    dto: AddNodeDto,
+  ): Promise<FlowDocument> {
     const flow = await this.get(userId, id);
     const nodeId = `n_${Date.now().toString(36)}_${flow.nodes.length}`;
-    const stage = dto.stage ?? Math.max(0, ...flow.nodes.map((n) => n.stage)) + 1;
+    const stage =
+      dto.stage ?? Math.max(0, ...flow.nodes.map((n) => n.stage)) + 1;
     const node: FlowNode = {
       id: nodeId,
       type: dto.type,
@@ -157,7 +197,12 @@ export class FlowsService {
     return flow.save();
   }
 
-  async updateNode(userId: string, id: string, nodeId: string, dto: UpdateNodeDto): Promise<FlowDocument> {
+  async updateNode(
+    userId: string,
+    id: string,
+    nodeId: string,
+    dto: UpdateNodeDto,
+  ): Promise<FlowDocument> {
     const flow = await this.get(userId, id);
     const node = flow.nodes.find((n) => n.id === nodeId);
     if (!node) throw new NotFoundException('Node not found');
@@ -166,34 +211,55 @@ export class FlowsService {
     if (dto.summary !== undefined) node.summary = dto.summary;
     if (dto.objective !== undefined) node.objective = dto.objective;
     if (dto.difficulty !== undefined) node.difficulty = dto.difficulty;
-    if (dto.estimatedMinutes !== undefined) node.estimatedMinutes = dto.estimatedMinutes;
+    if (dto.estimatedMinutes !== undefined)
+      node.estimatedMinutes = dto.estimatedMinutes;
     if (dto.masteryScore !== undefined) node.masteryScore = dto.masteryScore;
     if (dto.status !== undefined) node.status = dto.status;
     if (dto.position !== undefined) node.position = dto.position;
     if (dto.prerequisites !== undefined) node.prerequisites = dto.prerequisites;
     if (dto.linkedQuizId !== undefined) node.linkedQuizId = dto.linkedQuizId;
-    if (dto.linkedProjectId !== undefined) node.linkedProjectId = dto.linkedProjectId;
+    if (dto.linkedProjectId !== undefined)
+      node.linkedProjectId = dto.linkedProjectId;
     flow.markModified('nodes');
     this.recomputeStatuses(flow);
     const saved = await flow.save();
     if (dto.status === 'completed' && !wasCompleted) {
-      await this.ledger.record(userId, { kind: 'node_completed', title: `Completed: ${node.title}`, detail: `In flow "${flow.title}".`, evidenceRef: String(flow._id) });
+      await this.ledger.record(userId, {
+        kind: 'node_completed',
+        title: `Completed: ${node.title}`,
+        detail: `In flow "${flow.title}".`,
+        evidenceRef: String(flow._id),
+      });
     }
     return saved;
   }
 
-  async removeNode(userId: string, id: string, nodeId: string): Promise<FlowDocument> {
+  async removeNode(
+    userId: string,
+    id: string,
+    nodeId: string,
+  ): Promise<FlowDocument> {
     const flow = await this.get(userId, id);
     flow.nodes = flow.nodes.filter((n) => n.id !== nodeId);
-    flow.edges = flow.edges.filter((e) => e.source !== nodeId && e.target !== nodeId);
-    flow.nodes.forEach((n) => (n.prerequisites = n.prerequisites.filter((p) => p !== nodeId)));
-    flow.timeline.forEach((b) => (b.nodeIds = b.nodeIds.filter((x) => x !== nodeId)));
+    flow.edges = flow.edges.filter(
+      (e) => e.source !== nodeId && e.target !== nodeId,
+    );
+    flow.nodes.forEach(
+      (n) => (n.prerequisites = n.prerequisites.filter((p) => p !== nodeId)),
+    );
+    flow.timeline.forEach(
+      (b) => (b.nodeIds = b.nodeIds.filter((x) => x !== nodeId)),
+    );
     this.recomputeStatuses(flow);
     return flow.save();
   }
 
   /** Mark a node started and tell the client where to go to do the work. */
-  async executeNode(userId: string, id: string, nodeId: string): Promise<{ flow: FlowDocument; execution: NodeExecution }> {
+  async executeNode(
+    userId: string,
+    id: string,
+    nodeId: string,
+  ): Promise<{ flow: FlowDocument; execution: NodeExecution }> {
     const flow = await this.get(userId, id);
     const node = flow.nodes.find((n) => n.id === nodeId);
     if (!node) throw new NotFoundException('Node not found');
@@ -212,19 +278,50 @@ export class FlowsService {
       case 'quiz':
       case 'checkpoint':
       case 'mastery_gate':
-        return { nodeId: node.id, kind: 'quiz', route: '/app/quizzes', prompt: node.title };
+        return {
+          nodeId: node.id,
+          kind: 'quiz',
+          route: '/app/quizzes',
+          prompt: node.title,
+        };
       case 'project':
-        return { nodeId: node.id, kind: 'project', route: '/app/projects', prompt: node.title };
+        return {
+          nodeId: node.id,
+          kind: 'project',
+          route: '/app/projects',
+          prompt: node.title,
+        };
       case 'voice_practice':
-        return { nodeId: node.id, kind: 'voice', route: '/app/voice-room', prompt: objective };
+        return {
+          nodeId: node.id,
+          kind: 'voice',
+          route: '/app/voice-room',
+          prompt: objective,
+        };
       case 'mentor_review':
-        return { nodeId: node.id, kind: 'mentor', route: '/app/mentor-room', prompt: objective, agentType: 'mentor' };
+        return {
+          nodeId: node.id,
+          kind: 'mentor',
+          route: '/app/mentor-room',
+          prompt: objective,
+          agentType: 'mentor',
+        };
       case 'simulation':
-        return { nodeId: node.id, kind: 'simulation', route: '/app/voice-room', prompt: objective };
+        return {
+          nodeId: node.id,
+          kind: 'simulation',
+          route: '/app/voice-room',
+          prompt: objective,
+        };
       case 'document_source':
       case 'diagram':
       case 'image':
-        return { nodeId: node.id, kind: 'knowledge', route: '/app/knowledge', prompt: node.title };
+        return {
+          nodeId: node.id,
+          kind: 'knowledge',
+          route: '/app/knowledge',
+          prompt: node.title,
+        };
       case 'weak_area_repair':
         return {
           nodeId: node.id,
@@ -256,7 +353,11 @@ export class FlowsService {
     const lastStage = Math.max(0, ...flow.nodes.map((n) => n.stage));
     (profile?.weakAreas ?? []).forEach((weak, i) => {
       if (existingRepairs.has(weak.toLowerCase())) return;
-      const anchor = flow.nodes.find((n) => n.type === 'concept' && n.title.toLowerCase().includes(weak.toLowerCase().split(' ')[0]));
+      const anchor = flow.nodes.find(
+        (n) =>
+          n.type === 'concept' &&
+          n.title.toLowerCase().includes(weak.toLowerCase().split(' ')[0]),
+      );
       const newId = `n_repair_${Date.now().toString(36)}_${i}`;
       flow.nodes.push({
         id: newId,
@@ -276,7 +377,7 @@ export class FlowsService {
         linkedKnowledgeDocumentIds: [],
         linkedVisualAssetIds: [],
         linkedVoiceSessionIds: [],
-      } as FlowNode);
+      });
       if (anchor) {
         flow.edges.push({
           id: `e_repair_${Date.now().toString(36)}_${i}`,
@@ -303,13 +404,19 @@ export class FlowsService {
   }
 
   /** Add a weak-area repair node for a concept (Phase 8 · Mistake OS → flow). Returns node id. */
-  async addRepairNode(userId: string, flowId: string, concept: string): Promise<{ flow: FlowDocument; nodeId: string }> {
+  async addRepairNode(
+    userId: string,
+    flowId: string,
+    concept: string,
+  ): Promise<{ flow: FlowDocument; nodeId: string }> {
     const flow = await this.get(userId, flowId);
     const lastStage = Math.max(0, ...flow.nodes.map((n) => n.stage));
     const lane = flow.nodes.filter((n) => n.stage === lastStage).length;
     const nodeId = `n_repair_${Date.now().toString(36)}`;
     const anchor = flow.nodes.find(
-      (n) => n.type === 'concept' && n.title.toLowerCase().includes(concept.toLowerCase().split(' ')[0]),
+      (n) =>
+        n.type === 'concept' &&
+        n.title.toLowerCase().includes(concept.toLowerCase().split(' ')[0]),
     );
     flow.nodes.push({
       id: nodeId,
@@ -329,7 +436,7 @@ export class FlowsService {
       linkedKnowledgeDocumentIds: [],
       linkedVisualAssetIds: [],
       linkedVoiceSessionIds: [],
-    } as FlowNode);
+    });
     if (anchor) {
       flow.edges.push({
         id: `e_repair_${Date.now().toString(36)}`,
@@ -348,11 +455,17 @@ export class FlowsService {
   }
 
   /** Attach a generated visual asset to a node (Phase 8 cross-module link). */
-  async linkVisual(userId: string, flowId: string, nodeId: string, visualId: string): Promise<FlowDocument> {
+  async linkVisual(
+    userId: string,
+    flowId: string,
+    nodeId: string,
+    visualId: string,
+  ): Promise<FlowDocument> {
     const flow = await this.get(userId, flowId);
     const node = flow.nodes.find((n) => n.id === nodeId);
     if (!node) throw new NotFoundException('Node not found');
-    if (!node.linkedVisualAssetIds.includes(visualId)) node.linkedVisualAssetIds.push(visualId);
+    if (!node.linkedVisualAssetIds.includes(visualId))
+      node.linkedVisualAssetIds.push(visualId);
     flow.markModified('nodes');
     return flow.save();
   }
@@ -385,21 +498,30 @@ export class FlowsService {
 
   /** A node unlocks when every prerequisite is completed; progress = completed / total. */
   private recomputeStatuses(flow: FlowDocument): void {
-    const completed = new Set(flow.nodes.filter((n) => n.status === 'completed').map((n) => n.id));
+    const completed = new Set(
+      flow.nodes.filter((n) => n.status === 'completed').map((n) => n.id),
+    );
     for (const node of flow.nodes) {
-      if (node.status === 'completed' || node.status === 'skipped' || node.status === 'in_progress') continue;
+      if (
+        node.status === 'completed' ||
+        node.status === 'skipped' ||
+        node.status === 'in_progress'
+      )
+        continue;
       const ready = node.prerequisites.every((p) => completed.has(p));
       node.status = ready ? 'available' : 'locked';
     }
     const total = flow.nodes.length || 1;
     flow.progressPercentage = Math.round((completed.size / total) * 100);
     const gate = flow.nodes.find((n) => n.type === 'mastery_gate');
-    if (gate && gate.status === 'completed' && flow.status === 'active') flow.status = 'completed';
+    if (gate && gate.status === 'completed' && flow.status === 'active')
+      flow.status = 'completed';
     flow.markModified('nodes');
   }
 
   private assertOwner(flow: FlowDocument, userId: string): void {
-    if (flow.user.toString() !== userId) throw new ForbiddenException('You do not have access to this flow');
+    if (flow.user.toString() !== userId)
+      throw new ForbiddenException('You do not have access to this flow');
   }
 }
 

@@ -1,9 +1,22 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post, Query } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  Patch,
+  Post,
+  Query,
+} from '@nestjs/common';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { AuthUser } from '../../common/interfaces';
 import { MistakesService } from './mistakes.service';
 import { MistakeDocument, MistakeStatus } from './schemas/mistake.schema';
-import { CaptureMistakeDto, ToggleActionDto, UpdateMistakeStatusDto } from './dto/mistake.dto';
+import {
+  CaptureMistakeDto,
+  ToggleActionDto,
+  UpdateMistakeStatusDto,
+} from './dto/mistake.dto';
 
 function toView(m: MistakeDocument) {
   return {
@@ -18,13 +31,22 @@ function toView(m: MistakeDocument) {
     source: m.source,
     sourceId: m.sourceId ?? null,
     status: m.status,
-    repairActions: m.repairActions.map((a) => ({ id: a.id, kind: a.kind, label: a.label, route: a.route ?? null, prompt: a.prompt ?? null, done: a.done })),
+    repairActions: m.repairActions.map((a) => ({
+      id: a.id,
+      kind: a.kind,
+      label: a.label,
+      route: a.route ?? null,
+      prompt: a.prompt ?? null,
+      done: a.done,
+    })),
     linkedQuizId: m.linkedQuizId ?? null,
     linkedFlowId: m.linkedFlowId ?? null,
     linkedVisualId: m.linkedVisualId ?? null,
     lastSeenAt: m.lastSeenAt?.toISOString() ?? null,
     resolvedAt: m.resolvedAt?.toISOString() ?? null,
-    createdAt: (m as MistakeDocument & { createdAt?: Date }).createdAt?.toISOString() ?? '',
+    createdAt:
+      (m as MistakeDocument & { createdAt?: Date }).createdAt?.toISOString() ??
+      '',
   };
 }
 
@@ -33,7 +55,10 @@ export class MistakesController {
   constructor(private readonly mistakes: MistakesService) {}
 
   @Get()
-  async list(@CurrentUser() user: AuthUser, @Query('status') status?: MistakeStatus) {
+  async list(
+    @CurrentUser() user: AuthUser,
+    @Query('status') status?: MistakeStatus,
+  ) {
     return (await this.mistakes.list(user.id, status)).map(toView);
   }
 
@@ -58,24 +83,40 @@ export class MistakesController {
   }
 
   @Patch(':id/status')
-  async status(@CurrentUser() user: AuthUser, @Param('id') id: string, @Body() dto: UpdateMistakeStatusDto) {
+  async status(
+    @CurrentUser() user: AuthUser,
+    @Param('id') id: string,
+    @Body() dto: UpdateMistakeStatusDto,
+  ) {
     return toView(await this.mistakes.updateStatus(user.id, id, dto.status));
   }
 
   @Patch(':id/actions')
-  async toggleAction(@CurrentUser() user: AuthUser, @Param('id') id: string, @Body() dto: ToggleActionDto) {
-    return toView(await this.mistakes.toggleAction(user.id, id, dto.actionId, dto.done));
+  async toggleAction(
+    @CurrentUser() user: AuthUser,
+    @Param('id') id: string,
+    @Body() dto: ToggleActionDto,
+  ) {
+    return toView(
+      await this.mistakes.toggleAction(user.id, id, dto.actionId, dto.done),
+    );
   }
 
   @Post(':id/repair-flow')
   async repairFlow(@CurrentUser() user: AuthUser, @Param('id') id: string) {
-    const { mistake, flowId, nodeId } = await this.mistakes.repairFlow(user.id, id);
+    const { mistake, flowId, nodeId } = await this.mistakes.repairFlow(
+      user.id,
+      id,
+    );
     return { mistake: toView(mistake), flowId, nodeId };
   }
 
   @Post(':id/repair-project')
   async repairProject(@CurrentUser() user: AuthUser, @Param('id') id: string) {
-    const { mistake, projectId } = await this.mistakes.repairProject(user.id, id);
+    const { mistake, projectId } = await this.mistakes.repairProject(
+      user.id,
+      id,
+    );
     return { mistake: toView(mistake), projectId };
   }
 

@@ -1,9 +1,17 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { FilterQuery, Model, Types } from 'mongoose';
-import { DocumentChunk, DocumentChunkDocument } from '../schemas/document-chunk.schema';
+import {
+  DocumentChunk,
+  DocumentChunkDocument,
+} from '../schemas/document-chunk.schema';
 import { cosine, termOverlap, tokenize } from './scoring';
-import { ChunkHit, IVectorStore, RetrievalScope, VectorQuery } from './vector-store.interface';
+import {
+  ChunkHit,
+  IVectorStore,
+  RetrievalScope,
+  VectorQuery,
+} from './vector-store.interface';
 
 /**
  * Default backend — needs no Atlas. Loads the scoped chunks from MongoDB and ranks
@@ -16,20 +24,33 @@ export class KeywordVectorStore implements IVectorStore {
   readonly name: string = 'keyword';
 
   constructor(
-    @InjectModel(DocumentChunk.name) protected readonly chunks: Model<DocumentChunkDocument>,
+    @InjectModel(DocumentChunk.name)
+    protected readonly chunks: Model<DocumentChunkDocument>,
   ) {}
 
-  protected scopeFilter(scope: RetrievalScope): FilterQuery<DocumentChunkDocument> {
-    const filter: FilterQuery<DocumentChunkDocument> = { user: new Types.ObjectId(scope.userId) };
+  protected scopeFilter(
+    scope: RetrievalScope,
+  ): FilterQuery<DocumentChunkDocument> {
+    const filter: FilterQuery<DocumentChunkDocument> = {
+      user: new Types.ObjectId(scope.userId),
+    };
     if (scope.documentIds?.length) {
-      filter.document = { $in: scope.documentIds.map((id) => new Types.ObjectId(id)) };
+      filter.document = {
+        $in: scope.documentIds.map((id) => new Types.ObjectId(id)),
+      };
     }
     return filter;
   }
 
   /** Loads scoped chunks once; callers rank in-memory. Bounded for safety. */
-  protected async loadScoped(scope: RetrievalScope): Promise<DocumentChunkDocument[]> {
-    return this.chunks.find(this.scopeFilter(scope)).limit(2000).lean<DocumentChunkDocument[]>().exec();
+  protected async loadScoped(
+    scope: RetrievalScope,
+  ): Promise<DocumentChunkDocument[]> {
+    return this.chunks
+      .find(this.scopeFilter(scope))
+      .limit(2000)
+      .lean<DocumentChunkDocument[]>()
+      .exec();
   }
 
   protected toHit(c: DocumentChunkDocument, score: number): ChunkHit {
@@ -47,7 +68,11 @@ export class KeywordVectorStore implements IVectorStore {
     };
   }
 
-  async search(query: VectorQuery, scope: RetrievalScope, k: number): Promise<ChunkHit[]> {
+  async search(
+    query: VectorQuery,
+    scope: RetrievalScope,
+    k: number,
+  ): Promise<ChunkHit[]> {
     const docs = await this.loadScoped(scope);
     return docs
       .map((c) => this.toHit(c, cosine(query.embedding, c.embedding)))
@@ -56,7 +81,11 @@ export class KeywordVectorStore implements IVectorStore {
       .slice(0, k);
   }
 
-  async keywordSearch(query: VectorQuery, scope: RetrievalScope, k: number): Promise<ChunkHit[]> {
+  async keywordSearch(
+    query: VectorQuery,
+    scope: RetrievalScope,
+    k: number,
+  ): Promise<ChunkHit[]> {
     const terms = tokenize(query.text);
     const docs = await this.loadScoped(scope);
     return docs

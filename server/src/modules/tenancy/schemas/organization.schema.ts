@@ -18,7 +18,13 @@ export class Organization {
   name!: string;
 
   /** URL-safe unique handle (e.g. "sreenidhi-college"). */
-  @Prop({ required: true, unique: true, lowercase: true, trim: true, index: true })
+  @Prop({
+    required: true,
+    unique: true,
+    lowercase: true,
+    trim: true,
+    index: true,
+  })
   slug!: string;
 
   @Prop({ type: String, enum: OrgType, default: OrgType.College })

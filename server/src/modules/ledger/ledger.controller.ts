@@ -41,7 +41,10 @@ export class LedgerController {
 
   /** Manually record a verified event (self-reported evidence). */
   @Post('events')
-  async record(@CurrentUser() user: AuthUser, @Body() dto: RecordLedgerEventDto) {
+  async record(
+    @CurrentUser() user: AuthUser,
+    @Body() dto: RecordLedgerEventDto,
+  ) {
     await this.ledger.record(user.id, {
       kind: dto.kind,
       title: dto.title,
@@ -55,7 +58,11 @@ export class LedgerController {
 
   /** Show / hide a single event from the public Skill Passport. */
   @Patch('events/:id/visibility')
-  setVisibility(@CurrentUser() user: AuthUser, @Param('id') id: string, @Body() dto: SetLedgerVisibilityDto) {
+  setVisibility(
+    @CurrentUser() user: AuthUser,
+    @Param('id') id: string,
+    @Body() dto: SetLedgerVisibilityDto,
+  ) {
     return this.ledger.setVisibility(user.id, id, dto.visible);
   }
 }

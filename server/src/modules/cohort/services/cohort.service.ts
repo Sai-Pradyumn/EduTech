@@ -31,7 +31,13 @@ export interface MemberLite {
 export interface CohortDetail extends CohortView {
   mentors: MemberLite[];
   students: MemberLite[];
-  announcements: { id: string; title: string; body: string; authorName: string; createdAt: string }[];
+  announcements: {
+    id: string;
+    title: string;
+    body: string;
+    authorName: string;
+    createdAt: string;
+  }[];
 }
 
 export interface LeaderboardRow {
@@ -56,7 +62,14 @@ export class CohortService {
   async create(
     orgId: string,
     createdById: string,
-    input: { name: string; description?: string; roadmapGoal?: string; startDate?: string; endDate?: string; status?: CohortStatus },
+    input: {
+      name: string;
+      description?: string;
+      roadmapGoal?: string;
+      startDate?: string;
+      endDate?: string;
+      status?: CohortStatus;
+    },
   ): Promise<CohortView> {
     const cohort = await this.cohorts.create({
       organization: new Types.ObjectId(orgId),
@@ -84,7 +97,10 @@ export class CohortService {
   async listForStudent(userId: string): Promise<CohortView[]> {
     const list = await this.cohorts
       .find({ students: new Types.ObjectId(userId) })
-      .populate<{ organization: { _id: Types.ObjectId; name: string } }>('organization', 'name')
+      .populate<{ organization: { _id: Types.ObjectId; name: string } }>(
+        'organization',
+        'name',
+      )
       .sort({ createdAt: -1 })
       .lean()
       .exec();
@@ -95,7 +111,11 @@ export class CohortService {
   }
 
   async orgIdOf(id: string): Promise<string> {
-    const c = await this.cohorts.findById(id).select('organization').lean<{ organization: Types.ObjectId }>().exec();
+    const c = await this.cohorts
+      .findById(id)
+      .select('organization')
+      .lean<{ organization: Types.ObjectId }>()
+      .exec();
     if (!c) throw new NotFoundException('Cohort not found');
     return String(c.organization);
   }
@@ -103,20 +123,32 @@ export class CohortService {
   async getDetail(id: string): Promise<CohortDetail> {
     const c = await this.cohorts
       .findById(id)
-      .populate<{ mentors: { _id: Types.ObjectId; name: string; email: string }[] }>('mentors', 'name email')
-      .populate<{ students: { _id: Types.ObjectId; name: string; email: string }[] }>('students', 'name email')
-      .populate<{ organization: { _id: Types.ObjectId; name: string } }>('organization', 'name')
+      .populate<{
+        mentors: { _id: Types.ObjectId; name: string; email: string }[];
+      }>('mentors', 'name email')
+      .populate<{
+        students: { _id: Types.ObjectId; name: string; email: string }[];
+      }>('students', 'name email')
+      .populate<{
+        organization: { _id: Types.ObjectId; name: string };
+      }>('organization', 'name')
       .lean()
       .exec();
     if (!c) throw new NotFoundException('Cohort not found');
-    const toLite = (m: { _id: Types.ObjectId; name: string; email: string }): MemberLite => ({
+    const toLite = (m: {
+      _id: Types.ObjectId;
+      name: string;
+      email: string;
+    }): MemberLite => ({
       userId: String(m._id),
       name: m.name,
       email: m.email,
     });
     return {
       id: String(c._id),
-      organizationId: String((c.organization as { _id?: Types.ObjectId } | undefined)?._id ?? ''),
+      organizationId: String(
+        (c.organization as { _id?: Types.ObjectId } | undefined)?._id ?? '',
+      ),
       organizationName: (c.organization as { name?: string } | undefined)?.name,
       name: c.name,
       description: c.description,
@@ -127,52 +159,106 @@ export class CohortService {
       mentorCount: c.mentors.length,
       studentCount: c.students.length,
       announcementCount: c.announcements.length,
-      mentors: (c.mentors as { _id: Types.ObjectId; name: string; email: string }[]).map(toLite),
-      students: (c.students as { _id: Types.ObjectId; name: string; email: string }[]).map(toLite),
+      mentors: (
+        c.mentors as { _id: Types.ObjectId; name: string; email: string }[]
+      ).map(toLite),
+      students: (
+        c.students as { _id: Types.ObjectId; name: string; email: string }[]
+      ).map(toLite),
       announcements: [...c.announcements]
-        .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
-        .map((a) => ({ id: a.id, title: a.title, body: a.body, authorName: a.authorName, createdAt: new Date(a.createdAt).toISOString() })),
+        .sort(
+          (a, b) =>
+            new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+        )
+        .map((a) => ({
+          id: a.id,
+          title: a.title,
+          body: a.body,
+          authorName: a.authorName,
+          createdAt: new Date(a.createdAt).toISOString(),
+        })),
     };
   }
 
   async update(
     id: string,
-    patch: { name?: string; description?: string; roadmapGoal?: string; startDate?: string; endDate?: string; status?: CohortStatus },
+    patch: {
+      name?: string;
+      description?: string;
+      roadmapGoal?: string;
+      startDate?: string;
+      endDate?: string;
+      status?: CohortStatus;
+    },
   ): Promise<CohortView> {
     const set: Record<string, unknown> = {};
     if (patch.name !== undefined) set['name'] = patch.name;
     if (patch.description !== undefined) set['description'] = patch.description;
     if (patch.roadmapGoal !== undefined) set['roadmapGoal'] = patch.roadmapGoal;
-    if (patch.startDate !== undefined) set['startDate'] = new Date(patch.startDate);
+    if (patch.startDate !== undefined)
+      set['startDate'] = new Date(patch.startDate);
     if (patch.endDate !== undefined) set['endDate'] = new Date(patch.endDate);
     if (patch.status !== undefined) set['status'] = patch.status;
-    const c = await this.cohorts.findByIdAndUpdate(id, { $set: set }, { new: true }).exec();
+    const c = await this.cohorts
+      .findByIdAndUpdate(id, { $set: set }, { new: true })
+      .exec();
     if (!c) throw new NotFoundException('Cohort not found');
     return this.toView(c);
   }
 
-  async addMembers(id: string, userIds: string[], role: 'mentor' | 'student'): Promise<CohortDetail> {
+  async addMembers(
+    id: string,
+    userIds: string[],
+    role: 'mentor' | 'student',
+  ): Promise<CohortDetail> {
     const ids = userIds.map((u) => new Types.ObjectId(u));
     const field = role === 'mentor' ? 'mentors' : 'students';
-    await this.cohorts.updateOne({ _id: id }, { $addToSet: { [field]: { $each: ids } } }).exec();
+    await this.cohorts
+      .updateOne({ _id: id }, { $addToSet: { [field]: { $each: ids } } })
+      .exec();
     return this.getDetail(id);
   }
 
   async removeMember(id: string, userId: string): Promise<CohortDetail> {
     const oid = new Types.ObjectId(userId);
-    await this.cohorts.updateOne({ _id: id }, { $pull: { mentors: oid, students: oid } }).exec();
+    await this.cohorts
+      .updateOne({ _id: id }, { $pull: { mentors: oid, students: oid } })
+      .exec();
     return this.getDetail(id);
   }
 
-  async postAnnouncement(id: string, authorName: string, title: string, body: string): Promise<CohortDetail> {
+  async postAnnouncement(
+    id: string,
+    authorName: string,
+    title: string,
+    body: string,
+  ): Promise<CohortDetail> {
     await this.cohorts
-      .updateOne({ _id: id }, { $push: { announcements: { id: randomUUID(), title, body, authorName, createdAt: new Date() } } })
+      .updateOne(
+        { _id: id },
+        {
+          $push: {
+            announcements: {
+              id: randomUUID(),
+              title,
+              body,
+              authorName,
+              createdAt: new Date(),
+            },
+          },
+        },
+      )
       .exec();
     const detail = await this.getDetail(id);
     // B13: notify enrolled students of the new announcement.
     await this.notifications.createMany(
       detail.students.map((s) => s.userId),
-      { type: 'announcement', title: `${detail.name}: ${title}`, body, link: '/app/cohorts' },
+      {
+        type: 'announcement',
+        title: `${detail.name}: ${title}`,
+        body,
+        link: '/app/cohorts',
+      },
     );
     return detail;
   }
@@ -180,11 +266,15 @@ export class CohortService {
   async leaderboard(id: string): Promise<LeaderboardRow[]> {
     const c = await this.cohorts
       .findById(id)
-      .populate<{ students: { _id: Types.ObjectId; name: string }[] }>('students', 'name')
+      .populate<{
+        students: { _id: Types.ObjectId; name: string }[];
+      }>('students', 'name')
       .lean()
       .exec();
     if (!c) throw new NotFoundException('Cohort not found');
-    const students = (c.students as { _id: Types.ObjectId; name: string }[]).slice(0, LEADERBOARD_CAP);
+    const students = (
+      c.students as { _id: Types.ObjectId; name: string }[]
+    ).slice(0, LEADERBOARD_CAP);
     const rows = await Promise.all(
       students.map(async (s) => {
         const li = await this.intelligence.overview(String(s._id));

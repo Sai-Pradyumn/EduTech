@@ -15,7 +15,12 @@ import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { AuthUser } from '../../common/interfaces';
 import { FlowsService } from './flows.service';
 import { FlowDocument } from './schemas/flow.schema';
-import { AddNodeDto, GenerateFlowDto, UpdateFlowDto, UpdateNodeDto } from './dto/flow.dto';
+import {
+  AddNodeDto,
+  GenerateFlowDto,
+  UpdateFlowDto,
+  UpdateNodeDto,
+} from './dto/flow.dto';
 
 /** Maps a flow document to the client view (id, not _id). */
 function toView(f: FlowDocument) {
@@ -59,10 +64,17 @@ function toView(f: FlowDocument) {
       strength: e.strength,
       explanation: e.explanation,
     })),
-    timeline: f.timeline.map((b) => ({ index: b.index, label: b.label, focus: b.focus, nodeIds: b.nodeIds })),
+    timeline: f.timeline.map((b) => ({
+      index: b.index,
+      label: b.label,
+      focus: b.focus,
+      nodeIds: b.nodeIds,
+    })),
     metadata: f.metadata ?? {},
-    createdAt: (f as FlowDocument & { createdAt?: Date }).createdAt?.toISOString() ?? '',
-    updatedAt: (f as FlowDocument & { updatedAt?: Date }).updatedAt?.toISOString() ?? '',
+    createdAt:
+      (f as FlowDocument & { createdAt?: Date }).createdAt?.toISOString() ?? '',
+    updatedAt:
+      (f as FlowDocument & { updatedAt?: Date }).updatedAt?.toISOString() ?? '',
   };
 }
 
@@ -79,7 +91,10 @@ export class FlowsController {
   }
 
   private assertEnabled(): void {
-    if (!this.isEnabled()) throw new ForbiddenException('Flow Studio is disabled on this deployment.');
+    if (!this.isEnabled())
+      throw new ForbiddenException(
+        'Flow Studio is disabled on this deployment.',
+      );
   }
 
   @Get('status')
@@ -96,7 +111,10 @@ export class FlowsController {
 
   @Post('from-roadmap/:roadmapId')
   @HttpCode(HttpStatus.CREATED)
-  async fromRoadmap(@CurrentUser() user: AuthUser, @Param('roadmapId') roadmapId: string) {
+  async fromRoadmap(
+    @CurrentUser() user: AuthUser,
+    @Param('roadmapId') roadmapId: string,
+  ) {
     this.assertEnabled();
     return toView(await this.flows.fromRoadmap(user.id, roadmapId));
   }
@@ -112,12 +130,20 @@ export class FlowsController {
   }
 
   @Patch(':id')
-  async update(@CurrentUser() user: AuthUser, @Param('id') id: string, @Body() dto: UpdateFlowDto) {
+  async update(
+    @CurrentUser() user: AuthUser,
+    @Param('id') id: string,
+    @Body() dto: UpdateFlowDto,
+  ) {
     return toView(await this.flows.update(user.id, id, dto));
   }
 
   @Post(':id/nodes')
-  async addNode(@CurrentUser() user: AuthUser, @Param('id') id: string, @Body() dto: AddNodeDto) {
+  async addNode(
+    @CurrentUser() user: AuthUser,
+    @Param('id') id: string,
+    @Body() dto: AddNodeDto,
+  ) {
     return toView(await this.flows.addNode(user.id, id, dto));
   }
 
@@ -132,13 +158,25 @@ export class FlowsController {
   }
 
   @Delete(':id/nodes/:nodeId')
-  async removeNode(@CurrentUser() user: AuthUser, @Param('id') id: string, @Param('nodeId') nodeId: string) {
+  async removeNode(
+    @CurrentUser() user: AuthUser,
+    @Param('id') id: string,
+    @Param('nodeId') nodeId: string,
+  ) {
     return toView(await this.flows.removeNode(user.id, id, nodeId));
   }
 
   @Post(':id/execute-node/:nodeId')
-  async executeNode(@CurrentUser() user: AuthUser, @Param('id') id: string, @Param('nodeId') nodeId: string) {
-    const { flow, execution } = await this.flows.executeNode(user.id, id, nodeId);
+  async executeNode(
+    @CurrentUser() user: AuthUser,
+    @Param('id') id: string,
+    @Param('nodeId') nodeId: string,
+  ) {
+    const { flow, execution } = await this.flows.executeNode(
+      user.id,
+      id,
+      nodeId,
+    );
     return { flow: toView(flow), execution };
   }
 

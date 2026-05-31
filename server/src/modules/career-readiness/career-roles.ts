@@ -37,14 +37,21 @@ export interface CareerRole {
   readinessRubric: ReadinessRubric;
 }
 
-const RUBRIC_BALANCED: ReadinessRubric = { skills: 0.4, projects: 0.25, interview: 0.15, consistency: 0.1, portfolio: 0.1 };
+const RUBRIC_BALANCED: ReadinessRubric = {
+  skills: 0.4,
+  projects: 0.25,
+  interview: 0.15,
+  consistency: 0.1,
+  portfolio: 0.1,
+};
 
 export const CAREER_ROLES: CareerRole[] = [
   {
     id: 'full-stack-developer',
     title: 'Full Stack Developer',
     level: 'fresher',
-    summary: 'Build and ship end-to-end web apps across frontend, backend and database.',
+    summary:
+      'Build and ship end-to-end web apps across frontend, backend and database.',
     requiredSkills: [
       { name: 'JavaScript', target: 80, weight: 1.2 },
       { name: 'React', target: 78, weight: 1.1 },
@@ -54,9 +61,21 @@ export const CAREER_ROLES: CareerRole[] = [
       { name: 'Git', target: 70, weight: 0.7 },
     ],
     optionalSkills: ['TypeScript', 'Docker', 'CI/CD', 'Testing'],
-    projectExpectations: { minProjects: 2, note: 'At least one full-stack CRUD app with auth and a deployed demo.' },
-    interviewExpectations: ['JS fundamentals', 'A framework deep-dive', 'API + DB design', 'One behavioral round'],
-    portfolioExpectations: ['2+ deployed projects', 'GitHub with READMEs', 'A skills/proof profile'],
+    projectExpectations: {
+      minProjects: 2,
+      note: 'At least one full-stack CRUD app with auth and a deployed demo.',
+    },
+    interviewExpectations: [
+      'JS fundamentals',
+      'A framework deep-dive',
+      'API + DB design',
+      'One behavioral round',
+    ],
+    portfolioExpectations: [
+      '2+ deployed projects',
+      'GitHub with READMEs',
+      'A skills/proof profile',
+    ],
     readinessRubric: RUBRIC_BALANCED,
   },
   {
@@ -73,9 +92,21 @@ export const CAREER_ROLES: CareerRole[] = [
       { name: 'REST API design', target: 72, weight: 0.9 },
     ],
     optionalSkills: ['Redux', 'JWT auth', 'Deployment', 'Mongoose'],
-    projectExpectations: { minProjects: 2, note: 'A full MERN app with auth, CRUD and a hosted demo.' },
-    interviewExpectations: ['React + hooks', 'Node/Express internals', 'MongoDB modeling', 'Project deep-dive'],
-    portfolioExpectations: ['A flagship MERN project', 'Live demo + repo', 'Skill Passport published'],
+    projectExpectations: {
+      minProjects: 2,
+      note: 'A full MERN app with auth, CRUD and a hosted demo.',
+    },
+    interviewExpectations: [
+      'React + hooks',
+      'Node/Express internals',
+      'MongoDB modeling',
+      'Project deep-dive',
+    ],
+    portfolioExpectations: [
+      'A flagship MERN project',
+      'Live demo + repo',
+      'Skill Passport published',
+    ],
     readinessRubric: RUBRIC_BALANCED,
   },
   {
@@ -92,9 +123,21 @@ export const CAREER_ROLES: CareerRole[] = [
       { name: 'Data structures', target: 70, weight: 0.9 },
     ],
     optionalSkills: ['Hibernate', 'Microservices', 'Docker', 'Angular'],
-    projectExpectations: { minProjects: 2, note: 'A Spring Boot REST service with a JS frontend and a database.' },
-    interviewExpectations: ['Core Java + OOP', 'Spring fundamentals', 'SQL + JPA', 'DSA basics'],
-    portfolioExpectations: ['A Spring Boot project', 'Clean repo + docs', 'Deployed API'],
+    projectExpectations: {
+      minProjects: 2,
+      note: 'A Spring Boot REST service with a JS frontend and a database.',
+    },
+    interviewExpectations: [
+      'Core Java + OOP',
+      'Spring fundamentals',
+      'SQL + JPA',
+      'DSA basics',
+    ],
+    portfolioExpectations: [
+      'A Spring Boot project',
+      'Clean repo + docs',
+      'Deployed API',
+    ],
     readinessRubric: RUBRIC_BALANCED,
   },
   {
@@ -111,10 +154,28 @@ export const CAREER_ROLES: CareerRole[] = [
       { name: 'REST API design', target: 60, weight: 0.6 },
     ],
     optionalSkills: ['Accessibility', 'Testing', 'NgRx', 'Responsive design'],
-    projectExpectations: { minProjects: 2, note: 'A polished Angular app consuming a real API, deployed.' },
-    interviewExpectations: ['Angular internals', 'RxJS + state', 'CSS/layout', 'Component design'],
-    portfolioExpectations: ['A flagship Angular app', 'Live demo', 'Accessible, responsive UI'],
-    readinessRubric: { skills: 0.45, projects: 0.25, interview: 0.12, consistency: 0.08, portfolio: 0.1 },
+    projectExpectations: {
+      minProjects: 2,
+      note: 'A polished Angular app consuming a real API, deployed.',
+    },
+    interviewExpectations: [
+      'Angular internals',
+      'RxJS + state',
+      'CSS/layout',
+      'Component design',
+    ],
+    portfolioExpectations: [
+      'A flagship Angular app',
+      'Live demo',
+      'Accessible, responsive UI',
+    ],
+    readinessRubric: {
+      skills: 0.45,
+      projects: 0.25,
+      interview: 0.12,
+      consistency: 0.08,
+      portfolio: 0.1,
+    },
   },
   {
     id: 'backend-developer',
@@ -130,10 +191,28 @@ export const CAREER_ROLES: CareerRole[] = [
       { name: 'Git', target: 70, weight: 0.6 },
     ],
     optionalSkills: ['Caching', 'Message queues', 'Docker', 'Auth'],
-    projectExpectations: { minProjects: 2, note: 'A production-shaped API with auth, validation and a database.' },
-    interviewExpectations: ['API + DB design', 'DSA', 'System design basics', 'Debugging'],
-    portfolioExpectations: ['A documented API', 'Schema diagrams', 'Deployed service'],
-    readinessRubric: { skills: 0.42, projects: 0.25, interview: 0.18, consistency: 0.07, portfolio: 0.08 },
+    projectExpectations: {
+      minProjects: 2,
+      note: 'A production-shaped API with auth, validation and a database.',
+    },
+    interviewExpectations: [
+      'API + DB design',
+      'DSA',
+      'System design basics',
+      'Debugging',
+    ],
+    portfolioExpectations: [
+      'A documented API',
+      'Schema diagrams',
+      'Deployed service',
+    ],
+    readinessRubric: {
+      skills: 0.42,
+      projects: 0.25,
+      interview: 0.18,
+      consistency: 0.07,
+      portfolio: 0.08,
+    },
   },
   {
     id: 'ai-engineer',
@@ -149,9 +228,21 @@ export const CAREER_ROLES: CareerRole[] = [
       { name: 'Databases', target: 62, weight: 0.6 },
     ],
     optionalSkills: ['RAG', 'Vector DBs', 'PyTorch', 'Prompt engineering'],
-    projectExpectations: { minProjects: 2, note: 'An LLM/RAG app with evaluation and a demo.' },
-    interviewExpectations: ['ML fundamentals', 'LLM/RAG design', 'Python + DSA', 'A project deep-dive'],
-    portfolioExpectations: ['An AI app with a demo', 'A short write-up of approach', 'Repo with evals'],
+    projectExpectations: {
+      minProjects: 2,
+      note: 'An LLM/RAG app with evaluation and a demo.',
+    },
+    interviewExpectations: [
+      'ML fundamentals',
+      'LLM/RAG design',
+      'Python + DSA',
+      'A project deep-dive',
+    ],
+    portfolioExpectations: [
+      'An AI app with a demo',
+      'A short write-up of approach',
+      'Repo with evals',
+    ],
     readinessRubric: RUBRIC_BALANCED,
   },
   {
@@ -168,10 +259,28 @@ export const CAREER_ROLES: CareerRole[] = [
       { name: 'Networking', target: 60, weight: 0.6 },
     ],
     optionalSkills: ['Kubernetes', 'Terraform', 'Monitoring', 'AWS'],
-    projectExpectations: { minProjects: 1, note: 'A dockerised app with a CI/CD pipeline and deployment.' },
-    interviewExpectations: ['CI/CD design', 'Containers', 'Cloud basics', 'Troubleshooting'],
-    portfolioExpectations: ['A pipeline repo', 'Infra-as-code sample', 'A deployment write-up'],
-    readinessRubric: { skills: 0.45, projects: 0.2, interview: 0.15, consistency: 0.1, portfolio: 0.1 },
+    projectExpectations: {
+      minProjects: 1,
+      note: 'A dockerised app with a CI/CD pipeline and deployment.',
+    },
+    interviewExpectations: [
+      'CI/CD design',
+      'Containers',
+      'Cloud basics',
+      'Troubleshooting',
+    ],
+    portfolioExpectations: [
+      'A pipeline repo',
+      'Infra-as-code sample',
+      'A deployment write-up',
+    ],
+    readinessRubric: {
+      skills: 0.45,
+      projects: 0.2,
+      interview: 0.15,
+      consistency: 0.1,
+      portfolio: 0.1,
+    },
   },
   {
     id: 'data-analyst',
@@ -187,10 +296,28 @@ export const CAREER_ROLES: CareerRole[] = [
       { name: 'Communication', target: 65, weight: 0.7 },
     ],
     optionalSkills: ['Power BI', 'Tableau', 'Pandas', 'A/B testing'],
-    projectExpectations: { minProjects: 2, note: 'An end-to-end analysis with a dashboard and insights.' },
-    interviewExpectations: ['SQL queries', 'Stats reasoning', 'A case study', 'Communication'],
-    portfolioExpectations: ['2 analysis projects', 'A dashboard', 'Clear write-ups'],
-    readinessRubric: { skills: 0.42, projects: 0.28, interview: 0.12, consistency: 0.08, portfolio: 0.1 },
+    projectExpectations: {
+      minProjects: 2,
+      note: 'An end-to-end analysis with a dashboard and insights.',
+    },
+    interviewExpectations: [
+      'SQL queries',
+      'Stats reasoning',
+      'A case study',
+      'Communication',
+    ],
+    portfolioExpectations: [
+      '2 analysis projects',
+      'A dashboard',
+      'Clear write-ups',
+    ],
+    readinessRubric: {
+      skills: 0.42,
+      projects: 0.28,
+      interview: 0.12,
+      consistency: 0.08,
+      portfolio: 0.1,
+    },
   },
   {
     id: 'cybersecurity-analyst',
@@ -206,10 +333,28 @@ export const CAREER_ROLES: CareerRole[] = [
       { name: 'Incident response', target: 62, weight: 0.9 },
     ],
     optionalSkills: ['SIEM', 'OWASP', 'Threat modeling', 'Forensics'],
-    projectExpectations: { minProjects: 1, note: 'A lab write-up or CTF set demonstrating hands-on defense.' },
-    interviewExpectations: ['Security fundamentals', 'Networking', 'Scenario response', 'Tools'],
-    portfolioExpectations: ['Lab/CTF write-ups', 'A tool or script', 'Certs where relevant'],
-    readinessRubric: { skills: 0.5, projects: 0.18, interview: 0.15, consistency: 0.07, portfolio: 0.1 },
+    projectExpectations: {
+      minProjects: 1,
+      note: 'A lab write-up or CTF set demonstrating hands-on defense.',
+    },
+    interviewExpectations: [
+      'Security fundamentals',
+      'Networking',
+      'Scenario response',
+      'Tools',
+    ],
+    portfolioExpectations: [
+      'Lab/CTF write-ups',
+      'A tool or script',
+      'Certs where relevant',
+    ],
+    readinessRubric: {
+      skills: 0.5,
+      projects: 0.18,
+      interview: 0.15,
+      consistency: 0.07,
+      portfolio: 0.1,
+    },
   },
   {
     id: 'mobile-app-developer',
@@ -224,9 +369,22 @@ export const CAREER_ROLES: CareerRole[] = [
       { name: 'State management', target: 65, weight: 0.8 },
       { name: 'Git', target: 65, weight: 0.5 },
     ],
-    optionalSkills: ['Flutter', 'App store deploy', 'Push notifications', 'Offline storage'],
-    projectExpectations: { minProjects: 2, note: 'A published or demo-able mobile app with API integration.' },
-    interviewExpectations: ['Mobile fundamentals', 'A framework deep-dive', 'API integration', 'A project deep-dive'],
+    optionalSkills: [
+      'Flutter',
+      'App store deploy',
+      'Push notifications',
+      'Offline storage',
+    ],
+    projectExpectations: {
+      minProjects: 2,
+      note: 'A published or demo-able mobile app with API integration.',
+    },
+    interviewExpectations: [
+      'Mobile fundamentals',
+      'A framework deep-dive',
+      'API integration',
+      'A project deep-dive',
+    ],
     portfolioExpectations: ['A demo-able app', 'Screens/recording', 'Repo'],
     readinessRubric: RUBRIC_BALANCED,
   },
@@ -243,11 +401,34 @@ export const CAREER_ROLES: CareerRole[] = [
       { name: 'Databases', target: 68, weight: 0.9 },
       { name: 'Communication', target: 68, weight: 0.8 },
     ],
-    optionalSkills: ['Design sense', 'Analytics', 'Experimentation', 'Deployment'],
-    projectExpectations: { minProjects: 2, note: 'A shipped product with real users or a polished demo.' },
-    interviewExpectations: ['Full-stack build', 'Product sense', 'A project deep-dive', 'Behavioral'],
-    portfolioExpectations: ['A shipped product', 'A case study', 'Metrics/learnings'],
-    readinessRubric: { skills: 0.38, projects: 0.27, interview: 0.13, consistency: 0.1, portfolio: 0.12 },
+    optionalSkills: [
+      'Design sense',
+      'Analytics',
+      'Experimentation',
+      'Deployment',
+    ],
+    projectExpectations: {
+      minProjects: 2,
+      note: 'A shipped product with real users or a polished demo.',
+    },
+    interviewExpectations: [
+      'Full-stack build',
+      'Product sense',
+      'A project deep-dive',
+      'Behavioral',
+    ],
+    portfolioExpectations: [
+      'A shipped product',
+      'A case study',
+      'Metrics/learnings',
+    ],
+    readinessRubric: {
+      skills: 0.38,
+      projects: 0.27,
+      interview: 0.13,
+      consistency: 0.1,
+      portfolio: 0.12,
+    },
   },
 ];
 

@@ -21,13 +21,50 @@ export function cosine(a: number[], b: number[]): number {
 }
 
 const STOP = new Set([
-  'the', 'a', 'an', 'and', 'or', 'of', 'to', 'in', 'is', 'are', 'for', 'on', 'with', 'as',
-  'by', 'at', 'be', 'this', 'that', 'it', 'from', 'how', 'what', 'why', 'when', 'do', 'does',
-  'i', 'my', 'me', 'you', 'your', 'we', 'can', 'about', 'into', 'which', 'who',
+  'the',
+  'a',
+  'an',
+  'and',
+  'or',
+  'of',
+  'to',
+  'in',
+  'is',
+  'are',
+  'for',
+  'on',
+  'with',
+  'as',
+  'by',
+  'at',
+  'be',
+  'this',
+  'that',
+  'it',
+  'from',
+  'how',
+  'what',
+  'why',
+  'when',
+  'do',
+  'does',
+  'i',
+  'my',
+  'me',
+  'you',
+  'your',
+  'we',
+  'can',
+  'about',
+  'into',
+  'which',
+  'who',
 ]);
 
 export function tokenize(text: string): string[] {
-  return (text.toLowerCase().match(/[a-z0-9]+/g) ?? []).filter((t) => t.length > 1 && !STOP.has(t));
+  return (text.toLowerCase().match(/[a-z0-9]+/g) ?? []).filter(
+    (t) => t.length > 1 && !STOP.has(t),
+  );
 }
 
 /** Term-overlap score (0..1): fraction of query terms present, weighted by repetition. */

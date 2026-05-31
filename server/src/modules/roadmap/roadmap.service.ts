@@ -1,9 +1,16 @@
-import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { Difficulty, RoadmapStatus } from '../../common/enums';
-import { PROGRESSION_EVENTS, WeekCompletedEvent } from '../progression/progression.events';
+import {
+  PROGRESSION_EVENTS,
+  WeekCompletedEvent,
+} from '../progression/progression.events';
 import { StudentProfileService } from '../student-profile/student-profile.service';
 import { RoadmapAgentService } from '../agents/roadmap/roadmap-agent.service';
 import { RoadmapBlueprintInput } from '../agents/roadmap/roadmap-blueprint.generator';
@@ -22,7 +29,10 @@ export class RoadmapService {
   ) {}
 
   /** Generate from the student's profile (with optional goal/timeline/intensity overrides). */
-  async generate(userId: string, dto: GenerateRoadmapDto): Promise<RoadmapDocument> {
+  async generate(
+    userId: string,
+    dto: GenerateRoadmapDto,
+  ): Promise<RoadmapDocument> {
     const profile = await this.profiles.findByUserOrThrow(userId);
 
     const input: RoadmapBlueprintInput = {
@@ -31,7 +41,8 @@ export class RoadmapService {
       currentSkillLevel: profile.currentSkillLevel,
       currentSkills: profile.currentSkills,
       weakAreas: profile.weakAreas,
-      availableTimePerDay: dto.availableTimePerDay ?? profile.availableTimePerDay,
+      availableTimePerDay:
+        dto.availableTimePerDay ?? profile.availableTimePerDay,
       targetTimeline: dto.targetTimeline ?? profile.targetTimeline,
       preferredLearningStyle: profile.preferredLearningStyle,
       careerTarget: profile.careerTarget,
@@ -77,13 +88,17 @@ export class RoadmapService {
 
   findActive(userId: string): Promise<RoadmapDocument | null> {
     return this.model
-      .findOne({ user: new Types.ObjectId(userId), status: RoadmapStatus.Active })
+      .findOne({
+        user: new Types.ObjectId(userId),
+        status: RoadmapStatus.Active,
+      })
       .sort({ updatedAt: -1 })
       .exec();
   }
 
   async findByIdForUser(userId: string, id: string): Promise<RoadmapDocument> {
-    if (!Types.ObjectId.isValid(id)) throw new NotFoundException('Roadmap not found');
+    if (!Types.ObjectId.isValid(id))
+      throw new NotFoundException('Roadmap not found');
     const roadmap = await this.model.findById(id).exec();
     if (!roadmap) throw new NotFoundException('Roadmap not found');
     this.assertOwner(roadmap, userId);
@@ -98,9 +113,13 @@ export class RoadmapService {
     const roadmap = await this.findByIdForUser(userId, id);
 
     let newlyCompletedWeek: number | null = null;
-    if (typeof dto.weekNumber === 'number' && typeof dto.weekCompleted === 'boolean') {
+    if (
+      typeof dto.weekNumber === 'number' &&
+      typeof dto.weekCompleted === 'boolean'
+    ) {
       const set = new Set(roadmap.completedWeeks);
-      if (dto.weekCompleted && !set.has(dto.weekNumber)) newlyCompletedWeek = dto.weekNumber;
+      if (dto.weekCompleted && !set.has(dto.weekNumber))
+        newlyCompletedWeek = dto.weekNumber;
       if (dto.weekCompleted) set.add(dto.weekNumber);
       else set.delete(dto.weekNumber);
       roadmap.completedWeeks = [...set].sort((a, b) => a - b);
@@ -114,7 +133,10 @@ export class RoadmapService {
     }
 
     roadmap.progressPercentage = this.computeProgress(roadmap);
-    if (roadmap.progressPercentage >= 100 && roadmap.status === RoadmapStatus.Active) {
+    if (
+      roadmap.progressPercentage >= 100 &&
+      roadmap.status === RoadmapStatus.Active
+    ) {
       roadmap.status = RoadmapStatus.Completed;
     }
     const saved = await roadmap.save();
@@ -144,7 +166,11 @@ export class RoadmapService {
     if (dto.status === RoadmapStatus.Active) {
       await this.model
         .updateMany(
-          { user: roadmap.user, status: RoadmapStatus.Active, _id: { $ne: roadmap._id } },
+          {
+            user: roadmap.user,
+            status: RoadmapStatus.Active,
+            _id: { $ne: roadmap._id },
+          },
           { status: RoadmapStatus.Archived },
         )
         .exec();

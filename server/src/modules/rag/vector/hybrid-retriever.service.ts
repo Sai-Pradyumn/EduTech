@@ -3,7 +3,12 @@ import { ConfigService } from '@nestjs/config';
 import { AppConfig } from '../../../config/configuration';
 import { AiService } from '../../ai/ai.service';
 import { IReranker, RERANKER_TOKEN } from './reranker';
-import { ChunkHit, IVectorStore, RetrievalScope, VECTOR_STORE_TOKEN } from './vector-store.interface';
+import {
+  ChunkHit,
+  IVectorStore,
+  RetrievalScope,
+  VECTOR_STORE_TOKEN,
+} from './vector-store.interface';
 
 const RRF_K = 60; // Reciprocal Rank Fusion constant.
 // With real embeddings, a strong semantic match with NO lexical overlap is still valid
@@ -28,7 +33,11 @@ export class HybridRetrieverService {
     this.hybrid = config.get('rag.hybrid', { infer: true });
   }
 
-  async retrieve(queryText: string, scope: RetrievalScope, k: number): Promise<ChunkHit[]> {
+  async retrieve(
+    queryText: string,
+    scope: RetrievalScope,
+    k: number,
+  ): Promise<ChunkHit[]> {
     const embedding = await this.ai.generateEmbedding(queryText);
     const query = { text: queryText, embedding };
     const wide = k * 3;
@@ -62,11 +71,18 @@ export class HybridRetrieverService {
    * even for an off-corpus question (every list has a #1), defeating anti-hallucination.
    */
   private fuse(dense: ChunkHit[], sparse: ChunkHit[]): ChunkHit[] {
-    const acc = new Map<string, { hit: ChunkHit; rrf: number; dense: number; sparse: number }>();
+    const acc = new Map<
+      string,
+      { hit: ChunkHit; rrf: number; dense: number; sparse: number }
+    >();
     const add = (list: ChunkHit[], kind: 'dense' | 'sparse'): void => {
       list.forEach((hit, rank) => {
-        const entry =
-          acc.get(hit.chunkId) ?? { hit, rrf: 0, dense: 0, sparse: 0 };
+        const entry = acc.get(hit.chunkId) ?? {
+          hit,
+          rrf: 0,
+          dense: 0,
+          sparse: 0,
+        };
         entry.rrf += 1 / (RRF_K + rank + 1);
         entry[kind] = Math.max(entry[kind], hit.score);
         // Prefer the richest provenance we've seen for this chunk.

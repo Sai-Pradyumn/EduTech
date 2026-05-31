@@ -1,12 +1,24 @@
 import { Injectable, Logger } from '@nestjs/common';
 
 const INJECTION_PATTERNS: { re: RegExp; reason: string }[] = [
-  { re: /ignore (all |the |your )?(previous|prior|above) (instructions|prompts?)/i, reason: 'override-instructions' },
-  { re: /disregard (the |your )?(system|previous) (prompt|message|instructions)/i, reason: 'override-instructions' },
-  { re: /\b(reveal|print|show|repeat|leak) (your |the )?(system prompt|instructions|prompt)\b/i, reason: 'prompt-exfiltration' },
+  {
+    re: /ignore (all |the |your )?(previous|prior|above) (instructions|prompts?)/i,
+    reason: 'override-instructions',
+  },
+  {
+    re: /disregard (the |your )?(system|previous) (prompt|message|instructions)/i,
+    reason: 'override-instructions',
+  },
+  {
+    re: /\b(reveal|print|show|repeat|leak) (your |the )?(system prompt|instructions|prompt)\b/i,
+    reason: 'prompt-exfiltration',
+  },
   { re: /you are now (a|an|in) /i, reason: 'persona-hijack' },
   { re: /\bDAN\b|do anything now|jailbreak/i, reason: 'jailbreak' },
-  { re: /pretend (you are|to be) (an? )?(unrestricted|uncensored)/i, reason: 'jailbreak' },
+  {
+    re: /pretend (you are|to be) (an? )?(unrestricted|uncensored)/i,
+    reason: 'jailbreak',
+  },
 ];
 
 export interface InjectionVerdict {

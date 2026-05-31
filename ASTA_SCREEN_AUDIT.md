@@ -14,6 +14,7 @@ Legend — Rebuild: ✅ done · 🎯 next priority · ⏳ queued · ➖ keep (no
 | `/` | LandingComponent | Cinematic landing (U1, faithful design port) | ➖ | — |
 | `/pricing` | PricingComponent | Plans (public) | ⏳ | `GET /billing/plans` |
 | `/certificate/verify/:id` | CertVerifyComponent | Public verify | ➖ | `GET /certificates/verify/:id` |
+| `/u/:username` | PublicPassportComponent | **Public Skill Passport** — verifiable, privacy-respecting (Phase 9) | ✅ | `GET /skill-passport/public/:username` |
 | `/login`, `/register` | Login/Register | Auth | ➖ | `/auth/*` |
 | `/onboarding` | OnboardingComponent | 7-step + cinematic generate | ➖ | `/student-profile`, `/roadmap` |
 
@@ -44,6 +45,10 @@ Legend — Rebuild: ✅ done · 🎯 next priority · ⏳ queued · ➖ keep (no
 | `mentor-council` | MentorCouncilComponent | **AI Mentor Council** — 5 agents debate → chair verdict (Phase 8) | ✅ | `/mentor-council` |
 | `ledger` | LedgerComponent | **Proof-of-Learning** — verified event timeline (Phase 8) | ✅ | `/ledger` |
 | `replay` | ReplayComponent | **Learning Replay** — narrated recap + TTS (Phase 8) | ✅ | `/replay` |
+| `skill-passport` | SkillPassportComponent | **Skill Passport** — verified profile: skill graph, proof, projects, timeline, privacy (Phase 9) | ✅ | `/skill-passport/*` |
+| `skill-passport/public-preview` | PublicPassportComponent | Public preview of own passport (Phase 9) | ✅ | `/skill-passport/me` |
+| `career-readiness` | CareerReadinessComponent | **Career Readiness** — role rubric, explainable 5-dim score, gaps, 7-day plan (Phase 9) | ✅ | `/career-readiness/*` |
+| `outcome-council` | OutcomeCouncilComponent | **AI Outcome Council** — 6 perspectives → ranked verdict (Phase 9) | ✅ | `/outcome-council/*` |
 | `cohorts` | CohortsComponent | Leaderboard + announcements (signal timeline) | ⏳ | `/cohorts/*` |
 | `live-sessions` | LiveSessionsComponent | Session + recap | ⏳ | `/live-sessions/*` |
 | `community` | CommunityComponent | Channels + threads | ⏳ | `/community/*` |

@@ -19,7 +19,12 @@ import { AuthUser } from '../../common/interfaces';
 import { OrgContext } from '../tenancy/rbac.types';
 import { UsersService } from '../users/users.service';
 import { CohortService } from './services/cohort.service';
-import { AddCohortMembersDto, AnnouncementDto, CreateCohortDto, UpdateCohortDto } from './dto/cohort.dto';
+import {
+  AddCohortMembersDto,
+  AnnouncementDto,
+  CreateCohortDto,
+  UpdateCohortDto,
+} from './dto/cohort.dto';
 
 /**
  * Cohort surface (Phase 4 · B3). Manage routes require CohortCreate (org admins);
@@ -43,15 +48,21 @@ export class CohortController {
   @Get()
   @Permissions(Permission.CohortView)
   list(@CurrentOrg() ctx: OrgContext) {
-    if (!ctx.organizationId) throw new BadRequestException('Select an organization (x-org-id) first.');
+    if (!ctx.organizationId)
+      throw new BadRequestException('Select an organization (x-org-id) first.');
     return this.cohorts.listForOrg(ctx.organizationId);
   }
 
   @Post()
   @Permissions(Permission.CohortCreate)
   @HttpCode(HttpStatus.CREATED)
-  create(@CurrentUser() user: AuthUser, @CurrentOrg() ctx: OrgContext, @Body() dto: CreateCohortDto) {
-    if (!ctx.organizationId) throw new BadRequestException('Select an organization (x-org-id) first.');
+  create(
+    @CurrentUser() user: AuthUser,
+    @CurrentOrg() ctx: OrgContext,
+    @Body() dto: CreateCohortDto,
+  ) {
+    if (!ctx.organizationId)
+      throw new BadRequestException('Select an organization (x-org-id) first.');
     return this.cohorts.create(ctx.organizationId, user.id, dto);
   }
 
@@ -71,31 +82,53 @@ export class CohortController {
 
   @Patch(':id')
   @Permissions(Permission.CohortCreate)
-  async update(@CurrentOrg() ctx: OrgContext, @Param('id') id: string, @Body() dto: UpdateCohortDto) {
+  async update(
+    @CurrentOrg() ctx: OrgContext,
+    @Param('id') id: string,
+    @Body() dto: UpdateCohortDto,
+  ) {
     await this.assertOrg(ctx, id);
     return this.cohorts.update(id, dto);
   }
 
   @Post(':id/members')
   @Permissions(Permission.CohortCreate)
-  async addMembers(@CurrentOrg() ctx: OrgContext, @Param('id') id: string, @Body() dto: AddCohortMembersDto) {
+  async addMembers(
+    @CurrentOrg() ctx: OrgContext,
+    @Param('id') id: string,
+    @Body() dto: AddCohortMembersDto,
+  ) {
     await this.assertOrg(ctx, id);
     return this.cohorts.addMembers(id, dto.userIds, dto.role);
   }
 
   @Delete(':id/members/:userId')
   @Permissions(Permission.CohortCreate)
-  async removeMember(@CurrentOrg() ctx: OrgContext, @Param('id') id: string, @Param('userId') userId: string) {
+  async removeMember(
+    @CurrentOrg() ctx: OrgContext,
+    @Param('id') id: string,
+    @Param('userId') userId: string,
+  ) {
     await this.assertOrg(ctx, id);
     return this.cohorts.removeMember(id, userId);
   }
 
   @Post(':id/announcements')
   @Permissions(Permission.CohortCreate)
-  async announce(@CurrentUser() user: AuthUser, @CurrentOrg() ctx: OrgContext, @Param('id') id: string, @Body() dto: AnnouncementDto) {
+  async announce(
+    @CurrentUser() user: AuthUser,
+    @CurrentOrg() ctx: OrgContext,
+    @Param('id') id: string,
+    @Body() dto: AnnouncementDto,
+  ) {
     await this.assertOrg(ctx, id);
     const author = await this.users.findByIdOrThrow(user.id);
-    return this.cohorts.postAnnouncement(id, author.name, dto.title, dto.body ?? '');
+    return this.cohorts.postAnnouncement(
+      id,
+      author.name,
+      dto.title,
+      dto.body ?? '',
+    );
   }
 
   @Delete(':id')
@@ -109,6 +142,7 @@ export class CohortController {
   private async assertOrg(ctx: OrgContext, cohortId: string): Promise<void> {
     if (ctx.isPlatform) return;
     const orgId = await this.cohorts.orgIdOf(cohortId);
-    if (ctx.organizationId !== orgId) throw new ForbiddenException('You do not have access to this cohort.');
+    if (ctx.organizationId !== orgId)
+      throw new ForbiddenException('You do not have access to this cohort.');
   }
 }

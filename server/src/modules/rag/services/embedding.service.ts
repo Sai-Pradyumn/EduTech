@@ -23,7 +23,9 @@ export class EmbeddingService {
         out[i] = await this.ai.generateEmbedding(texts[i]);
       }
     };
-    await Promise.all(Array.from({ length: Math.min(CONCURRENCY, texts.length) }, worker));
+    await Promise.all(
+      Array.from({ length: Math.min(CONCURRENCY, texts.length) }, worker),
+    );
     return out;
   }
 

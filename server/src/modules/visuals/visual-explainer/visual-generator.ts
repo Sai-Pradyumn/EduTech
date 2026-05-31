@@ -1,17 +1,30 @@
 import { VisualType } from '../schemas/visual-asset.schema';
-import { GeneratedVisual, VisualGenInput, VisualGraph } from './generated-visual.types';
+import {
+  GeneratedVisual,
+  VisualGenInput,
+  VisualGraph,
+} from './generated-visual.types';
 
 /** Strip a concept down to a short, clean subject phrase. */
 function subjectOf(concept: string): string {
-  return concept.replace(/^(learn|master|explain|understand|what is|how does|how to)\s+/i, '').replace(/[?.]+$/, '').trim();
+  return concept
+    .replace(
+      /^(learn|master|explain|understand|what is|how does|how to)\s+/i,
+      '',
+    )
+    .replace(/[?.]+$/, '')
+    .trim();
 }
 
 /** Pick the most useful visual type for a concept when the caller didn't specify one. */
 function inferType(concept: string): VisualType {
   const c = concept.toLowerCase();
-  if (/\bvs\b|versus|compare|comparison|difference/.test(c)) return 'comparison';
-  if (/architecture|system design|microservice|infrastructure/.test(c)) return 'architecture';
-  if (/sequence|request|lifecycle|handshake|flow of/.test(c)) return 'sequence_diagram';
+  if (/\bvs\b|versus|compare|comparison|difference/.test(c))
+    return 'comparison';
+  if (/architecture|system design|microservice|infrastructure/.test(c))
+    return 'architecture';
+  if (/sequence|request|lifecycle|handshake|flow of/.test(c))
+    return 'sequence_diagram';
   if (/timeline|history|roadmap|days|weeks|schedule/.test(c)) return 'timeline';
   if (/formula|equation|theorem|law of/.test(c)) return 'formula_map';
   if (/flashcard|memorize|recall/.test(c)) return 'flashcard';
@@ -51,18 +64,35 @@ function processSteps(subject: string): string[] {
 }
 
 function conceptParts(subject: string): string[] {
-  return ['Definition', 'Key components', 'A concrete example', 'When to use it', 'Common pitfalls', 'Related concepts'];
+  return [
+    'Definition',
+    'Key components',
+    'A concrete example',
+    'When to use it',
+    'Common pitfalls',
+    'Related concepts',
+  ];
 }
 
 function esc(s: string): string {
-  return s.replace(/"/g, "'").replace(/[\[\]{}()|]/g, ' ').replace(/\s+/g, ' ').trim();
+  return s
+    .replace(/"/g, "'")
+    .replace(/[\[\]{}()|]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
 }
 
-function graphToMermaid(type: VisualType, g: VisualGraph, subject: string): string {
+function graphToMermaid(
+  type: VisualType,
+  g: VisualGraph,
+  subject: string,
+): string {
   if (type === 'sequence_diagram') {
     const lines = ['sequenceDiagram'];
     for (let i = 0; i < g.nodes.length - 1; i++) {
-      lines.push(`  ${g.nodes[i].label.slice(0, 18)}->>+${g.nodes[i + 1].label.slice(0, 18)}: step ${i + 1}`);
+      lines.push(
+        `  ${g.nodes[i].label.slice(0, 18)}->>+${g.nodes[i + 1].label.slice(0, 18)}: step ${i + 1}`,
+      );
     }
     return lines.join('\n');
   }
@@ -73,12 +103,19 @@ function graphToMermaid(type: VisualType, g: VisualGraph, subject: string): stri
   }
   if (type === 'mind_map') {
     const lines = ['mindmap', `  root((${esc(subject)}))`];
-    g.nodes.filter((n) => n.kind !== 'root').forEach((n) => lines.push(`    ${esc(n.label)}`));
+    g.nodes
+      .filter((n) => n.kind !== 'root')
+      .forEach((n) => lines.push(`    ${esc(n.label)}`));
     return lines.join('\n');
   }
-  const dir = g.layout === 'layered' ? 'TD' : g.layout === 'horizontal' ? 'LR' : 'TD';
+  const dir =
+    g.layout === 'layered' ? 'TD' : g.layout === 'horizontal' ? 'LR' : 'TD';
   const lines = [`flowchart ${dir}`];
-  g.edges.forEach((e) => lines.push(`  ${e.from}["${esc(label(g, e.from))}"] --> ${e.to}["${esc(label(g, e.to))}"]`));
+  g.edges.forEach((e) =>
+    lines.push(
+      `  ${e.from}["${esc(label(g, e.from))}"] --> ${e.to}["${esc(label(g, e.to))}"]`,
+    ),
+  );
   return lines.join('\n');
 }
 
@@ -93,12 +130,28 @@ function makeThumb(title: string, glyph: string, color: string): string {
 }
 
 const TYPE_GLYPH: Record<VisualType, string> = {
-  flowchart: '⤵', process_map: '⇉', mind_map: '✺', concept_graph: '◈', formula_map: '∑',
-  sequence_diagram: '⇄', timeline: '⏱', system_design: '▤', architecture: '▦', comparison: '⇆',
-  infographic: '▥', flashcard: '▭', memory_palace: '◫', cheat_sheet: '☰', illustration: '✦', analogy: '❖',
+  flowchart: '⤵',
+  process_map: '⇉',
+  mind_map: '✺',
+  concept_graph: '◈',
+  formula_map: '∑',
+  sequence_diagram: '⇄',
+  timeline: '⏱',
+  system_design: '▤',
+  architecture: '▦',
+  comparison: '⇆',
+  infographic: '▥',
+  flashcard: '▭',
+  memory_palace: '◫',
+  cheat_sheet: '☰',
+  illustration: '✦',
+  analogy: '❖',
 };
 
-export function illustrationDataUri(subject: string, accent = '#63ef7a'): string {
+export function illustrationDataUri(
+  subject: string,
+  accent = '#63ef7a',
+): string {
   const t = esc(subject).slice(0, 26);
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="640" height="400" viewBox="0 0 640 400"><defs><radialGradient id="rg" cx="0.3" cy="0.3" r="0.9"><stop offset="0" stop-color="${accent}" stop-opacity="0.35"/><stop offset="1" stop-color="#0b0f17"/></radialGradient></defs><rect width="640" height="400" fill="url(#rg)"/><circle cx="200" cy="170" r="90" fill="none" stroke="${accent}" stroke-width="2" stroke-opacity="0.7"/><circle cx="430" cy="240" r="60" fill="none" stroke="#8aa6ff" stroke-width="2" stroke-opacity="0.6"/><line x1="200" y1="170" x2="430" y2="240" stroke="${accent}" stroke-opacity="0.5" stroke-width="2"/><text x="40" y="60" font-family="sans-serif" font-size="26" fill="#e6edf3">${t}</text><text x="40" y="360" font-family="monospace" font-size="13" fill="#8b97a7">Asta · generated illustration (mock)</text></svg>`;
   return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
@@ -111,9 +164,14 @@ export function illustrationDataUri(subject: string, accent = '#63ef7a'): string
 export function buildVisual(input: VisualGenInput): GeneratedVisual {
   const subject = subjectOf(input.concept) || 'this concept';
   const type = input.type ?? inferType(input.concept);
-  const accent = type === 'comparison' || type === 'analogy' ? '#8aa6ff' : '#63ef7a';
+  const accent =
+    type === 'comparison' || type === 'analogy' ? '#8aa6ff' : '#63ef7a';
   const thumbnail = makeThumb(input.concept, TYPE_GLYPH[type], accent);
-  const baseMeta = { subject, level: input.level ?? 'beginner', generator: 'deterministic' };
+  const baseMeta = {
+    subject,
+    level: input.level ?? 'beginner',
+    generator: 'deterministic',
+  };
 
   // ── graph-based visuals ──
   const layout = LAYOUT_FOR[type];
@@ -123,7 +181,14 @@ export function buildVisual(input: VisualGenInput): GeneratedVisual {
 
     if (layout === 'radial') {
       const parts = conceptParts(subject);
-      nodes = [{ id: 'c', label: subject, kind: 'root' }, ...parts.map((p, i) => ({ id: `p${i}`, label: p, kind: 'normal' as const }))];
+      nodes = [
+        { id: 'c', label: subject, kind: 'root' },
+        ...parts.map((p, i) => ({
+          id: `p${i}`,
+          label: p,
+          kind: 'normal' as const,
+        })),
+      ];
       edges = parts.map((_, i) => ({ from: 'c', to: `p${i}` }));
     } else if (layout === 'layered') {
       const layers = [
@@ -138,17 +203,30 @@ export function buildVisual(input: VisualGenInput): GeneratedVisual {
       layers.forEach((layer, li) => {
         const ids = layer.items.map((it, i) => {
           const id = `l${li}_${i}`;
-          nodes.push({ id, label: it, group: layer.group, kind: li === 2 ? 'accent' : 'normal' });
+          nodes.push({
+            id,
+            label: it,
+            group: layer.group,
+            kind: li === 2 ? 'accent' : 'normal',
+          });
           return id;
         });
-        prevIds.forEach((pid) => ids.forEach((id) => edges.push({ from: pid, to: id })));
+        prevIds.forEach((pid) =>
+          ids.forEach((id) => edges.push({ from: pid, to: id })),
+        );
         prevIds = ids;
       });
     } else {
       // vertical / horizontal chain
       const steps = processSteps(subject);
-      nodes = steps.map((s, i) => ({ id: `s${i}`, label: s, kind: i === 0 ? 'accent' : 'normal' }));
-      edges = steps.slice(1).map((_, i) => ({ from: `s${i}`, to: `s${i + 1}`, label: `${i + 1}` }));
+      nodes = steps.map((s, i) => ({
+        id: `s${i}`,
+        label: s,
+        kind: i === 0 ? 'accent' : 'normal',
+      }));
+      edges = steps
+        .slice(1)
+        .map((_, i) => ({ from: `s${i}`, to: `s${i + 1}`, label: `${i + 1}` }));
     }
 
     const graph: VisualGraph = { layout, nodes, edges };
@@ -176,8 +254,12 @@ export function buildVisual(input: VisualGenInput): GeneratedVisual {
       contentFormat: 'imageUrl',
       content: illustrationDataUri(subject, accent),
       mermaid: '',
-      caption: type === 'analogy' ? `An analogy to picture ${subject}.` : `A generated illustration of ${subject}.`,
-      howToRead: 'A pictorial aid — use it as a memory hook, not a precise diagram.',
+      caption:
+        type === 'analogy'
+          ? `An analogy to picture ${subject}.`
+          : `A generated illustration of ${subject}.`,
+      howToRead:
+        'A pictorial aid — use it as a memory hook, not a precise diagram.',
       thumbnail,
       metadata: { ...baseMeta, note: 'mock image provider' },
     };
@@ -192,7 +274,13 @@ export function buildVisual(input: VisualGenInput): GeneratedVisual {
     md = `### ${a} vs ${b}\n\n| Aspect | ${a} | ${b} |\n|---|---|---|\n| What it is | … | … |\n| Best for | … | … |\n| Strengths | … | … |\n| Trade-offs | … | … |\n| Use when | … | … |`;
   } else if (type === 'flashcard') {
     const parts = conceptParts(subject);
-    md = `### Flashcards · ${capitalize(subject)}\n\n` + parts.map((p, i) => `**Q${i + 1}.** ${p} of ${subject}?\n\n> _Flip to answer_`).join('\n\n');
+    md =
+      `### Flashcards · ${capitalize(subject)}\n\n` +
+      parts
+        .map(
+          (p, i) => `**Q${i + 1}.** ${p} of ${subject}?\n\n> _Flip to answer_`,
+        )
+        .join('\n\n');
   } else if (type === 'cheat_sheet') {
     md = `### ${capitalize(subject)} — cheat sheet\n\n- **Core idea:** …\n- **Key terms:** …\n- **Must-know syntax/steps:** …\n- **Gotchas:** …\n- **One-liner to remember:** …`;
   } else if (type === 'memory_palace') {
@@ -207,7 +295,8 @@ export function buildVisual(input: VisualGenInput): GeneratedVisual {
     content: md,
     mermaid: '',
     caption: `${capitalize(typeLabel(type))} for ${subject}.`,
-    howToRead: 'Skim the headings first, then fill the gaps from your notes or by asking the AI Tutor.',
+    howToRead:
+      'Skim the headings first, then fill the gaps from your notes or by asking the AI Tutor.',
     thumbnail,
     metadata: baseMeta,
   };

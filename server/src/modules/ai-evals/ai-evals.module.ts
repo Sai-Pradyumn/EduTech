@@ -8,7 +8,11 @@ import { AiFeedback, AiFeedbackSchema } from './schemas/ai-feedback.schema';
 /** AI quality layer: prompt templates, structured-output validation, feedback. Global. */
 @Global()
 @Module({
-  imports: [MongooseModule.forFeature([{ name: AiFeedback.name, schema: AiFeedbackSchema }])],
+  imports: [
+    MongooseModule.forFeature([
+      { name: AiFeedback.name, schema: AiFeedbackSchema },
+    ]),
+  ],
   providers: [PromptTemplateService, ResponseValidatorService, FeedbackService],
   exports: [PromptTemplateService, ResponseValidatorService, FeedbackService],
 })

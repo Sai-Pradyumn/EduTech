@@ -1,4 +1,11 @@
-import { Body, Controller, Get, NotFoundException, Param, Post } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  NotFoundException,
+  Param,
+  Post,
+} from '@nestjs/common';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { AuthUser } from '../../common/interfaces';
 import { CareerReadinessService } from './career-readiness.service';
@@ -39,6 +46,10 @@ export class CareerReadinessController {
   @Post('generate-gap-plan')
   async gapPlan(@CurrentUser() user: AuthUser) {
     const a = await this.readiness.analyze(user.id);
-    return { blockers: a.blockers, weekPlan: a.weekPlan, recommendations: a.recommendations };
+    return {
+      blockers: a.blockers,
+      weekPlan: a.weekPlan,
+      recommendations: a.recommendations,
+    };
   }
 }

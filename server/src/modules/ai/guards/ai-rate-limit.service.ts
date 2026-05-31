@@ -20,7 +20,9 @@ export class AiRateLimitService {
   /** Records a turn for the user; throws 429 when over the per-minute budget. */
   enforce(userId: string): void {
     const now = Date.now();
-    const recent = (this.hits.get(userId) ?? []).filter((t) => now - t < this.windowMs);
+    const recent = (this.hits.get(userId) ?? []).filter(
+      (t) => now - t < this.windowMs,
+    );
     if (recent.length >= this.max) {
       throw new HttpException(
         `You're sending AI requests too fast. Please wait a moment (limit ${this.max}/min).`,

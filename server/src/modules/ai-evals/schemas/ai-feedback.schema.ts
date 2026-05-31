@@ -11,7 +11,10 @@ export class AiFeedback {
   @Prop({ type: Types.ObjectId, ref: 'AgentMessage', index: true })
   message?: Types.ObjectId;
 
-  @Prop({ required: true, enum: ['up', 'down', 'too_hard', 'too_easy', 'incorrect'] })
+  @Prop({
+    required: true,
+    enum: ['up', 'down', 'too_hard', 'too_easy', 'incorrect'],
+  })
   rating!: 'up' | 'down' | 'too_hard' | 'too_easy' | 'incorrect';
 
   @Prop({ default: '' })

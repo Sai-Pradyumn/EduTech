@@ -51,7 +51,10 @@ export class AiAgentController {
   @Get('next-action')
   async next(@CurrentUser() user: AuthUser): Promise<NextAction> {
     const loaded = await this.context.load(user.id);
-    return this.nextAction.decide({ profile: loaded.profile, roadmap: loaded.roadmap });
+    return this.nextAction.decide({
+      profile: loaded.profile,
+      roadmap: loaded.roadmap,
+    });
   }
 
   @Post('agent/message')
@@ -65,10 +68,16 @@ export class AiAgentController {
       source: 'chat',
       context: this.buildContext(dto),
     });
-    return { sessionId: result.sessionId, messageId: result.messageId, response: result.response };
+    return {
+      sessionId: result.sessionId,
+      messageId: result.messageId,
+      response: result.response,
+    };
   }
 
-  private buildContext(dto: AgentMessageDto): Record<string, unknown> | undefined {
+  private buildContext(
+    dto: AgentMessageDto,
+  ): Record<string, unknown> | undefined {
     const ctx: Record<string, unknown> = {};
     if (dto.mode) ctx['mode'] = dto.mode;
     if (dto.documentIds?.length) ctx['documentIds'] = dto.documentIds;
@@ -76,7 +85,9 @@ export class AiAgentController {
   }
 
   @Get('sessions')
-  async listSessions(@CurrentUser() user: AuthUser): Promise<AgentSessionSummary[]> {
+  async listSessions(
+    @CurrentUser() user: AuthUser,
+  ): Promise<AgentSessionSummary[]> {
     const list = await this.sessions.listSessions(user.id);
     return list.map(toSessionSummary);
   }
@@ -91,7 +102,10 @@ export class AiAgentController {
   }
 
   @Post('feedback')
-  async submitFeedback(@CurrentUser() user: AuthUser, @Body() dto: FeedbackDto) {
+  async submitFeedback(
+    @CurrentUser() user: AuthUser,
+    @Body() dto: FeedbackDto,
+  ) {
     await this.feedback.submit(user.id, dto);
     return { ok: true };
   }

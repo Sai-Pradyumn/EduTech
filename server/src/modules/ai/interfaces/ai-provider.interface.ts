@@ -31,7 +31,10 @@ export interface GenOptions {
    */
   mockFactory?: () => unknown;
   /** Invoked with real usage after a call completes (best-effort; ignored by mock). */
-  onUsage?: (usage: TokenUsage, meta: { provider: string; model: string }) => void;
+  onUsage?: (
+    usage: TokenUsage,
+    meta: { provider: string; model: string },
+  ) => void;
   /**
    * Optional attribution; when present, AiService records an ai_usage_log row with the
    * real token counts captured from this call (estimated when the provider is mock).

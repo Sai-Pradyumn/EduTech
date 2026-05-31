@@ -1,6 +1,11 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { Intent } from '../../common/enums';
-import { AgentRequest, AgentResponse, AgentStreamEvent, StreamEmit } from '../ai/types/agent.types';
+import {
+  AgentRequest,
+  AgentResponse,
+  AgentStreamEvent,
+  StreamEmit,
+} from '../ai/types/agent.types';
 import { ResponseValidatorService } from '../ai-evals/response-validator.service';
 import { AiRateLimitService } from '../ai/guards/ai-rate-limit.service';
 import { PromptInjectionGuard } from '../ai/guards/prompt-injection.guard';
@@ -44,32 +49,62 @@ export class AgentOrchestratorService {
     private readonly injection: PromptInjectionGuard,
   ) {}
 
-  async handle(request: AgentRequest, emit: StreamEmit = () => {}): Promise<OrchestratorResult> {
+  async handle(
+    request: AgentRequest,
+    emit: StreamEmit = () => {},
+  ): Promise<OrchestratorResult> {
     // Cost/abuse protection: per-user AI rate limit (throws 429 when exceeded).
     this.rateLimit.enforce(request.userId);
 
     const trace = this.observability.start();
-    const session = await this.sessions.ensureSession(request.userId, request.sessionId, request.source);
+    const session = await this.sessions.ensureSession(
+      request.userId,
+      request.sessionId,
+      request.source,
+    );
     const sessionId = session.id;
 
     // Prior turns (before we append the current message) → multi-turn coherence.
-    const history = await this.sessions.recentHistory(request.userId, sessionId);
+    const history = await this.sessions.recentHistory(
+      request.userId,
+      sessionId,
+    );
 
-    const userMsg = await this.sessions.addUserMessage(request.userId, sessionId, request.message);
+    const userMsg = await this.sessions.addUserMessage(
+      request.userId,
+      sessionId,
+      request.message,
+    );
     const messageId = userMsg.id;
-    const tagged: StreamEmit = (e: AgentStreamEvent) => emit({ ...e, messageId } as AgentStreamEvent);
+    const tagged: StreamEmit = (e: AgentStreamEvent) =>
+      emit({ ...e, messageId });
 
     // 1) Classify (LLM when live, keyword fallback) and extract entities.
-    const classification = await this.router.classify(request.message, request.intent);
+    const classification = await this.router.classify(
+      request.message,
+      request.intent,
+    );
     const intent = classification.intent;
 
     // 2) Plan (usually one step; compound asks chain agents).
-    const plan = this.planner.plan(request.message, classification, request.agentType);
+    const plan = this.planner.plan(
+      request.message,
+      classification,
+      request.agentType,
+    );
     const primaryAgent = plan.steps[0].agentType;
-    trace.step('classify', `Intent: ${intent} → ${plan.steps.map((s) => s.agentType).join(' → ')}`);
+    trace.step(
+      'classify',
+      `Intent: ${intent} → ${plan.steps.map((s) => s.agentType).join(' → ')}`,
+    );
 
     emit({ type: 'started', sessionId, messageId, agentType: primaryAgent });
-    emit({ type: 'plan', messageId, steps: plan.steps, rationale: plan.rationale });
+    emit({
+      type: 'plan',
+      messageId,
+      steps: plan.steps,
+      rationale: plan.rationale,
+    });
 
     try {
       trace.step('context', 'Loading profile, roadmap & memory');
@@ -79,19 +114,37 @@ export class AgentOrchestratorService {
       const injection = this.injection.inspect(request.message);
       const baseContext: Record<string, unknown> = {
         ...(request.context ?? {}),
-        ...(classification.entities.topic ? { topic: classification.entities.topic } : {}),
-        ...(classification.entities.difficulty ? { difficulty: classification.entities.difficulty } : {}),
-        ...(injection.flagged ? { securityNote: this.injection.defenseNote } : {}),
+        ...(classification.entities.topic
+          ? { topic: classification.entities.topic }
+          : {}),
+        ...(classification.entities.difficulty
+          ? { difficulty: classification.entities.difficulty }
+          : {}),
+        ...(injection.flagged
+          ? { securityNote: this.injection.defenseNote }
+          : {}),
       };
 
       const responses: AgentResponse[] = [];
       for (let i = 0; i < plan.steps.length; i++) {
         const step = plan.steps[i];
-        emit({ type: 'step_started', messageId, index: i, agentType: step.agentType, goal: step.goal });
-        if (i > 0) tagged({ type: 'chunk', messageId: '', delta: '\n\n---\n\n' });
+        emit({
+          type: 'step_started',
+          messageId,
+          index: i,
+          agentType: step.agentType,
+          goal: step.goal,
+        });
+        if (i > 0)
+          tagged({ type: 'chunk', messageId: '', delta: '\n\n---\n\n' });
 
         const stepCtx: AgentRuntimeContext = {
-          request: { ...request, intent, message: i === 0 ? request.message : step.goal, context: baseContext },
+          request: {
+            ...request,
+            intent,
+            message: i === 0 ? request.message : step.goal,
+            context: baseContext,
+          },
           profile: loaded.profile,
           roadmap: loaded.roadmap,
           memories: loaded.memories,
@@ -110,19 +163,34 @@ export class AgentOrchestratorService {
             answer: 'I had trouble forming a full answer — could you rephrase?',
           }),
         );
-        emit({ type: 'step_completed', messageId, index: i, agentType: step.agentType });
+        emit({
+          type: 'step_completed',
+          messageId,
+          index: i,
+          agentType: step.agentType,
+        });
       }
 
       const response = this.synthesize(responses);
       // 3) Proactive next move from the learner's state.
-      response.nextAction = this.nextAction.decide({ profile: loaded.profile, roadmap: loaded.roadmap });
+      response.nextAction = this.nextAction.decide({
+        profile: loaded.profile,
+        roadmap: loaded.roadmap,
+      });
 
       trace.step('persist', 'Saving message & memory');
-      const assistant = await this.sessions.addAssistantMessage(request.userId, sessionId, response);
+      const assistant = await this.sessions.addAssistantMessage(
+        request.userId,
+        sessionId,
+        response,
+      );
       await this.rememberTopic(request, intent, classification.entities.topic);
       void this.sessions.maybeSummarize(request.userId, sessionId); // fire-and-forget for next turn
 
-      await this.observability.persist(request.userId, primaryAgent, trace, { sessionId, success: true });
+      await this.observability.persist(request.userId, primaryAgent, trace, {
+        sessionId,
+        success: true,
+      });
       emit({ type: 'completed', messageId: assistant.id, response });
       return { sessionId, messageId: assistant.id, response };
     } catch (err) {
@@ -133,7 +201,11 @@ export class AgentOrchestratorService {
         success: false,
         error: message,
       });
-      emit({ type: 'error', messageId, message: 'The agent hit an error. Please try again.' });
+      emit({
+        type: 'error',
+        messageId,
+        message: 'The agent hit an error. Please try again.',
+      });
       throw err;
     }
   }
@@ -148,16 +220,38 @@ export class AgentOrchestratorService {
       actions: responses.flatMap((r) => r.actions).slice(0, 6),
       visualBlocks: responses.flatMap((r) => r.visualBlocks),
       sources: responses.flatMap((r) => r.sources ?? []),
-      confidence: Math.round((responses.reduce((s, r) => s + r.confidence, 0) / responses.length) * 100) / 100,
-      followUpQuestions: [...new Set(responses.flatMap((r) => r.followUpQuestions))].slice(0, 4),
-      recommendedNextActions: [...new Set(responses.flatMap((r) => r.recommendedNextActions))].slice(0, 4),
+      confidence:
+        Math.round(
+          (responses.reduce((s, r) => s + r.confidence, 0) / responses.length) *
+            100,
+        ) / 100,
+      followUpQuestions: [
+        ...new Set(responses.flatMap((r) => r.followUpQuestions)),
+      ].slice(0, 4),
+      recommendedNextActions: [
+        ...new Set(responses.flatMap((r) => r.recommendedNextActions)),
+      ].slice(0, 4),
     };
   }
 
-  private async rememberTopic(request: AgentRequest, intent: Intent, topic?: string): Promise<void> {
+  private async rememberTopic(
+    request: AgentRequest,
+    intent: Intent,
+    topic?: string,
+  ): Promise<void> {
     if (intent === Intent.ConceptExplanation) {
-      const t = topic ?? request.message.replace(/^(explain|what is|teach me)\s+/i, '').slice(0, 80);
-      await this.memory.remember(request.userId, 'fact', `Studied: ${t}`, 1, 'tutor');
+      const t =
+        topic ??
+        request.message
+          .replace(/^(explain|what is|teach me)\s+/i, '')
+          .slice(0, 80);
+      await this.memory.remember(
+        request.userId,
+        'fact',
+        `Studied: ${t}`,
+        1,
+        'tutor',
+      );
     }
   }
 }

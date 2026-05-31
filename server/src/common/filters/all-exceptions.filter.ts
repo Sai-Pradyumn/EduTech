@@ -31,7 +31,9 @@ export class AllExceptionsFilter implements ExceptionFilter {
         message = res;
       } else if (typeof res === 'object' && res !== null) {
         const body = res as { message?: string | string[]; error?: string };
-        message = Array.isArray(body.message) ? body.message[0] : (body.message ?? message);
+        message = Array.isArray(body.message)
+          ? body.message[0]
+          : (body.message ?? message);
         if (Array.isArray(body.message)) details = { messages: body.message };
       }
     } else if (exception instanceof Error) {
@@ -39,7 +41,10 @@ export class AllExceptionsFilter implements ExceptionFilter {
       this.logger.error(exception.message, exception.stack);
     }
 
-    const payload: ApiError = { success: false, error: { code, message, details } };
+    const payload: ApiError = {
+      success: false,
+      error: { code, message, details },
+    };
     response.status(status).json(payload);
   }
 }

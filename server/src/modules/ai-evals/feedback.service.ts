@@ -11,12 +11,20 @@ export interface SubmitFeedbackInput {
 
 @Injectable()
 export class FeedbackService {
-  constructor(@InjectModel(AiFeedback.name) private readonly model: Model<AiFeedbackDocument>) {}
+  constructor(
+    @InjectModel(AiFeedback.name)
+    private readonly model: Model<AiFeedbackDocument>,
+  ) {}
 
-  submit(userId: string, input: SubmitFeedbackInput): Promise<AiFeedbackDocument> {
+  submit(
+    userId: string,
+    input: SubmitFeedbackInput,
+  ): Promise<AiFeedbackDocument> {
     return this.model.create({
       user: new Types.ObjectId(userId),
-      message: input.messageId ? new Types.ObjectId(input.messageId) : undefined,
+      message: input.messageId
+        ? new Types.ObjectId(input.messageId)
+        : undefined,
       rating: input.rating,
       reason: input.reason ?? '',
     });

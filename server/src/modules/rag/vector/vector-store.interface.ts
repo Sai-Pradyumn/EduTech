@@ -41,9 +41,17 @@ export interface VectorQuery {
 export interface IVectorStore {
   readonly name: string;
   /** Dense / ANN path. */
-  search(query: VectorQuery, scope: RetrievalScope, k: number): Promise<ChunkHit[]>;
+  search(
+    query: VectorQuery,
+    scope: RetrievalScope,
+    k: number,
+  ): Promise<ChunkHit[]>;
   /** Sparse / keyword path (term overlap) — fused with dense by the hybrid retriever. */
-  keywordSearch(query: VectorQuery, scope: RetrievalScope, k: number): Promise<ChunkHit[]>;
+  keywordSearch(
+    query: VectorQuery,
+    scope: RetrievalScope,
+    k: number,
+  ): Promise<ChunkHit[]>;
 }
 
 export const VECTOR_STORE_TOKEN = 'VECTOR_STORE_TOKEN';

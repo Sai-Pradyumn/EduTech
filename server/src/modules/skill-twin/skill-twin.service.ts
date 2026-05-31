@@ -3,9 +3,19 @@ import { LearningIntelligenceService } from '../learning-intelligence/learning-i
 import { MistakesService } from '../mistakes/mistakes.service';
 import { FlowsService } from '../flows/flows.service';
 import { StudentProfileService } from '../student-profile/student-profile.service';
-import { MistakeDocument, MistakeType } from '../mistakes/schemas/mistake.schema';
+import {
+  MistakeDocument,
+  MistakeType,
+} from '../mistakes/schemas/mistake.schema';
 
-export type Modality = 'read' | 'voice' | 'quiz' | 'project' | 'visual' | 'mentor' | 'simulation';
+export type Modality =
+  | 'read'
+  | 'voice'
+  | 'quiz'
+  | 'project'
+  | 'visual'
+  | 'mentor'
+  | 'simulation';
 
 export interface TwinAction {
   id: string;
@@ -30,8 +40,18 @@ export interface SkillTwin {
   modality: { modality: Modality; reason: string };
   skills: { skill: string; mastery: number; target: number }[];
   strengths: string[];
-  weaknessRoots: { concept: string; severity: number; frequency: number; source: string; status: string }[];
-  misconceptionMemory: { concept: string; type: MistakeType; frequency: number }[];
+  weaknessRoots: {
+    concept: string;
+    severity: number;
+    frequency: number;
+    source: string;
+    status: string;
+  }[];
+  misconceptionMemory: {
+    concept: string;
+    type: MistakeType;
+    frequency: number;
+  }[];
   nextBestActions: TwinAction[];
   signals: { label: string; detail: string }[];
 }
@@ -67,29 +87,59 @@ export class SkillTwinService {
       this.flows.findActive(userId),
     ]);
 
-    const openMistakes = allMistakes.filter((m) => m.status === 'open' || m.status === 'repairing');
-    const sortedOpen = [...openMistakes].sort((a, b) => b.severity - a.severity);
+    const openMistakes = allMistakes.filter(
+      (m) => m.status === 'open' || m.status === 'repairing',
+    );
+    const sortedOpen = [...openMistakes].sort(
+      (a, b) => b.severity - a.severity,
+    );
 
     // ── risk scores (transparent heuristics) ──
     const { activeDays, streak } = overview.momentum;
-    const retentionRisk = clamp(Math.round(100 - (Math.min(activeDays, 14) / 14) * 70 - (Math.min(streak, 7) / 7) * 30));
+    const retentionRisk = clamp(
+      Math.round(
+        100 -
+          (Math.min(activeDays, 14) / 14) * 70 -
+          (Math.min(streak, 7) / 7) * 30,
+      ),
+    );
     // Burnout = SUSTAINED intensity: per-day load weighted by streak length (a single busy day isn't burnout).
-    const load = (overview.momentum.attempts + overview.momentum.sessions) / Math.max(activeDays, 1);
-    const burnoutRisk = clamp(Math.round((Math.min(load, 8) / 8) * 55 + (Math.min(streak, 14) / 14) * 45));
+    const load =
+      (overview.momentum.attempts + overview.momentum.sessions) /
+      Math.max(activeDays, 1);
+    const burnoutRisk = clamp(
+      Math.round(
+        (Math.min(load, 8) / 8) * 55 + (Math.min(streak, 14) / 14) * 45,
+      ),
+    );
 
     // ── pace + projection ──
     const readiness = overview.readinessScore;
-    const pace: SkillTwin['pace'] = readiness >= 75 ? 'ahead' : readiness >= 52 ? 'steady' : 'behind';
+    const pace: SkillTwin['pace'] =
+      readiness >= 75 ? 'ahead' : readiness >= 52 ? 'steady' : 'behind';
     const gap = Math.max(0, 80 - readiness);
     const factor = pace === 'ahead' ? 1.6 : pace === 'steady' ? 3 : 5;
-    const projectedDaysToGoal = overview.hasData ? Math.round(gap * factor) : null;
+    const projectedDaysToGoal = overview.hasData
+      ? Math.round(gap * factor)
+      : null;
 
     // ── modality router ──
-    const preferredModality = LEARNING_STYLE_MODALITY[profile?.preferredLearningStyle ?? 'mixed'] ?? 'read';
-    const modality = this.routeModality(sortedOpen, retentionRisk, activeFlow, preferredModality);
+    const preferredModality =
+      LEARNING_STYLE_MODALITY[profile?.preferredLearningStyle ?? 'mixed'] ??
+      'read';
+    const modality = this.routeModality(
+      sortedOpen,
+      retentionRisk,
+      activeFlow,
+      preferredModality,
+    );
 
     // ── mastery graph + misconception memory ──
-    const skills = overview.radar.map((r) => ({ skill: r.label, mastery: r.value, target: r.target }));
+    const skills = overview.radar.map((r) => ({
+      skill: r.label,
+      mastery: r.value,
+      target: r.target,
+    }));
     const weaknessRoots = sortedOpen.slice(0, 8).map((m) => ({
       concept: m.concept,
       severity: m.severity,
@@ -97,18 +147,42 @@ export class SkillTwinService {
       source: m.source,
       status: m.status,
     }));
-    const misconceptionMemory = sortedOpen
-      .slice(0, 8)
-      .map((m) => ({ concept: m.concept, type: m.mistakeType, frequency: m.frequency }));
+    const misconceptionMemory = sortedOpen.slice(0, 8).map((m) => ({
+      concept: m.concept,
+      type: m.mistakeType,
+      frequency: m.frequency,
+    }));
 
-    const nextBestActions = this.nextActions(sortedOpen, overview, activeFlow, modality);
+    const nextBestActions = this.nextActions(
+      sortedOpen,
+      overview,
+      activeFlow,
+      modality,
+    );
 
     const signals: SkillTwin['signals'] = [
-      { label: 'Quizzes', detail: `${overview.momentum.attempts} attempts · ${overview.momentum.quizzes} quizzes` },
-      { label: 'Open mistakes', detail: `${openMistakes.length} unresolved (${sortedOpen[0]?.concept ?? 'none'})` },
-      { label: 'Active flow', detail: activeFlow ? `${activeFlow.progressPercentage}% · ${activeFlow.title}` : 'none' },
-      { label: 'Activity', detail: `${activeDays} active days · streak ${streak}` },
-      { label: 'Projects', detail: `${overview.momentum.projects} in progress/done` },
+      {
+        label: 'Quizzes',
+        detail: `${overview.momentum.attempts} attempts · ${overview.momentum.quizzes} quizzes`,
+      },
+      {
+        label: 'Open mistakes',
+        detail: `${openMistakes.length} unresolved (${sortedOpen[0]?.concept ?? 'none'})`,
+      },
+      {
+        label: 'Active flow',
+        detail: activeFlow
+          ? `${activeFlow.progressPercentage}% · ${activeFlow.title}`
+          : 'none',
+      },
+      {
+        label: 'Activity',
+        detail: `${activeDays} active days · streak ${streak}`,
+      },
+      {
+        label: 'Projects',
+        detail: `${overview.momentum.projects} in progress/done`,
+      },
     ];
 
     return {
@@ -140,33 +214,75 @@ export class SkillTwinService {
   ): { modality: Modality; reason: string } {
     if (open.length) {
       const tally = new Map<MistakeType, number>();
-      open.forEach((m) => tally.set(m.mistakeType, (tally.get(m.mistakeType) ?? 0) + 1));
+      open.forEach((m) =>
+        tally.set(m.mistakeType, (tally.get(m.mistakeType) ?? 0) + 1),
+      );
       const top = [...tally.entries()].sort((a, b) => b[1] - a[1])[0][0];
       switch (top) {
         case 'misconception':
         case 'missing_prerequisite':
-          return { modality: 'visual', reason: `You hold ${tally.get(top)} misconception-type gaps — a diagram rebuilds the mental model faster than text.` };
+          return {
+            modality: 'visual',
+            reason: `You hold ${tally.get(top)} misconception-type gaps — a diagram rebuilds the mental model faster than text.`,
+          };
         case 'weak_recall':
-          return { modality: 'quiz', reason: 'Your gaps are recall-based — short spaced quizzes lock them in.' };
+          return {
+            modality: 'quiz',
+            reason:
+              'Your gaps are recall-based — short spaced quizzes lock them in.',
+          };
         case 'poor_explanation':
         case 'interview_communication_gap':
-          return { modality: 'voice', reason: 'You can do it but struggle to explain it — a spoken viva is the fastest fix.' };
+          return {
+            modality: 'voice',
+            reason:
+              'You can do it but struggle to explain it — a spoken viva is the fastest fix.',
+          };
         case 'implementation_gap':
         case 'project_architecture_gap':
-          return { modality: 'project', reason: 'Your gaps are in building, not theory — a small targeted project closes them.' };
+          return {
+            modality: 'project',
+            reason:
+              'Your gaps are in building, not theory — a small targeted project closes them.',
+          };
         default:
-          return { modality: preferred, reason: 'Matched to your preferred learning style.' };
+          return {
+            modality: preferred,
+            reason: 'Matched to your preferred learning style.',
+          };
       }
     }
-    if (retentionRisk >= 60) return { modality: 'read', reason: 'You have been away — a light revision pass re-warms what you knew.' };
-    if (activeFlow) return { modality: preferred, reason: 'No open gaps — keep advancing your active flow in your preferred style.' };
-    return { modality: preferred, reason: 'Matched to your preferred learning style.' };
+    if (retentionRisk >= 60)
+      return {
+        modality: 'read',
+        reason:
+          'You have been away — a light revision pass re-warms what you knew.',
+      };
+    if (activeFlow)
+      return {
+        modality: preferred,
+        reason:
+          'No open gaps — keep advancing your active flow in your preferred style.',
+      };
+    return {
+      modality: preferred,
+      reason: 'Matched to your preferred learning style.',
+    };
   }
 
   private nextActions(
     open: MistakeDocument[],
-    overview: { readinessScore: number; weaknesses: { topic: string; severity: number }[]; momentum: { projects: number } },
-    activeFlow: { _id: unknown; title: string; goal: string; nodes: { id: string; title: string; status: string }[] } | null,
+    overview: {
+      readinessScore: number;
+      weaknesses: { topic: string; severity: number }[];
+      momentum: { projects: number };
+    },
+    activeFlow: {
+      _id: unknown;
+      title: string;
+      goal: string;
+      nodes: { id: string; title: string; status: string }[];
+    } | null,
     modality: { modality: Modality },
   ): TwinAction[] {
     const actions: TwinAction[] = [];
@@ -182,7 +298,9 @@ export class SkillTwinService {
       });
     }
     if (activeFlow) {
-      const nextNode = activeFlow.nodes.find((n) => n.status === 'available' || n.status === 'in_progress');
+      const nextNode = activeFlow.nodes.find(
+        (n) => n.status === 'available' || n.status === 'in_progress',
+      );
       if (nextNode) {
         actions.push({
           id: 'flow-next',
@@ -206,14 +324,45 @@ export class SkillTwinService {
       });
     }
     // Modality-routed suggestion.
-    const modalityRoute: Record<Modality, { route: string; label: string; kind: TwinAction['kind'] }> = {
-      visual: { route: '/app/visuals', label: 'See your weak concept as a diagram', kind: 'visual' },
-      quiz: { route: '/app/quizzes', label: 'Take a short targeted quiz', kind: 'quiz' },
-      voice: { route: '/app/voice-room', label: 'Explain a concept aloud (voice viva)', kind: 'voice' },
-      project: { route: '/app/projects', label: 'Build a small targeted project', kind: 'project' },
-      read: { route: '/app/tutor', label: 'Revise with the AI Tutor', kind: 'explore' },
-      mentor: { route: '/app/mentor-room', label: 'Get a mentor review', kind: 'explore' },
-      simulation: { route: '/app/voice-room', label: 'Run an interview simulation', kind: 'voice' },
+    const modalityRoute: Record<
+      Modality,
+      { route: string; label: string; kind: TwinAction['kind'] }
+    > = {
+      visual: {
+        route: '/app/visuals',
+        label: 'See your weak concept as a diagram',
+        kind: 'visual',
+      },
+      quiz: {
+        route: '/app/quizzes',
+        label: 'Take a short targeted quiz',
+        kind: 'quiz',
+      },
+      voice: {
+        route: '/app/voice-room',
+        label: 'Explain a concept aloud (voice viva)',
+        kind: 'voice',
+      },
+      project: {
+        route: '/app/projects',
+        label: 'Build a small targeted project',
+        kind: 'project',
+      },
+      read: {
+        route: '/app/tutor',
+        label: 'Revise with the AI Tutor',
+        kind: 'explore',
+      },
+      mentor: {
+        route: '/app/mentor-room',
+        label: 'Get a mentor review',
+        kind: 'explore',
+      },
+      simulation: {
+        route: '/app/voice-room',
+        label: 'Run an interview simulation',
+        kind: 'voice',
+      },
     };
     const mr = modalityRoute[modality.modality];
     if (!actions.some((a) => a.route === mr.route)) {
@@ -230,7 +379,8 @@ export class SkillTwinService {
       actions.push({
         id: 'project',
         label: 'Build a portfolio project',
-        reason: 'Your readiness needs hands-on evidence — a project lifts it the fastest.',
+        reason:
+          'Your readiness needs hands-on evidence — a project lifts it the fastest.',
         route: '/app/projects',
         modality: 'project',
         kind: 'project',
@@ -239,9 +389,19 @@ export class SkillTwinService {
     return actions.slice(0, 5);
   }
 
-  private headline(pace: SkillTwin['pace'], open: MistakeDocument[], modality: { modality: Modality }): string {
-    const paceMsg = pace === 'ahead' ? "You're ahead of pace" : pace === 'steady' ? "You're on a steady pace" : "You're behind pace — let's catch up";
-    if (open[0]) return `${paceMsg}. Biggest lever: repair ${open[0].concept} (try ${modality.modality}).`;
+  private headline(
+    pace: SkillTwin['pace'],
+    open: MistakeDocument[],
+    modality: { modality: Modality },
+  ): string {
+    const paceMsg =
+      pace === 'ahead'
+        ? "You're ahead of pace"
+        : pace === 'steady'
+          ? "You're on a steady pace"
+          : "You're behind pace — let's catch up";
+    if (open[0])
+      return `${paceMsg}. Biggest lever: repair ${open[0].concept} (try ${modality.modality}).`;
     return `${paceMsg}. No open gaps — keep advancing.`;
   }
 

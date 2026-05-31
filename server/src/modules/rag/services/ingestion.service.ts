@@ -8,7 +8,10 @@ import {
   KnowledgeDocumentDocument,
   DocSource,
 } from '../schemas/knowledge-document.schema';
-import { DocumentChunk, DocumentChunkDocument } from '../schemas/document-chunk.schema';
+import {
+  DocumentChunk,
+  DocumentChunkDocument,
+} from '../schemas/document-chunk.schema';
 import { FILE_STORAGE_TOKEN, IFileStorage } from '../storage/file-storage';
 import { ChunkingService } from './chunking.service';
 import { DocumentParserService, ParseInput } from './document-parser.service';
@@ -41,8 +44,10 @@ export class IngestionService {
   private readonly log = new Logger(IngestionService.name);
 
   constructor(
-    @InjectModel(KnowledgeDocument.name) private readonly docs: Model<KnowledgeDocumentDocument>,
-    @InjectModel(DocumentChunk.name) private readonly chunks: Model<DocumentChunkDocument>,
+    @InjectModel(KnowledgeDocument.name)
+    private readonly docs: Model<KnowledgeDocumentDocument>,
+    @InjectModel(DocumentChunk.name)
+    private readonly chunks: Model<DocumentChunkDocument>,
     @Inject(FILE_STORAGE_TOKEN) private readonly storage: IFileStorage,
     private readonly parser: DocumentParserService,
     private readonly chunking: ChunkingService,
@@ -51,9 +56,13 @@ export class IngestionService {
   ) {}
 
   /** Persists the doc + file and kicks off processing. Returns immediately. */
-  async ingest(req: IngestRequest): Promise<{ documentId: string; reused: boolean }> {
+  async ingest(
+    req: IngestRequest,
+  ): Promise<{ documentId: string; reused: boolean }> {
     const content = req.rawText ?? req.buffer?.toString('utf8') ?? '';
-    const contentHash = createHash('sha256').update(`${req.title}::${content}`).digest('hex');
+    const contentHash = createHash('sha256')
+      .update(`${req.title}::${content}`)
+      .digest('hex');
 
     const existing = await this.docs.findOne({
       user: new Types.ObjectId(req.userId),
@@ -90,8 +99,14 @@ export class IngestionService {
     return { documentId, reused: false };
   }
 
-  private async setStatus(id: string, status: IngestStatus, patch: Partial<KnowledgeDocument> = {}): Promise<void> {
-    await this.docs.updateOne({ _id: id }, { $set: { status, ...patch } }).exec();
+  private async setStatus(
+    id: string,
+    status: IngestStatus,
+    patch: Partial<KnowledgeDocument> = {},
+  ): Promise<void> {
+    await this.docs
+      .updateOne({ _id: id }, { $set: { status, ...patch } })
+      .exec();
   }
 
   /** The full pipeline. Idempotent: clears prior chunks before inserting. */
@@ -109,20 +124,33 @@ export class IngestionService {
         return;
       }
 
-      await this.setStatus(documentId, 'chunking', { language: parsed.language });
+      await this.setStatus(documentId, 'chunking', {
+        language: parsed.language,
+      });
       const chunks = this.chunking.chunk(parsed);
       if (chunks.length === 0) {
-        await this.setStatus(documentId, 'failed', { error: 'Document produced no chunks.' });
+        await this.setStatus(documentId, 'failed', {
+          error: 'Document produced no chunks.',
+        });
         return;
       }
 
-      const tags = await this.tagging.inferDocumentTags(String(doc.user), doc.title, chunks);
+      const tags = await this.tagging.inferDocumentTags(
+        String(doc.user),
+        doc.title,
+        chunks,
+      );
 
-      await this.setStatus(documentId, 'embedding', { topic: tags.topic, tags: tags.tags });
+      await this.setStatus(documentId, 'embedding', {
+        topic: tags.topic,
+        tags: tags.tags,
+      });
       const vectors = await this.embedding.embedAll(chunks.map((c) => c.text));
       const dimension = vectors[0]?.length ?? 0;
 
-      await this.chunks.deleteMany({ document: new Types.ObjectId(documentId) }).exec();
+      await this.chunks
+        .deleteMany({ document: new Types.ObjectId(documentId) })
+        .exec();
       await this.chunks.insertMany(
         chunks.map((c, i) => ({
           document: new Types.ObjectId(documentId),
@@ -151,10 +179,16 @@ export class IngestionService {
         embeddingDimension: dimension,
         warnings: parsed.warnings,
       });
-      this.log.log(`Ingested "${doc.title}" → ${chunks.length} chunks (${this.embedding.provider}, dim ${dimension}).`);
+      this.log.log(
+        `Ingested "${doc.title}" → ${chunks.length} chunks (${this.embedding.provider}, dim ${dimension}).`,
+      );
     } catch (err) {
-      this.log.error(`Ingestion failed for ${documentId}: ${(err as Error).message}`);
-      await this.setStatus(documentId, 'failed', { error: (err as Error).message });
+      this.log.error(
+        `Ingestion failed for ${documentId}: ${(err as Error).message}`,
+      );
+      await this.setStatus(documentId, 'failed', {
+        error: (err as Error).message,
+      });
     }
   }
 }

@@ -1,4 +1,8 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { MembershipStatus, OrgRole } from '../../../common/enums';
@@ -23,20 +27,33 @@ export interface AssignedStudent {
   organizationName: string;
 }
 
-const MENTORING_ROLES: OrgRole[] = [OrgRole.Mentor, OrgRole.Instructor, OrgRole.OrgAdmin];
+const MENTORING_ROLES: OrgRole[] = [
+  OrgRole.Mentor,
+  OrgRole.Instructor,
+  OrgRole.OrgAdmin,
+];
 
 @Injectable()
 export class MembershipService {
   constructor(
-    @InjectModel(Membership.name) private readonly memberships: Model<MembershipDocument>,
+    @InjectModel(Membership.name)
+    private readonly memberships: Model<MembershipDocument>,
     private readonly users: UsersService,
     private readonly orgs: OrganizationsService,
   ) {}
 
   /** Adds (or re-activates) a member by email with the given org role. */
-  async addMember(orgId: string, email: string, orgRole: OrgRole, invitedBy: string): Promise<MemberView> {
+  async addMember(
+    orgId: string,
+    email: string,
+    orgRole: OrgRole,
+    invitedBy: string,
+  ): Promise<MemberView> {
     const user = await this.users.findByEmail(email);
-    if (!user) throw new NotFoundException(`No user with email ${email}. They must register first.`);
+    if (!user)
+      throw new NotFoundException(
+        `No user with email ${email}. They must register first.`,
+      );
 
     const existing = await this.memberships.findOne({
       user: user._id,
@@ -54,16 +71,27 @@ export class MembershipService {
         status: MembershipStatus.Active,
         invitedBy: new Types.ObjectId(invitedBy),
       });
-      if (!user.primaryOrganization) await this.users.setPrimaryOrganization(String(user._id), orgId);
+      if (!user.primaryOrganization)
+        await this.users.setPrimaryOrganization(String(user._id), orgId);
     }
     await this.orgs.recountMembers(orgId);
-    return { userId: String(user._id), name: user.name, email: user.email, orgRole, status: MembershipStatus.Active, joinedAt: new Date().toISOString() };
+    return {
+      userId: String(user._id),
+      name: user.name,
+      email: user.email,
+      orgRole,
+      status: MembershipStatus.Active,
+      joinedAt: new Date().toISOString(),
+    };
   }
 
   async listMembers(orgId: string): Promise<MemberView[]> {
     const members = await this.memberships
       .find({ organization: new Types.ObjectId(orgId) })
-      .populate<{ user: { _id: Types.ObjectId; name: string; email: string } }>('user', 'name email')
+      .populate<{ user: { _id: Types.ObjectId; name: string; email: string } }>(
+        'user',
+        'name email',
+      )
       .sort({ createdAt: 1 })
       .lean()
       .exec();
@@ -79,11 +107,22 @@ export class MembershipService {
       }));
   }
 
-  async updateRole(orgId: string, userId: string, orgRole: OrgRole): Promise<void> {
+  async updateRole(
+    orgId: string,
+    userId: string,
+    orgRole: OrgRole,
+  ): Promise<void> {
     const res = await this.memberships
-      .updateOne({ organization: new Types.ObjectId(orgId), user: new Types.ObjectId(userId) }, { orgRole })
+      .updateOne(
+        {
+          organization: new Types.ObjectId(orgId),
+          user: new Types.ObjectId(userId),
+        },
+        { orgRole },
+      )
       .exec();
-    if (res.matchedCount === 0) throw new NotFoundException('Membership not found');
+    if (res.matchedCount === 0)
+      throw new NotFoundException('Membership not found');
   }
 
   /** Students in the orgs where the user mentors/instructs/admins (org-scoped assignment). */
@@ -100,9 +139,19 @@ export class MembershipService {
     if (orgIds.length === 0) return [];
 
     const students = await this.memberships
-      .find({ organization: { $in: orgIds }, orgRole: OrgRole.Student, status: MembershipStatus.Active })
-      .populate<{ user: { _id: Types.ObjectId; name: string; email: string } }>('user', 'name email')
-      .populate<{ organization: { _id: Types.ObjectId; name: string } }>('organization', 'name')
+      .find({
+        organization: { $in: orgIds },
+        orgRole: OrgRole.Student,
+        status: MembershipStatus.Active,
+      })
+      .populate<{ user: { _id: Types.ObjectId; name: string; email: string } }>(
+        'user',
+        'name email',
+      )
+      .populate<{ organization: { _id: Types.ObjectId; name: string } }>(
+        'organization',
+        'name',
+      )
       .lean()
       .exec();
 
@@ -122,10 +171,18 @@ export class MembershipService {
     return out;
   }
 
-  async removeMember(orgId: string, userId: string, actingUserId: string): Promise<void> {
-    if (userId === actingUserId) throw new BadRequestException('You cannot remove yourself.');
+  async removeMember(
+    orgId: string,
+    userId: string,
+    actingUserId: string,
+  ): Promise<void> {
+    if (userId === actingUserId)
+      throw new BadRequestException('You cannot remove yourself.');
     await this.memberships
-      .deleteOne({ organization: new Types.ObjectId(orgId), user: new Types.ObjectId(userId) })
+      .deleteOne({
+        organization: new Types.ObjectId(orgId),
+        user: new Types.ObjectId(userId),
+      })
       .exec();
     await this.orgs.recountMembers(orgId);
   }

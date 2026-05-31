@@ -16,7 +16,13 @@ export const EVIDENCE_SOURCE_TYPES = [
 ] as const;
 export type EvidenceSourceType = (typeof EVIDENCE_SOURCE_TYPES)[number];
 
-export const EVIDENCE_VERIFICATION = ['self', 'ai', 'mentor', 'system', 'certificate'] as const;
+export const EVIDENCE_VERIFICATION = [
+  'self',
+  'ai',
+  'mentor',
+  'system',
+  'certificate',
+] as const;
 export type EvidenceVerification = (typeof EVIDENCE_VERIFICATION)[number];
 
 export type SkillEvidenceDocument = HydratedDocument<SkillEvidence>;

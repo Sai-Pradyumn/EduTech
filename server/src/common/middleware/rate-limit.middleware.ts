@@ -35,7 +35,13 @@ export function rateLimit(opts: { windowMs?: number; max?: number } = {}) {
     res.setHeader('X-RateLimit-Remaining', String(Math.max(0, max - b.count)));
     if (b.count > max) {
       res.setHeader('Retry-After', String(Math.ceil((b.reset - now) / 1000)));
-      res.status(429).json({ success: false, error: { code: 'RATE_LIMITED', message: 'Too many requests. Please slow down.' } });
+      res.status(429).json({
+        success: false,
+        error: {
+          code: 'RATE_LIMITED',
+          message: 'Too many requests. Please slow down.',
+        },
+      });
       return;
     }
     next();
