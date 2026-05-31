@@ -49,6 +49,8 @@ import { PeerRoomsModule } from './modules/peer-rooms/peer-rooms.module';
 import { LedgerModule } from './modules/ledger/ledger.module';
 import { MentorCouncilModule } from './modules/mentor-council/mentor-council.module';
 import { ReplayModule } from './modules/replay/replay.module';
+import { SkillPassportModule } from './modules/skill-passport/skill-passport.module';
+import { CareerReadinessModule } from './modules/career-readiness/career-readiness.module';
 import { SocketsModule } from './sockets/sockets.module';
 
 @Module({
@@ -99,6 +101,8 @@ import { SocketsModule } from './sockets/sockets.module';
     LedgerModule,
     MentorCouncilModule,
     ReplayModule,
+    SkillPassportModule,
+    CareerReadinessModule,
     SocketsModule,
   ],
   controllers: [HealthController],
