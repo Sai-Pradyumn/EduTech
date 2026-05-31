@@ -147,6 +147,10 @@ export class Project {
   @Prop({ type: MentorReviewSchema })
   mentorReview?: MentorReview;
 
+  /** Phase 9 · Project Review 2.0 — portfolio-ready case study generated from the review. */
+  @Prop({ default: '' })
+  caseStudy!: string;
+
   @Prop({ default: 0, min: 0, max: 100 })
   progressPercentage!: number;
 }

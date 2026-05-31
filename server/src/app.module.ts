@@ -52,6 +52,9 @@ import { ReplayModule } from './modules/replay/replay.module';
 import { SkillPassportModule } from './modules/skill-passport/skill-passport.module';
 import { CareerReadinessModule } from './modules/career-readiness/career-readiness.module';
 import { OutcomeCouncilModule } from './modules/outcome-council/outcome-council.module';
+import { PortfolioModule } from './modules/portfolio/portfolio.module';
+import { InterviewModule } from './modules/interview/interview.module';
+import { ResumeModule } from './modules/resume/resume.module';
 import { SocketsModule } from './sockets/sockets.module';
 
 @Module({
@@ -105,6 +108,9 @@ import { SocketsModule } from './sockets/sockets.module';
     SkillPassportModule,
     CareerReadinessModule,
     OutcomeCouncilModule,
+    PortfolioModule,
+    InterviewModule,
+    ResumeModule,
     SocketsModule,
   ],
   controllers: [HealthController],

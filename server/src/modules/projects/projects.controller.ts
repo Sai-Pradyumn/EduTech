@@ -88,6 +88,7 @@ function toView(p: ProjectDocument) {
           reviewedAt: p.mentorReview.reviewedAt.toISOString(),
         }
       : null,
+    caseStudy: p.caseStudy ?? '',
     createdAt:
       (p as ProjectDocument & { createdAt?: Date }).createdAt?.toISOString() ??
       '',
@@ -172,6 +173,11 @@ export class ProjectsController {
   @Post(':id/ai-review')
   async aiReview(@CurrentUser() user: AuthUser, @Param('id') id: string) {
     return toView(await this.projects.generateAiReview(user.id, id));
+  }
+
+  @Post(':id/generate-case-study')
+  async caseStudy(@CurrentUser() user: AuthUser, @Param('id') id: string) {
+    return toView(await this.projects.generateCaseStudy(user.id, id));
   }
 
   @Patch(':id/ai-review/items/:itemId')

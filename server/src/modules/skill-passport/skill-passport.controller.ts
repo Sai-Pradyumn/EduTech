@@ -69,6 +69,15 @@ export class SkillPassportController {
     return evidenceView(await this.passport.addEvidence(user.id, dto));
   }
 
+  /** Project Review 2.0 — promote a reviewed project into verified passport evidence. */
+  @Post('from-project/:projectId')
+  async fromProject(
+    @CurrentUser() user: AuthUser,
+    @Param('projectId') projectId: string,
+  ) {
+    return evidenceView(await this.passport.addProjectEvidence(user.id, projectId));
+  }
+
   @Delete('evidence/:id')
   removeEvidence(@CurrentUser() user: AuthUser, @Param('id') id: string) {
     return this.passport.removeEvidence(user.id, id);
