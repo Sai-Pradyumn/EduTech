@@ -26,7 +26,11 @@ export class AuthController {
   @Post('register')
   async register(@Body() dto: RegisterDto, @Req() req: Request) {
     const result = await this.auth.register(dto);
-    await this.sessions.record(result.user.id, req.ip, req.header('user-agent'));
+    await this.sessions.record(
+      result.user.id,
+      req.ip,
+      req.header('user-agent'),
+    );
     return result;
   }
 
@@ -35,7 +39,11 @@ export class AuthController {
   @Post('login')
   async login(@Body() dto: LoginDto, @Req() req: Request) {
     const result = await this.auth.login(dto);
-    await this.sessions.record(result.user.id, req.ip, req.header('user-agent'));
+    await this.sessions.record(
+      result.user.id,
+      req.ip,
+      req.header('user-agent'),
+    );
     return result;
   }
 

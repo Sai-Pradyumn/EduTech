@@ -4,7 +4,12 @@ import { HydratedDocument } from 'mongoose';
 export type DataJobDocument = HydratedDocument<DataJob>;
 
 export type DataJobKind = 'export' | 'delete_request';
-export type DataJobStatus = 'pending' | 'processing' | 'ready' | 'completed' | 'failed';
+export type DataJobStatus =
+  | 'pending'
+  | 'processing'
+  | 'ready'
+  | 'completed'
+  | 'failed';
 
 /** Data export / deletion request job (Phase 10 · M14). Tracked so users get a clear
  *  status and admins can audit governance actions. Export payloads are generated on demand

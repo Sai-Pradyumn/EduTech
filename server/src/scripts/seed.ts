@@ -127,6 +127,14 @@ import {
   ErrorLog,
   ErrorLogSchema,
 } from '../modules/ops/schemas/error-log.schema';
+import {
+  Session,
+  SessionSchema,
+} from '../modules/sessions/schemas/session.schema';
+import {
+  OrgBranding,
+  OrgBrandingSchema,
+} from '../modules/org-branding/schemas/org-branding.schema';
 import { buildRoadmapBlueprint } from '../modules/agents/roadmap/roadmap-blueprint.generator';
 import { buildFlowBlueprint } from '../modules/flows/flow-architect/flow-blueprint.generator';
 import { buildVisual } from '../modules/visuals/visual-explainer/visual-generator';
@@ -924,6 +932,24 @@ async function run(): Promise<void> {
     );
     const org = await OrgModel.findOne({ slug }).exec();
     if (org) {
+      // Org white-label branding (M15).
+      const OrgBrandingModel = mongoose.model(
+        OrgBranding.name,
+        OrgBrandingSchema,
+      );
+      await OrgBrandingModel.updateOne(
+        { org: org._id },
+        {
+          $set: {
+            org: org._id,
+            publicName: 'Sreenidhi College',
+            accentColor: '#1b6b4f',
+            certificateTemplate: 'default',
+            supportEmail: 'support@sreenidhi.edu',
+          },
+        },
+        { upsert: true },
+      );
       // admin → ORG_ADMIN, student → STUDENT (idempotent).
       await MembershipModel.updateOne(
         { user: admin._id, organization: org._id },
@@ -1233,6 +1259,24 @@ async function run(): Promise<void> {
     },
     { upsert: true },
   );
+
+  // ── Phase 10 (M6): a couple of active sessions for the student's Security page ──
+  const SessionModel = mongoose.model(Session.name, SessionSchema);
+  await SessionModel.deleteMany({ user: student._id });
+  await SessionModel.insertMany([
+    {
+      user: student._id,
+      device: 'Chrome · macOS',
+      ip: '103.21.244.10',
+      lastSeenAt: now,
+    },
+    {
+      user: student._id,
+      device: 'Safari · iOS',
+      ip: '103.21.244.55',
+      lastSeenAt: new Date(now.getTime() - 2 * 86400000),
+    },
+  ]);
 
   // Feature-flag overrides: keep image generation off (expensive), web push beta on.
   await FeatureFlagModel.updateOne(

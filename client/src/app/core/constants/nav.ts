@@ -57,6 +57,7 @@ export function workspaceNav(opts: { hasOrg: boolean; isPlatformAdmin: boolean; 
   const items: NavItem[] = [];
   if (opts.canMentor || opts.isPlatformAdmin) items.push({ label: 'Mentoring', route: '/app/mentor', icon: I.mentor });
   if (opts.hasOrg || opts.isPlatformAdmin) items.push({ label: 'Organization', route: '/app/org', icon: I.org });
+  if (opts.hasOrg || opts.isPlatformAdmin) items.push({ label: 'Branding', route: '/app/org/branding', icon: I.certificate });
   if (opts.canReports || opts.isPlatformAdmin) items.push({ label: 'Reports', route: '/app/reports', icon: I.analytics });
   if (opts.isPlatformAdmin) items.push({ label: 'Platform', route: '/app/platform', icon: I.platform });
   if (opts.isPlatformAdmin) items.push({ label: 'Founder', route: '/app/founder', icon: I.dashboard });
@@ -123,6 +124,8 @@ export const STUDENT_NAV: NavGroup[] = [
       { label: 'Certificates', route: '/app/certificates', icon: I.certificate },
       { label: 'Billing', route: '/app/billing', icon: I.billing },
       { label: 'Offline & Sync', route: '/app/offline', icon: I.flow },
+      { label: 'Security', route: '/app/security', icon: I.privacy },
+      { label: 'Your Data', route: '/app/data', icon: I.docs },
       { label: 'Data & Privacy', route: '/app/privacy', icon: I.privacy },
       { label: 'Profile', route: '/app/profile', icon: I.profile },
     ],

@@ -191,12 +191,28 @@ export class LlmGatewayService implements IAIProvider {
     for (let attempt = 0; attempt < 2; attempt++) {
       const { signal, clear } = this.deadline(opts?.signal);
       try {
-        return await call(provider, signal);
+        this.logger.log(
+          `[LLM-GATEWAY] Trying provider: ${provider.name} (attempt ${attempt + 1}/2)`
+        );
+        const result = await call(provider, signal);
+        this.logger.log(
+          `[LLM-GATEWAY] Provider ${provider.name} succeeded`
+        );
+        return result;
       } catch (err) {
+        const errMsg = (err as Error).message;
+        if (attempt === 0) {
+          this.logger.warn(
+            `[LLM-GATEWAY] Provider ${provider.name} attempt 1 failed: ${errMsg}`
+          );
+        }
         if (attempt === 0 && this.isRetryable(err) && !opts?.signal?.aborted) {
           await new Promise((r) => setTimeout(r, 300));
           continue; // same provider, one more time
         }
+        this.logger.error(
+          `[LLM-GATEWAY] Provider ${provider.name} failed: ${errMsg}`
+        );
         throw err;
       } finally {
         clear();

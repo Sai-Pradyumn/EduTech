@@ -71,7 +71,10 @@ export class SessionsService {
   async revoke(userId: string, sessionId: string) {
     await this.sessions
       .updateOne(
-        { _id: new Types.ObjectId(sessionId), user: new Types.ObjectId(userId) },
+        {
+          _id: new Types.ObjectId(sessionId),
+          user: new Types.ObjectId(userId),
+        },
         { $set: { revokedAt: new Date() } },
       )
       .exec();

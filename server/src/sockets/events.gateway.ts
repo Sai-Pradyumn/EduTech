@@ -71,6 +71,11 @@ export class EventsGateway implements OnGatewayConnection {
     }
     if (!payload?.message?.trim()) return { ok: false };
 
+    const msgPreview = payload.message.slice(0, 60);
+    this.logger.log(
+      `[WS] agent.send from user ${userId} | agent: ${payload.agentType ?? 'auto'} | message: "${msgPreview}${payload.message.length > 60 ? '...' : ''}"`
+    );
+
     const emit = (event: AgentStreamEvent) => client.emit('agent.event', event);
     try {
       const result = await this.orchestrator.handle(
@@ -86,9 +91,14 @@ export class EventsGateway implements OnGatewayConnection {
         },
         emit,
       );
+      this.logger.log(
+        `[WS] agent.send completed | sessionId: ${result.sessionId} | messageId: ${result.messageId}`
+      );
       return { ok: true, sessionId: result.sessionId };
     } catch (err) {
-      this.logger.warn(`agent.send failed: ${(err as Error).message}`);
+      this.logger.error(
+        `[WS] agent.send FAILED | error: ${(err as Error).message}`
+      );
       return { ok: false };
     }
   }

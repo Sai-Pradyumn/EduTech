@@ -66,7 +66,6 @@ import { ToastService } from '../../core/services/toast.service';
 export class SecurityComponent implements OnInit {
   private readonly enterprise = inject(EnterpriseService);
   private readonly auth = inject(AuthService);
-  private readonly router = inject(Router);
   private readonly toast = inject(ToastService);
 
   readonly sessions = signal<SessionView[]>([]);
@@ -98,7 +97,6 @@ export class SecurityComponent implements OnInit {
       next: () => {
         this.toast.success('Signed out of all devices');
         this.auth.logout();
-        void this.router.navigate(['/login']);
       },
       error: () => this.busy.set(false),
     });

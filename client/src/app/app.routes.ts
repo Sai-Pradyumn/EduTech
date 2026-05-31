@@ -396,6 +396,24 @@ export const routes: Routes = [
         loadComponent: () => import('./features/platform/offline.component').then((m) => m.OfflineComponent),
       },
       {
+        path: 'security',
+        title: 'Security',
+        data: { title: 'Security & Devices' },
+        loadComponent: () => import('./features/platform/security.component').then((m) => m.SecurityComponent),
+      },
+      {
+        path: 'data',
+        title: 'Your Data',
+        data: { title: 'Your Data' },
+        loadComponent: () => import('./features/platform/data-governance.component').then((m) => m.DataGovernanceComponent),
+      },
+      {
+        path: 'org/branding',
+        title: 'Org Branding',
+        data: { title: 'Org Branding' },
+        loadComponent: () => import('./features/org/org-branding.component').then((m) => m.OrgBrandingComponent),
+      },
+      {
         path: 'mentor',
         title: 'Mentor Room',
         data: { title: 'Mentor Room' },

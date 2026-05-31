@@ -64,6 +64,10 @@ export class AgentOrchestratorService {
     );
     const sessionId = session.id;
 
+    this.logger.log(
+      `[ORCHESTRATOR] Starting pipeline | sessionId: ${sessionId} | requestedAgent: ${request.agentType ?? 'auto'} | message: "${request.message.slice(0, 50)}..."`
+    );
+
     // Prior turns (before we append the current message) → multi-turn coherence.
     const history = await this.sessions.recentHistory(
       request.userId,
@@ -93,6 +97,9 @@ export class AgentOrchestratorService {
       request.agentType,
     );
     const primaryAgent = plan.steps[0].agentType;
+    this.logger.log(
+      `[ORCHESTRATOR] Classification complete | intent: ${intent} | agents: ${plan.steps.map((s) => s.agentType).join(' → ')}`
+    );
     trace.step(
       'classify',
       `Intent: ${intent} → ${plan.steps.map((s) => s.agentType).join(' → ')}`,

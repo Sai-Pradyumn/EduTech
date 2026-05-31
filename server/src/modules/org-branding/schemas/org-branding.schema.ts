@@ -7,7 +7,13 @@ export type OrgBrandingDocument = HydratedDocument<OrgBranding>;
  *  never overrides the Noir Cockpit shell, only certificate/public-page accents. */
 @Schema({ timestamps: true, collection: 'org_branding' })
 export class OrgBranding {
-  @Prop({ type: Types.ObjectId, ref: 'Organization', required: true, unique: true, index: true })
+  @Prop({
+    type: Types.ObjectId,
+    ref: 'Organization',
+    required: true,
+    unique: true,
+    index: true,
+  })
   org!: Types.ObjectId;
 
   @Prop({ default: '' })

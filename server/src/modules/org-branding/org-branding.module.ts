@@ -1,9 +1,6 @@
 import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
-import {
-  OrgBranding,
-  OrgBrandingSchema,
-} from './schemas/org-branding.schema';
+import { OrgBranding, OrgBrandingSchema } from './schemas/org-branding.schema';
 import { OrgBrandingController } from './org-branding.controller';
 import { OrgBrandingService } from './org-branding.service';
 

@@ -184,8 +184,31 @@ Adds real offline learning data, a sync queue and a web-push foundation.
 `build:server` ✅ · `build:client` ✅ · runtime boot ✅ (push routes mapped) · new files
 lint-clean. No paid keys required; web push is foundation-only until VAPID is set.
 
-## Priority 4 — Enterprise *(planned)*
-Org members/roles/security, sessions, branding, data export.
+## Priority 4 — Enterprise: Sessions, Branding & Data Governance ✅
+
+Org members/roles already existed in the tenancy module; this priority adds the missing
+enterprise controls.
+
+### Modules added
+- **`sessions`** (`@Global`, M6) — `Session` schema + service (record on login, list, revoke,
+  revoke-all). Auth controller records a session (device parsed from UA, IP) on login/
+  register; `/auth/sessions` (GET), `/auth/sessions/:id` (DELETE), `/auth/logout-all`.
+- **`org-branding`** (M15) — `OrgBranding` schema + service + `/org/branding` (GET/PATCH,
+  OrgManage) + `Public` `/org/:orgId/branding/public`. Updates are audited; subtle/token-based.
+- **`data-governance`** (M14) — `DataJob` schema + service; `/data/export/me`,
+  `/data/export/jobs`, `/data/delete-request`, `/org/data/export`,
+  `/admin/data-governance/retention`. Requests are audited; retention policy exposed.
+
+### Client
+- `EnterpriseService`. Pages: **Security & devices** (`/app/security`), **Your data**
+  (`/app/data`), **Org branding** (`/app/org/branding`, live certificate preview). Nav:
+  Security + Your Data under Account; Branding under Workspace.
+
+### Seed
+Two student sessions; Sreenidhi College branding.
+
+### Build status
+`build:server` ✅ · `build:client` ✅ · `seed` ✅ · runtime boot ✅ · Phase-10 files lint-clean.
 
 ## Priority 5 — Platform / Growth *(planned)*
 Developer API keys, webhooks, integrations, i18n/a11y, tests.
