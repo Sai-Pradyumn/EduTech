@@ -77,6 +77,10 @@ import {
   CareerReadinessState,
   CareerReadinessStateSchema,
 } from '../modules/career-readiness/schemas/career-readiness.schema';
+import { Portfolio, PortfolioSchema } from '../modules/portfolio/schemas/portfolio.schema';
+import { MentorProfile, MentorProfileSchema } from '../modules/mentor-marketplace/schemas/mentor-profile.schema';
+import { MentorSession, MentorSessionSchema } from '../modules/mentor-marketplace/schemas/mentor-session.schema';
+import { MarketplaceTemplate, MarketplaceTemplateSchema } from '../modules/marketplace/schemas/marketplace-template.schema';
 import { buildRoadmapBlueprint } from '../modules/agents/roadmap/roadmap-blueprint.generator';
 import { buildFlowBlueprint } from '../modules/flows/flow-architect/flow-blueprint.generator';
 import { buildVisual } from '../modules/visuals/visual-explainer/visual-generator';
@@ -154,6 +158,10 @@ async function run(): Promise<void> {
     CareerReadinessState.name,
     CareerReadinessStateSchema,
   );
+  const PortfolioModel = mongoose.model(Portfolio.name, PortfolioSchema);
+  const MentorProfileModel = mongoose.model(MentorProfile.name, MentorProfileSchema);
+  const MentorSessionModel = mongoose.model(MentorSession.name, MentorSessionSchema);
+  const MarketplaceTemplateModel = mongoose.model(MarketplaceTemplate.name, MarketplaceTemplateSchema);
 
   await UserModel.updateOne(
     { email: DEMO.admin.email },
@@ -740,6 +748,93 @@ async function run(): Promise<void> {
     { upsert: true },
   );
 
+  // ── Phase 9 · Portfolio: a draft portfolio for the student.
+  const existingPortfolio = await PortfolioModel.findOne({ user: student._id }).exec();
+  if (!existingPortfolio) {
+    await PortfolioModel.create({
+      user: student._id,
+      username: `aarav-sharma-${String(student._id).slice(-4)}`,
+      title: 'Aarav Sharma — Full Stack Developer',
+      tagline: 'Aspiring Full-Stack Developer — building proof one project at a time.',
+      about:
+        'Aarav is an aspiring Full Stack Developer building real, verifiable proof of skill across the MERN stack, with a flagship task-tracker project and a growing record of passed assessments.',
+      targetRole: 'Full Stack Developer',
+      skills: ['JavaScript', 'React', 'Node', 'MongoDB', 'REST API design'],
+      projects: [
+        {
+          projectId: 'demo-mern',
+          title: 'MERN Task Tracker',
+          caseStudy: 'A full-stack task tracker with auth and CRUD, built on the MERN stack and AI-reviewed 78/100 for architecture and quality.',
+          stack: ['React', 'Node', 'Express', 'MongoDB'],
+          highlights: ['JWT auth', 'CRUD API', 'Deployed demo'],
+          githubUrl: 'https://github.com/example/mern-task-tracker',
+          visible: true,
+        },
+      ],
+      links: [{ label: 'GitHub', url: 'https://github.com/example' }],
+      status: 'draft',
+    });
+  }
+
+  // ── Phase 9 · Mentor Marketplace: a published mentor profile + a requested session.
+  if (mentor) {
+    const existingMentorProfile = await MentorProfileModel.findOne({ user: mentor._id }).exec();
+    if (!existingMentorProfile) {
+      await MentorProfileModel.create({
+        user: mentor._id,
+        headline: 'Senior Full-Stack Engineer · 6 yrs · ex-startup',
+        expertise: ['React', 'Node', 'System Design', 'Interviews'],
+        bio: 'I help juniors turn projects into offers — project reviews, mock interviews and portfolio feedback.',
+        availability: 'Weekends + async reviews',
+        pricingMode: 'free',
+        visibility: 'public',
+        ratingSummary: { avg: 4.8, count: 12 },
+      });
+    }
+    const existingMentorSession = await MentorSessionModel.findOne({ student: student._id }).exec();
+    if (!existingMentorSession) {
+      await MentorSessionModel.create({
+        mentor: mentor._id,
+        student: student._id,
+        type: 'project_review',
+        status: 'requested',
+        message: 'Could you review my MERN Task Tracker before I add it to my portfolio?',
+        linkedProjectId: 'demo-mern',
+      });
+    }
+  }
+
+  // ── Phase 9 · Marketplace: one published template (by mentor) + one pending (for moderation).
+  const existingTemplate = await MarketplaceTemplateModel.findOne().exec();
+  if (!existingTemplate && mentor) {
+    await MarketplaceTemplateModel.create({
+      creator: mentor._id,
+      type: 'flow',
+      title: 'MERN Internship Sprint (4 weeks)',
+      description: 'A focused 4-week flow from JS foundations to a deployed MERN app — interview-ready.',
+      tags: ['mern', 'internship', 'fullstack'],
+      level: 'beginner',
+      targetRole: 'Full Stack Developer',
+      content: { goal: 'Learn the MERN stack and land an internship in 4 weeks' },
+      visibility: 'public',
+      status: 'published',
+      usageCount: 37,
+      ratingSummary: { avg: 4.7, count: 9 },
+    });
+    await MarketplaceTemplateModel.create({
+      creator: mentor._id,
+      type: 'interview',
+      title: 'Frontend Interview Gauntlet',
+      description: 'A set of frontend interview rounds covering framework internals, CSS and state.',
+      tags: ['frontend', 'interview', 'react'],
+      level: 'intermediate',
+      targetRole: 'Angular Frontend Developer',
+      content: { goal: 'Frontend interview prep' },
+      visibility: 'public',
+      status: 'pending_review',
+    });
+  }
+
   // ── Multi-tenant demo (B1): a sample college org with admin as owner + student member.
   if (admin) {
     const slug = 'sreenidhi-college';
@@ -814,6 +909,11 @@ async function run(): Promise<void> {
       ).exec();
       await UserModel.updateOne(
         { _id: student._id, primaryOrganization: { $exists: false } },
+        { $set: { primaryOrganization: org._id } },
+      ).exec();
+      // Phase 9 · admin views the Institution outcome layer for this org.
+      await UserModel.updateOne(
+        { _id: admin._id, primaryOrganization: { $exists: false } },
         { $set: { primaryOrganization: org._id } },
       ).exec();
 
