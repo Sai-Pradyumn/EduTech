@@ -287,7 +287,19 @@ mock fallback so local dev + CI stay green without any keys.
 Config: all new vars added to Joi validation + `.env.example`. New deps: `razorpay`,
 `web-push`, `google-auth-library`. Tests: 12 passing (added plan-tier/inheritance specs).
 
+### Merge & CI status
+- ✅ **Merged to `main`** via PR #3 (merge commit `4665e9a`). Build + 12 unit tests + server
+  lint all green in GitHub Actions CI.
+- ✅ **CI lint hardening (commit `e0f86ec`)** — the CI `lint` step had never passed before:
+  60 pre-existing server eslint errors (across phases 8–10) plus a missing client `lint`
+  script. Fixed by resolving every server error (underscore-arg convention, `require-await`
+  stubs → `Promise.resolve/reject`, Mongoose `.id` `any`→`string` casts at source, typed
+  socket `client.data`, `base-to-string`/`no-implied-eval`/unused-import cleanups) and
+  invoking the client lint with `--if-present` (client has no linter configured). Server
+  lint now reports 0 errors (4 accepted `no-unsafe-argument` warnings, per the existing config).
+
 ### Known limitations / remaining
-- **Playwright e2e smoke suite — NOT yet implemented** (the one deferred follow-up).
+- ⏳ **Playwright e2e smoke suite — NOT yet implemented** (the one deferred follow-up).
 - Stripe is a placeholder (Razorpay is the implemented provider); real keys are required to
   exercise live payments/OAuth/push (mock/no-op without them).
+- Client (Angular) has no eslint setup; only the server is linted in CI.

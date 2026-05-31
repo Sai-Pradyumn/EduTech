@@ -22,7 +22,15 @@ green + seed + 10 unit tests passing + runtime-smoked:
 flat ~2% for INR, no fixed per-txn fee; HMAC verify + webhook), ✅ entitlement **org-inheritance** (members inherit
 the org plan) + ✅ **AI budget enforcement** at the gateway, ✅ **BullMQ worker** behind the job ledger (flag-gated by
 `ENABLE_BULLMQ`; inline + ledgered when off). All activate behind env keys with graceful mock fallback (local/CI green).
-**Still remaining:** ⏳ Playwright e2e smoke suite (only deferred item).
+
+**Merged to `main` (PR #3 → merge `4665e9a`):** the whole `phase-10-scale-monetization` branch is now on
+`main` with GitHub Actions CI green (build + 12 tests + server lint). ✅ **CI lint hardening** (commit `e0f86ec`)
+landed alongside: the CI `lint` step had never passed (60 pre-existing server eslint errors across phases 8–10 +
+a missing client `lint` script). All 60 fixed (underscore-arg convention; `require-await` stubs →
+`Promise.resolve/reject`; Mongoose `.id` `any`→`string` casts at source — orchestrator/auth/DTOs/agent-context;
+typed socket `client.data`; `base-to-string`/`no-implied-eval`/unused-import cleanups) + client lint now
+`--if-present` (client has no linter). Server lint = 0 errors (4 accepted `no-unsafe-argument` warnings).
+**Still remaining:** ⏳ Playwright e2e smoke suite (only deferred item); Angular client has no eslint setup (server-only CI lint).
 
 ## ✅ Shipped — Phase 9 · Outcome Network (ALL 15 modules)
 Priorities 1–4 complete end-to-end (backend + frontend + seed). In addition to the Priority-1 + Council
