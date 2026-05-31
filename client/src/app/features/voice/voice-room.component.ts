@@ -1,185 +1,364 @@
-import { ChangeDetectionStrategy, Component, OnInit, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnDestroy, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { VoiceApiService } from '../../core/services/lab.service';
+import { ActivatedRoute, Router } from '@angular/router';
+import { Subscription } from 'rxjs';
+import { ButtonComponent } from '../../shared/ui/button.component';
+import { CardComponent } from '../../shared/ui/card.component';
+import { EmptyStateComponent } from '../../shared/ui/empty-state.component';
+import { SkeletonComponent } from '../../shared/ui/skeleton.component';
 import { ToastService } from '../../core/services/toast.service';
+import { SpeechRecognitionService } from '../../core/services/speech-recognition.service';
+import { TextToSpeechService } from '../../core/services/text-to-speech.service';
+import {
+  VOICE_MODE_LIST,
+  VOICE_MODE_META,
+  VoiceMode,
+  VoiceSession,
+  VoiceSessionService,
+} from '../../core/services/voice-session.service';
 
-interface Turn {
-  role: 'you' | 'asta';
-  text: string;
-}
+type VState = 'idle' | 'listening' | 'thinking' | 'speaking';
 
-/**
- * Voice Room (A5). Spoken tutor / mock interview — mic capture + speech synthesis run in the
- * browser via the Web Speech API; transcripts route through the Agent OS server-side.
- * Gated by ENABLE_REALTIME_VOICE (the page shows a notice when disabled).
- */
 @Component({
   selector: 'asta-voice-room',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormsModule],
+  imports: [FormsModule, ButtonComponent, CardComponent, EmptyStateComponent, SkeletonComponent],
   template: `
-    <!-- Command header -->
     <header class="asta-page-command-header">
       <div class="min-w-0">
-        <h1 class="text-[26px] leading-tight mb-2 grad-flow">Voice Room</h1>
-        <span class="goal-pill"><span class="dot"></span>Talk to Asta out loud · spoken tutor &amp; mock interview</span>
+        <h1 class="text-[24px] leading-tight mb-2 grad-flow truncate">{{ session() ? session()!.title : 'Voice Room' }}</h1>
+        <span class="goal-pill"><span class="dot"></span>{{ session() ? modeMeta(session()!.mode).label + ' · speak to learn' : 'Voice-native learning · 8 modes' }}</span>
+      </div>
+      <div class="flex gap-2.5 shrink-0">
+        @if (session()) {
+          <asta-btn variant="ghost" size="sm" (click)="lobby()">All sessions</asta-btn>
+          @if (session()!.status === 'active') { <asta-btn variant="ghost" size="sm" (click)="endSession()">End</asta-btn> }
+        }
       </div>
     </header>
 
-    @if (enabled() === false) {
-      <div class="card grid place-items-center text-center" style="padding:48px 24px;min-height:240px">
-        <div>
-          <p class="font-display text-xl mb-1">Voice Room is off</p>
-          <p class="text-sm text-txt-soft max-w-md">This feature is behind a flag. Set <code>ENABLE_REALTIME_VOICE=true</code> on the server to talk to Asta out loud.</p>
-        </div>
-      </div>
-    } @else if (enabled()) {
-      <div class="grid gap-5 lg:grid-cols-[1fr_minmax(280px,340px)] motion-row-primary">
-        <div class="card motion-card-reveal" style="--motion-card-index:0;padding:20px;min-height:340px">
-          <div class="flex items-center justify-between mb-3">
-            <p class="kicker">Conversation</p>
-            <div class="flex gap-1.5">
-              @for (m of modes; track m) { <button class="chip" [class.chip-on]="mode() === m" (click)="mode.set(m)">{{ m }}</button> }
-            </div>
-          </div>
-          @if (turns().length === 0) {
-            <p class="text-sm text-txt-mute py-8 text-center">Tap the mic and start speaking — or type below.</p>
+    @if (!sessionId()) {
+      <!-- ───────── lobby ───────── -->
+      <asta-card class="block motion-card-reveal motion-row-primary mb-5">
+        <p class="kicker mb-3">Start a voice session</p>
+        <div class="grid gap-2.5 sm:grid-cols-2 lg:grid-cols-4">
+          @for (m of modes; track m) {
+            <button class="mode-card" [class.busy]="starting()" (click)="start(m)">
+              <span class="mode-glyph">{{ modeMeta(m).glyph }}</span>
+              <span class="mode-label">{{ modeMeta(m).label }}</span>
+              <span class="mode-blurb">{{ modeMeta(m).blurb }}</span>
+            </button>
           }
-          <div class="space-y-3">
-            @for (t of turns(); track $index) {
-              <div [class]="t.role === 'you' ? 'text-right' : ''">
-                <span class="bubble" [class.bub-you]="t.role === 'you'">{{ t.text }}</span>
+        </div>
+        @if (!sttSupported) {
+          <p class="text-xs text-txt-mute mt-3">Your browser doesn't support speech recognition — you can still type; Asta will speak answers aloud.</p>
+        }
+      </asta-card>
+
+      @if (loading()) {
+        <asta-card><asta-skeleton h="80px" /></asta-card>
+      } @else if (sessions().length) {
+        <p class="kicker mb-2">Recent sessions</p>
+        <div class="space-y-2 motion-row-2">
+          @for (s of sessions(); track s.id; let i = $index) {
+            <asta-card class="motion-card-reveal hover-lift cursor-pointer block" [interactive]="true" [style.--motion-card-index]="i % 4" (click)="open(s.id)">
+              <div class="flex items-center gap-3">
+                <span class="mode-glyph sm">{{ modeMeta(s.mode).glyph }}</span>
+                <span class="min-w-0 flex-1">
+                  <span class="block font-medium truncate">{{ s.title }}</span>
+                  <span class="block text-xs text-txt-mute">{{ modeMeta(s.mode).label }} · {{ s.transcript.length }} turns · {{ s.status }}</span>
+                </span>
+                @if (s.linkedFlowId) { <span class="link-pill">→ flow</span> }
+                @if (s.linkedQuizId) { <span class="link-pill">→ quiz</span> }
               </div>
+            </asta-card>
+          }
+        </div>
+      }
+    } @else {
+      <!-- ───────── live session ───────── -->
+      @if (loading()) {
+        <asta-card><asta-skeleton h="380px" /></asta-card>
+      } @else if (!session()) {
+        <asta-card><asta-empty-state title="Session not found" description=""><asta-btn variant="accent" (click)="lobby()">Back to Voice Room</asta-btn></asta-empty-state></asta-card>
+      } @else {
+        <div class="grid gap-4 lg:grid-cols-[1fr_300px] items-start">
+          <div class="min-w-0">
+            <!-- orb + state + controls -->
+            <asta-card class="block motion-card-reveal motion-row-primary text-center">
+              <div class="orb-wrap">
+                <div class="orb" [class.listening]="state() === 'listening'" [class.thinking]="state() === 'thinking'" [class.speaking]="tts.speaking() || state() === 'speaking'"></div>
+              </div>
+              <p class="state-label">{{ stateLabel() }}</p>
+              @if (interim()) { <p class="interim">“{{ interim() }}”</p> }
+
+              <div class="flex items-center justify-center gap-2.5 mt-3 flex-wrap">
+                @if (state() === 'listening') {
+                  <asta-btn variant="accent" size="sm" (click)="stopListening()">Stop listening</asta-btn>
+                } @else {
+                  <asta-btn variant="accent" size="sm" [disabled]="state() === 'thinking'" (click)="startListening()">🎙 {{ sttSupported ? 'Push to talk' : 'Mic unavailable' }}</asta-btn>
+                }
+                @if (tts.speaking()) { <asta-btn variant="ghost" size="sm" (click)="stopSpeaking()">Stop voice</asta-btn> }
+                @if (lastAnswer()) { <asta-btn variant="ghost" size="sm" (click)="replay()">Replay</asta-btn> }
+                <button class="auto-toggle" [class.on]="autoRead()" (click)="autoRead.set(!autoRead())">Auto-read {{ autoRead() ? 'on' : 'off' }}</button>
+              </div>
+
+              <div class="type-row mt-3">
+                <input class="v-input" [(ngModel)]="typed" (keydown.enter)="sendTyped()" placeholder="…or type your turn" [disabled]="state() === 'thinking'" aria-label="Type your turn" />
+                <asta-btn variant="ghost" size="sm" [disabled]="!typed.trim() || state() === 'thinking'" (click)="sendTyped()">Send</asta-btn>
+              </div>
+            </asta-card>
+
+            <!-- transcript -->
+            <asta-card class="block motion-card-reveal motion-row-2 mt-4">
+              <p class="kicker mb-3">Transcript</p>
+              @if (session()!.transcript.length === 0) {
+                <p class="text-sm text-txt-mute">Tap “Push to talk” (or type) to begin.</p>
+              } @else {
+                <div class="space-y-2.5">
+                  @for (t of session()!.transcript; track $index) {
+                    <div class="turn" [class.you]="t.role === 'user'">
+                      <span class="turn-who">{{ t.role === 'user' ? 'You' : 'Asta' }}</span>
+                      <span class="turn-text">{{ t.text }}</span>
+                    </div>
+                  }
+                </div>
+              }
+            </asta-card>
+          </div>
+
+          <!-- artifacts rail -->
+          <div class="space-y-4">
+            <asta-card class="block motion-card-reveal motion-row-2">
+              <p class="kicker mb-2">Turn this session into…</p>
+              <div class="grid gap-2">
+                <asta-btn variant="ghost" size="sm" [loading]="busy() === 'flow'" (click)="createFlow()">🧭 A learning flow</asta-btn>
+                <asta-btn variant="ghost" size="sm" [loading]="busy() === 'quiz'" (click)="createQuiz()">✓ A quiz</asta-btn>
+                <asta-btn variant="ghost" size="sm" [loading]="busy() === 'notes'" (click)="extractNotes()">▤ Notes</asta-btn>
+                <asta-btn variant="ghost" size="sm" [loading]="busy() === 'sum'" (click)="summarize()">✦ Summary</asta-btn>
+              </div>
+            </asta-card>
+
+            @if (session()!.summary) {
+              <asta-card class="block motion-card-reveal motion-row-3">
+                <p class="kicker mb-1">Summary</p>
+                <p class="text-sm text-txt-soft">{{ session()!.summary }}</p>
+                @if (session()!.extractedActions.length) {
+                  <p class="kicker mt-3 mb-1">Action items</p>
+                  <ul class="text-sm text-txt-soft space-y-0.5">
+                    @for (a of session()!.extractedActions; track a) { <li>• {{ a }}</li> }
+                  </ul>
+                }
+              </asta-card>
+            }
+
+            @if (notes()) {
+              <asta-card class="block motion-card-reveal motion-row-3">
+                <div class="flex items-center justify-between mb-1">
+                  <p class="kicker !mb-0">Notes</p>
+                  <button class="copy-btn" (click)="copyNotes()">Copy</button>
+                </div>
+                <pre class="notes">{{ notes() }}</pre>
+              </asta-card>
             }
           </div>
-          @if (thinking()) { <p class="text-xs text-txt-mute mt-3">Asta is thinking…</p> }
         </div>
-
-        <div class="card motion-card-reveal" style="--motion-card-index:1;padding:20px">
-          <p class="kicker mb-3">Speak</p>
-          <div class="grid place-items-center py-4">
-            <button class="mic" [class.mic-on]="listening()" (click)="toggleMic()" [disabled]="!speechSupported">
-              <svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a3 3 0 0 0-3 3v6a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3ZM5 11a7 7 0 0 0 14 0M12 18v3"/></svg>
-            </button>
-            <p class="text-xs text-txt-mute mt-2">{{ listening() ? 'Listening…' : speechSupported ? 'Tap to talk' : 'Mic not supported — type below' }}</p>
-          </div>
-          <div class="flex gap-1.5 mt-2">
-            <input class="input" placeholder="…or type a message" [(ngModel)]="typed" (keydown.enter)="sendTyped()" />
-            <button class="mv" (click)="sendTyped()" [disabled]="!typed.trim()">↵</button>
-          </div>
-          @if (speaking()) { <button class="text-[11px] text-txt-mute mt-2" (click)="stopSpeaking()">⏹ Stop speaking</button> }
-        </div>
-      </div>
+      }
     }
   `,
   styles: [
     `
-      .chip { font-family: var(--mono); font-size: 11px; text-transform: uppercase; padding: 4px 10px; border-radius: 100px; border: 1px solid var(--paper-3); background: var(--paper); color: var(--text-soft); }
-      .chip-on { background: var(--ink); color: var(--paper); border-color: var(--ink); }
-      .bubble { display: inline-block; max-width: 85%; padding: 9px 13px; border-radius: 14px; background: var(--paper-2); font-size: 14px; text-align: left; }
-      .bub-you { background: var(--green); color: var(--ink); }
-      .mic { width: 76px; height: 76px; border-radius: 50%; display: grid; place-items: center; background: var(--paper-2); border: 1px solid var(--paper-3); color: var(--text-soft); transition: all .2s; }
-      .mic:hover:not(:disabled) { border-color: var(--green); color: var(--green-deep); }
-      .mic-on { background: var(--green); color: var(--ink); border-color: var(--green); animation: pulse 1.4s ease-in-out infinite; }
-      .mic:disabled { opacity: .5; }
-      @keyframes pulse { 0%,100% { box-shadow: 0 0 0 0 oklch(0.80 0.16 150 / .4); } 50% { box-shadow: 0 0 0 12px oklch(0.80 0.16 150 / 0); } }
-      .mv { width: 40px; border-radius: 10px; border: 1px solid var(--paper-3); background: var(--paper); color: var(--text-soft); }
+      :host { display: block; }
+      .mode-card { display: flex; flex-direction: column; align-items: flex-start; gap: 3px; padding: 12px 14px; border-radius: 14px; border: 1px solid var(--paper-3); background: var(--paper-2); cursor: pointer; text-align: left; transition: border-color .2s, transform .2s; }
+      .mode-card:hover { border-color: var(--green); transform: translateY(-2px); }
+      .mode-card.busy { opacity: .6; pointer-events: none; }
+      .mode-glyph { font-size: 24px; }
+      .mode-glyph.sm { font-size: 20px; }
+      .mode-label { font-weight: 600; font-size: 14px; }
+      .mode-blurb { font-size: 11px; color: var(--text-mute); }
+      .link-pill { font-size: 10px; padding: 2px 8px; border-radius: 999px; border: 1px solid color-mix(in oklab, var(--green) 40%, var(--paper-3)); color: var(--green-deep); white-space: nowrap; }
+      .orb-wrap { display: grid; place-items: center; height: 140px; }
+      .orb { width: 96px; height: 96px; border-radius: 50%; background: radial-gradient(circle at 35% 30%, color-mix(in oklab, var(--green) 55%, transparent), color-mix(in oklab, var(--green-deep) 40%, transparent)); box-shadow: 0 0 30px color-mix(in oklab, var(--green) 35%, transparent); transition: transform .3s var(--ease); }
+      .orb.listening { animation: orbPulse 1.1s ease-in-out infinite; box-shadow: 0 0 44px color-mix(in oklab, var(--green) 60%, transparent); }
+      .orb.thinking { animation: orbSpin 1.4s linear infinite; background: conic-gradient(from 0deg, color-mix(in oklab, var(--peri,#8aa6ff) 60%, transparent), transparent 70%); }
+      .orb.speaking { animation: orbPulse .6s ease-in-out infinite; }
+      @keyframes orbPulse { 0%,100% { transform: scale(1); } 50% { transform: scale(1.12); } }
+      @keyframes orbSpin { to { transform: rotate(360deg); } }
+      @media (prefers-reduced-motion: reduce) { .orb, .orb.listening, .orb.thinking, .orb.speaking { animation: none; } }
+      .state-label { font-size: 13px; color: var(--text-mute); text-transform: uppercase; letter-spacing: .06em; }
+      .interim { font-size: 14px; color: var(--text-soft); font-style: italic; margin-top: 4px; }
+      .auto-toggle { font-size: 12px; padding: 6px 12px; border-radius: 999px; border: 1px solid var(--paper-3); background: transparent; color: var(--text-mute); cursor: pointer; }
+      .auto-toggle.on { color: var(--green-deep); border-color: color-mix(in oklab, var(--green) 45%, var(--paper-3)); }
+      .type-row { display: flex; gap: 8px; align-items: center; max-width: 440px; margin: 0 auto; }
+      .v-input { flex: 1; background: var(--ink-2, var(--paper-2)); border: 1px solid var(--paper-3); border-radius: 12px; padding: 9px 12px; color: var(--text); font-size: 14px; }
+      .v-input:focus { outline: none; border-color: var(--green); }
+      .turn { display: flex; flex-direction: column; gap: 2px; padding: 9px 12px; border-radius: 12px; background: var(--paper-2); border: 1px solid var(--paper-3); }
+      .turn.you { background: color-mix(in oklab, var(--green) 8%, var(--paper-2)); }
+      .turn-who { font-size: 10px; text-transform: uppercase; letter-spacing: .06em; color: var(--text-mute); }
+      .turn-text { font-size: 14px; }
+      .copy-btn { font-size: 11px; padding: 3px 9px; border-radius: 999px; border: 1px solid var(--paper-3); background: transparent; color: var(--peri,#8aa6ff); cursor: pointer; }
+      .notes { font-size: 12px; white-space: pre-wrap; color: var(--text-soft); max-height: 240px; overflow: auto; margin: 0; }
     `,
   ],
 })
-export class VoiceRoomComponent implements OnInit {
-  private readonly api = inject(VoiceApiService);
+export class VoiceRoomComponent implements OnDestroy {
+  private readonly api = inject(VoiceSessionService);
+  private readonly stt = inject(SpeechRecognitionService);
+  readonly tts = inject(TextToSpeechService);
   private readonly toast = inject(ToastService);
+  private readonly router = inject(Router);
+  private readonly route = inject(ActivatedRoute);
+  private sub?: Subscription;
 
-  readonly enabled = signal<boolean | null>(null);
-  readonly turns = signal<Turn[]>([]);
-  readonly listening = signal(false);
-  readonly thinking = signal(false);
-  readonly speaking = signal(false);
-  readonly mode = signal<'tutor' | 'interview'>('tutor');
-  readonly modes: ('tutor' | 'interview')[] = ['tutor', 'interview'];
+  readonly modes = VOICE_MODE_LIST;
+  readonly sttSupported = typeof window !== 'undefined' && ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window);
 
+  readonly sessionId = signal<string | null>(null);
+  readonly session = signal<VoiceSession | null>(null);
+  readonly sessions = signal<VoiceSession[]>([]);
+  readonly loading = signal(false);
+  readonly starting = signal(false);
+  readonly state = signal<VState>('idle');
+  readonly interim = signal('');
+  readonly lastAnswer = signal('');
+  readonly autoRead = signal(true);
+  readonly busy = signal<'flow' | 'quiz' | 'notes' | 'sum' | null>(null);
+  readonly notes = signal('');
   typed = '';
-  private sessionId?: string;
-  private recognition: any;
-  readonly speechSupported = typeof window !== 'undefined' && !!((window as any).SpeechRecognition || (window as any).webkitSpeechRecognition);
 
-  ngOnInit(): void {
-    this.api.status().subscribe({
-      next: (s) => this.enabled.set(s.enabled),
-      error: () => this.enabled.set(false),
-    });
-    this.setupRecognition();
-  }
+  private readonly startedAt = Date.now();
 
-  private setupRecognition(): void {
-    const Ctor = typeof window !== 'undefined' ? (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition : null;
-    if (!Ctor) return;
-    this.recognition = new Ctor();
-    this.recognition.continuous = false;
-    this.recognition.interimResults = false;
-    this.recognition.lang = 'en-US';
-    this.recognition.onresult = (e: any) => {
-      const transcript = e.results[0][0].transcript as string;
-      this.send(transcript);
-    };
-    this.recognition.onend = () => this.listening.set(false);
-    this.recognition.onerror = () => this.listening.set(false);
-  }
-
-  toggleMic(): void {
-    if (!this.recognition) return;
-    if (this.listening()) {
-      this.recognition.stop();
-      this.listening.set(false);
-    } else {
-      this.stopSpeaking();
-      try {
-        this.recognition.start();
-        this.listening.set(true);
-      } catch {
-        /* already started */
-      }
+  readonly stateLabel = computed(() => {
+    switch (this.state()) {
+      case 'listening': return 'Listening…';
+      case 'thinking': return 'Asta is thinking…';
+      case 'speaking': return 'Speaking…';
+      default: return this.tts.speaking() ? 'Speaking…' : 'Ready';
     }
+  });
+
+  constructor() {
+    this.sub = this.route.paramMap.subscribe((p) => {
+      const id = p.get('id');
+      this.sessionId.set(id);
+      if (id) this.loadSession(id);
+      else this.loadLobby();
+    });
   }
+
+  ngOnDestroy(): void {
+    this.sub?.unsubscribe();
+    this.stt.abort();
+    this.tts.cancel();
+  }
+
+  modeMeta(m: VoiceMode) { return VOICE_MODE_META[m]; }
+
+  private loadLobby(): void {
+    this.session.set(null);
+    this.loading.set(true);
+    this.api.list().subscribe({
+      next: (l) => { this.sessions.set(l); this.loading.set(false); },
+      error: () => this.loading.set(false),
+    });
+  }
+
+  private loadSession(id: string): void {
+    this.loading.set(true);
+    this.api.get(id).subscribe({
+      next: (s) => { this.session.set(s); this.loading.set(false); },
+      error: () => { this.session.set(null); this.loading.set(false); },
+    });
+  }
+
+  start(mode: VoiceMode): void {
+    this.starting.set(true);
+    this.api.create(mode).subscribe({
+      next: (s) => { this.starting.set(false); this.router.navigate(['/app/voice-room/session', s.id]); },
+      error: (e: Error) => { this.starting.set(false); this.toast.error(e.message || 'Could not start session'); },
+    });
+  }
+
+  open(id: string): void { this.router.navigate(['/app/voice-room/session', id]); }
+  lobby(): void { this.router.navigate(['/app/voice-room']); }
+
+  // ── speech ──
+  startListening(): void {
+    if (!this.sttSupported) { this.toast.info('Speech recognition unavailable — type instead'); return; }
+    this.state.set('listening');
+    this.interim.set('');
+    this.stt.start({
+      interimResults: true,
+      lang: 'en-US',
+      onResult: (text, isFinal) => {
+        this.interim.set(text);
+        if (isFinal && text.trim()) { this.stt.stop(); this.interim.set(''); this.send(text.trim()); }
+      },
+      onError: (c) => { this.state.set('idle'); this.toast.error(`Mic: ${c}`); },
+      onEnd: () => { if (this.state() === 'listening') this.state.set('idle'); },
+    });
+  }
+
+  stopListening(): void { this.stt.stop(); this.state.set('idle'); }
 
   sendTyped(): void {
-    if (!this.typed.trim()) return;
     const t = this.typed.trim();
+    if (!t) return;
     this.typed = '';
     this.send(t);
   }
 
-  private send(transcript: string): void {
-    this.turns.update((list) => [...list, { role: 'you', text: transcript }]);
-    this.thinking.set(true);
-    this.api.ask(transcript, this.sessionId, this.mode()).subscribe({
-      next: (turn) => {
-        this.thinking.set(false);
-        this.sessionId = turn.sessionId;
-        this.turns.update((list) => [...list, { role: 'asta', text: turn.text }]);
-        this.speak(turn.text);
+  private send(text: string): void {
+    const s = this.session();
+    if (!s) return;
+    this.session.set({ ...s, transcript: [...s.transcript, { role: 'user', text, at: new Date().toISOString() }] });
+    this.state.set('thinking');
+    this.api.turn(s.id, text).subscribe({
+      next: (res) => {
+        const cur = this.session();
+        if (cur) this.session.set({ ...cur, transcript: [...cur.transcript, { role: 'assistant', text: res.text, at: new Date().toISOString() }] });
+        this.lastAnswer.set(res.text);
+        if (this.autoRead() && this.tts.supported) {
+          this.state.set('speaking');
+          this.tts.speak(res.text).then(() => this.state.set('idle'));
+        } else {
+          this.state.set('idle');
+        }
       },
-      error: (e) => {
-        this.thinking.set(false);
-        this.toast.error(e?.message ?? 'Voice request failed');
-      },
+      error: (e: Error) => { this.state.set('idle'); this.toast.error(e.message || 'Could not get a response'); },
     });
   }
 
-  private speak(text: string): void {
-    if (typeof window === 'undefined' || !window.speechSynthesis) return;
-    window.speechSynthesis.cancel();
-    const u = new SpeechSynthesisUtterance(text);
-    u.lang = 'en-US';
-    u.onstart = () => this.speaking.set(true);
-    u.onend = () => this.speaking.set(false);
-    window.speechSynthesis.speak(u);
-  }
+  replay(): void { if (this.lastAnswer()) this.tts.speak(this.lastAnswer()); }
+  stopSpeaking(): void { this.tts.cancel(); if (this.state() === 'speaking') this.state.set('idle'); }
 
-  stopSpeaking(): void {
-    if (typeof window !== 'undefined' && window.speechSynthesis) window.speechSynthesis.cancel();
-    this.speaking.set(false);
+  // ── artifacts ──
+  summarize(): void {
+    const s = this.session(); if (!s) return;
+    this.busy.set('sum');
+    this.api.summarize(s.id).subscribe({ next: (u) => { this.session.set(u); this.busy.set(null); this.toast.success('Summarized'); }, error: () => { this.busy.set(null); this.toast.error('Could not summarize'); } });
+  }
+  createFlow(): void {
+    const s = this.session(); if (!s) return;
+    this.busy.set('flow');
+    this.api.createFlow(s.id).subscribe({ next: (r) => { this.busy.set(null); this.toast.success('Flow created from your session'); this.router.navigate(['/app/flows', r.flowId]); }, error: (e: Error) => { this.busy.set(null); this.toast.error(e.message || 'Could not create flow'); } });
+  }
+  createQuiz(): void {
+    const s = this.session(); if (!s) return;
+    this.busy.set('quiz');
+    this.api.createQuiz(s.id).subscribe({ next: (r) => { this.busy.set(null); this.toast.success('Quiz created'); this.router.navigate(['/app/quizzes'], { queryParams: { quizId: r.quizId } }); }, error: (e: Error) => { this.busy.set(null); this.toast.error(e.message || 'Could not create quiz'); } });
+  }
+  extractNotes(): void {
+    const s = this.session(); if (!s) return;
+    this.busy.set('notes');
+    this.api.extractNotes(s.id).subscribe({ next: (r) => { this.notes.set(r.notes); this.busy.set(null); this.toast.success('Notes extracted'); }, error: () => { this.busy.set(null); this.toast.error('Could not extract notes'); } });
+  }
+  copyNotes(): void { navigator.clipboard?.writeText(this.notes()).then(() => this.toast.success('Notes copied'), () => this.toast.error('Clipboard unavailable')); }
+
+  endSession(): void {
+    const s = this.session(); if (!s) return;
+    this.stt.abort(); this.tts.cancel();
+    this.api.end(s.id, Date.now() - this.startedAt).subscribe({ next: (u) => { this.session.set(u); this.toast.success('Session ended'); }, error: () => this.toast.error('Could not end session') });
   }
 }

@@ -58,6 +58,14 @@ export class StudentProfileService {
     await profile.save();
   }
 
+  /** Clear all flagged weak areas (Phase 8 · Skill Twin "reset learning memory"). */
+  async clearWeakAreas(userId: string): Promise<void> {
+    const profile = await this.findByUser(userId);
+    if (!profile) return;
+    profile.weakAreas = [];
+    await profile.save();
+  }
+
   async update(userId: string, dto: UpdateStudentProfileDto): Promise<StudentProfileDocument> {
     const profile = await this.model
       .findOneAndUpdate({ user: new Types.ObjectId(userId) }, dto, { new: true })

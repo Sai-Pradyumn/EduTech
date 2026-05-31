@@ -23,13 +23,27 @@ Legend — Rebuild: ✅ done · 🎯 next priority · ⏳ queued · ➖ keep (no
 | `dashboard` | DashboardComponent | **Mission Control** (hero · ribbon · mastery rings · learning river · signal timeline) | ✅ | profile, roadmap, intelligence |
 | `tutor` | TutorWorkspaceComponent | **Cognitive Studio** (canvas + agent rail; visual blocks) | 🎯 | Agent OS (socket), RAG |
 | `mentor-room` `doubt-solver` `career-coach` `content-studio` | AgentWorkspaceComponent | Agent Orbit rail + visual blocks | 🎯 | Agent OS stream |
-| `voice-room` | VoiceRoomComponent | **Voice Chamber** (living orb exists) | ⏳ | `/voice` (flag) |
+| `voice-room` / `voice-room/session/:id` | VoiceRoomComponent | **Voice Room** — 8 modes, browser STT/TTS, speaking orb, persisted sessions, voice→flow/quiz (Phase 8) | ✅ | `/voice/sessions/*` |
 | `workflows` | WorkflowsComponent | **Agent Swarm Map** | ⏳ | `/agent-graph` (flag) |
 | `roadmap` / `roadmap/:id` / `roadmap/generate` | Roadmap{List,Details,Generate} | **Learning Path Galaxy** (learning river + constellation) | 🎯 | `/roadmap/*` |
+| `flows` / `flows/new` | FlowsListComponent | **Flow Studio** home — generate panel + flow gallery (Phase 8) | ✅ | `/flows` |
+| `flows/:id` | FlowDetailComponent | **Flow Studio cockpit** — SVG dependency graph (pan/zoom/drag), inspector, Map/Timeline/Focus/Weakness/Project views (Phase 8) | ✅ | `/flows/:id` |
+| `visuals` | VisualsListComponent | **Visual Studio** — gallery + generate panel (Phase 8) | ✅ | `/visuals` |
+| `visuals/:id` | VisualDetailComponent | **Visual viewer** — SVG/Mermaid/Markdown renderer + caption/how-to-read + copy/export/regenerate (Phase 8) | ✅ | `/visuals/:id` |
 | `knowledge` | KnowledgeHubComponent | **Knowledge Vault** (shards + retrieval confidence) | 🎯 | `/knowledge/*` |
 | `quizzes` | QuizStudioComponent | **Mastery Arena** (focus Q + mastery rings) | 🎯 | `/assessment/*` |
 | `projects` | ProjectStudioComponent | **Project Forge** (blueprint + journey + AI review) | ⏳ | `/projects/*` |
 | `progress` | IntelligenceCockpitComponent | **Skill Observatory** (radar/heatmap/momentum + rings) | 🎯 | `/intelligence/overview` |
+| `mistakes` | MistakesComponent | **Mistake OS** — repair inbox: stats, top focus, weakness heatmap, repair loops (Phase 8) | ✅ | `/mistakes` |
+| `skill-twin` | SkillTwinComponent | **Skill Twin** — live learner model: readiness/risk gauges, mastery graph, modality router, explainable next-best-actions (Phase 8) | ✅ | `/skill-twin` |
+| `today` | TodayComponent | **Daily Autopilot** — today plan (quick/exam/burnout modes) from flow+mistakes+roadmap (Phase 8) | ✅ | `/daily-plan/*` |
+| `spaces` / `spaces/:id` | Spaces{List,Detail} | **Study Spaces** — multimodal notebooks: sources, grounded ask, generators (Phase 8) | ✅ | `/spaces/*` |
+| `simulations` / `simulations/:id` | Simulations{List,Detail} | **Simulation Labs** — rubric-scored rounds (Phase 8) | ✅ | `/simulations/*` |
+| `course-builder` / `course-builder/:id` | Course{List,Detail} | **Course Builder** — generate + edit + publish courses (Phase 8) | ✅ | `/courses/*` |
+| `peer-rooms` / `peer-rooms/:id` | PeerRooms{List,Detail} | **Peer Rooms** — collaborative study + AI moderator (Phase 8) | ✅ | `/peer-rooms/*` |
+| `mentor-council` | MentorCouncilComponent | **AI Mentor Council** — 5 agents debate → chair verdict (Phase 8) | ✅ | `/mentor-council` |
+| `ledger` | LedgerComponent | **Proof-of-Learning** — verified event timeline (Phase 8) | ✅ | `/ledger` |
+| `replay` | ReplayComponent | **Learning Replay** — narrated recap + TTS (Phase 8) | ✅ | `/replay` |
 | `cohorts` | CohortsComponent | Leaderboard + announcements (signal timeline) | ⏳ | `/cohorts/*` |
 | `live-sessions` | LiveSessionsComponent | Session + recap | ⏳ | `/live-sessions/*` |
 | `community` | CommunityComponent | Channels + threads | ⏳ | `/community/*` |

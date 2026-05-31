@@ -37,6 +37,18 @@ import { CertificatesModule } from './modules/certificates/certificates.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
 import { RoadmapModule } from './modules/roadmap/roadmap.module';
 import { ProgressionModule } from './modules/progression/progression.module';
+import { FlowsModule } from './modules/flows/flows.module';
+import { VisualsModule } from './modules/visuals/visuals.module';
+import { MistakesModule } from './modules/mistakes/mistakes.module';
+import { SkillTwinModule } from './modules/skill-twin/skill-twin.module';
+import { SpacesModule } from './modules/spaces/spaces.module';
+import { SimulationsModule } from './modules/simulations/simulations.module';
+import { DailyPlanModule } from './modules/daily-plan/daily-plan.module';
+import { CourseBuilderModule } from './modules/course-builder/course-builder.module';
+import { PeerRoomsModule } from './modules/peer-rooms/peer-rooms.module';
+import { LedgerModule } from './modules/ledger/ledger.module';
+import { MentorCouncilModule } from './modules/mentor-council/mentor-council.module';
+import { ReplayModule } from './modules/replay/replay.module';
 import { SocketsModule } from './sockets/sockets.module';
 
 @Module({
@@ -75,6 +87,18 @@ import { SocketsModule } from './sockets/sockets.module';
     StudentProfileModule,
     RoadmapModule,
     ProgressionModule,
+    FlowsModule,
+    VisualsModule,
+    MistakesModule,
+    SkillTwinModule,
+    SpacesModule,
+    SimulationsModule,
+    DailyPlanModule,
+    CourseBuilderModule,
+    PeerRoomsModule,
+    LedgerModule,
+    MentorCouncilModule,
+    ReplayModule,
     SocketsModule,
   ],
   controllers: [HealthController],

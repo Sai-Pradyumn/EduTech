@@ -17,7 +17,21 @@ import { Roadmap, RoadmapSchema } from '../modules/roadmap/schemas/roadmap.schem
 import { Organization, OrganizationSchema } from '../modules/tenancy/schemas/organization.schema';
 import { Membership, MembershipSchema } from '../modules/tenancy/schemas/membership.schema';
 import { Cohort, CohortSchema } from '../modules/cohort/schemas/cohort.schema';
+import { Flow, FlowSchema } from '../modules/flows/schemas/flow.schema';
+import { VisualAsset, VisualAssetSchema } from '../modules/visuals/schemas/visual-asset.schema';
+import { Mistake, MistakeSchema } from '../modules/mistakes/schemas/mistake.schema';
+import { buildRepairPlan, severityToType } from '../modules/mistakes/mistake-repair.generator';
+import { VoiceSession, VoiceSessionSchema } from '../modules/voice/schemas/voice-session.schema';
+import { StudySpace, StudySpaceSchema } from '../modules/spaces/schemas/study-space.schema';
+import { Simulation, SimulationSchema } from '../modules/simulations/schemas/simulation.schema';
+import { SIM_BLUEPRINTS } from '../modules/simulations/simulation-coach';
+import { Course, CourseSchema } from '../modules/course-builder/schemas/course.schema';
+import { buildCourseBlueprint } from '../modules/course-builder/course-blueprint.generator';
+import { PeerRoom, PeerRoomSchema } from '../modules/peer-rooms/schemas/peer-room.schema';
+import { LedgerEntry, LedgerEntrySchema } from '../modules/ledger/schemas/ledger-entry.schema';
 import { buildRoadmapBlueprint } from '../modules/agents/roadmap/roadmap-blueprint.generator';
+import { buildFlowBlueprint } from '../modules/flows/flow-architect/flow-blueprint.generator';
+import { buildVisual } from '../modules/visuals/visual-explainer/visual-generator';
 import {
   Branch,
   CareerTarget,
@@ -53,6 +67,15 @@ async function run(): Promise<void> {
   const OrgModel = mongoose.model(Organization.name, OrganizationSchema);
   const MembershipModel = mongoose.model(Membership.name, MembershipSchema);
   const CohortModel = mongoose.model(Cohort.name, CohortSchema);
+  const FlowModel = mongoose.model(Flow.name, FlowSchema);
+  const VisualModel = mongoose.model(VisualAsset.name, VisualAssetSchema);
+  const MistakeModel = mongoose.model(Mistake.name, MistakeSchema);
+  const VoiceSessionModel = mongoose.model(VoiceSession.name, VoiceSessionSchema);
+  const StudySpaceModel = mongoose.model(StudySpace.name, StudySpaceSchema);
+  const SimulationModel = mongoose.model(Simulation.name, SimulationSchema);
+  const CourseModel = mongoose.model(Course.name, CourseSchema);
+  const PeerRoomModel = mongoose.model(PeerRoom.name, PeerRoomSchema);
+  const LedgerModel = mongoose.model(LedgerEntry.name, LedgerEntrySchema);
 
   await UserModel.updateOne(
     { email: DEMO.admin.email },
@@ -141,6 +164,239 @@ async function run(): Promise<void> {
       completedWeeks: [],
       completedTasks: [],
     });
+  }
+
+  // ── Phase 8 · Flow Studio: seed two demo learning flows so the graph is alive on first run.
+  const existingFlow = await FlowModel.findOne({ user: student._id }).exec();
+  if (!existingFlow) {
+    const mern = buildFlowBlueprint({
+      goal: 'Learn the MERN stack and land an internship',
+      skillLevel: Difficulty.Beginner,
+      currentSkills: profileFields.currentSkills,
+      weakAreas: profileFields.weakAreas,
+      targetRole: 'Full-stack intern',
+      sourceType: 'generated',
+    });
+    // Mark the first few nodes as completed/available so progress looks lived-in.
+    const sorted = [...mern.nodes].sort((a, b) => a.stage - b.stage);
+    if (sorted[0]) sorted[0].status = 'completed';
+    if (sorted[1]) sorted[1].status = 'completed';
+    if (sorted[2]) sorted[2].status = 'in_progress';
+    const completed = new Set(mern.nodes.filter((n) => n.status === 'completed').map((n) => n.id));
+    mern.nodes.forEach((n) => {
+      if (n.status === 'completed' || n.status === 'in_progress') return;
+      n.status = n.prerequisites.every((p) => completed.has(p)) ? 'available' : 'locked';
+    });
+    await FlowModel.create({
+      user: student._id,
+      title: mern.title,
+      goal: mern.goal,
+      description: mern.description,
+      sourceType: 'generated',
+      status: 'active',
+      difficulty: mern.difficulty as Difficulty,
+      nodes: mern.nodes,
+      edges: mern.edges,
+      timeline: mern.timeline,
+      metadata: mern.metadata,
+      progressPercentage: Math.round((completed.size / (mern.nodes.length || 1)) * 100),
+    });
+
+    const dsa = buildFlowBlueprint({
+      goal: 'Crack DSA interviews in 45 days',
+      skillLevel: Difficulty.Intermediate,
+      currentSkills: ['JavaScript', 'Problem solving'],
+      weakAreas: ['Dynamic programming', 'Graphs'],
+      targetRole: 'SDE',
+      sourceType: 'generated',
+    });
+    await FlowModel.create({
+      user: student._id,
+      title: dsa.title,
+      goal: dsa.goal,
+      description: dsa.description,
+      sourceType: 'generated',
+      status: 'active',
+      difficulty: dsa.difficulty as Difficulty,
+      nodes: dsa.nodes,
+      edges: dsa.edges,
+      timeline: dsa.timeline,
+      metadata: dsa.metadata,
+      progressPercentage: 0,
+    });
+  }
+
+  // ── Phase 8 · Visual Intelligence Studio: seed a few educational visuals.
+  const existingVisual = await VisualModel.findOne({ user: student._id }).exec();
+  if (!existingVisual) {
+    const demos: { concept: string; type: import('../modules/visuals/schemas/visual-asset.schema').VisualType }[] = [
+      { concept: 'How a MERN request flows end to end', type: 'sequence_diagram' },
+      { concept: 'React component lifecycle', type: 'mind_map' },
+      { concept: 'Scalable web app architecture', type: 'architecture' },
+      { concept: 'SQL vs NoSQL', type: 'comparison' },
+    ];
+    for (const d of demos) {
+      const v = buildVisual({ concept: d.concept, type: d.type });
+      await VisualModel.create({
+        user: student._id,
+        type: v.type,
+        title: d.concept,
+        prompt: d.concept,
+        sourceType: 'manual',
+        contentFormat: v.contentFormat,
+        content: v.content,
+        mermaid: v.mermaid,
+        thumbnail: v.thumbnail,
+        caption: v.caption,
+        howToRead: v.howToRead,
+        level: 'beginner',
+        status: 'ready',
+        provider: 'deterministic',
+        metadata: v.metadata,
+      });
+    }
+  }
+
+  // ── Phase 8 · Mistake OS: seed a few logged mistakes so the repair inbox is alive.
+  const existingMistake = await MistakeModel.findOne({ user: student._id }).exec();
+  if (!existingMistake) {
+    const demos = [
+      { concept: 'Dynamic programming', severity: 82, frequency: 3, source: 'quiz' as const, status: 'open' as const, repaired: false },
+      { concept: 'REST API design', severity: 64, frequency: 2, source: 'quiz' as const, status: 'repairing' as const, repaired: true },
+      { concept: 'MongoDB aggregation', severity: 58, frequency: 2, source: 'quiz' as const, status: 'open' as const, repaired: false },
+      { concept: 'Deployment & CI/CD', severity: 47, frequency: 1, source: 'project' as const, status: 'resolved' as const, repaired: false },
+    ];
+    for (const d of demos) {
+      const type = severityToType(d.severity);
+      const plan = d.repaired ? buildRepairPlan(d.concept, type) : { correction: '', actions: [] };
+      await MistakeModel.create({
+        user: student._id,
+        concept: d.concept,
+        topic: d.concept,
+        mistakeType: type,
+        correction: plan.correction,
+        severity: d.severity,
+        frequency: d.frequency,
+        source: d.source,
+        status: d.status,
+        repairActions: plan.actions,
+        lastSeenAt: new Date(),
+        resolvedAt: d.status === 'resolved' ? new Date() : undefined,
+      });
+    }
+  }
+
+  // ── Phase 8 · Voice Room: seed one completed voice session so the room isn't empty.
+  const existingVoice = await VoiceSessionModel.findOne({ user: student._id }).exec();
+  if (!existingVoice) {
+    await VoiceSessionModel.create({
+      user: student._id,
+      mode: 'tutor',
+      title: 'Explain how closures work',
+      transcript: [
+        { role: 'user', text: 'Explain how closures work in JavaScript.', at: new Date() },
+        { role: 'assistant', text: 'A closure is a function that remembers the variables from the scope where it was created, even after that scope has returned. Can you think of where that memory is useful?', at: new Date() },
+        { role: 'user', text: 'Maybe for a counter that keeps its own count?', at: new Date() },
+        { role: 'assistant', text: 'Exactly — the inner function keeps a private reference to the count variable. That is the classic closure use case. Want to try writing one?', at: new Date() },
+      ],
+      summary: 'Voice tutor session covering: how closures work; a counter example.',
+      extractedActions: ['Follow up on: how closures work', 'Follow up on: a private counter example'],
+      durationMs: 95000,
+      status: 'completed',
+    });
+  }
+
+  // ── Phase 8 · Study Spaces: seed one space with a couple of sources.
+  const existingSpace = await StudySpaceModel.findOne({ user: student._id }).exec();
+  if (!existingSpace) {
+    await StudySpaceModel.create({
+      user: student._id,
+      title: 'System Design Basics',
+      description: 'Notes and transcripts for the system design round.',
+      sources: [
+        { id: 'src_caching', type: 'text', title: 'Caching notes', text: 'A cache stores hot data closer to the consumer to cut latency. Use a TTL to bound staleness. Cache-aside is the most common pattern: read-through on miss, write to the DB then invalidate the cache.', addedAt: new Date() },
+        { id: 'src_lb', type: 'text', title: 'Load balancing', text: 'A load balancer spreads traffic across servers. Round-robin is simple; least-connections suits long-lived requests. Health checks remove unhealthy nodes.', addedAt: new Date() },
+      ],
+    });
+  }
+
+  // ── Phase 8 · Simulation Labs: seed one finished interview simulation.
+  const existingSim = await SimulationModel.findOne({ user: student._id }).exec();
+  if (!existingSim) {
+    const bp = SIM_BLUEPRINTS.interview;
+    await SimulationModel.create({
+      user: student._id,
+      type: 'interview',
+      topic: 'REST API design',
+      difficulty: Difficulty.Intermediate,
+      role: bp.role,
+      scenario: bp.scenario('REST API design'),
+      rubric: bp.rubric.map((c) => ({ criterion: c, weight: 1, score: 72 })),
+      transcript: [
+        { role: 'coach', text: bp.scenario('REST API design'), at: new Date() },
+        { role: 'user', text: 'REST uses resources and HTTP verbs; I would version the API and use proper status codes.', at: new Date() },
+        { role: 'coach', text: 'Good. How would you handle pagination and partial failures?', at: new Date() },
+      ],
+      score: 72,
+      feedback: 'Solid performance (72/100). Tighten the weaker rubric areas and retry.',
+      improvementPlan: ['Strengthen "Depth" on REST API design.'],
+      linkedSkills: ['REST API design'],
+      status: 'finished',
+    });
+  }
+
+  // ── Phase 8 · Course Builder: seed one draft course authored by the mentor.
+  if (mentor) {
+    const existingCourse = await CourseModel.findOne({ author: mentor._id }).exec();
+    if (!existingCourse) {
+      const bp = buildCourseBlueprint('MERN stack for beginners', Difficulty.Beginner);
+      await CourseModel.create({
+        author: mentor._id,
+        title: bp.title,
+        goal: 'MERN stack for beginners',
+        description: bp.description,
+        audience: 'First-year students',
+        level: Difficulty.Beginner,
+        source: 'goal',
+        status: 'draft',
+        visibility: 'private',
+        modules: bp.modules,
+        project: bp.project,
+        certificateCriteria: bp.certificateCriteria,
+      });
+    }
+  }
+
+  // ── Phase 8 · Peer Rooms: seed one open room hosted by the student.
+  const existingRoom = await PeerRoomModel.findOne({ host: student._id }).exec();
+  if (!existingRoom) {
+    await PeerRoomModel.create({
+      host: student._id,
+      title: 'DSA Study Circle',
+      topic: 'Dynamic programming',
+      code: 'DEMO01',
+      members: [{ user: student._id, name: 'Aarav Sharma', role: 'host', joinedAt: new Date() }],
+      messages: [
+        { id: 'msg_seed1', name: 'Asta', kind: 'system', text: 'Room created for "Dynamic programming". Share code DEMO01 to invite peers.', at: new Date() },
+        { id: 'msg_seed2', user: student._id, name: 'Aarav Sharma', kind: 'chat', text: 'Anyone want to practice DP problems together this week?', at: new Date() },
+      ],
+      status: 'open',
+    });
+  }
+
+  // ── Phase 8 · Proof-of-Learning Ledger: seed a few verified events (powers the ledger + replay).
+  const existingLedger = await LedgerModel.findOne({ user: student._id }).exec();
+  if (!existingLedger) {
+    const now = Date.now();
+    const day = 24 * 60 * 60 * 1000;
+    const entries = [
+      { kind: 'node_completed', title: 'Completed: JavaScript & ES2023 foundations', detail: 'In flow "Learn the MERN stack and land an internship".', at: new Date(now - 5 * day) },
+      { kind: 'quiz_passed', title: 'Passed quiz: JavaScript basics', detail: 'Scored 80% on JavaScript.', score: 80, at: new Date(now - 4 * day) },
+      { kind: 'node_completed', title: 'Completed: React components & hooks', detail: 'In flow "Learn the MERN stack and land an internship".', at: new Date(now - 3 * day) },
+      { kind: 'simulation_finished', title: 'Finished interview: REST API design', detail: 'Scored 72/100.', score: 72, at: new Date(now - 2 * day) },
+      { kind: 'week_completed', title: 'Completed week 1', detail: 'MERN Stack Developer — next: React fundamentals.', at: new Date(now - 1 * day) },
+    ] as const;
+    for (const e of entries) await LedgerModel.create({ user: student._id, ...e });
   }
 
   // ── Multi-tenant demo (B1): a sample college org with admin as owner + student member.

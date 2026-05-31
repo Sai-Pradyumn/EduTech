@@ -1,5 +1,158 @@
 # Asta — Fixed / Remaining
 
+## ✅ Shipped — Phase 8 · PRIORITY 4 breakthroughs — PHASE 8 COMPLETE
+The breakthrough features, end-to-end. Full detail in [`PHASE_8_MULTIMODAL_LEARNING_OS.md`](PHASE_8_MULTIMODAL_LEARNING_OS.md).
+- **Proof-of-Learning Ledger** `server/src/modules/ledger/` + `client/.../features/ledger/`: append-only
+  verified-event timeline. `LedgerService` listens to quiz/week/project events **and** is called by
+  Flows(node complete) / Mistakes(resolved) / Simulations(finish). 2 routes. Seed 5 entries. (Flow-node
+  capture verified live: 5→6.)
+- **AI Mentor Council** `server/src/modules/mentor-council/` + `features/mentor-council/`: 5 agent
+  perspectives (Tutor/Assessment/Project/Career/Mentor) propose with urgency; chair picks + synthesizes.
+  Read-only (LI + Flows + Mistakes). `/app/mentor-council`.
+- **Learning Replay** `server/src/modules/replay/` + `features/replay/`: recap from Ledger + Skill Twin
+  with a TTS-playable 3-min script. `/app/replay`.
+- **Weakness-to-Project**: `POST /mistakes/:id/repair-project` (→ ProjectsService) + "Generate targeted
+  project" button in Mistake OS. (Adaptive Modality Router + Explainability Drawer already in Skill Twin.)
+- **Wiring**: 5 routes + nav (Mentor Council, Learning Replay, Proof-of-Learning) + voice rules. Cross-
+  module: Flows/Mistakes/Simulations now import LedgerModule; Mistakes imports ProjectsModule.
+- **Verification**: builds green; client warning-free (524.25 kB < 540 kB); server boots clean; API
+  smoked — ledger list/stats + **flow-node→ledger capture**, council 5-member verdict, replay recap,
+  weakness→project.
+- **PHASE 8 COMPLETE** — all 4 priorities (11 module groups). Remaining = optional polish (dashboard
+  widget, socket streaming, real STT/TTS+image providers, BullMQ, live UI/a11y pass).
+
+## ✅ Shipped — Phase 8 · PRIORITY 3 (Course Builder + Peer Rooms) — in one pass
+Both Priority-3 modules built end-to-end. Full detail in [`PHASE_8_MULTIMODAL_LEARNING_OS.md`](PHASE_8_MULTIMODAL_LEARNING_OS.md).
+- **Course Builder** `server/src/modules/course-builder/` + `client/.../features/course-builder/`: goal/
+  outline/roadmap → modules+lessons+project+certificate criteria (`course-blueprint.generator`),
+  editable; per-module generate quiz (→Assessment) / visual (→Visuals); generate project (→Projects) /
+  flow (→Flows); **role-gated publish** to org/cohort (mentor/admin). 11 routes; `ENABLE_COURSE_BUILDER`.
+  Seed 1 draft course (mentor).
+- **Peer Rooms** `server/src/modules/peer-rooms/` + `features/peer-rooms/`: create/join-by-code, shared
+  message board, **AI moderator** (Agent OS nudge), summary + action items, shared learning flow,
+  host-only close. 11 routes; `ENABLE_PEER_ROOMS`. Seed 1 open room (code DEMO01).
+- **Wiring**: 8 routes + nav (Course Builder, Peer Rooms) + voice rules.
+- **Verification**: builds green; client warning-free (522.79 kB < 540 kB); server boots clean; API
+  runtime-smoked — course generation + per-module quiz/visual/project/flow; **publish role gate
+  (student org-publish 403, mentor org-publish ok)**; peer-room create/message/moderate/summary/flow +
+  mentor join-by-code with role mapping.
+- **PRIORITY 3 COMPLETE.** Remaining: Priority 4 breakthroughs (AI Mentor Council, Proof-of-Learning
+  Ledger, Learning Replay).
+
+## ✅ Shipped — Phase 8 · PRIORITY 2 (Study Spaces + Simulation Labs + Daily Autopilot) — in one pass
+All three Priority-2 modules built end-to-end. Full detail in [`PHASE_8_MULTIMODAL_LEARNING_OS.md`](PHASE_8_MULTIMODAL_LEARNING_OS.md).
+- **Study Spaces** `server/src/modules/spaces/` + `client/.../features/spaces/`: NotebookLM-style spaces
+  (sources → grounded ask, summary, flashcards, audio-overview script, + spawn flow/quiz/concept-visual).
+  14 routes; `ENABLE_STUDY_SPACES`. Reuses AI gateway + Flows + Assessment + Visuals. Seed 1 space.
+- **Simulation Labs** `server/src/modules/simulations/` + `features/simulations/`: 10 round types,
+  per-type blueprints (agent + scenario + rubric), start/respond(Agent OS)/finish(rubric score +
+  improvement plan + **feeds Mistake OS** on sub-60)/retry/create-repair-flow. 8 routes;
+  `ENABLE_SIMULATIONS`. Seed 1 finished sim.
+- **Daily Autopilot** `server/src/modules/daily-plan/` + `features/today/`: builds today's plan from
+  active flow + open mistakes + roadmap + quiz nudge; modes normal/quick/exam/burnout_recovery;
+  complete/recalculate. 5 routes. `/app/today`.
+- **Wiring**: 8 new routes + nav items (Today, Study Spaces, Simulations) + voice-command rules.
+- **Verification**: builds green; client warning-free (521.46 kB < 540 kB); server boots clean (all
+  route groups mapped); API runtime-smoked across all three (grounded ask + generators; sim finish →
+  Mistake-OS link verified; daily-plan normal/quick/exam).
+- **PRIORITY 2 COMPLETE.** Remaining Phase 8: Priority 3 (Course Builder, Peer Rooms), Priority 4
+  breakthroughs (AI Mentor Council, Proof-of-Learning, Learning Replay).
+
+## ✅ Shipped — Phase 8 · Complete Voice Room (Priority 1 · module 5) — PRIORITY 1 DONE
+Voice-native learning, end-to-end. Full detail in [`PHASE_8_MULTIMODAL_LEARNING_OS.md`](PHASE_8_MULTIMODAL_LEARNING_OS.md).
+- **Backend** `server/src/modules/voice/`: promoted the stub to **persisted `VoiceSession`** (8 modes,
+  transcript, summary, extractedActions, links). `VoiceService` adds sessions CRUD + `addTurn` (routes
+  through the Agent OS per mode) + summarize + **createFlow** (→ FlowsService) + **createQuiz** (→
+  AssessmentService) + extractNotes + end; kept legacy `converse()` for the Ask-Asta dock. Controller
+  +11 session routes; module imports Flows + Assessment + Mongoose. `ENABLE_VOICE` flag (default on).
+  Seed: 1 demo voice session.
+- **Frontend** `client/src/app/features/voice/voice-room.component.ts`: rewritten as lobby (8 mode cards
+  + recent sessions) + live session (`/app/voice-room/session/:id`) — speaking **orb**, push-to-talk mic
+  (browser `SpeechRecognitionService`) **and** type fallback, TTS playback (`TextToSpeechService`),
+  transcript timeline, replay/stop/auto-read, and a "turn into flow/quiz/notes/summary" rail. New
+  `voice-session.service.ts`; live-session route added; nav/voice rules already present.
+- **Graceful degradation**: unsupported STT → notice + type fallback; mic-permission errors → toast.
+- **Verification**: builds green; client warning-free (519.60 kB < 540 kB); server boots clean (13 voice
+  routes); API smoked across the full lifecycle (create → turn via Agent OS → voice→flow + voice→quiz
+  linked → notes → end + summary).
+- **PRIORITY 1 COMPLETE**: Flow Studio ✅, Visual Studio ✅, Mistake OS ✅, Skill Twin ✅, Voice Room ✅.
+  Next: Priority 2 (Study Spaces, Simulation Labs, Daily Autopilot).
+
+## ✅ Shipped — Phase 8 · Skill Twin (Priority 1 · module 4)
+A **live, explainable learner model** that powers recommendations. Full detail in [`PHASE_8_MULTIMODAL_LEARNING_OS.md`](PHASE_8_MULTIMODAL_LEARNING_OS.md).
+- **Backend** `server/src/modules/skill-twin/`: `SkillTwinService.compute()` blends `LearningIntelligence`
+  overview + **Mistake OS** + active **Flow** + profile into readiness/health, retention & burnout risk,
+  pace + projected days, mastery graph, weakness roots, misconception memory, an **Adaptive Modality
+  Router** and **explainable next-best-actions** (each with a `reason`). `resetMemory()` clears Mistake
+  OS + flagged weak areas (added `MistakesService.clearForUser` + `StudentProfileService.clearWeakAreas`).
+  Read-only (no new persistence). 2 routes.
+- **Frontend** `client/src/app/features/skill-twin/`: readiness/health rings + retention/burnout gauges,
+  next-best-actions with a **"Why?" drawer**, recommended-modality card, mastery graph (value vs target),
+  weakness roots, misconception memory, strengths, transparent signals list, guarded reset. `skill-twin.service.ts`;
+  route `/app/skill-twin`; nav "Skill Twin"; voice rule.
+- **Verification**: builds green; client warning-free (519.29 kB < 540 kB); server boots clean (skill-twin
+  routes mapped); API smoked (compute returns full model w/ modality + explainable actions; burnout
+  heuristic softened to use streak; reset clears 5 mistakes → twin recomputes). Re-seeded demo data.
+- **Priority 1 now COMPLETE except Voice Room** (Flow Studio ✅, Visual Studio ✅, Mistake OS ✅, Skill Twin ✅).
+
+## ✅ Shipped — Phase 8 · Mistake OS (Priority 1 · module 3)
+Remembers **misconceptions, not just scores**. Full detail in [`PHASE_8_MULTIMODAL_LEARNING_OS.md`](PHASE_8_MULTIMODAL_LEARNING_OS.md).
+- **Backend** `server/src/modules/mistakes/`: `Mistake` schema (8 types, severity/frequency, repair
+  actions, status), `MistakesService` with **`@OnEvent(quizGraded)` auto-capture** (enriched the event
+  with per-topic `topicScores`), `buildRepairPlan` generator (tutor/visual/micro-quiz/voice-viva/flow-
+  node), stats (open/repairing/resolved + top focus + heatmap), controller (9 routes). Added
+  `FlowsService.addRepairNode` + `findActive` so a mistake can inject a `weak_area_repair` node into the
+  active flow. Seed: 4 demo mistakes.
+- **Frontend** `client/src/app/features/mistakes/`: repair **inbox** — stats strip, top-repair-focus
+  card, **weakness heatmap**, status filter, expandable cards with a repair plan whose actions deep-link
+  to tutor/visual/quiz/voice or add a flow repair node; resolve/reopen/delete. `mistake.service.ts`;
+  route `/app/mistakes`; nav "Mistakes"; voice rule.
+- **Verification**: builds green; client warning-free (518.80 kB < 540 kB); server boots clean (mistake
+  routes mapped); API runtime-smoked incl. the **0%-quiz → auto-captured mistake** event path and
+  **repair-flow → node added to active flow**.
+
+## ✅ Shipped — Phase 8 · Visual Intelligence Studio (Priority 1 · module 2)
+Built **Visual Studio** end-to-end — turns any concept (or a flow node) into a structured educational
+visual, **with no paid image API**. Full detail in [`PHASE_8_MULTIMODAL_LEARNING_OS.md`](PHASE_8_MULTIMODAL_LEARNING_OS.md).
+- **Backend** `server/src/modules/visuals/`: `VisualAsset` schema (16 types, formats svg/mermaid/
+  jsonGraph/imageUrl/markdown/html), **VisualExplainer** agent (LLM structured output + deterministic
+  `buildVisual` fallback), **image-provider abstraction** (`IImageProvider`/`MockImageProvider`, behind
+  `ENABLE_IMAGE_GENERATION`, default off → mock SVG), `VisualsService` (generate / from-flow-node /
+  regenerate / CRUD), controller (8 routes, `ENABLE_VISUAL_STUDIO` gate). Seed: 4 demo visuals.
+- **Frontend** `client/src/app/features/visuals/`: reusable `VisualRendererComponent` (dependency-free
+  SVG graph renderer for jsonGraph + `MarkdownPipe` + image + mermaid code — **no mermaid.js/d3 dep**),
+  `visuals-list` (gallery + generate panel) and `visual-detail` (viewer + copy/export/regenerate/ask-
+  tutor). New `visual.service.ts`. Routes `/app/visuals`,`/visuals/:id`; nav "Visual Studio"; voice rule.
+- **Cross-module**: "Explain visually" in the **Flow inspector** → `from-flow-node` generates a visual
+  and **links it back onto the flow node** (`linkedVisualAssetIds`, verified in smoke).
+- **Verification**: builds green; client warning-free (518.31 kB < 540 kB); server boots clean (visual
+  routes mapped); API runtime-smoked (generate / comparison / from-flow-node+link / get / regenerate /
+  delete). Noir cockpit compliant.
+
+## ✅ Shipped — Phase 8 · Flow Studio (Multimodal Learning OS, Priority 1 · module 1)
+Built **Flow Studio** end-to-end and deeply (per the Phase 8 brief: complete Priority 1 deeply, not
+everything shallowly). Full detail in [`PHASE_8_MULTIMODAL_LEARNING_OS.md`](PHASE_8_MULTIMODAL_LEARNING_OS.md).
+- **Backend** `server/src/modules/flows/`: `Flow` schema (embedded `FlowNode`/`FlowEdge`/timeline, 15
+  node types, 8 edge relations, unlock statuses), DTOs, `FlowsService` (generate / from-roadmap / CRUD /
+  node ops / execute-node / recalculate / export), `FlowsController` (13 routes, `ENABLE_FLOW_STUDIO`
+  gate), and the **FlowArchitect** agent (`AiService.generateStructuredOutput` + `mockFactory`
+  deterministic blueprint + normalize/validate → works offline). Registered in `app.module`; flag added
+  to config (default on).
+- **Frontend** `client/src/app/features/flows/`: `flows-list` (generate panel + gallery + states),
+  `flow-detail` **graph cockpit** — custom **SVG canvas** (pan/zoom/drag, dot-grid mission-control look),
+  right inspector, **5 views** (Map/Timeline/Focus/Weakness/Project), node actions (Start → routes to
+  tutor/quiz/project/voice/mentor/knowledge; Mark mastered → unlock cascade), recalculate, export. New
+  `flow.service.ts` + `flow-node-meta.ts`. Routes (`/app/flows`, `/flows/new`, `/flows/:id`), **nav**
+  ("Flow Studio" in Learn), command palette (auto), and a voice-command nav rule.
+- **Seed**: 2 demo flows (22-node MERN with lived-in progress, 20-node DSA).
+- **Verification**: `build:server` green; `build:client` green & **warning-free** (517.77 kB < 540 kB);
+  server **boots clean** (all flow routes mapped, no DI errors); API **runtime-smoked** with the mock
+  provider (generate → execute-node → complete-cascade → recalculate → export).
+- **Design**: compact Noir cockpit — command headers, `.card`/`.kicker`, no heroes; green=path,
+  cyan/violet=AI nodes, amber=weakness; shared motion taxonomy + reduced-motion safe; mobile → list view.
+- **Remaining Phase 8** (queued, see the Phase 8 doc): Visual Intelligence Studio, complete Voice Room,
+  Skill Twin, Mistake OS (Priority 1); then Study Spaces / Simulations / Daily Autopilot (P2); etc.
+
 ## ✅ Fixed / done — WHOLE-APP motion rollout (latest)
 Completed the motion-taxonomy rollout across **every remaining logged-in screen**
 (20 files, via two waves of 3 parallel agents + central build verification). The

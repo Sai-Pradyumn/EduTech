@@ -34,6 +34,22 @@ export interface AppConfig {
     langgraph: boolean;
     realtimeVoice: boolean;
     fineTuning: boolean;
+    /** Phase 8 · Flow Studio (visual learning graphs). On by default; set ENABLE_FLOW_STUDIO=false to disable. */
+    flowStudio: boolean;
+    /** Phase 8 · Visual Intelligence Studio. On by default. */
+    visualStudio: boolean;
+    /** Phase 8 · real image generation (OpenAI/Gemini/Stability). Off by default — mock SVG used. */
+    imageGeneration: boolean;
+    /** Phase 8 · Voice Room (browser STT/TTS). On by default; ENABLE_VOICE=false to disable. */
+    voice: boolean;
+    /** Phase 8 · Study Spaces. On by default. */
+    studySpaces: boolean;
+    /** Phase 8 · Simulation Labs. On by default. */
+    simulations: boolean;
+    /** Phase 8 · Course Builder. On by default. */
+    courseBuilder: boolean;
+    /** Phase 8 · Peer Rooms. On by default. */
+    peerRooms: boolean;
   };
   vector: { backend: 'keyword' | 'atlas' };
   rag: { topK: number; minScore: number; hybrid: boolean };
@@ -106,6 +122,14 @@ export default (): AppConfig => ({
     langgraph: process.env.ENABLE_LANGGRAPH === 'true',
     realtimeVoice: process.env.ENABLE_REALTIME_VOICE === 'true',
     fineTuning: process.env.ENABLE_FINE_TUNING === 'true',
+    flowStudio: process.env.ENABLE_FLOW_STUDIO !== 'false',
+    visualStudio: process.env.ENABLE_VISUAL_STUDIO !== 'false',
+    imageGeneration: process.env.ENABLE_IMAGE_GENERATION === 'true',
+    voice: process.env.ENABLE_VOICE !== 'false',
+    studySpaces: process.env.ENABLE_STUDY_SPACES !== 'false',
+    simulations: process.env.ENABLE_SIMULATIONS !== 'false',
+    courseBuilder: process.env.ENABLE_COURSE_BUILDER !== 'false',
+    peerRooms: process.env.ENABLE_PEER_ROOMS !== 'false',
   },
   vector: {
     backend: (process.env.VECTOR_STORE_PROVIDER ??

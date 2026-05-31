@@ -237,6 +237,7 @@ export class AssessmentService {
       topic: quiz.topic,
       score: evaluation.score,
       weakTopics: evaluation.weakTopics,
+      topicScores: evaluation.topicScores.map((t) => ({ topic: t.topic, severity: t.severity })),
     } satisfies QuizGradedEvent);
 
     return { attempt: this.toAttemptView(attempt), evaluation, review };

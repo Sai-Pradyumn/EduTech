@@ -37,6 +37,17 @@
 | 11m | **Certificates** — issue verifiable credentials (gated by permission), **public verification page** at `/certificate/verify/:id`; `/app/certificates` | ✅ Phase 4 · B7 |
 | 11n | **In-app notifications** — topbar bell with unread badge + mark-read; cohort announcements fan out to enrolled students | ✅ Phase 4 · B13 |
 | 11o | **Production ops** — Dockerfiles (FE/BE), `docker-compose.prod.yml`, nginx reverse-proxy, CI workflow, deploy doc; security headers + per-IP rate limiting; `/api/health/detailed` readiness probe | ✅ Phase 4 · B10/B11/B12 |
+| P8·1 | **Flow Studio** — a goal becomes a **living visual learning graph** (concept/practice/quiz/project/voice/repair/mastery-gate nodes + dependency edges). SVG graph cockpit (pan/zoom/drag, inspector, Map/Timeline/Focus/Weakness/Project views), unlock cascades, recalculate (adds weak-area repairs), export; from-roadmap generation; FlowArchitect agent (LLM + deterministic offline fallback); `/app/flows` | ✅ Phase 8 |
+| P8·2 | **Visual Studio** — turn any concept (or a flow node) into a **structured educational visual**: jsonGraph→SVG, Mermaid, Markdown tables/cheat-sheets, mock SVG illustrations. Reusable SVG renderer (no mermaid.js/d3 dep), regenerate/copy/export, "Explain visually" from a flow node (links back). VisualExplainer agent + image-provider abstraction (mock by default, no paid API); `/app/visuals` | ✅ Phase 8 |
+| P8·3 | **Mistake OS** — remembers misconceptions, not just scores. **Auto-captures** weak topics from graded quizzes (event-driven), builds **repair loops** (tutor/visual/micro-quiz/voice-viva), injects `weak_area_repair` nodes into the active flow, weakness heatmap + top repair focus; `/app/mistakes` | ✅ Phase 8 |
+| P8·4 | **Skill Twin** — a live, explainable learner model (readiness/health, retention & burnout risk, pace, mastery graph, weakness roots, misconception memory). **Adaptive modality router** + next-best-actions each with a **"Why?" explainability drawer**; reset-learning-memory. Blends Learning-Intelligence + Mistake OS + active flow + profile; `/app/skill-twin` | ✅ Phase 8 |
+| P8·5 | **Voice Room** — voice-native learning: persisted multi-turn sessions across **8 modes** (tutor/viva/interview/doubt/flow-builder/revision/mentor/project-review), browser STT/TTS with type fallback, speaking orb, **voice→flow** + **voice→quiz** + notes/summary; `/app/voice-room` | ✅ Phase 8 |
+| P8·6 | **Study Spaces** — NotebookLM-style multimodal notebooks: add sources, ask grounded questions, generate summary/flashcards/audio-overview, and spawn a flow/quiz/concept-map; `/app/spaces` | ✅ Phase 8 |
+| P8·7 | **Simulation Labs** — rubric-scored practice across 10 round types (interview/viva/debugging/system-design/…); finishing scores you, writes an improvement plan, feeds Mistake OS + can patch your flow; `/app/simulations` | ✅ Phase 8 |
+| P8·8 | **Daily Autopilot** — turns your active flow + open mistakes + roadmap into a **today plan** with energy-aware modes (quick / exam / burnout-recovery); `/app/today` | ✅ Phase 8 |
+| P8·9 | **Course Builder** — mentors/admins turn a goal/outline/roadmap into a full course (modules + lessons + per-module quiz/visual/voice-script + capstone project + flow + certificate criteria), editable, **role-gated publish** to org/cohort; `/app/course-builder` | ✅ Phase 8 |
+| P8·10 | **Peer Rooms** — collaborative study rooms (join by code, shared board, **AI moderator**, auto-summary + action items, shared learning flow); `/app/peer-rooms` | ✅ Phase 8 |
+| P8·11 | **Breakthroughs** — **Proof-of-Learning Ledger** (verified event timeline), **AI Mentor Council** (5 agents debate → chair picks), **Learning Replay** (narrated recap + TTS), **Weakness-to-Project** generator; `/app/ledger`, `/app/mentor-council`, `/app/replay` | ✅ Phase 8 |
 | 11 | Admin dashboard + AI analytics | ⏳ Phase 6 |
 | 12 | Notifications (in-app + BullMQ) | ⏳ Phase 6 |
 | 13 | WebSocket foundation (streaming + realtime) | ⏳ Phase 3 |
@@ -134,6 +145,15 @@ npm run build            # builds server then client
 | `CLAUDE_MODEL` / `OPENAI_MODEL` / `GEMINI_MODEL` | model overrides |
 | `AI_REQUEST_TIMEOUT_MS` / `AI_MAX_OUTPUT_TOKENS` / `AI_USER_RATE_PER_MIN` | gateway timeout, output cap, per-user AI turns/min |
 | `VECTOR_BACKEND` | `keyword` \| `atlas` (keyword needs no vector DB) |
+| `ENABLE_FLOW_STUDIO` | Phase 8 Flow Studio. **On by default**; set `false` to disable `/app/flows` generation (`GET /api/flows/status` reports state). |
+| `ENABLE_VISUAL_STUDIO` | Phase 8 Visual Studio. **On by default** (`/app/visuals`). |
+| `ENABLE_IMAGE_GENERATION` | Real image generation provider. **Off by default** — a deterministic mock SVG is used so no paid image API is required. |
+| `ENABLE_VOICE` | Phase 8 Voice Room. **On by default** (browser STT/TTS need no keys); set `false` to disable `/app/voice-room`. |
+| `ENABLE_REALTIME_VOICE` | Server-side STT/TTS provider (OpenAI Realtime / ElevenLabs / Azure). Off by default — the browser Web Speech API does mic + speech. |
+| `ENABLE_STUDY_SPACES` | Phase 8 Study Spaces (`/app/spaces`). **On by default.** |
+| `ENABLE_SIMULATIONS` | Phase 8 Simulation Labs (`/app/simulations`). **On by default.** |
+| `ENABLE_COURSE_BUILDER` | Phase 8 Course Builder (`/app/course-builder`). **On by default.** |
+| `ENABLE_PEER_ROOMS` | Phase 8 Peer Rooms (`/app/peer-rooms`). **On by default.** |
 | `STORAGE_PROVIDER` | `local` \| `s3` |
 | `AWS_*` / `S3_BUCKET` | S3 storage (optional) |
 
@@ -181,3 +201,4 @@ Every AI surface goes through one pipeline: **classify intent → route to agent
 - [`docs/DATABASE_SCHEMA.md`](docs/DATABASE_SCHEMA.md) · [`docs/API_CONTRACTS.md`](docs/API_CONTRACTS.md) · [`docs/AI_AGENTS.md`](docs/AI_AGENTS.md)
 - Phase 3: [`docs/AI_AGENT_OS.md`](docs/AI_AGENT_OS.md) · [`docs/AGENT_WORKFLOWS.md`](docs/AGENT_WORKFLOWS.md) · [`docs/RAG_ARCHITECTURE.md`](docs/RAG_ARCHITECTURE.md) · [`docs/VOICE_AGENT_ARCHITECTURE.md`](docs/VOICE_AGENT_ARCHITECTURE.md) · [`docs/FINE_TUNING_LORA_ARCHITECTURE.md`](docs/FINE_TUNING_LORA_ARCHITECTURE.md)
 - UX/dashboards: [`docs/FRONTEND_UX_SYSTEM.md`](docs/FRONTEND_UX_SYSTEM.md) · [`docs/STUDENT_DASHBOARD.md`](docs/STUDENT_DASHBOARD.md) · [`docs/ADMIN_COMMAND_CENTER.md`](docs/ADMIN_COMMAND_CENTER.md)
+- Phase 8 (Multimodal Learning OS): [`PHASE_8_MULTIMODAL_LEARNING_OS.md`](PHASE_8_MULTIMODAL_LEARNING_OS.md) — Flow Studio shipped; Visual Studio / Voice / Skill Twin / Mistake OS queued.
