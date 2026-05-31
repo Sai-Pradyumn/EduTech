@@ -21,6 +21,7 @@ import { Flow, FlowSchema } from '../modules/flows/schemas/flow.schema';
 import { VisualAsset, VisualAssetSchema } from '../modules/visuals/schemas/visual-asset.schema';
 import { Mistake, MistakeSchema } from '../modules/mistakes/schemas/mistake.schema';
 import { buildRepairPlan, severityToType } from '../modules/mistakes/mistake-repair.generator';
+import { VoiceSession, VoiceSessionSchema } from '../modules/voice/schemas/voice-session.schema';
 import { buildRoadmapBlueprint } from '../modules/agents/roadmap/roadmap-blueprint.generator';
 import { buildFlowBlueprint } from '../modules/flows/flow-architect/flow-blueprint.generator';
 import { buildVisual } from '../modules/visuals/visual-explainer/visual-generator';
@@ -62,6 +63,7 @@ async function run(): Promise<void> {
   const FlowModel = mongoose.model(Flow.name, FlowSchema);
   const VisualModel = mongoose.model(VisualAsset.name, VisualAssetSchema);
   const MistakeModel = mongoose.model(Mistake.name, MistakeSchema);
+  const VoiceSessionModel = mongoose.model(VoiceSession.name, VoiceSessionSchema);
 
   await UserModel.updateOne(
     { email: DEMO.admin.email },
@@ -270,6 +272,26 @@ async function run(): Promise<void> {
         resolvedAt: d.status === 'resolved' ? new Date() : undefined,
       });
     }
+  }
+
+  // ── Phase 8 · Voice Room: seed one completed voice session so the room isn't empty.
+  const existingVoice = await VoiceSessionModel.findOne({ user: student._id }).exec();
+  if (!existingVoice) {
+    await VoiceSessionModel.create({
+      user: student._id,
+      mode: 'tutor',
+      title: 'Explain how closures work',
+      transcript: [
+        { role: 'user', text: 'Explain how closures work in JavaScript.', at: new Date() },
+        { role: 'assistant', text: 'A closure is a function that remembers the variables from the scope where it was created, even after that scope has returned. Can you think of where that memory is useful?', at: new Date() },
+        { role: 'user', text: 'Maybe for a counter that keeps its own count?', at: new Date() },
+        { role: 'assistant', text: 'Exactly — the inner function keeps a private reference to the count variable. That is the classic closure use case. Want to try writing one?', at: new Date() },
+      ],
+      summary: 'Voice tutor session covering: how closures work; a counter example.',
+      extractedActions: ['Follow up on: how closures work', 'Follow up on: a private counter example'],
+      durationMs: 95000,
+      status: 'completed',
+    });
   }
 
   // ── Multi-tenant demo (B1): a sample college org with admin as owner + student member.

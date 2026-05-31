@@ -23,7 +23,7 @@ Legend — Rebuild: ✅ done · 🎯 next priority · ⏳ queued · ➖ keep (no
 | `dashboard` | DashboardComponent | **Mission Control** (hero · ribbon · mastery rings · learning river · signal timeline) | ✅ | profile, roadmap, intelligence |
 | `tutor` | TutorWorkspaceComponent | **Cognitive Studio** (canvas + agent rail; visual blocks) | 🎯 | Agent OS (socket), RAG |
 | `mentor-room` `doubt-solver` `career-coach` `content-studio` | AgentWorkspaceComponent | Agent Orbit rail + visual blocks | 🎯 | Agent OS stream |
-| `voice-room` | VoiceRoomComponent | **Voice Chamber** (living orb exists) | ⏳ | `/voice` (flag) |
+| `voice-room` / `voice-room/session/:id` | VoiceRoomComponent | **Voice Room** — 8 modes, browser STT/TTS, speaking orb, persisted sessions, voice→flow/quiz (Phase 8) | ✅ | `/voice/sessions/*` |
 | `workflows` | WorkflowsComponent | **Agent Swarm Map** | ⏳ | `/agent-graph` (flag) |
 | `roadmap` / `roadmap/:id` / `roadmap/generate` | Roadmap{List,Details,Generate} | **Learning Path Galaxy** (learning river + constellation) | 🎯 | `/roadmap/*` |
 | `flows` / `flows/new` | FlowsListComponent | **Flow Studio** home — generate panel + flow gallery (Phase 8) | ✅ | `/flows` |

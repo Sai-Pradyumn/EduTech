@@ -40,6 +40,8 @@ export interface AppConfig {
     visualStudio: boolean;
     /** Phase 8 · real image generation (OpenAI/Gemini/Stability). Off by default — mock SVG used. */
     imageGeneration: boolean;
+    /** Phase 8 · Voice Room (browser STT/TTS). On by default; ENABLE_VOICE=false to disable. */
+    voice: boolean;
   };
   vector: { backend: 'keyword' | 'atlas' };
   rag: { topK: number; minScore: number; hybrid: boolean };
@@ -115,6 +117,7 @@ export default (): AppConfig => ({
     flowStudio: process.env.ENABLE_FLOW_STUDIO !== 'false',
     visualStudio: process.env.ENABLE_VISUAL_STUDIO !== 'false',
     imageGeneration: process.env.ENABLE_IMAGE_GENERATION === 'true',
+    voice: process.env.ENABLE_VOICE !== 'false',
   },
   vector: {
     backend: (process.env.VECTOR_STORE_PROVIDER ??

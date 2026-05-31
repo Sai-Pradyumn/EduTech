@@ -1,5 +1,25 @@
 # Asta — Fixed / Remaining
 
+## ✅ Shipped — Phase 8 · Complete Voice Room (Priority 1 · module 5) — PRIORITY 1 DONE
+Voice-native learning, end-to-end. Full detail in [`PHASE_8_MULTIMODAL_LEARNING_OS.md`](PHASE_8_MULTIMODAL_LEARNING_OS.md).
+- **Backend** `server/src/modules/voice/`: promoted the stub to **persisted `VoiceSession`** (8 modes,
+  transcript, summary, extractedActions, links). `VoiceService` adds sessions CRUD + `addTurn` (routes
+  through the Agent OS per mode) + summarize + **createFlow** (→ FlowsService) + **createQuiz** (→
+  AssessmentService) + extractNotes + end; kept legacy `converse()` for the Ask-Asta dock. Controller
+  +11 session routes; module imports Flows + Assessment + Mongoose. `ENABLE_VOICE` flag (default on).
+  Seed: 1 demo voice session.
+- **Frontend** `client/src/app/features/voice/voice-room.component.ts`: rewritten as lobby (8 mode cards
+  + recent sessions) + live session (`/app/voice-room/session/:id`) — speaking **orb**, push-to-talk mic
+  (browser `SpeechRecognitionService`) **and** type fallback, TTS playback (`TextToSpeechService`),
+  transcript timeline, replay/stop/auto-read, and a "turn into flow/quiz/notes/summary" rail. New
+  `voice-session.service.ts`; live-session route added; nav/voice rules already present.
+- **Graceful degradation**: unsupported STT → notice + type fallback; mic-permission errors → toast.
+- **Verification**: builds green; client warning-free (519.60 kB < 540 kB); server boots clean (13 voice
+  routes); API smoked across the full lifecycle (create → turn via Agent OS → voice→flow + voice→quiz
+  linked → notes → end + summary).
+- **PRIORITY 1 COMPLETE**: Flow Studio ✅, Visual Studio ✅, Mistake OS ✅, Skill Twin ✅, Voice Room ✅.
+  Next: Priority 2 (Study Spaces, Simulation Labs, Daily Autopilot).
+
 ## ✅ Shipped — Phase 8 · Skill Twin (Priority 1 · module 4)
 A **live, explainable learner model** that powers recommendations. Full detail in [`PHASE_8_MULTIMODAL_LEARNING_OS.md`](PHASE_8_MULTIMODAL_LEARNING_OS.md).
 - **Backend** `server/src/modules/skill-twin/`: `SkillTwinService.compute()` blends `LearningIntelligence`

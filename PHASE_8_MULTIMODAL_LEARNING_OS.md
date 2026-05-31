@@ -15,17 +15,19 @@
 | **1** | **Visual Intelligence Studio** | ✅ **Shipped** |
 | **1** | **Mistake OS foundation** | ✅ **Shipped** |
 | **1** | **Skill Twin foundation** | ✅ **Shipped** |
-| 1 | Complete Voice Room (browser STT/TTS + sessions) | ⏳ queued (stub `voice` module + browser STT/TTS services already exist) |
+| **1** | **Complete Voice Room** (browser STT/TTS + persisted sessions) | ✅ **Shipped** |
+
+**Priority 1 is COMPLETE** (all 5 modules). Priority 2 (Study Spaces · Simulation Labs · Daily Autopilot) is next.
 | 2 | Study Spaces · Simulation Labs · Daily Autopilot | ⏳ queued |
 | 3 | Course Builder · Peer Rooms | ⏳ queued |
 | 4 | AI Mentor Council · Proof-of-Learning · Learning Replay · Modality Router | ⏳ queued |
 
 Build status: **`npm run build:server` green**, **`npm run build:client` green & warning-free**
-(initial bundle **519.29 kB**, < 540 kB budget). Server **boots clean** (all flow + visual + mistake +
-skill-twin routes mapped, no DI errors); all four modules **runtime-smoked** with the mock provider
-(incl. the Mistake-OS quiz auto-capture event path and the Skill-Twin compute + memory-reset). Seed
-inserts **2 demo flows** (22-node MERN, 20-node DSA), **4 demo visuals**, and **4 demo mistakes** (the
-Skill Twin is computed live from these + Learning-Intelligence).
+(initial bundle **519.60 kB**, < 540 kB budget). Server **boots clean** (all flow + visual + mistake +
+skill-twin + voice routes mapped, no DI errors); all five modules **runtime-smoked** with the mock
+provider (incl. Mistake-OS quiz auto-capture, Skill-Twin compute + reset, and the full voice session
+lifecycle → flow/quiz). Seed inserts **2 demo flows**, **4 demo visuals**, **4 demo mistakes**, and **1
+demo voice session** (the Skill Twin is computed live).
 
 ---
 
@@ -338,6 +340,67 @@ on read) · ✅ build green & warning-free.
 
 ---
 
+## Module — Complete Voice Room ✅ (Priority 1)
+
+Voice-native learning: **persisted multi-turn sessions** across **8 modes**, routed through the Agent
+OS, with **voice-to-flow** and **voice-to-quiz**. Mic capture + speech synthesis run **in-browser**
+(Web Speech API) via the existing services; server STT/TTS sit behind `IVoiceProvider` (mock default).
+
+### Routes (client)
+- `/app/voice-room` — lobby: 8 mode cards + recent sessions (with → flow / → quiz link pills).
+- `/app/voice-room/session/:id` — live session: speaking **orb** (listening/thinking/speaking states),
+  push-to-talk mic **and** a type fallback, transcript timeline, replay / stop-voice / auto-read toggle,
+  and a "turn this session into…" rail (flow / quiz / notes / summary).
+
+### 8 modes
+tutor · viva · interview · doubt · flow_builder · revision · mentor · project_review — each frames the
+prompt and picks the answering agent (Tutor / Career / DoubtSolver / Mentor).
+
+### Browser-native + graceful fallback
+STT via `SpeechRecognitionService` (Web Speech API) with interim results; TTS via
+`TextToSpeechService` (`speaking` signal drives the orb). If the browser lacks speech recognition the UI
+says so and the **type fallback** keeps the room fully usable; if it lacks TTS, answers show as text.
+Mic-permission/`not-allowed` errors surface as a toast.
+
+### Backend
+```
+server/src/modules/voice/
+  schemas/voice-session.schema.ts   VoiceSession (8 modes, transcript[], summary, extractedActions, links)
+  voice.service.ts                  sessions CRUD + addTurn (Agent OS by mode) + summarize +
+                                    createFlow (→ FlowsService) + createQuiz (→ AssessmentService) +
+                                    extractNotes + end; legacy converse() kept for the Ask-Asta dock
+  voice.controller.ts               REST (status + ask + 11 session routes)
+  voice.module.ts                   VoiceSession model + AgentsModule + FlowsModule + AssessmentModule
+  voice.provider.ts                 IVoiceProvider + MockVoiceProvider (server STT/TTS abstraction)
+```
+
+### API (`/api`, JWT-guarded, `userId`-scoped)
+`GET /voice/status` · `POST /voice/sessions` · `GET /voice/sessions` · `GET /voice/sessions/:id` ·
+`POST /voice/sessions/:id/turn` · `PATCH /voice/sessions/:id` · `POST /voice/sessions/:id/summarize` ·
+`POST /voice/sessions/:id/create-flow` · `POST /voice/sessions/:id/create-quiz` ·
+`POST /voice/sessions/:id/extract-notes` · `POST /voice/sessions/:id/end` · `DELETE /voice/sessions/:id`.
+
+### Provider abstraction
+`IVoiceProvider` (transcribe / synthesize) with `MockVoiceProvider` (passthrough; browser does the real
+work). A real STT/TTS provider (OpenAI Realtime / ElevenLabs / Azure) slots in behind
+`VOICE_PROVIDER_TOKEN`; `status` reports `serverStt`/`serverTts` (gated by `ENABLE_REALTIME_VOICE`).
+
+### Cross-module integration
+**Voice → Flow** (`create-flow` generates a flow from the spoken goal and links it), **Voice → Quiz**
+(`create-quiz`), **Voice → Notes/Summary**. Verified live (flow_builder session → flow + quiz created
+and linked).
+
+### Feature flag
+`ENABLE_VOICE` (`flags.voice`, default **on** — browser STT/TTS need no keys). `ENABLE_REALTIME_VOICE`
+remains for future server-side STT/TTS.
+
+### Acceptance (Voice Room) — all met
+✅ works with browser-native voice where supported · ✅ graceful fallback (type) when unsupported · ✅
+mic-permission errors handled · ✅ transcript saved · ✅ transcript → flow / quiz / notes · ✅ spoken
+answers (TTS) · ✅ stop speaking + replay · ✅ switch modes · ✅ mobile-friendly layout · ✅ build green.
+
+---
+
 ## Data relationships wired this pass
 - **Roadmap → Flow**: `POST /flows/from-roadmap/:roadmapId` seeds the graph backbone from roadmap weeks.
 - **Flow node → Tutor / Quiz / Project / Voice / Mentor / Knowledge**: `execute-node` returns the route + prompt + agent.
@@ -357,13 +420,13 @@ on read) · ✅ build green & warning-free.
   orchestrator's agent registry; registry entries can be added when voice "speak-a-goal → flow" lands.
 
 ## Feature flags (Phase 8 roster)
-Shipped: `ENABLE_FLOW_STUDIO` (default on), `ENABLE_VISUAL_STUDIO` (default on),
-`ENABLE_IMAGE_GENERATION` (default off → mock SVG). Planned: `ENABLE_VOICE`, `ENABLE_BROWSER_STT`,
-`ENABLE_BROWSER_TTS`, `ENABLE_SIMULATIONS`, `ENABLE_STUDY_SPACES`. (`ENABLE_REALTIME_VOICE` already
-exists for the stub voice module.)
+Shipped: `ENABLE_FLOW_STUDIO` (default on), `ENABLE_VISUAL_STUDIO` (default on), `ENABLE_VOICE`
+(default on; browser STT/TTS need no keys), `ENABLE_IMAGE_GENERATION` (default off → mock SVG).
+`ENABLE_REALTIME_VOICE` (default off) gates future server-side STT/TTS providers. Planned:
+`ENABLE_SIMULATIONS`, `ENABLE_STUDY_SPACES`.
 
-## Next-pass recommendations
-1. **Complete Voice Room** — promote the stub `voice` module to persisted `VoiceSession`s + socket events, using the existing browser STT/TTS services; add "speak a goal → generate flow", voice viva for `voice_practice` flow nodes, and the Mistake-OS `voice_viva` repair action. (Last Priority-1 module.)
-2. Surface the Skill Twin's top next-best-action + "top repair focus" on the **dashboard** (the API already returns them).
-3. Point flow `diagram`/`image` nodes at Visual Studio and add the remaining Visual `from-*` source endpoints.
-4. Then Priority 2: Study Spaces, Simulation Labs, Daily Autopilot.
+## Next-pass recommendations (Priority 1 complete → Priority 2)
+1. **Study Spaces** — NotebookLM-style multimodal workspaces (sources → ask/summary/flashcards/quiz/flow/visuals/audio-overview), reusing RAG + Flow + Visual + Voice.
+2. **Simulation Labs** — interview / viva / debugging / system-design rounds with rubric scoring that feeds Mistake OS + Skill Twin (the `simulation` flow node + voice `interview` mode are ready to host it).
+3. **Daily Autopilot** — convert the active flow/roadmap into a today plan; surface the Skill Twin's top next-best-action + "top repair focus" on the dashboard (the API already returns them).
+4. Wire the Voice Room socket events for token streaming; add a real STT/TTS provider behind `ENABLE_REALTIME_VOICE`.

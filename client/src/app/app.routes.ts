@@ -88,6 +88,12 @@ export const routes: Routes = [
         loadComponent: () => import('./features/voice/voice-room.component').then((m) => m.VoiceRoomComponent),
       },
       {
+        path: 'voice-room/session/:id',
+        title: 'Voice Session',
+        data: { title: 'Voice Session' },
+        loadComponent: () => import('./features/voice/voice-room.component').then((m) => m.VoiceRoomComponent),
+      },
+      {
         path: 'workflows',
         title: 'Workflows',
         data: { title: 'Agent Workflows' },
