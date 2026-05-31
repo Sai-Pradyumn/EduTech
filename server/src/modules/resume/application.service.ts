@@ -78,4 +78,10 @@ export class ApplicationService {
     await this.model.deleteOne({ _id: new Types.ObjectId(id), user: new Types.ObjectId(userId) }).exec();
     return { ok: true };
   }
+
+  /** Privacy — delete the learner's entire application tracker. */
+  async clearAll(userId: string): Promise<{ deleted: number }> {
+    const res = await this.model.deleteMany({ user: new Types.ObjectId(userId) }).exec();
+    return { deleted: res.deletedCount ?? 0 };
+  }
 }

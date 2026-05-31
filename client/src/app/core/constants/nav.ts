@@ -49,6 +49,7 @@ const I = {
   interview: 'M3 5h18a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1h-7l-4 4v-4H3a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1Zm5 5h.01M12 10h.01M16 10h.01',
   resume: 'M7 3h7l5 5v13a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1Zm7 0v5h5M9 13h6M9 17h6M9 9h2',
   applications: 'M9 11l3 3L22 4M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11',
+  privacy: 'M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10ZM9 12l2 2 4-4',
 };
 
 /** Org/platform nav appended for members + operators (permission-aware, built at runtime). */
@@ -121,6 +122,7 @@ export const STUDENT_NAV: NavGroup[] = [
     items: [
       { label: 'Certificates', route: '/app/certificates', icon: I.certificate },
       { label: 'Billing', route: '/app/billing', icon: I.billing },
+      { label: 'Data & Privacy', route: '/app/privacy', icon: I.privacy },
       { label: 'Profile', route: '/app/profile', icon: I.profile },
     ],
   },

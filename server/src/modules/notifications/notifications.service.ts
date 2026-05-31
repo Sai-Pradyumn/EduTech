@@ -40,6 +40,16 @@ export class NotificationsService {
     });
   }
 
+  /** Phase 9 · Nudge-safe create — skips if an identical unread nudge already exists (no spam). */
+  async createUnique(
+    userId: string,
+    input: { type?: string; title: string; body?: string; link?: string },
+  ): Promise<void> {
+    const exists = await this.model.exists({ user: new Types.ObjectId(userId), title: input.title, read: false }).exec();
+    if (exists) return;
+    await this.create(userId, input);
+  }
+
   /** Fan-out the same notification to many users (e.g. a cohort announcement). */
   async createMany(
     userIds: string[],

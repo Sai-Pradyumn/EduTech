@@ -58,6 +58,8 @@ import { ResumeModule } from './modules/resume/resume.module';
 import { MentorMarketplaceModule } from './modules/mentor-marketplace/mentor-marketplace.module';
 import { MarketplaceModule } from './modules/marketplace/marketplace.module';
 import { InstitutionModule } from './modules/institution/institution.module';
+import { PrivacyModule } from './modules/privacy/privacy.module';
+import { NudgesModule } from './modules/nudges/nudges.module';
 import { SocketsModule } from './sockets/sockets.module';
 
 @Module({
@@ -117,6 +119,8 @@ import { SocketsModule } from './sockets/sockets.module';
     MentorMarketplaceModule,
     MarketplaceModule,
     InstitutionModule,
+    PrivacyModule,
+    NudgesModule,
     SocketsModule,
   ],
   controllers: [HealthController],

@@ -408,6 +408,12 @@ export const routes: Routes = [
         loadComponent: () => import('./features/platform/platform-orgs.component').then((m) => m.PlatformOrgsComponent),
       },
       {
+        path: 'privacy',
+        title: 'Data & Privacy',
+        data: { title: 'Data & Privacy' },
+        loadComponent: () => import('./features/privacy/privacy.component').then((m) => m.PrivacyComponent),
+      },
+      {
         path: 'profile',
         title: 'Profile',
         data: { title: 'Profile & Settings' },
