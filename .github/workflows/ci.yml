@@ -24,3 +24,5 @@ jobs:
           # Build-time only; runtime secrets are injected by the deploy environment.
           JWT_SECRET: ci-build-not-a-secret
           JWT_REFRESH_SECRET: ci-build-not-a-secret
+      - name: Test (server unit tests)
+        run: npm test --if-present

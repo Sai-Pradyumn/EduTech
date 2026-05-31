@@ -124,6 +124,8 @@ export const STUDENT_NAV: NavGroup[] = [
       { label: 'Certificates', route: '/app/certificates', icon: I.certificate },
       { label: 'Billing', route: '/app/billing', icon: I.billing },
       { label: 'Offline & Sync', route: '/app/offline', icon: I.flow },
+      { label: 'Integrations', route: '/app/integrations', icon: I.spaces },
+      { label: 'Developer', route: '/app/developer', icon: I.quiz },
       { label: 'Security', route: '/app/security', icon: I.privacy },
       { label: 'Your Data', route: '/app/data', icon: I.docs },
       { label: 'Data & Privacy', route: '/app/privacy', icon: I.privacy },

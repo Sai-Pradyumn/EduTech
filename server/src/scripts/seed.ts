@@ -135,6 +135,19 @@ import {
   OrgBranding,
   OrgBrandingSchema,
 } from '../modules/org-branding/schemas/org-branding.schema';
+import {
+  ApiKey,
+  ApiKeySchema,
+} from '../modules/developer/schemas/api-key.schema';
+import {
+  WebhookEndpoint,
+  WebhookEndpointSchema,
+} from '../modules/developer/schemas/webhook.schema';
+import {
+  IntegrationConnection,
+  IntegrationConnectionSchema,
+} from '../modules/integrations/schemas/integration.schema';
+import { createHash } from 'crypto';
 import { buildRoadmapBlueprint } from '../modules/agents/roadmap/roadmap-blueprint.generator';
 import { buildFlowBlueprint } from '../modules/flows/flow-architect/flow-blueprint.generator';
 import { buildVisual } from '../modules/visuals/visual-explainer/visual-generator';
@@ -950,6 +963,42 @@ async function run(): Promise<void> {
         },
         { upsert: true },
       );
+      // Developer platform (M11): an API-key stub (hash only) + a webhook endpoint.
+      const ApiKeyModel = mongoose.model(ApiKey.name, ApiKeySchema);
+      await ApiKeyModel.updateOne(
+        { keyHash: createHash('sha256').update('ak_live_seedkey').digest('hex') },
+        {
+          $set: {
+            org: org._id,
+            name: 'LMS sync key',
+            keyHash: createHash('sha256')
+              .update('ak_live_seedkey')
+              .digest('hex'),
+            prefix: 'ak_live_seed',
+            scopes: ['read:students', 'read:certificates'],
+            createdBy: String(admin!._id),
+          },
+        },
+        { upsert: true },
+      );
+      const WebhookEndpointModel = mongoose.model(
+        WebhookEndpoint.name,
+        WebhookEndpointSchema,
+      );
+      await WebhookEndpointModel.updateOne(
+        { org: org._id, url: 'https://example.edu/webhooks/asta' },
+        {
+          $set: {
+            org: org._id,
+            url: 'https://example.edu/webhooks/asta',
+            events: ['certificate.issued', 'project.submitted'],
+            secret: 'whsec_seedsecret',
+            active: true,
+          },
+        },
+        { upsert: true },
+      );
+
       // admin → ORG_ADMIN, student → STUDENT (idempotent).
       await MembershipModel.updateOne(
         { user: admin._id, organization: org._id },
@@ -1255,6 +1304,25 @@ async function run(): Promise<void> {
         targetType: 'feature_flag',
         targetId: 'ENABLE_IMAGE_GENERATION',
         metadata: { enabled: false },
+      },
+    },
+    { upsert: true },
+  );
+
+  // ── Phase 10 (M12): a mock GitHub integration connection for the student ──
+  const IntegrationConnectionModel = mongoose.model(
+    IntegrationConnection.name,
+    IntegrationConnectionSchema,
+  );
+  await IntegrationConnectionModel.updateOne(
+    { user: student._id, provider: 'github' },
+    {
+      $set: {
+        user: student._id,
+        provider: 'github',
+        status: 'connected',
+        metadata: { username: 'aarav-dev' },
+        lastSyncAt: now,
       },
     },
     { upsert: true },

@@ -210,18 +210,57 @@ Two student sessions; Sreenidhi College branding.
 ### Build status
 `build:server` ✅ · `build:client` ✅ · `seed` ✅ · runtime boot ✅ · Phase-10 files lint-clean.
 
-## Priority 5 — Platform / Growth *(planned)*
-Developer API keys, webhooks, integrations, i18n/a11y, tests.
+## Priority 5 — Developer Platform, Integrations & Tests ✅
+
+### Modules added
+- **`developer`** (M11) — `ApiKey` (SHA-256 hash only; plaintext shown once),
+  `WebhookEndpoint` + `WebhookDelivery` schemas. `DeveloperService` (create/list/revoke
+  keys; create/list/update/delete webhooks; **HMAC-signed test delivery** + delivery log).
+  `/developer/*`, OrgManage; key + revoke actions audited.
+- **`integrations`** (M12) — `IntegrationConnection` + `IntegrationSyncLog` schemas, a
+  6-provider catalog (GitHub manual, Google Calendar OAuth placeholder, real `.ics`
+  calendar export, Slack/Discord mock, LMS import). Connect/disconnect/sync are local-safe;
+  `/integrations/calendar.ics` streams a real ICS file (bypasses the JSON envelope).
+
+### Tests & CI (M10)
+- Jest unit tests: `plans.spec.ts` (6) + `feature-flags.catalog.spec.ts` (4) — **10 passing**,
+  no DB required. Root `npm test` added; CI runs install → lint → build → **test**.
+
+### i18n / a11y (M9)
+- Reuses the existing `I18nService` (locale + `t()` + timezone, persisted). New Phase-10
+  components use semantic headings, `aria-pressed`/`role="switch"` toggles, `aria-current`
+  nav and reduced-motion-safe skeletons.
+
+### Client
+- `DeveloperService` + **Developer** page (`/app/developer`). `IntegrationService` +
+  **Integrations** page (`/app/integrations`). Nav entries under Account.
+
+### Seed
+Org API-key stub (hash only) + webhook endpoint; a connected GitHub integration.
+
+### Build status
+`build:server` ✅ · `build:client` ✅ · `seed` ✅ · `npm test` ✅ (10/10) · runtime boot ✅.
 
 ---
 
-### Known limitations (Priority 1)
-- Entitlements resolve from the user's own subscription; org-scoped plan inheritance is
-  modeled (schema fields present) but not yet enforced.
-- Hard-blocking of over-limit AI calls is opt-in via `consume(enforce:true)` / the gate;
-  the central AI meter records without blocking so demos never dead-end.
-- Live Stripe/Razorpay SDK calls are placeholders.
+## Cross-cutting summary
+
+**New server modules:** entitlements, feature-flags, ops, audit, ai-ops, product-analytics,
+push, sessions, org-branding, data-governance, developer, integrations (+ billing/AI upgrades).
+
+**Provider abstractions:** PaymentProvider (mock default + Stripe/Razorpay placeholders),
+PushService (no-op until VAPID), integration connectors (mock/manual/export/oauth).
+
+**Security & privacy:** API keys SHA-256-hashed (plaintext once); webhooks HMAC-signed;
+errors carry IDs and never leak stacks; audit trail on sensitive actions; product analytics
+whitelisted + sanitized; metering never blocks the product path.
+
+### Known limitations
+- Entitlement org-inheritance is modeled but not enforced; hard-blocking over-limit AI is
+  opt-in via `consume(enforce:true)` / the gate.
+- Live Stripe/Razorpay, VAPID web-push and real OAuth are placeholders (flag-gated).
+- The job ledger is queue-agnostic — no BullMQ worker yet.
 
 ### Next phase recommendation
-Proceed to Priority 2 (observability) so the metering data created here becomes a real AI
-Ops + cost dashboard.
+Wire a real BullMQ worker behind the job ledger, enforce AI budget policies at the gateway,
+and turn the OAuth/payment/web-push placeholders live behind their flags.

@@ -70,6 +70,8 @@ import { PushModule } from './modules/push/push.module';
 import { SessionsModule } from './modules/sessions/sessions.module';
 import { OrgBrandingModule } from './modules/org-branding/org-branding.module';
 import { DataGovernanceModule } from './modules/data-governance/data-governance.module';
+import { DeveloperModule } from './modules/developer/developer.module';
+import { IntegrationsModule } from './modules/integrations/integrations.module';
 import { SocketsModule } from './sockets/sockets.module';
 
 @Module({
@@ -93,6 +95,8 @@ import { SocketsModule } from './sockets/sockets.module';
     SessionsModule,
     OrgBrandingModule,
     DataGovernanceModule,
+    DeveloperModule,
+    IntegrationsModule,
     AiEvalsModule,
     AgentsModule,
     RagModule,

@@ -414,6 +414,18 @@ export const routes: Routes = [
         loadComponent: () => import('./features/org/org-branding.component').then((m) => m.OrgBrandingComponent),
       },
       {
+        path: 'developer',
+        title: 'Developer',
+        data: { title: 'Developer Platform' },
+        loadComponent: () => import('./features/platform/developer.component').then((m) => m.DeveloperComponent),
+      },
+      {
+        path: 'integrations',
+        title: 'Integrations',
+        data: { title: 'Integrations' },
+        loadComponent: () => import('./features/platform/integrations.component').then((m) => m.IntegrationsComponent),
+      },
+      {
         path: 'mentor',
         title: 'Mentor Room',
         data: { title: 'Mentor Room' },
