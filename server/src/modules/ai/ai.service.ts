@@ -132,11 +132,11 @@ export class AiService {
     await this.guardBudget(opts);
     const cap = this.captureOpts(opts);
     const started = Date.now();
-    
+
     this.logger.log(
-      `[AI-SERVICE] Calling ${this.provider.name}.streamText | operation: ${opts?.meta?.operation ?? 'unknown'} | isLive: ${this.provider.isLive}`
+      `[AI-SERVICE] Calling ${this.provider.name}.streamText | operation: ${opts?.meta?.operation ?? 'unknown'} | isLive: ${this.provider.isLive}`,
     );
-    
+
     let acc = '';
     let tokenCount = 0;
     try {
@@ -147,12 +147,12 @@ export class AiService {
       }
       const latencyMs = Date.now() - started;
       this.logger.log(
-        `[AI-SERVICE] ${this.provider.name}.streamText completed | tokens: ${tokenCount} | latency: ${latencyMs}ms | response length: ${acc.length} chars`
+        `[AI-SERVICE] ${this.provider.name}.streamText completed | tokens: ${tokenCount} | latency: ${latencyMs}ms | response length: ${acc.length} chars`,
       );
     } catch (err) {
       const latencyMs = Date.now() - started;
       this.logger.error(
-        `[AI-SERVICE] ${this.provider.name}.streamText FAILED after ${latencyMs}ms: ${(err as Error).message}`
+        `[AI-SERVICE] ${this.provider.name}.streamText FAILED after ${latencyMs}ms: ${(err as Error).message}`,
       );
       throw err;
     }

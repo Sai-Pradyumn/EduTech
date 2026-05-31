@@ -74,9 +74,9 @@ export class LlmComposerService {
   ): Promise<string> {
     const user = opts.user ?? ctx.request.message;
     const securityNote = ctx.request.context?.['securityNote'];
-    
+
     this.logger.log(
-      `[LLM-COMPOSER] Starting answer composition | operation: ${opts.operation} | agentType: ${opts.agentType} | isLive: ${this.ai.isLive} | provider: ${this.ai.providerName} | strategy: ${this.ai.strategy}`
+      `[LLM-COMPOSER] Starting answer composition | operation: ${opts.operation} | agentType: ${opts.agentType} | isLive: ${this.ai.isLive} | provider: ${this.ai.providerName} | strategy: ${this.ai.strategy}`,
     );
 
     if (this.ai.isLive) {
@@ -107,7 +107,7 @@ export class LlmComposerService {
         if (this.ai.strategy === 'fallback') {
           // Stream real tokens live (best UX / lowest latency).
           this.logger.log(
-            `[LLM-COMPOSER] Streaming real tokens from ${this.ai.providerName} (fallback strategy)`
+            `[LLM-COMPOSER] Streaming real tokens from ${this.ai.providerName} (fallback strategy)`,
           );
           let acc = '';
           for await (const token of this.ai.streamText(messages, {
@@ -119,15 +119,13 @@ export class LlmComposerService {
           }
           if (acc.trim()) {
             this.logger.log(
-              `[LLM-COMPOSER] Successfully streamed ${acc.length} chars from ${this.ai.providerName}`
+              `[LLM-COMPOSER] Successfully streamed ${acc.length} chars from ${this.ai.providerName}`,
             );
             return acc;
           }
         } else {
           // refine (draft→self-critique) / parallel (race→judge): compute, then stream the result.
-          this.logger.log(
-            `[LLM-COMPOSER] Using ${this.ai.strategy} strategy`
-          );
+          this.logger.log(`[LLM-COMPOSER] Using ${this.ai.strategy} strategy`);
           ctx.emit({
             type: 'thinking',
             messageId: '',
@@ -142,7 +140,7 @@ export class LlmComposerService {
           });
           if (text.trim()) {
             this.logger.log(
-              `[LLM-COMPOSER] Composed ${text.length} chars via ${this.ai.strategy}`
+              `[LLM-COMPOSER] Composed ${text.length} chars via ${this.ai.strategy}`,
             );
             await this.streamFallback(text, ctx);
             return text;
@@ -150,17 +148,17 @@ export class LlmComposerService {
         }
       } catch (err) {
         this.logger.warn(
-          `[LLM-COMPOSER] Live API call failed (falling back to mock): ${(err as Error).message}`
+          `[LLM-COMPOSER] Live API call failed (falling back to mock): ${(err as Error).message}`,
         );
       }
     } else {
       this.logger.warn(
-        `[LLM-COMPOSER] No live LLM provider configured - using MOCK responses`
+        `[LLM-COMPOSER] No live LLM provider configured - using MOCK responses`,
       );
     }
-    
+
     this.logger.log(
-      `[LLM-COMPOSER] Falling back to deterministic answer (${opts.operation})`
+      `[LLM-COMPOSER] Falling back to deterministic answer (${opts.operation})`,
     );
     await this.streamFallback(opts.fallback, ctx);
     // Record a usage row for the deterministic path too, so analytics stay populated

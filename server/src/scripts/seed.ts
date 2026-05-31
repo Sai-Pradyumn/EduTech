@@ -966,7 +966,9 @@ async function run(): Promise<void> {
       // Developer platform (M11): an API-key stub (hash only) + a webhook endpoint.
       const ApiKeyModel = mongoose.model(ApiKey.name, ApiKeySchema);
       await ApiKeyModel.updateOne(
-        { keyHash: createHash('sha256').update('ak_live_seedkey').digest('hex') },
+        {
+          keyHash: createHash('sha256').update('ak_live_seedkey').digest('hex'),
+        },
         {
           $set: {
             org: org._id,
@@ -976,7 +978,7 @@ async function run(): Promise<void> {
               .digest('hex'),
             prefix: 'ak_live_seed',
             scopes: ['read:students', 'read:certificates'],
-            createdBy: String(admin!._id),
+            createdBy: String(admin._id),
           },
         },
         { upsert: true },
@@ -1277,7 +1279,9 @@ async function run(): Promise<void> {
   ];
   await ProductEventModel.insertMany(
     EVENT_SEQ.map((event, i) => {
-      const at = new Date(now.getTime() - (EVENT_SEQ.length - i) * 2 * 86400000);
+      const at = new Date(
+        now.getTime() - (EVENT_SEQ.length - i) * 2 * 86400000,
+      );
       return {
         user: student._id,
         event,
@@ -1292,10 +1296,43 @@ async function run(): Promise<void> {
   // Job ledger: a handful of completed jobs + one failed (retryable) example.
   await JobRunModel.deleteMany({ queue: 'seed' });
   await JobRunModel.insertMany([
-    { queue: 'seed', name: 'roadmap.reindex', status: 'completed', attempts: 1, maxAttempts: 3, startedAt: now, finishedAt: now },
-    { queue: 'seed', name: 'certificate.render', status: 'completed', attempts: 1, maxAttempts: 3, startedAt: now, finishedAt: now },
-    { queue: 'seed', name: 'digest.email', status: 'completed', attempts: 1, maxAttempts: 3, startedAt: now, finishedAt: now },
-    { queue: 'seed', name: 'rag.embed', status: 'failed', attempts: 2, maxAttempts: 3, error: 'Embedding provider timed out', startedAt: now, finishedAt: now },
+    {
+      queue: 'seed',
+      name: 'roadmap.reindex',
+      status: 'completed',
+      attempts: 1,
+      maxAttempts: 3,
+      startedAt: now,
+      finishedAt: now,
+    },
+    {
+      queue: 'seed',
+      name: 'certificate.render',
+      status: 'completed',
+      attempts: 1,
+      maxAttempts: 3,
+      startedAt: now,
+      finishedAt: now,
+    },
+    {
+      queue: 'seed',
+      name: 'digest.email',
+      status: 'completed',
+      attempts: 1,
+      maxAttempts: 3,
+      startedAt: now,
+      finishedAt: now,
+    },
+    {
+      queue: 'seed',
+      name: 'rag.embed',
+      status: 'failed',
+      attempts: 2,
+      maxAttempts: 3,
+      error: 'Embedding provider timed out',
+      startedAt: now,
+      finishedAt: now,
+    },
   ]);
 
   // One sample error log so the Ops error feed isn't empty on a fresh demo.

@@ -178,11 +178,13 @@ export class ClaudeProvider implements IAIProvider {
     }
   }
 
-  async generateEmbedding(_text: string): Promise<number[]> {
-    throw new AIProviderCallError(
-      'claude',
-      'Claude does not provide embeddings.',
-      501,
+  generateEmbedding(_text: string): Promise<number[]> {
+    return Promise.reject(
+      new AIProviderCallError(
+        'claude',
+        'Claude does not provide embeddings.',
+        501,
+      ),
     );
   }
 

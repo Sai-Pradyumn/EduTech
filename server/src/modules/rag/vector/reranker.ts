@@ -13,8 +13,8 @@ export interface IReranker {
 /** Default — passes hits through unchanged (used when no LLM key is configured). */
 @Injectable()
 export class NoopReranker implements IReranker {
-  async rerank(_query: string, hits: ChunkHit[]): Promise<ChunkHit[]> {
-    return hits;
+  rerank(_query: string, hits: ChunkHit[]): Promise<ChunkHit[]> {
+    return Promise.resolve(hits);
   }
 }
 

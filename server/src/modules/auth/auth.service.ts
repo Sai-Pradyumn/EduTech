@@ -120,7 +120,7 @@ export class AuthService {
 
   private async rotateTokens(user: UserDocument): Promise<AuthTokens> {
     const payload: JwtPayload = {
-      sub: user.id,
+      sub: user.id as string,
       email: user.email,
       role: user.role,
     };
@@ -135,7 +135,7 @@ export class AuthService {
     });
 
     await this.users.setRefreshTokenHash(
-      user.id,
+      user.id as string,
       await bcrypt.hash(refreshToken, SALT_ROUNDS),
     );
     return { accessToken, refreshToken };
@@ -147,7 +147,7 @@ export class AuthService {
       user.platformRole === OrgRole.PlatformAdmin ||
       user.platformRole === OrgRole.SuperAdmin;
     return {
-      id: user.id,
+      id: user.id as string,
       name: user.name,
       email: user.email,
       role: user.role,

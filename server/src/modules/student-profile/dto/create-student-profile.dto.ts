@@ -2,7 +2,6 @@ import {
   ArrayMaxSize,
   IsArray,
   IsEnum,
-  IsOptional,
   IsString,
   MaxLength,
   MinLength,

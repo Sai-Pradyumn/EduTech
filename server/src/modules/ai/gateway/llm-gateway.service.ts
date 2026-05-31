@@ -39,7 +39,10 @@ export class LlmGatewayService implements IAIProvider {
     const live = this.chain.some((p) => p.isLive);
     if (!live) {
       // Log once per startup (not on every call)
-      if (this.chain.length > 1 || (this.chain.length === 1 && this.chain[0].name !== 'mock')) {
+      if (
+        this.chain.length > 1 ||
+        (this.chain.length === 1 && this.chain[0].name !== 'mock')
+      ) {
         this.logger.warn(
           '⚠️  All providers are offline. Check API keys and network connectivity.',
         );
@@ -192,18 +195,16 @@ export class LlmGatewayService implements IAIProvider {
       const { signal, clear } = this.deadline(opts?.signal);
       try {
         this.logger.log(
-          `[LLM-GATEWAY] Trying provider: ${provider.name} (attempt ${attempt + 1}/2)`
+          `[LLM-GATEWAY] Trying provider: ${provider.name} (attempt ${attempt + 1}/2)`,
         );
         const result = await call(provider, signal);
-        this.logger.log(
-          `[LLM-GATEWAY] Provider ${provider.name} succeeded`
-        );
+        this.logger.log(`[LLM-GATEWAY] Provider ${provider.name} succeeded`);
         return result;
       } catch (err) {
         const errMsg = (err as Error).message;
         if (attempt === 0) {
           this.logger.warn(
-            `[LLM-GATEWAY] Provider ${provider.name} attempt 1 failed: ${errMsg}`
+            `[LLM-GATEWAY] Provider ${provider.name} attempt 1 failed: ${errMsg}`,
           );
         }
         if (attempt === 0 && this.isRetryable(err) && !opts?.signal?.aborted) {
@@ -211,7 +212,7 @@ export class LlmGatewayService implements IAIProvider {
           continue; // same provider, one more time
         }
         this.logger.error(
-          `[LLM-GATEWAY] Provider ${provider.name} failed: ${errMsg}`
+          `[LLM-GATEWAY] Provider ${provider.name} failed: ${errMsg}`,
         );
         throw err;
       } finally {

@@ -1,6 +1,5 @@
 import { Injectable } from '@nestjs/common';
 import { Difficulty, QuestionType } from '../../../common/enums';
-import { QuizSource } from '../schemas/quiz.schema';
 import { BankQuestion, KNOWN_TOPICS, QUIZ_BANK } from '../quiz-bank';
 
 export interface GeneratedQuestion {

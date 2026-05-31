@@ -141,7 +141,7 @@ export class FlowArchitectService {
     const ROW_H = 150;
     // Lay out by stage if positions are missing, and seed statuses so stage 0 is available.
     const byStage = new Map<number, number>();
-    const nodes = flow.nodes.map((n, i) => {
+    const nodes = flow.nodes.map((n) => {
       const stage = typeof n.stage === 'number' ? n.stage : 0;
       const lane = byStage.get(stage) ?? 0;
       byStage.set(stage, lane + 1);

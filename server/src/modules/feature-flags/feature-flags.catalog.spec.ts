@@ -1,4 +1,8 @@
-import { FEATURE_FLAG_DEFS, FEATURE_FLAG_KEYS, flagDef } from './feature-flags.catalog';
+import {
+  FEATURE_FLAG_DEFS,
+  FEATURE_FLAG_KEYS,
+  flagDef,
+} from './feature-flags.catalog';
 
 /** Feature-flag catalog invariants (Phase 10 · M16). Pure logic — no DB. */
 describe('feature-flag catalog', () => {

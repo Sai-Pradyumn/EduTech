@@ -212,7 +212,7 @@ export class DoubtSolverAgentService implements IAgent {
 
   private revealAnswer(
     c: { kind: string; checks: string[] },
-    problem: string,
+    _problem: string,
   ): string {
     return [
       `Okay — here's a direct path for **${c.kind}**:`,

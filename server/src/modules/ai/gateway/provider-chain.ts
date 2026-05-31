@@ -118,9 +118,7 @@ export const providerChainFactory: Provider = {
       const embedder =
         chain.find((c) => c.capabilities.embeddings && c.isLive)?.name ??
         'mock-hashed';
-      logger.log(
-        `✓ LLM providers configured: ${configuredKeys.join(', ')}`,
-      );
+      logger.log(`✓ LLM providers configured: ${configuredKeys.join(', ')}`);
       logger.log(
         `✓ Provider chain: ${selected.join(' → ')} → mock | Strategy: ${ai.strategy} | Embeddings: ${embedder}`,
       );

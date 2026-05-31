@@ -272,7 +272,7 @@ export class FlowsService {
     return { flow, execution: this.executionFor(node, flow) };
   }
 
-  private executionFor(node: FlowNode, flow: FlowDocument): NodeExecution {
+  private executionFor(node: FlowNode, _flow: FlowDocument): NodeExecution {
     const objective = node.objective || node.summary || node.title;
     switch (node.type) {
       case 'quiz':

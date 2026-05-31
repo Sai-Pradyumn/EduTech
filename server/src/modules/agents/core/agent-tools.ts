@@ -24,8 +24,11 @@ export class ToolsRegistrarService implements OnModuleInit {
       readOnly: true,
       argKeys: ['query'],
       run: async (args) => {
-        const userId = String(args['userId'] ?? '');
-        const query = String(args['query'] ?? '').slice(0, 300);
+        const userId = (args['userId'] as string | undefined) ?? '';
+        const query = ((args['query'] as string | undefined) ?? '').slice(
+          0,
+          300,
+        );
         if (!userId || !query) return { found: false };
         const r = await this.rag.answer(query, { userId });
         return {
@@ -45,7 +48,7 @@ export class ToolsRegistrarService implements OnModuleInit {
       readOnly: true,
       argKeys: [],
       run: async (args) => {
-        const userId = String(args['userId'] ?? '');
+        const userId = (args['userId'] as string | undefined) ?? '';
         if (!userId) return { mastery: [] };
         const mastery = await this.assessment.topicMastery(userId);
         const sorted = [...mastery].sort((a, b) => a.mastery - b.mastery);

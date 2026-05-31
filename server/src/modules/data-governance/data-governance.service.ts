@@ -44,7 +44,11 @@ export class DataGovernanceService {
       targetId: ownerId,
     });
     // Heavy export runs on the queue when ENABLE_BULLMQ=true; otherwise inline + ledgered.
-    await this.queue.enqueue('data.export', { ownerType, ownerId, jobId: String(job._id) });
+    await this.queue.enqueue('data.export', {
+      ownerType,
+      ownerId,
+      jobId: String(job._id),
+    });
     return this.view(job);
   }
 

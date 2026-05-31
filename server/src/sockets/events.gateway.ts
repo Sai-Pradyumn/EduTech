@@ -12,9 +12,15 @@ import {
 import { Server, Socket } from 'socket.io';
 import { AppConfig } from '../config/configuration';
 import { JwtPayload } from '../common/interfaces';
-import { AgentType, Intent } from '../common/enums';
+import { AgentType, Intent, Role } from '../common/enums';
 import { AgentOrchestratorService } from '../modules/agents/agent-orchestrator.service';
 import { AgentStreamEvent } from '../modules/ai/types/agent.types';
+
+/** Typed view over socket.io's untyped `client.data` bag. */
+interface SocketData {
+  userId?: string;
+  role?: Role;
+}
 
 interface AgentSendPayload {
   sessionId?: string;
@@ -51,8 +57,9 @@ export class EventsGateway implements OnGatewayConnection {
       const payload = await this.jwt.verifyAsync<JwtPayload>(clean, {
         secret: this.config.get('jwt.secret', { infer: true }),
       });
-      client.data['userId'] = payload.sub;
-      client.data['role'] = payload.role;
+      const data = client.data as SocketData;
+      data.userId = payload.sub;
+      data.role = payload.role;
       await client.join(`user:${payload.sub}`);
     } catch {
       this.reject(client);
@@ -64,7 +71,8 @@ export class EventsGateway implements OnGatewayConnection {
     @ConnectedSocket() client: Socket,
     @MessageBody() payload: AgentSendPayload,
   ): Promise<{ ok: boolean; sessionId?: string }> {
-    const userId = client.data['userId'] as string | undefined;
+    const data = client.data as SocketData;
+    const userId = data.userId;
     if (!userId) {
       this.reject(client);
       return { ok: false };
@@ -73,7 +81,7 @@ export class EventsGateway implements OnGatewayConnection {
 
     const msgPreview = payload.message.slice(0, 60);
     this.logger.log(
-      `[WS] agent.send from user ${userId} | agent: ${payload.agentType ?? 'auto'} | message: "${msgPreview}${payload.message.length > 60 ? '...' : ''}"`
+      `[WS] agent.send from user ${userId} | agent: ${payload.agentType ?? 'auto'} | message: "${msgPreview}${payload.message.length > 60 ? '...' : ''}"`,
     );
 
     const emit = (event: AgentStreamEvent) => client.emit('agent.event', event);
@@ -81,7 +89,7 @@ export class EventsGateway implements OnGatewayConnection {
       const result = await this.orchestrator.handle(
         {
           userId,
-          role: client.data['role'],
+          role: data.role as Role,
           message: payload.message,
           intent: payload.intent,
           agentType: payload.agentType,
@@ -92,12 +100,12 @@ export class EventsGateway implements OnGatewayConnection {
         emit,
       );
       this.logger.log(
-        `[WS] agent.send completed | sessionId: ${result.sessionId} | messageId: ${result.messageId}`
+        `[WS] agent.send completed | sessionId: ${result.sessionId} | messageId: ${result.messageId}`,
       );
       return { ok: true, sessionId: result.sessionId };
     } catch (err) {
       this.logger.error(
-        `[WS] agent.send FAILED | error: ${(err as Error).message}`
+        `[WS] agent.send FAILED | error: ${(err as Error).message}`,
       );
       return { ok: false };
     }

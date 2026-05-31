@@ -9,11 +9,7 @@ import { Model, Types } from 'mongoose';
 import { AgentType, Role } from '../../common/enums';
 import { AgentOrchestratorService } from '../agents/agent-orchestrator.service';
 import { FlowsService } from '../flows/flows.service';
-import {
-  PeerMessageKind,
-  PeerRoom,
-  PeerRoomDocument,
-} from './schemas/peer-room.schema';
+import { PeerRoom, PeerRoomDocument } from './schemas/peer-room.schema';
 import { CreateRoomDto } from './dto/peer-room.dto';
 
 @Injectable()

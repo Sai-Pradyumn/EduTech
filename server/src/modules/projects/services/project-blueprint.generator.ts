@@ -1,12 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { randomUUID } from 'crypto';
 import { Difficulty, ItemStatus } from '../../../common/enums';
-import {
-  ARCHETYPES,
-  GENERIC,
-  inferStack,
-  matchArchetype,
-} from '../project-bank';
+import { GENERIC, inferStack, matchArchetype } from '../project-bank';
 
 export interface BlueprintTask {
   id: string;

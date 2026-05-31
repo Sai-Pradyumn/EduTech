@@ -28,7 +28,10 @@ export class MockImageProvider implements IImageProvider {
   readonly name = 'mock';
   readonly isLive = false;
 
-  async generate(prompt: string): Promise<ImageResult> {
-    return { url: illustrationDataUri(prompt), provider: this.name };
+  generate(prompt: string): Promise<ImageResult> {
+    return Promise.resolve({
+      url: illustrationDataUri(prompt),
+      provider: this.name,
+    });
   }
 }

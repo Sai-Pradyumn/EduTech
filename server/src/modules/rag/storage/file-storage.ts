@@ -57,16 +57,18 @@ export class LocalFileStorage implements IFileStorage {
 @Injectable()
 export class S3FileStorage implements IFileStorage {
   readonly name = 's3';
-  async save(): Promise<void> {
-    throw new Error(
-      'S3 storage selected but not configured. Use STORAGE_PROVIDER=local for local dev.',
+  save(): Promise<void> {
+    return Promise.reject(
+      new Error(
+        'S3 storage selected but not configured. Use STORAGE_PROVIDER=local for local dev.',
+      ),
     );
   }
-  async read(): Promise<Buffer> {
-    throw new Error('S3 storage selected but not configured.');
+  read(): Promise<Buffer> {
+    return Promise.reject(new Error('S3 storage selected but not configured.'));
   }
-  async delete(): Promise<void> {
-    throw new Error('S3 storage selected but not configured.');
+  delete(): Promise<void> {
+    return Promise.reject(new Error('S3 storage selected but not configured.'));
   }
 }
 

@@ -46,7 +46,7 @@ export class AgentContextService {
         (w) => !activeRoadmap.completedWeeks.includes(w.weekNumber),
       );
       roadmap = {
-        id: activeRoadmap.id,
+        id: activeRoadmap.id as string,
         title: activeRoadmap.title,
         goal: activeRoadmap.goal,
         progressPercentage: activeRoadmap.progressPercentage,
