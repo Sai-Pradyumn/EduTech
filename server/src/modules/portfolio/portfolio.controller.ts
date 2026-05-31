@@ -43,7 +43,10 @@ export class PortfolioController {
   }
 
   @Post('add-project/:projectId')
-  async addProject(@CurrentUser() user: AuthUser, @Param('projectId') projectId: string) {
+  async addProject(
+    @CurrentUser() user: AuthUser,
+    @Param('projectId') projectId: string,
+  ) {
     return toView(await this.portfolio.addProject(user.id, projectId));
   }
 

@@ -1,10 +1,22 @@
-import { Body, Controller, Get, Param, Patch, Post, Query } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Param,
+  Patch,
+  Post,
+  Query,
+} from '@nestjs/common';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { Role } from '../../common/enums';
 import { AuthUser } from '../../common/interfaces';
 import { MarketplaceService } from './marketplace.service';
-import { CreateTemplateDto, ReviewTemplateDto, UpdateTemplateDto } from './dto/marketplace.dto';
+import {
+  CreateTemplateDto,
+  ReviewTemplateDto,
+  UpdateTemplateDto,
+} from './dto/marketplace.dto';
 
 @Controller('marketplace')
 export class MarketplaceController {
@@ -38,7 +50,11 @@ export class MarketplaceController {
   }
 
   @Patch('templates/:id')
-  async update(@CurrentUser() user: AuthUser, @Param('id') id: string, @Body() dto: UpdateTemplateDto) {
+  async update(
+    @CurrentUser() user: AuthUser,
+    @Param('id') id: string,
+    @Body() dto: UpdateTemplateDto,
+  ) {
     const t = await this.market.update(user.id, id, dto);
     return { id: String(t._id), status: t.status };
   }

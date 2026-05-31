@@ -15,13 +15,19 @@ export const INTERVIEW_TYPES = [
 ] as const;
 export type InterviewType = (typeof INTERVIEW_TYPES)[number];
 
-export const INTERVIEW_TYPE_META: Record<InterviewType, { label: string; focus: string }> = {
+export const INTERVIEW_TYPE_META: Record<
+  InterviewType,
+  { label: string; focus: string }
+> = {
   hr: { label: 'HR / Screening', focus: 'motivation, fit, communication' },
   technical: { label: 'Technical', focus: 'fundamentals + problem solving' },
   frontend: { label: 'Frontend', focus: 'UI frameworks, state, CSS' },
   backend: { label: 'Backend', focus: 'APIs, data, reliability' },
   system_design: { label: 'System Design', focus: 'architecture & trade-offs' },
-  project_deep_dive: { label: 'Project Deep-Dive', focus: 'your real project decisions' },
+  project_deep_dive: {
+    label: 'Project Deep-Dive',
+    focus: 'your real project decisions',
+  },
   behavioral: { label: 'Behavioral', focus: 'ownership, teamwork, conflict' },
   dsa: { label: 'DSA Oral', focus: 'data structures & complexity' },
   voice_viva: { label: 'Voice Viva', focus: 'explain concepts aloud' },
@@ -36,9 +42,9 @@ const BANK: Record<InterviewType, string[]> = {
     'Tell me about a time you had to learn something hard, fast.',
   ],
   technical: [
-    'Walk me through how you would approach debugging a bug you can\'t reproduce.',
+    "Walk me through how you would approach debugging a bug you can't reproduce.",
     'Explain a core concept from your strongest skill as if to a junior.',
-    'What\'s the difference between value and reference types in your main language?',
+    "What's the difference between value and reference types in your main language?",
     'How do you decide when code is "good enough" to ship?',
     'Describe a technical trade-off you made recently and why.',
   ],
@@ -78,21 +84,23 @@ const BANK: Record<InterviewType, string[]> = {
     'How do you prioritise when everything feels urgent?',
   ],
   dsa: [
-    'Explain when you\'d use a hash map vs an array, with complexity.',
+    "Explain when you'd use a hash map vs an array, with complexity.",
     'How would you detect a cycle in a linked list? Explain the idea aloud.',
     'Describe the trade-offs between BFS and DFS.',
     'What is the time/space complexity of your usual sorting approach?',
-    'Explain dynamic programming to someone who\'s never heard of it.',
+    "Explain dynamic programming to someone who's never heard of it.",
   ],
   voice_viva: [
     'In your own words, explain a concept you recently learned.',
     'Why does that concept matter in real projects?',
-    'What\'s a common misconception about it?',
-    'Give a concrete example where you\'d apply it.',
+    "What's a common misconception about it?",
+    "Give a concrete example where you'd apply it.",
     'What would you study next to go deeper?',
   ],
 };
 
 export function buildQuestions(type: InterviewType, role: string): string[] {
-  return (BANK[type] ?? BANK.technical).map((q) => q.replace('{role}', role || 'developer'));
+  return (BANK[type] ?? BANK.technical).map((q) =>
+    q.replace('{role}', role || 'developer'),
+  );
 }

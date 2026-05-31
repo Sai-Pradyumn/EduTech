@@ -2,9 +2,18 @@ import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { UsersModule } from '../users/users.module';
 import { LedgerModule } from '../ledger/ledger.module';
-import { MentorProfile, MentorProfileSchema } from './schemas/mentor-profile.schema';
-import { MentorSession, MentorSessionSchema } from './schemas/mentor-session.schema';
-import { MentorsController, MentorSessionsController } from './mentor-marketplace.controller';
+import {
+  MentorProfile,
+  MentorProfileSchema,
+} from './schemas/mentor-profile.schema';
+import {
+  MentorSession,
+  MentorSessionSchema,
+} from './schemas/mentor-session.schema';
+import {
+  MentorsController,
+  MentorSessionsController,
+} from './mentor-marketplace.controller';
 import { MentorMarketplaceService } from './mentor-marketplace.service';
 
 /**

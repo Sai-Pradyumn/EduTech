@@ -30,7 +30,11 @@ export class PrivacyService {
       this.ledger.summary(userId),
     ]);
     return {
-      passport: { username: pv.username, visibility: pv.visibility, publicSettings: pv.publicSettings },
+      passport: {
+        username: pv.username,
+        visibility: pv.visibility,
+        publicSettings: pv.publicSettings,
+      },
       portfolio: { username: pf.username, status: pf.status },
       proof: { total: ledgerSummary.total, public: ledgerSummary.publicCount },
     };
@@ -38,22 +42,41 @@ export class PrivacyService {
 
   /** Export the learner's outcome data as a single JSON object. */
   async exportData(userId: string): Promise<Record<string, unknown>> {
-    const [passport, portfolio, ledger, resume, applications, evidence] = await Promise.all([
-      this.passport.getMe(userId),
-      this.portfolio.getMe(userId),
-      this.ledger.list(userId, 500),
-      this.resume.getMe(userId),
-      this.applications.list(userId),
-      this.passport.listEvidence(userId),
-    ]);
+    const [passport, portfolio, ledger, resume, applications, evidence] =
+      await Promise.all([
+        this.passport.getMe(userId),
+        this.portfolio.getMe(userId),
+        this.ledger.list(userId, 500),
+        this.resume.getMe(userId),
+        this.applications.list(userId),
+        this.passport.listEvidence(userId),
+      ]);
     return {
       exportedAt: new Date().toISOString(),
       skillPassport: passport,
       portfolio,
       resume,
-      proofLedger: ledger.map((e) => ({ kind: e.kind, title: e.title, detail: e.detail, score: e.score ?? null, skills: e.skills, verificationLevel: e.verificationLevel, at: e.at.toISOString() })),
-      manualEvidence: evidence.map((e) => ({ skill: e.skill, summary: e.summary, sourceType: e.sourceType, verificationLevel: e.verificationLevel })),
-      applications: applications.map((a) => ({ company: a.company, role: a.role, status: a.status, matchScore: a.matchScore })),
+      proofLedger: ledger.map((e) => ({
+        kind: e.kind,
+        title: e.title,
+        detail: e.detail,
+        score: e.score ?? null,
+        skills: e.skills,
+        verificationLevel: e.verificationLevel,
+        at: e.at.toISOString(),
+      })),
+      manualEvidence: evidence.map((e) => ({
+        skill: e.skill,
+        summary: e.summary,
+        sourceType: e.sourceType,
+        verificationLevel: e.verificationLevel,
+      })),
+      applications: applications.map((a) => ({
+        company: a.company,
+        role: a.role,
+        status: a.status,
+        matchScore: a.matchScore,
+      })),
     };
   }
 

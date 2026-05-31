@@ -1,11 +1,27 @@
-import { ArrayMaxSize, IsArray, IsIn, IsOptional, IsString, MaxLength, MinLength } from 'class-validator';
+import {
+  ArrayMaxSize,
+  IsArray,
+  IsIn,
+  IsOptional,
+  IsString,
+  MaxLength,
+  MinLength,
+} from 'class-validator';
 import { APPLICATION_STATUS } from '../schemas/application.schema';
 
 export class UpdateResumeDto {
   @IsOptional() @IsString() @MaxLength(120) headline?: string;
   @IsOptional() @IsString() @MaxLength(1200) summary?: string;
-  @IsOptional() @IsArray() @ArrayMaxSize(20) @IsString({ each: true }) skills?: string[];
-  @IsOptional() @IsArray() @ArrayMaxSize(12) @IsString({ each: true }) highlights?: string[];
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(20)
+  @IsString({ each: true })
+  skills?: string[];
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(12)
+  @IsString({ each: true })
+  highlights?: string[];
 }
 
 export class AnalyzeJdDto {
@@ -17,6 +33,8 @@ export class AnalyzeJdDto {
 export class CreateApplicationDto extends AnalyzeJdDto {}
 
 export class UpdateApplicationDto {
-  @IsOptional() @IsIn(APPLICATION_STATUS as unknown as string[]) status?: string;
+  @IsOptional()
+  @IsIn(APPLICATION_STATUS)
+  status?: string;
   @IsOptional() @IsString() @MaxLength(2000) notes?: string;
 }

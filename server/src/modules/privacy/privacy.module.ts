@@ -12,7 +12,13 @@ import { PrivacyService } from './privacy.service';
  * export JSON, take public profile/portfolio private, reset Skill Twin, clear application tracker.
  */
 @Module({
-  imports: [SkillPassportModule, PortfolioModule, SkillTwinModule, LedgerModule, ResumeModule],
+  imports: [
+    SkillPassportModule,
+    PortfolioModule,
+    SkillTwinModule,
+    LedgerModule,
+    ResumeModule,
+  ],
   controllers: [PrivacyController],
   providers: [PrivacyService],
 })

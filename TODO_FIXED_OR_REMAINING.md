@@ -1,5 +1,15 @@
 # Asta — Fixed / Remaining
 
+## ✅ Shipped — Phase 9 · Outcome Network (ALL 15 modules)
+Priorities 1–4 complete end-to-end (backend + frontend + seed). In addition to the Priority-1 + Council
+work below, Phase 9 now also ships: **Portfolio Builder** (+ public `/p/:username`), **Project Review 2.0**
+(case study + add-to-passport/portfolio), **Interview OS** (9 types, scored, feeds readiness + Mistake OS),
+**Resume & Application Assistant** (JD analyzer + tracker), **Mentor Marketplace**, **Creator/Template
+Marketplace** (+ admin moderation), **Institution Outcome Layer**, **Nudge intelligence** (event + pull),
+and **Privacy/Export/Reset** (`/app/privacy`). Both builds green; seed runs; all new endpoints runtime-smoked.
+Foundation-level by design: marketplace payments/scheduling, template deep-clone prefill, BullMQ readiness
+precompute for large cohorts, and outbound (email/WhatsApp) nudge delivery are the Phase-10 follow-ups.
+
 ## ✅ Shipped — Phase 9 · Outcome Network (Priority 1 + Outcome Council)
 Full detail in [`PHASE_9_OUTCOME_NETWORK_OS.md`](PHASE_9_OUTCOME_NETWORK_OS.md). "From learning to **verified outcomes**."
 - **Skill Passport** `server/src/modules/skill-passport/` + `features/skill-passport/`: living verified

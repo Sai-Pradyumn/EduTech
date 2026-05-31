@@ -1,7 +1,13 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { HydratedDocument, Types } from 'mongoose';
 
-export const APPLICATION_STATUS = ['saved', 'applied', 'interviewing', 'offer', 'rejected'] as const;
+export const APPLICATION_STATUS = [
+  'saved',
+  'applied',
+  'interviewing',
+  'offer',
+  'rejected',
+] as const;
 export type ApplicationStatus = (typeof APPLICATION_STATUS)[number];
 
 export type ApplicationDocument = HydratedDocument<Application>;
@@ -24,7 +30,12 @@ export class Application {
   @Prop({ default: '' }) coverLetter!: string;
   @Prop({ default: '' }) prepPlan!: string;
 
-  @Prop({ type: String, enum: APPLICATION_STATUS, default: 'saved', index: true })
+  @Prop({
+    type: String,
+    enum: APPLICATION_STATUS,
+    default: 'saved',
+    index: true,
+  })
   status!: ApplicationStatus;
 
   @Prop({ default: '' }) notes!: string;

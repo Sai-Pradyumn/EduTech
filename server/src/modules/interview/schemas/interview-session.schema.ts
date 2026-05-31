@@ -28,7 +28,12 @@ export class InterviewSession {
   @Prop({ type: [InterviewQASchema], default: [] }) questions!: InterviewQA[];
   @Prop({ default: 0 }) currentIndex!: number;
 
-  @Prop({ type: String, enum: ['active', 'finished'], default: 'active', index: true })
+  @Prop({
+    type: String,
+    enum: ['active', 'finished'],
+    default: 'active',
+    index: true,
+  })
   status!: 'active' | 'finished';
 
   @Prop({ default: 0 }) communicationScore!: number;
@@ -41,5 +46,6 @@ export class InterviewSession {
   @Prop() finishedAt?: Date;
 }
 
-export const InterviewSessionSchema = SchemaFactory.createForClass(InterviewSession);
+export const InterviewSessionSchema =
+  SchemaFactory.createForClass(InterviewSession);
 InterviewSessionSchema.index({ user: 1, createdAt: -1 });

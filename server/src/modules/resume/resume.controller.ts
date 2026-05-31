@@ -1,11 +1,24 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  Patch,
+  Post,
+} from '@nestjs/common';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { AuthUser } from '../../common/interfaces';
 import { ResumeService } from './resume.service';
 import { ApplicationService } from './application.service';
 import { ResumeDocument } from './schemas/resume.schema';
 import { ApplicationDocument } from './schemas/application.schema';
-import { AnalyzeJdDto, CreateApplicationDto, UpdateApplicationDto, UpdateResumeDto } from './dto/resume.dto';
+import {
+  AnalyzeJdDto,
+  CreateApplicationDto,
+  UpdateApplicationDto,
+  UpdateResumeDto,
+} from './dto/resume.dto';
 
 function resumeView(r: ResumeDocument) {
   return {
@@ -32,7 +45,10 @@ function appView(a: ApplicationDocument) {
     prepPlan: a.prepPlan,
     status: a.status,
     notes: a.notes,
-    createdAt: (a as ApplicationDocument & { createdAt?: Date }).createdAt?.toISOString() ?? '',
+    createdAt:
+      (
+        a as ApplicationDocument & { createdAt?: Date }
+      ).createdAt?.toISOString() ?? '',
   };
 }
 
@@ -66,7 +82,10 @@ export class ApplicationsController {
   }
 
   @Post()
-  async create(@CurrentUser() user: AuthUser, @Body() dto: CreateApplicationDto) {
+  async create(
+    @CurrentUser() user: AuthUser,
+    @Body() dto: CreateApplicationDto,
+  ) {
     return appView(await this.applications.create(user.id, dto));
   }
 
@@ -76,7 +95,11 @@ export class ApplicationsController {
   }
 
   @Patch(':id')
-  async update(@CurrentUser() user: AuthUser, @Param('id') id: string, @Body() dto: UpdateApplicationDto) {
+  async update(
+    @CurrentUser() user: AuthUser,
+    @Param('id') id: string,
+    @Body() dto: UpdateApplicationDto,
+  ) {
     return appView(await this.applications.update(user.id, id, dto));
   }
 

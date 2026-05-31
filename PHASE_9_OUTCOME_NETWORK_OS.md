@@ -3,7 +3,7 @@
 > **Theme: "From learning to verified outcomes."**
 > Asta no longer only helps people learn — it helps them **prove** what they've mastered, see exactly how close they are to a real role, and decide the single best next move toward employability. Built strictly inside the existing **Noir Cockpit** design language: compact command headers, dense cards, skill graphs, proof timelines — no heroes, no dead placeholders.
 
-This phase was delivered **Priority-1-deep + the Outcome Council**, then scaffolded the remaining ecosystem modules as a clear, honest backlog (see *Known limitations / next*). Everything ships **offline-safe** (mock AI provider, deterministic fallbacks, no paid keys) and connects to the existing learning graph (Skill Twin, flows, roadmaps, projects, quizzes, voice, certificates, ledger).
+**All 15 modules are now built** — Priority 1 deeply, then Priority 2–4 end-to-end (backend + frontend + seed). Everything ships **offline-safe** (mock AI provider, deterministic fallbacks, no paid keys) and connects to the existing learning graph (Skill Twin, flows, roadmaps, projects, quizzes, voice, certificates, ledger). New AI agents use the existing gateway and degrade gracefully to deterministic logic when no key is present.
 
 ---
 
@@ -47,7 +47,37 @@ A living, verified profile. **Computed on read** by blending Skill Twin + Proof 
 
 ### Module 12 — Dashboard 3.0 (outcome cockpit) ✅
 - Compact outcome strip on the dashboard: **Career Readiness** (score ring + top blocker) and **Skill Passport** (verified-proof count + publish status), both deep-linked. No hero; same row, same reveal family; reduced-motion safe.
-- Grouped nav: new **Outcome** section (Skill Passport · Career Readiness · Outcome Council · Proof-of-Learning).
+- Grouped nav: **Outcome** + **Ecosystem** sections.
+
+### Module 4 — Portfolio Builder ✅
+Generates an editable, public-facing portfolio from verified evidence (passport + projects + certificates) with **AI-written about copy + per-project case studies** (`PortfolioBuilderAgent`, LLM + fallback). Publish/unpublish, granular public toggles, public route **`/p/:username`**. `/app/portfolio`.
+
+### Module 5 — Project Review 2.0 ✅
+Builds on Project Studio's existing rubric AI review. Adds a **case-study generator** (`POST /projects/:id/generate-case-study`), **add-to-passport** (`POST /skill-passport/from-project/:id` → creates `SkillEvidence` + a verified ledger event) and **add-to-portfolio** (`POST /portfolio/add-project/:id`) — turning a reviewed project into portable proof.
+
+### Module 6 — Interview OS ✅
+Role-based mock interviews across **9 types** (HR, technical, frontend, backend, system design, project deep-dive, behavioral, DSA, voice viva). Deterministic question bank + `InterviewCoachAgent` answer scoring (LLM + transparent heuristic), a full feedback report (technical/communication/confidence), and outcome wiring: a **verified ledger event feeds Career Readiness** and **weak areas flow into Mistake OS**. `/app/interview`.
+
+### Module 7 — Resume & Application Assistant ✅
+`ResumeAgent` generates an ATS-style resume from verified evidence (summary, highlights, project bullets, copy-as-Markdown). `ApplicationAgent` + a deterministic **skill-detection vocabulary** analyze a **pasted JD** (no scraping) into a **match score, matched/missing skills, a tailored cover letter and a prep plan**, with an application tracker (status + notes). `/app/resume`, `/app/applications`.
+
+### Module 8 — Mentor Marketplace ✅
+Mentor profiles students can browse; **session requests** (project/interview/portfolio/roadmap/general reviews); mentor accept/complete; a completed session writes a **mentor-verified ledger event** back to the student's proof timeline. "Become a mentor" profile editor. `/app/mentors`.
+
+### Module 9 — Creator/Template Marketplace ✅
+Creators publish reusable templates (flow/roadmap/quiz/project/simulation/interview/course/study-space/visual); **admin moderation queue** (approve/reject); learners browse by type and **use → clone route** into the matching generator; usage tracking. `/app/marketplace`, `/app/creator-studio`.
+
+### Module 10 — Institution Outcome Layer ✅
+Org-isolated, admin/mentor-only **cohort placement-readiness analytics** reusing the cohort + Career Readiness engines: per-student readiness rolled up to cohort + institution (avg readiness, at-risk, job-ready, top performers, weak concepts across cohorts) and **assign flow/template to a cohort**. `/app/institution`.
+
+### Module 13 — Public Trust / Sharing Layer ✅
+Public, unauthenticated, privacy-filtered **`/u/:username`** (Skill Passport) and **`/p/:username`** (Portfolio), plus the existing certificate verification — all server-side privacy filtered, "Verified by Asta" trust styling.
+
+### Module 14 — Nudge Intelligence ✅
+**Event-driven**: `NudgeEngine` turns quiz/project/week events into de-duplicated, actionable notifications (`createUnique`, no spam). **Pull-based**: `GET /nudges` computes the learner's ranked next actions from live readiness/passport state.
+
+### Module 15 — Privacy, Export & Reset ✅
+`GET /privacy/export` (full outcome data as downloadable JSON), one-click **make-everything-private**, **reset Skill Twin**, **clear application tracker**, and a settings page showing exactly what's public. `/app/privacy`.
 
 ---
 
@@ -59,7 +89,15 @@ A living, verified profile. **Computed on read** by blending Skill Twin + Proof 
 | `/app/skill-passport/public-preview` | student | Preview your public profile |
 | `/app/career-readiness` | student | Career readiness + gaps + plan |
 | `/app/outcome-council` | student | AI Outcome Council |
+| `/app/portfolio` | student | Portfolio builder |
+| `/app/interview`, `/app/interview/sessions/:id` | student | Interview OS |
+| `/app/resume`, `/app/applications` | student | Resume + Applications |
+| `/app/mentors`, `/app/mentor-sessions` | student | Mentor Marketplace |
+| `/app/marketplace`, `/app/creator-studio` | student/creator | Template Marketplace |
+| `/app/institution` | admin/mentor | Institution outcomes |
+| `/app/privacy` | student | Data & privacy |
 | `/u/:username` | **public** | Public, verifiable Skill Passport |
+| `/p/:username` | **public** | Public, verifiable Portfolio |
 
 ## APIs added
 
@@ -71,18 +109,36 @@ A living, verified profile. **Computed on read** by blending Skill Twin + Proof 
 
 **Outcome Council** — `POST /outcome-council/recommend`, `GET /outcome-council/latest`.
 
+**Portfolio** — `GET/PATCH /portfolio/me`, `POST /portfolio/generate|publish|unpublish`, `POST /portfolio/add-project/:id`, `GET /portfolio/public/:username` *(public)*.
+
+**Project Review 2.0** — `POST /projects/:id/generate-case-study`, `POST /skill-passport/from-project/:id`, `POST /portfolio/add-project/:id`.
+
+**Interview OS** — `GET /interview/types`, `POST /interview/start`, `POST /interview/:id/respond`, `POST /interview/:id/finish`, `GET /interview/sessions`, `GET /interview/sessions/:id`.
+
+**Resume / Applications** — `GET/PATCH /resume/me`, `POST /resume/generate`; `POST /applications/analyze-jd`, `POST /applications`, `GET /applications`, `PATCH /applications/:id`, `DELETE /applications/:id`.
+
+**Mentor Marketplace** — `GET /mentors`, `GET /mentors/:id`, `GET /mentors/profile/me`, `POST/PATCH /mentors/profile`, `POST /mentor-sessions`, `GET /mentor-sessions`, `PATCH /mentor-sessions/:id/status`, `POST /mentor-sessions/:id/notes`.
+
+**Template Marketplace** — `GET /marketplace/templates`, `GET /marketplace/templates/mine`, `GET /marketplace/templates/pending` *(admin)*, `GET /marketplace/templates/:id`, `POST /marketplace/templates`, `PATCH /marketplace/templates/:id`, `POST /marketplace/templates/:id/publish`, `POST /marketplace/templates/:id/review` *(admin)*, `POST /marketplace/templates/:id/use`.
+
+**Institution** *(admin/mentor, org-isolated)* — `GET /institution/overview`, `GET /institution/cohorts/:id/outcomes`, `POST /institution/cohorts/:id/assign-flow|assign-template`, `GET /institution/reports/outcomes|readiness`.
+
+**Nudges** — `GET /nudges`. **Privacy** — `GET /privacy/settings`, `GET /privacy/export`, `POST /privacy/make-private|reset-skill-twin|clear-applications`.
+
 ## Schemas added
-- `SkillPassport` (identity + visibility + public settings + cached snapshot, unique `user`/`username`)
-- `SkillEvidence` (manual proof artifacts)
-- `CareerReadinessState` (chosen target role + cached score)
-- `CouncilRecommendation` (cached council verdict)
-- `LedgerEntry` extended: `skills`, `verificationLevel`, `visibleOnPassport` + new kinds.
+- `SkillPassport`, `SkillEvidence`, `CareerReadinessState`, `CouncilRecommendation`
+- `Portfolio`, `InterviewSession`, `Resume`, `Application`
+- `MentorProfile`, `MentorSession`, `MarketplaceTemplate`
+- `Project` extended: `caseStudy`; `LedgerEntry` extended: `skills`, `verificationLevel`, `visibleOnPassport` + new kinds.
 
 ## Agents added
-- `CareerReadinessAgent` — narrates the readiness score (LLM + deterministic fallback)
-- `OutcomeCouncilAgent` — narrates the council verdict (LLM + deterministic fallback)
+- `CareerReadinessAgent` — narrates the readiness score
+- `OutcomeCouncilAgent` — narrates the council verdict
+- `PortfolioBuilderAgent` — about copy + project case studies
+- `InterviewCoachAgent` — scores interview answers + feedback
+- `ResumeAgent` / `ApplicationAgent` — resume summary + JD-tailored cover letter
 
-Both use the existing **AI gateway** (`AiService`), log usage metadata only (no sensitive content), validate/guard output, and degrade gracefully with **no paid keys**.
+All use the existing **AI gateway** (`AiService`), log usage metadata only (no sensitive content), validate/guard output, and degrade to deterministic logic with **no paid keys**.
 
 ## Seed data
 Seeded student (`student@asta.dev`) now demos the whole outcome flow on first run:
@@ -90,6 +146,8 @@ Seeded student (`student@asta.dev`) now demos the whole outcome flow on first ru
 - 10 ledger events carrying **skill tags + verification levels** (quizzes, project + AI review, viva, mistake repair, week complete).
 - 2 manual skill-evidence artifacts (repo link + DOM projects).
 - A `CareerReadinessState` targeting **Full Stack Developer** → live score ≈ **48% (building)** with credible per-dimension breakdown.
+- A **draft Portfolio**, a **published mentor profile** (Maya Mentor) + a **requested project-review session**, and **two marketplace templates** (one published, one in the admin moderation queue).
+- The **admin** is wired to the demo org so the **Institution** dashboard renders cohort outcomes on first run.
 
 > Seed is idempotent. The Phase-9 collections (`ledger_entries`, `skill_passports`, `skill_evidence`, `career_readiness_states`) were refreshed during development so the enriched ledger (with skill tags) is what powers the demo.
 
@@ -102,17 +160,15 @@ Seeded student (`student@asta.dev`) now demos the whole outcome flow on first ru
 ## Build status
 - `npm run build:server` ✅ green · `npm run build:client` ✅ green (Angular strict templates).
 - `npm run seed` ✅ runs clean against local Mongo.
-- Runtime-smoked: login → `skill-passport/me`, `career-readiness/me` (proof-based score), `proof-ledger/summary` (skill aggregation), `outcome-council/recommend`/`latest`, and the **unauthenticated** `skill-passport/public/:username`.
+- Runtime-smoked end-to-end: passport, readiness (proof-based), ledger summary, outcome council, **portfolio generate**, **interview start→respond→finish** (report), **resume generate**, **applications analyze-jd** (match score), **mentors + mentor-sessions**, **marketplace list + admin pending**, **institution overview** (admin & mentor), **nudges**, **privacy settings**, and the unauthenticated public `/u/:username` + `/p/:username`.
 
-## Known limitations / next (scaffolded backlog)
-Delivered Priority 1 + the Outcome Council deeply. The remaining Phase-9 modules are **specced and ready to build on the same foundation** (they all reuse the ledger/passport/readiness services already shipped):
-
-- **Portfolio Builder** (`/app/portfolio`, `PortfolioBuilderAgent`) — generate a public portfolio from passport evidence.
-- **Project Review 2.0** — rubric scoring already exists in Project Studio; add `ProjectReview` history, "add-to-passport/portfolio", richer mentor flow.
-- **Interview OS** (`/app/interview`, `InterviewCoachAgent`) — the readiness 7-day plan and council already deep-link to `/app/interview`; wire the session engine (can reuse Phase-8 Simulation Labs + Voice Room).
-- **Resume & Application Assistant** (`/app/resume`, `/app/applications`) — JD paste → match score from the readiness engine.
-- **Mentor Marketplace**, **Template/Creator Marketplace**, **Institution Outcome Layer** — extend existing `mentor`, `course-builder`, `cohort`/`org` modules.
-- **Public Portfolio route** `/p/:username`, intelligent **Nudge Engine**, and a dedicated **Privacy/Export/Reset** settings page (privacy primitives — per-event visibility, evidence delete, passport unpublish, Skill-Twin reset — already exist).
+## Known limitations (honest)
+All 15 modules are functional and integrated, but a few are deliberately **foundation-level** (per the brief — "build the foundation, not full payment complexity"):
+- **Mentor Marketplace** has no payments/scheduling/calendaring (free + request/accept/complete flow only); ratings are seeded, not yet user-submitted.
+- **Template Marketplace** "use" increments usage and routes to the matching generator; it does not yet auto-populate the generator with the template's blueprint payload (the `content.goal` is carried, deep prefill is the next step).
+- **Institution** computes readiness per student on demand (capped at 40/request) rather than via a background job/cache; large cohorts would want BullMQ precompute. Org name falls back to a generic label when the cohort view doesn't carry it.
+- **Interview answer scoring** uses an LLM when a key is present, otherwise a transparent length/structure heuristic (it does not claim to grade factual correctness offline).
+- **Nudges** are event-driven + pull-based; no email/WhatsApp delivery (placeholders only).
 
 ## Next phase recommendation
-**Phase 10 — "Apply & get hired":** Interview OS + Resume/Application assistant + Mentor Marketplace, all feeding the Skill Passport and Career Readiness already shipped here — turning verified proof into actual applications and offers.
+**Phase 10 — "Hired":** real mentor scheduling + payments, marketplace deep-clone (template → fully populated flow/roadmap/quiz), background readiness precompute (BullMQ) for institutions, and outbound nudge delivery (email/WhatsApp) — converting the proof layer shipped here into booked sessions and submitted applications at scale.

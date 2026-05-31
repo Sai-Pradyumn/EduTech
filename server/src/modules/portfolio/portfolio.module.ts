@@ -13,7 +13,9 @@ import { PortfolioBuilderAgent } from './portfolio.agent';
  */
 @Module({
   imports: [
-    MongooseModule.forFeature([{ name: Portfolio.name, schema: PortfolioSchema }]),
+    MongooseModule.forFeature([
+      { name: Portfolio.name, schema: PortfolioSchema },
+    ]),
     SkillPassportModule,
     ProjectsModule,
   ],

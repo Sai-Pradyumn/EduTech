@@ -1,8 +1,14 @@
-import { IsIn, IsOptional, IsString, MaxLength, MinLength } from 'class-validator';
+import {
+  IsIn,
+  IsOptional,
+  IsString,
+  MaxLength,
+  MinLength,
+} from 'class-validator';
 import { INTERVIEW_TYPES, InterviewType } from '../interview-bank';
 
 export class StartInterviewDto {
-  @IsIn(INTERVIEW_TYPES as unknown as string[]) type!: InterviewType;
+  @IsIn(INTERVIEW_TYPES) type!: InterviewType;
   @IsOptional() @IsString() roleId?: string;
 }
 

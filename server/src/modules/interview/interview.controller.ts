@@ -3,7 +3,7 @@ import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { AuthUser } from '../../common/interfaces';
 import { InterviewService } from './interview.service';
 import { InterviewSessionDocument } from './schemas/interview-session.schema';
-import { INTERVIEW_TYPES, INTERVIEW_TYPE_META, InterviewType } from './interview-bank';
+import { INTERVIEW_TYPES, INTERVIEW_TYPE_META } from './interview-bank';
 import { RespondInterviewDto, StartInterviewDto } from './dto/interview.dto';
 
 function toView(s: InterviewSessionDocument) {
@@ -15,7 +15,14 @@ function toView(s: InterviewSessionDocument) {
     status: s.status,
     currentIndex: s.currentIndex,
     total: s.questions.length,
-    questions: s.questions.map((q) => ({ id: q.id, question: q.question, answer: q.answer, feedback: q.feedback, score: q.score ?? null, answered: q.answered })),
+    questions: s.questions.map((q) => ({
+      id: q.id,
+      question: q.question,
+      answer: q.answer,
+      feedback: q.feedback,
+      score: q.score ?? null,
+      answered: q.answered,
+    })),
     communicationScore: s.communicationScore,
     technicalScore: s.technicalScore,
     confidenceScore: s.confidenceScore,
@@ -23,7 +30,10 @@ function toView(s: InterviewSessionDocument) {
     summary: s.summary,
     strengths: s.strengths,
     weakConcepts: s.weakConcepts,
-    createdAt: (s as InterviewSessionDocument & { createdAt?: Date }).createdAt?.toISOString() ?? '',
+    createdAt:
+      (
+        s as InterviewSessionDocument & { createdAt?: Date }
+      ).createdAt?.toISOString() ?? '',
   };
 }
 
@@ -34,7 +44,10 @@ export class InterviewController {
   /** Available interview types (for the picker). */
   @Get('types')
   types() {
-    return INTERVIEW_TYPES.map((t) => ({ type: t, ...INTERVIEW_TYPE_META[t as InterviewType] }));
+    return INTERVIEW_TYPES.map((t) => ({
+      type: t,
+      ...INTERVIEW_TYPE_META[t],
+    }));
   }
 
   @Post('start')
@@ -43,7 +56,11 @@ export class InterviewController {
   }
 
   @Post(':id/respond')
-  async respond(@CurrentUser() user: AuthUser, @Param('id') id: string, @Body() dto: RespondInterviewDto) {
+  async respond(
+    @CurrentUser() user: AuthUser,
+    @Param('id') id: string,
+    @Body() dto: RespondInterviewDto,
+  ) {
     return toView(await this.interview.respond(user.id, id, dto.answer));
   }
 

@@ -3,7 +3,10 @@ import { MongooseModule } from '@nestjs/mongoose';
 import { LedgerModule } from '../ledger/ledger.module';
 import { MistakesModule } from '../mistakes/mistakes.module';
 import { StudentProfileModule } from '../student-profile/student-profile.module';
-import { InterviewSession, InterviewSessionSchema } from './schemas/interview-session.schema';
+import {
+  InterviewSession,
+  InterviewSessionSchema,
+} from './schemas/interview-session.schema';
 import { InterviewController } from './interview.controller';
 import { InterviewService } from './interview.service';
 import { InterviewCoachAgent } from './interview.agent';
@@ -14,7 +17,9 @@ import { InterviewCoachAgent } from './interview.agent';
  */
 @Module({
   imports: [
-    MongooseModule.forFeature([{ name: InterviewSession.name, schema: InterviewSessionSchema }]),
+    MongooseModule.forFeature([
+      { name: InterviewSession.name, schema: InterviewSessionSchema },
+    ]),
     LedgerModule,
     MistakesModule,
     StudentProfileModule,

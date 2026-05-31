@@ -77,10 +77,22 @@ import {
   CareerReadinessState,
   CareerReadinessStateSchema,
 } from '../modules/career-readiness/schemas/career-readiness.schema';
-import { Portfolio, PortfolioSchema } from '../modules/portfolio/schemas/portfolio.schema';
-import { MentorProfile, MentorProfileSchema } from '../modules/mentor-marketplace/schemas/mentor-profile.schema';
-import { MentorSession, MentorSessionSchema } from '../modules/mentor-marketplace/schemas/mentor-session.schema';
-import { MarketplaceTemplate, MarketplaceTemplateSchema } from '../modules/marketplace/schemas/marketplace-template.schema';
+import {
+  Portfolio,
+  PortfolioSchema,
+} from '../modules/portfolio/schemas/portfolio.schema';
+import {
+  MentorProfile,
+  MentorProfileSchema,
+} from '../modules/mentor-marketplace/schemas/mentor-profile.schema';
+import {
+  MentorSession,
+  MentorSessionSchema,
+} from '../modules/mentor-marketplace/schemas/mentor-session.schema';
+import {
+  MarketplaceTemplate,
+  MarketplaceTemplateSchema,
+} from '../modules/marketplace/schemas/marketplace-template.schema';
 import { buildRoadmapBlueprint } from '../modules/agents/roadmap/roadmap-blueprint.generator';
 import { buildFlowBlueprint } from '../modules/flows/flow-architect/flow-blueprint.generator';
 import { buildVisual } from '../modules/visuals/visual-explainer/visual-generator';
@@ -159,9 +171,18 @@ async function run(): Promise<void> {
     CareerReadinessStateSchema,
   );
   const PortfolioModel = mongoose.model(Portfolio.name, PortfolioSchema);
-  const MentorProfileModel = mongoose.model(MentorProfile.name, MentorProfileSchema);
-  const MentorSessionModel = mongoose.model(MentorSession.name, MentorSessionSchema);
-  const MarketplaceTemplateModel = mongoose.model(MarketplaceTemplate.name, MarketplaceTemplateSchema);
+  const MentorProfileModel = mongoose.model(
+    MentorProfile.name,
+    MentorProfileSchema,
+  );
+  const MentorSessionModel = mongoose.model(
+    MentorSession.name,
+    MentorSessionSchema,
+  );
+  const MarketplaceTemplateModel = mongoose.model(
+    MarketplaceTemplate.name,
+    MarketplaceTemplateSchema,
+  );
 
   await UserModel.updateOne(
     { email: DEMO.admin.email },
@@ -749,13 +770,16 @@ async function run(): Promise<void> {
   );
 
   // ── Phase 9 · Portfolio: a draft portfolio for the student.
-  const existingPortfolio = await PortfolioModel.findOne({ user: student._id }).exec();
+  const existingPortfolio = await PortfolioModel.findOne({
+    user: student._id,
+  }).exec();
   if (!existingPortfolio) {
     await PortfolioModel.create({
       user: student._id,
       username: `aarav-sharma-${String(student._id).slice(-4)}`,
       title: 'Aarav Sharma — Full Stack Developer',
-      tagline: 'Aspiring Full-Stack Developer — building proof one project at a time.',
+      tagline:
+        'Aspiring Full-Stack Developer — building proof one project at a time.',
       about:
         'Aarav is an aspiring Full Stack Developer building real, verifiable proof of skill across the MERN stack, with a flagship task-tracker project and a growing record of passed assessments.',
       targetRole: 'Full Stack Developer',
@@ -764,7 +788,8 @@ async function run(): Promise<void> {
         {
           projectId: 'demo-mern',
           title: 'MERN Task Tracker',
-          caseStudy: 'A full-stack task tracker with auth and CRUD, built on the MERN stack and AI-reviewed 78/100 for architecture and quality.',
+          caseStudy:
+            'A full-stack task tracker with auth and CRUD, built on the MERN stack and AI-reviewed 78/100 for architecture and quality.',
           stack: ['React', 'Node', 'Express', 'MongoDB'],
           highlights: ['JWT auth', 'CRUD API', 'Deployed demo'],
           githubUrl: 'https://github.com/example/mern-task-tracker',
@@ -778,7 +803,9 @@ async function run(): Promise<void> {
 
   // ── Phase 9 · Mentor Marketplace: a published mentor profile + a requested session.
   if (mentor) {
-    const existingMentorProfile = await MentorProfileModel.findOne({ user: mentor._id }).exec();
+    const existingMentorProfile = await MentorProfileModel.findOne({
+      user: mentor._id,
+    }).exec();
     if (!existingMentorProfile) {
       await MentorProfileModel.create({
         user: mentor._id,
@@ -791,14 +818,17 @@ async function run(): Promise<void> {
         ratingSummary: { avg: 4.8, count: 12 },
       });
     }
-    const existingMentorSession = await MentorSessionModel.findOne({ student: student._id }).exec();
+    const existingMentorSession = await MentorSessionModel.findOne({
+      student: student._id,
+    }).exec();
     if (!existingMentorSession) {
       await MentorSessionModel.create({
         mentor: mentor._id,
         student: student._id,
         type: 'project_review',
         status: 'requested',
-        message: 'Could you review my MERN Task Tracker before I add it to my portfolio?',
+        message:
+          'Could you review my MERN Task Tracker before I add it to my portfolio?',
         linkedProjectId: 'demo-mern',
       });
     }
@@ -811,11 +841,14 @@ async function run(): Promise<void> {
       creator: mentor._id,
       type: 'flow',
       title: 'MERN Internship Sprint (4 weeks)',
-      description: 'A focused 4-week flow from JS foundations to a deployed MERN app — interview-ready.',
+      description:
+        'A focused 4-week flow from JS foundations to a deployed MERN app — interview-ready.',
       tags: ['mern', 'internship', 'fullstack'],
       level: 'beginner',
       targetRole: 'Full Stack Developer',
-      content: { goal: 'Learn the MERN stack and land an internship in 4 weeks' },
+      content: {
+        goal: 'Learn the MERN stack and land an internship in 4 weeks',
+      },
       visibility: 'public',
       status: 'published',
       usageCount: 37,
@@ -825,7 +858,8 @@ async function run(): Promise<void> {
       creator: mentor._id,
       type: 'interview',
       title: 'Frontend Interview Gauntlet',
-      description: 'A set of frontend interview rounds covering framework internals, CSS and state.',
+      description:
+        'A set of frontend interview rounds covering framework internals, CSS and state.',
       tags: ['frontend', 'interview', 'react'],
       level: 'intermediate',
       targetRole: 'Angular Frontend Developer',

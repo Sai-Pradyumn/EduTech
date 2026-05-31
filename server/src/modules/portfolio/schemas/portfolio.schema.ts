@@ -31,7 +31,9 @@ export class PortfolioPublicSettings {
   @Prop({ default: true }) showTimeline!: boolean;
   @Prop({ default: true }) showContact!: boolean;
 }
-const PortfolioPublicSettingsSchema = SchemaFactory.createForClass(PortfolioPublicSettings);
+const PortfolioPublicSettingsSchema = SchemaFactory.createForClass(
+  PortfolioPublicSettings,
+);
 
 export type PortfolioDocument = HydratedDocument<Portfolio>;
 
@@ -42,10 +44,22 @@ export type PortfolioDocument = HydratedDocument<Portfolio>;
  */
 @Schema({ timestamps: true, collection: 'portfolios' })
 export class Portfolio {
-  @Prop({ type: Types.ObjectId, ref: 'User', required: true, unique: true, index: true })
+  @Prop({
+    type: Types.ObjectId,
+    ref: 'User',
+    required: true,
+    unique: true,
+    index: true,
+  })
   user!: Types.ObjectId;
 
-  @Prop({ required: true, unique: true, index: true, lowercase: true, trim: true })
+  @Prop({
+    required: true,
+    unique: true,
+    index: true,
+    lowercase: true,
+    trim: true,
+  })
   username!: string;
 
   @Prop({ default: '' }) title!: string;
@@ -53,7 +67,8 @@ export class Portfolio {
   @Prop({ default: '' }) about!: string;
   @Prop({ default: '' }) targetRole!: string;
   @Prop({ type: [String], default: [] }) skills!: string[];
-  @Prop({ type: [PortfolioProjectSchema], default: [] }) projects!: PortfolioProject[];
+  @Prop({ type: [PortfolioProjectSchema], default: [] })
+  projects!: PortfolioProject[];
   @Prop({ type: [PortfolioLinkSchema], default: [] }) links!: PortfolioLink[];
   @Prop({ default: 'noir' }) theme!: string;
 

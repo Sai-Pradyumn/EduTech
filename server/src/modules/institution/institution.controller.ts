@@ -28,12 +28,20 @@ export class InstitutionController {
   }
 
   @Post('cohorts/:id/assign-flow')
-  assignFlow(@CurrentUser() user: AuthUser, @Param('id') id: string, @Body() dto: AssignDto) {
+  assignFlow(
+    @CurrentUser() user: AuthUser,
+    @Param('id') id: string,
+    @Body() dto: AssignDto,
+  ) {
     return this.institution.assign(user.id, id, 'flow', dto.title);
   }
 
   @Post('cohorts/:id/assign-template')
-  assignTemplate(@CurrentUser() user: AuthUser, @Param('id') id: string, @Body() dto: AssignDto) {
+  assignTemplate(
+    @CurrentUser() user: AuthUser,
+    @Param('id') id: string,
+    @Body() dto: AssignDto,
+  ) {
     return this.institution.assign(user.id, id, 'template', dto.title);
   }
 
