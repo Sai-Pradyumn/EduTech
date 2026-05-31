@@ -4,6 +4,8 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { PROGRESSION_EVENTS, QuizGradedEvent } from '../progression/progression.events';
 import { FlowsService } from '../flows/flows.service';
+import { LedgerService } from '../ledger/ledger.service';
+import { ProjectsService } from '../projects/services/projects.service';
 import { Mistake, MistakeDocument, MistakeStatus } from './schemas/mistake.schema';
 import { buildRepairPlan, severityToType } from './mistake-repair.generator';
 import { CaptureMistakeDto } from './dto/mistake.dto';
@@ -15,6 +17,8 @@ export class MistakesService {
   constructor(
     @InjectModel(Mistake.name) private readonly model: Model<MistakeDocument>,
     private readonly flows: FlowsService,
+    private readonly ledger: LedgerService,
+    private readonly projects: ProjectsService,
   ) {}
 
   // ───────────────────────── capture ─────────────────────────
@@ -132,9 +136,23 @@ export class MistakesService {
 
   async updateStatus(userId: string, id: string, status: MistakeStatus): Promise<MistakeDocument> {
     const m = await this.get(userId, id);
+    const wasResolved = m.status === 'resolved';
     m.status = status;
     m.resolvedAt = status === 'resolved' ? new Date() : undefined;
-    return m.save();
+    const saved = await m.save();
+    if (status === 'resolved' && !wasResolved) {
+      await this.ledger.record(userId, { kind: 'mistake_resolved', title: `Resolved: ${m.concept}`, detail: `Closed a ${m.mistakeType.replace('_', ' ')} gap.` });
+    }
+    return saved;
+  }
+
+  /** Weakness-to-Project: generate a tiny project targeting this exact weak concept. */
+  async repairProject(userId: string, id: string): Promise<{ mistake: MistakeDocument; projectId: string }> {
+    const m = await this.get(userId, id);
+    const project = await this.projects.generate(userId, { goal: `Tiny project to master ${m.concept}` });
+    if (m.status === 'open') m.status = 'repairing';
+    await m.save();
+    return { mistake: m, projectId: String(project._id) };
   }
 
   async toggleAction(userId: string, id: string, actionId: string, done: boolean): Promise<MistakeDocument> {

@@ -28,6 +28,7 @@ import { SIM_BLUEPRINTS } from '../modules/simulations/simulation-coach';
 import { Course, CourseSchema } from '../modules/course-builder/schemas/course.schema';
 import { buildCourseBlueprint } from '../modules/course-builder/course-blueprint.generator';
 import { PeerRoom, PeerRoomSchema } from '../modules/peer-rooms/schemas/peer-room.schema';
+import { LedgerEntry, LedgerEntrySchema } from '../modules/ledger/schemas/ledger-entry.schema';
 import { buildRoadmapBlueprint } from '../modules/agents/roadmap/roadmap-blueprint.generator';
 import { buildFlowBlueprint } from '../modules/flows/flow-architect/flow-blueprint.generator';
 import { buildVisual } from '../modules/visuals/visual-explainer/visual-generator';
@@ -74,6 +75,7 @@ async function run(): Promise<void> {
   const SimulationModel = mongoose.model(Simulation.name, SimulationSchema);
   const CourseModel = mongoose.model(Course.name, CourseSchema);
   const PeerRoomModel = mongoose.model(PeerRoom.name, PeerRoomSchema);
+  const LedgerModel = mongoose.model(LedgerEntry.name, LedgerEntrySchema);
 
   await UserModel.updateOne(
     { email: DEMO.admin.email },
@@ -380,6 +382,21 @@ async function run(): Promise<void> {
       ],
       status: 'open',
     });
+  }
+
+  // ── Phase 8 · Proof-of-Learning Ledger: seed a few verified events (powers the ledger + replay).
+  const existingLedger = await LedgerModel.findOne({ user: student._id }).exec();
+  if (!existingLedger) {
+    const now = Date.now();
+    const day = 24 * 60 * 60 * 1000;
+    const entries = [
+      { kind: 'node_completed', title: 'Completed: JavaScript & ES2023 foundations', detail: 'In flow "Learn the MERN stack and land an internship".', at: new Date(now - 5 * day) },
+      { kind: 'quiz_passed', title: 'Passed quiz: JavaScript basics', detail: 'Scored 80% on JavaScript.', score: 80, at: new Date(now - 4 * day) },
+      { kind: 'node_completed', title: 'Completed: React components & hooks', detail: 'In flow "Learn the MERN stack and land an internship".', at: new Date(now - 3 * day) },
+      { kind: 'simulation_finished', title: 'Finished interview: REST API design', detail: 'Scored 72/100.', score: 72, at: new Date(now - 2 * day) },
+      { kind: 'week_completed', title: 'Completed week 1', detail: 'MERN Stack Developer — next: React fundamentals.', at: new Date(now - 1 * day) },
+    ] as const;
+    for (const e of entries) await LedgerModel.create({ user: student._id, ...e });
   }
 
   // ── Multi-tenant demo (B1): a sample college org with admin as owner + student member.

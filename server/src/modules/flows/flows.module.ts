@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { StudentProfileModule } from '../student-profile/student-profile.module';
 import { Roadmap, RoadmapSchema } from '../roadmap/schemas/roadmap.schema';
+import { LedgerModule } from '../ledger/ledger.module';
 import { Flow, FlowSchema } from './schemas/flow.schema';
 import { FlowsController } from './flows.controller';
 import { FlowsService } from './flows.service';
@@ -20,6 +21,7 @@ import { FlowArchitectService } from './flow-architect/flow-architect.service';
       { name: Roadmap.name, schema: RoadmapSchema },
     ]),
     StudentProfileModule,
+    LedgerModule,
   ],
   controllers: [FlowsController],
   providers: [FlowsService, FlowArchitectService],

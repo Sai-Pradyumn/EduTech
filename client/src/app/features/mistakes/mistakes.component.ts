@@ -133,6 +133,7 @@ type Filter = 'all' | MistakeStatus;
                       <asta-btn variant="ghost" size="sm" (click)="setStatus(m, 'open')">Reopen</asta-btn>
                     }
                     <asta-btn variant="ghost" size="sm" [loading]="busyId() === m.id" (click)="addToFlow(m)">Add repair node to flow</asta-btn>
+                    <asta-btn variant="ghost" size="sm" [loading]="busyId() === m.id" (click)="repairProject(m)">Generate targeted project</asta-btn>
                     <asta-btn variant="ghost" size="sm" (click)="remove(m)">Delete</asta-btn>
                   </div>
                 </div>
@@ -257,6 +258,14 @@ export class MistakesComponent {
         else this.toast.warning('No active flow — generate one in Flow Studio first');
       },
       error: (e: Error) => { this.busyId.set(null); this.toast.error(e.message || 'Could not add repair node'); },
+    });
+  }
+
+  repairProject(m: Mistake): void {
+    this.busyId.set(m.id);
+    this.api.repairProject(m.id).subscribe({
+      next: (res) => { this.busyId.set(null); this.replace(res.mistake); this.toast.success('Targeted project created'); this.router.navigate(['/app/projects']); },
+      error: (e: Error) => { this.busyId.set(null); this.toast.error(e.message || 'Could not create project'); },
     });
   }
 

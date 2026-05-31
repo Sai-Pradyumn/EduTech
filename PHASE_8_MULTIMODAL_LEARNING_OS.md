@@ -27,19 +27,32 @@
 | **3** | **Course Builder** (teacher/mentor course generation) | ✅ **Shipped** |
 | **3** | **Peer Rooms** (collaborative study) | ✅ **Shipped** |
 
-**Priority 1, 2 & 3 COMPLETE** (10 modules). Only the Priority-4 breakthrough features remain.
+**Priority 1, 2 & 3 COMPLETE** (10 modules). **Priority 4 breakthroughs shipped:**
+
+| Priority | Feature | Status |
+|---|---|---|
+| **4** | **Proof-of-Learning Ledger** | ✅ **Shipped** |
+| **4** | **AI Mentor Council** | ✅ **Shipped** |
+| **4** | **Learning Replay** | ✅ **Shipped** |
+| **4** | **Weakness-to-Project Generator** | ✅ **Shipped** |
+| 4 | Adaptive Modality Router · Explainability Drawer | ✅ (shipped in Skill Twin) |
+
+**Phase 8 is COMPLETE** across all four priorities. Remaining items are polish/optional
+(see "Next-pass"), not core modules.
 | 2 | Study Spaces · Simulation Labs · Daily Autopilot | ⏳ queued |
 | 3 | Course Builder · Peer Rooms | ⏳ queued |
 | 4 | AI Mentor Council · Proof-of-Learning · Learning Replay · Modality Router | ⏳ queued |
 
 Build status: **`npm run build:server` green**, **`npm run build:client` green & warning-free**
-(initial bundle **522.79 kB**, < 540 kB budget). Server **boots clean** (all 10 Phase-8 module route
-groups mapped, no DI errors); every module **runtime-smoked** with the mock provider (incl. Mistake-OS
-quiz auto-capture, Skill-Twin compute + reset, full voice session lifecycle → flow/quiz, Study-Space ask
-+ generators, Simulation finish → Mistake-OS feed, Daily-Plan modes, Course-Builder role-gated publish,
-and Peer-Room AI moderator + join-by-code). Seed inserts **2 flows**, **4 visuals**, **4 mistakes**,
-**1 voice session**, **1 study space**, **1 simulation**, **1 course**, and **1 peer room** (Skill Twin
-+ Daily Plan are computed live).
+(initial bundle **524.25 kB**, < 540 kB budget). Server **boots clean** (all Phase-8 module route groups
+mapped, no DI errors); every module **runtime-smoked** with the mock provider (incl. Mistake-OS quiz
+auto-capture, Skill-Twin compute + reset, full voice session lifecycle → flow/quiz, Study-Space ask +
+generators, Simulation finish → Mistake-OS feed, Daily-Plan modes, Course-Builder role-gated publish,
+Peer-Room AI moderator + join-by-code, **Ledger event-capture** (flow-node complete → verified event),
+**Mentor-Council** verdict, **Learning-Replay** recap, and **Weakness-to-Project**). Seed inserts
+**2 flows**, **4 visuals**, **4 mistakes**, **1 voice session**, **1 study space**, **1 simulation**,
+**1 course**, **1 peer room**, and **5 ledger entries** (Skill Twin / Daily Plan / Council / Replay are
+computed live).
 
 ---
 
@@ -506,6 +519,38 @@ auto-summary with action items, and a **shared learning flow**.
 
 ---
 
+## Priority 4 — Breakthrough features ✅
+
+### Proof-of-Learning Ledger
+An append-only, **verified** timeline of real learning events. Decoupled: `LedgerService` listens to
+domain events (quiz-pass / week / project) **and** exposes `record()` for the services that don't emit —
+so completing a **flow node**, resolving a **mistake**, and finishing a **simulation** all post verified
+events (wired into FlowsService / MistakesService / SimulationsService; flow-node capture verified live).
+Route `/app/ledger` (timeline + stats); `GET /ledger`, `GET /ledger/stats`.
+
+### AI Mentor Council
+Five agent perspectives — **Tutor / Assessment / Project / Career / Mentor** — each propose the next best
+move from shared signals (active flow, open mistakes, readiness, momentum) with a stance + rationale +
+**urgency** score; a chair picks the highest-urgency proposal and writes a synthesis that also credits
+the runner-up. Read-only, explainable, deterministic. Route `/app/mentor-council`; `GET /mentor-council`.
+
+### Learning Replay
+A narrated post-activity recap built from the **Ledger** ("what you did") + the **Skill Twin** ("where
+you are / struggled / what's next"), with a TTS-playable 3-minute **recap script**. Route `/app/replay`;
+`GET /replay`.
+
+### Weakness-to-Project Generator
+`POST /mistakes/:id/repair-project` turns a logged weakness into a tiny targeted project via
+ProjectsService and moves the mistake to `repairing` — surfaced as a "Generate targeted project" action
+in the Mistake OS inbox.
+
+### Already shipped earlier (Priority-4 list)
+**Adaptive Modality Router** and the **Explainability Drawer** ("Why Asta recommends this") shipped in the
+**Skill Twin**. Concept-DNA / Mode-Morphing / Confusion-Detector are largely covered by the
+Flow + Visual + Voice + Mistake-OS interplay.
+
+---
+
 ## Data relationships wired this pass
 - **Roadmap → Flow**: `POST /flows/from-roadmap/:roadmapId` seeds the graph backbone from roadmap weeks.
 - **Flow node → Tutor / Quiz / Project / Voice / Mentor / Knowledge**: `execute-node` returns the route + prompt + agent.
@@ -530,7 +575,9 @@ All default **on** unless noted: `ENABLE_FLOW_STUDIO`, `ENABLE_VISUAL_STUDIO`, `
 `ENABLE_PEER_ROOMS`. Off by default: `ENABLE_IMAGE_GENERATION` (→ mock SVG) and `ENABLE_REALTIME_VOICE`
 (future server-side STT/TTS).
 
-## Next-pass recommendations (Priority 1–3 complete → Priority 4)
-1. **Priority 4 breakthroughs** still open: **AI Mentor Council** (multi-agent debate → orchestrator picks one), **Proof-of-Learning Ledger** (verified learning-event timeline), **Learning Replay** (post-session recap + Skill-Twin delta + voice playback). (Adaptive Modality Router + Explainability Drawer already shipped in the Skill Twin; Concept DNA Graph + Mode-Morphing largely covered by Flow + Visual + Voice + Mistake OS.)
-2. Surface the Skill-Twin top action + Daily-Plan "today" on the **dashboard** widget.
-3. Wire Voice Room + Peer Rooms socket streaming; add a real STT/TTS + image provider behind their flags.
+## Next-pass recommendations (Phase 8 COMPLETE → polish/hardening)
+All four priorities are shipped. Remaining items are optional polish, not core modules:
+1. Surface the Skill-Twin top action + Daily-Plan "today" + Mentor-Council verdict on the **dashboard** widget.
+2. Wire Voice Room + Peer Rooms **socket streaming** (REST works today); add a real STT/TTS + image provider behind `ENABLE_REALTIME_VOICE` / `ENABLE_IMAGE_GENERATION`.
+3. Move heavy generators (flow/course/visual) onto **BullMQ** jobs so requests never block.
+4. Live UI screenshot/eyeball + a11y pass across the 13 new Phase-8 screens; persist Skill-Twin snapshots so Learning Replay can show a true before/after delta.

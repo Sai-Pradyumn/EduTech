@@ -47,6 +47,7 @@
 | P8·8 | **Daily Autopilot** — turns your active flow + open mistakes + roadmap into a **today plan** with energy-aware modes (quick / exam / burnout-recovery); `/app/today` | ✅ Phase 8 |
 | P8·9 | **Course Builder** — mentors/admins turn a goal/outline/roadmap into a full course (modules + lessons + per-module quiz/visual/voice-script + capstone project + flow + certificate criteria), editable, **role-gated publish** to org/cohort; `/app/course-builder` | ✅ Phase 8 |
 | P8·10 | **Peer Rooms** — collaborative study rooms (join by code, shared board, **AI moderator**, auto-summary + action items, shared learning flow); `/app/peer-rooms` | ✅ Phase 8 |
+| P8·11 | **Breakthroughs** — **Proof-of-Learning Ledger** (verified event timeline), **AI Mentor Council** (5 agents debate → chair picks), **Learning Replay** (narrated recap + TTS), **Weakness-to-Project** generator; `/app/ledger`, `/app/mentor-council`, `/app/replay` | ✅ Phase 8 |
 | 11 | Admin dashboard + AI analytics | ⏳ Phase 6 |
 | 12 | Notifications (in-app + BullMQ) | ⏳ Phase 6 |
 | 13 | WebSocket foundation (streaming + realtime) | ⏳ Phase 3 |

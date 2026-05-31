@@ -46,6 +46,9 @@ import { SimulationsModule } from './modules/simulations/simulations.module';
 import { DailyPlanModule } from './modules/daily-plan/daily-plan.module';
 import { CourseBuilderModule } from './modules/course-builder/course-builder.module';
 import { PeerRoomsModule } from './modules/peer-rooms/peer-rooms.module';
+import { LedgerModule } from './modules/ledger/ledger.module';
+import { MentorCouncilModule } from './modules/mentor-council/mentor-council.module';
+import { ReplayModule } from './modules/replay/replay.module';
 import { SocketsModule } from './sockets/sockets.module';
 
 @Module({
@@ -93,6 +96,9 @@ import { SocketsModule } from './sockets/sockets.module';
     DailyPlanModule,
     CourseBuilderModule,
     PeerRoomsModule,
+    LedgerModule,
+    MentorCouncilModule,
+    ReplayModule,
     SocketsModule,
   ],
   controllers: [HealthController],

@@ -73,6 +73,12 @@ export class MistakesController {
     return { mistake: toView(mistake), flowId, nodeId };
   }
 
+  @Post(':id/repair-project')
+  async repairProject(@CurrentUser() user: AuthUser, @Param('id') id: string) {
+    const { mistake, projectId } = await this.mistakes.repairProject(user.id, id);
+    return { mistake: toView(mistake), projectId };
+  }
+
   @Delete(':id')
   remove(@CurrentUser() user: AuthUser, @Param('id') id: string) {
     return this.mistakes.remove(user.id, id);

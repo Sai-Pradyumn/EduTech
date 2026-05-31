@@ -4,6 +4,7 @@ import { Model, Types } from 'mongoose';
 import { Difficulty } from '../../common/enums';
 import { StudentProfileService } from '../student-profile/student-profile.service';
 import { Roadmap, RoadmapDocument } from '../roadmap/schemas/roadmap.schema';
+import { LedgerService } from '../ledger/ledger.service';
 import { FlowArchitectService } from './flow-architect/flow-architect.service';
 import { FlowBlueprintInput } from './flow-architect/generated-flow.types';
 import { Flow, FlowDocument, FlowNode, FlowNodeType } from './schemas/flow.schema';
@@ -25,6 +26,7 @@ export class FlowsService {
     @InjectModel(Roadmap.name) private readonly roadmaps: Model<RoadmapDocument>,
     private readonly profiles: StudentProfileService,
     private readonly architect: FlowArchitectService,
+    private readonly ledger: LedgerService,
   ) {}
 
   // ───────────────────────── generation ─────────────────────────
@@ -159,6 +161,7 @@ export class FlowsService {
     const flow = await this.get(userId, id);
     const node = flow.nodes.find((n) => n.id === nodeId);
     if (!node) throw new NotFoundException('Node not found');
+    const wasCompleted = node.status === 'completed';
     if (dto.title !== undefined) node.title = dto.title;
     if (dto.summary !== undefined) node.summary = dto.summary;
     if (dto.objective !== undefined) node.objective = dto.objective;
@@ -172,7 +175,11 @@ export class FlowsService {
     if (dto.linkedProjectId !== undefined) node.linkedProjectId = dto.linkedProjectId;
     flow.markModified('nodes');
     this.recomputeStatuses(flow);
-    return flow.save();
+    const saved = await flow.save();
+    if (dto.status === 'completed' && !wasCompleted) {
+      await this.ledger.record(userId, { kind: 'node_completed', title: `Completed: ${node.title}`, detail: `In flow "${flow.title}".`, evidenceRef: String(flow._id) });
+    }
+    return saved;
   }
 
   async removeNode(userId: string, id: string, nodeId: string): Promise<FlowDocument> {

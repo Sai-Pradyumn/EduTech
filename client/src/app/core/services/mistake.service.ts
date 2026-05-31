@@ -76,6 +76,9 @@ export class MistakeService {
   repairFlow(id: string): Observable<{ mistake: Mistake; flowId: string | null; nodeId: string | null }> {
     return this.api.post<{ mistake: Mistake; flowId: string | null; nodeId: string | null }>(`/mistakes/${id}/repair-flow`, {});
   }
+  repairProject(id: string): Observable<{ mistake: Mistake; projectId: string }> {
+    return this.api.post<{ mistake: Mistake; projectId: string }>(`/mistakes/${id}/repair-project`, {});
+  }
   remove(id: string): Observable<{ ok: true }> {
     return this.api.delete<{ ok: true }>(`/mistakes/${id}`);
   }

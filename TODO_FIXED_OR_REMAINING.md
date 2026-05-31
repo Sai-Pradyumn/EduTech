@@ -1,5 +1,26 @@
 # Asta — Fixed / Remaining
 
+## ✅ Shipped — Phase 8 · PRIORITY 4 breakthroughs — PHASE 8 COMPLETE
+The breakthrough features, end-to-end. Full detail in [`PHASE_8_MULTIMODAL_LEARNING_OS.md`](PHASE_8_MULTIMODAL_LEARNING_OS.md).
+- **Proof-of-Learning Ledger** `server/src/modules/ledger/` + `client/.../features/ledger/`: append-only
+  verified-event timeline. `LedgerService` listens to quiz/week/project events **and** is called by
+  Flows(node complete) / Mistakes(resolved) / Simulations(finish). 2 routes. Seed 5 entries. (Flow-node
+  capture verified live: 5→6.)
+- **AI Mentor Council** `server/src/modules/mentor-council/` + `features/mentor-council/`: 5 agent
+  perspectives (Tutor/Assessment/Project/Career/Mentor) propose with urgency; chair picks + synthesizes.
+  Read-only (LI + Flows + Mistakes). `/app/mentor-council`.
+- **Learning Replay** `server/src/modules/replay/` + `features/replay/`: recap from Ledger + Skill Twin
+  with a TTS-playable 3-min script. `/app/replay`.
+- **Weakness-to-Project**: `POST /mistakes/:id/repair-project` (→ ProjectsService) + "Generate targeted
+  project" button in Mistake OS. (Adaptive Modality Router + Explainability Drawer already in Skill Twin.)
+- **Wiring**: 5 routes + nav (Mentor Council, Learning Replay, Proof-of-Learning) + voice rules. Cross-
+  module: Flows/Mistakes/Simulations now import LedgerModule; Mistakes imports ProjectsModule.
+- **Verification**: builds green; client warning-free (524.25 kB < 540 kB); server boots clean; API
+  smoked — ledger list/stats + **flow-node→ledger capture**, council 5-member verdict, replay recap,
+  weakness→project.
+- **PHASE 8 COMPLETE** — all 4 priorities (11 module groups). Remaining = optional polish (dashboard
+  widget, socket streaming, real STT/TTS+image providers, BullMQ, live UI/a11y pass).
+
 ## ✅ Shipped — Phase 8 · PRIORITY 3 (Course Builder + Peer Rooms) — in one pass
 Both Priority-3 modules built end-to-end. Full detail in [`PHASE_8_MULTIMODAL_LEARNING_OS.md`](PHASE_8_MULTIMODAL_LEARNING_OS.md).
 - **Course Builder** `server/src/modules/course-builder/` + `client/.../features/course-builder/`: goal/

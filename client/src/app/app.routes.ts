@@ -238,6 +238,24 @@ export const routes: Routes = [
         loadComponent: () => import('./features/skill-twin/skill-twin.component').then((m) => m.SkillTwinComponent),
       },
       {
+        path: 'mentor-council',
+        title: 'Mentor Council',
+        data: { title: 'AI Mentor Council' },
+        loadComponent: () => import('./features/mentor-council/mentor-council.component').then((m) => m.MentorCouncilComponent),
+      },
+      {
+        path: 'ledger',
+        title: 'Proof-of-Learning',
+        data: { title: 'Proof-of-Learning' },
+        loadComponent: () => import('./features/ledger/ledger.component').then((m) => m.LedgerComponent),
+      },
+      {
+        path: 'replay',
+        title: 'Learning Replay',
+        data: { title: 'Learning Replay' },
+        loadComponent: () => import('./features/replay/replay.component').then((m) => m.ReplayComponent),
+      },
+      {
         path: 'cohorts',
         title: 'Cohorts',
         data: { title: 'Cohorts' },

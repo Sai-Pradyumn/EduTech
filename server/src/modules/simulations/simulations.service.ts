@@ -5,6 +5,7 @@ import { Difficulty, Role } from '../../common/enums';
 import { AgentOrchestratorService } from '../agents/agent-orchestrator.service';
 import { MistakesService } from '../mistakes/mistakes.service';
 import { FlowsService } from '../flows/flows.service';
+import { LedgerService } from '../ledger/ledger.service';
 import { Simulation, SimulationDocument, SimulationType } from './schemas/simulation.schema';
 import { SIM_BLUEPRINTS, scoreSimulation } from './simulation-coach';
 import { StartSimulationDto } from './dto/simulation.dto';
@@ -16,6 +17,7 @@ export class SimulationsService {
     private readonly orchestrator: AgentOrchestratorService,
     private readonly mistakes: MistakesService,
     private readonly flows: FlowsService,
+    private readonly ledger: LedgerService,
   ) {}
 
   async start(userId: string, dto: StartSimulationDto): Promise<SimulationDocument> {
@@ -78,6 +80,7 @@ export class SimulationsService {
     sim.linkedSkills = [sim.topic];
     sim.status = 'finished';
     sim.markModified('rubric');
+    await this.ledger.record(userId, { kind: 'simulation_finished', title: `Finished ${sim.type.replace('_', ' ')}: ${sim.topic}`, detail: `Scored ${score}/100.`, score, evidenceRef: String(sim._id) });
 
     // Below-bar performance feeds Mistake OS so the gap is tracked + repairable.
     if (score < 60) {

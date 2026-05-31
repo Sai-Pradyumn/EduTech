@@ -41,6 +41,9 @@ Legend — Rebuild: ✅ done · 🎯 next priority · ⏳ queued · ➖ keep (no
 | `simulations` / `simulations/:id` | Simulations{List,Detail} | **Simulation Labs** — rubric-scored rounds (Phase 8) | ✅ | `/simulations/*` |
 | `course-builder` / `course-builder/:id` | Course{List,Detail} | **Course Builder** — generate + edit + publish courses (Phase 8) | ✅ | `/courses/*` |
 | `peer-rooms` / `peer-rooms/:id` | PeerRooms{List,Detail} | **Peer Rooms** — collaborative study + AI moderator (Phase 8) | ✅ | `/peer-rooms/*` |
+| `mentor-council` | MentorCouncilComponent | **AI Mentor Council** — 5 agents debate → chair verdict (Phase 8) | ✅ | `/mentor-council` |
+| `ledger` | LedgerComponent | **Proof-of-Learning** — verified event timeline (Phase 8) | ✅ | `/ledger` |
+| `replay` | ReplayComponent | **Learning Replay** — narrated recap + TTS (Phase 8) | ✅ | `/replay` |
 | `cohorts` | CohortsComponent | Leaderboard + announcements (signal timeline) | ⏳ | `/cohorts/*` |
 | `live-sessions` | LiveSessionsComponent | Session + recap | ⏳ | `/live-sessions/*` |
 | `community` | CommunityComponent | Channels + threads | ⏳ | `/community/*` |
