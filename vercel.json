@@ -1,0 +1,9 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "installCommand": "npm ci",
+  "buildCommand": "node client/scripts/generate-env.mjs && npm --workspace client run build",
+  "outputDirectory": "client/dist/client/browser",
+  "framework": null,
+  "github": { "enabled": false },
+  "rewrites": [{ "source": "/(.*)", "destination": "/index.html" }]
+}

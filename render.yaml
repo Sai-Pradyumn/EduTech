@@ -1,0 +1,43 @@
+# Render Blueprint — Asta backend (NestJS API).
+# Deploy: Render Dashboard → New → Blueprint → connect this repo → Apply.
+#
+# Render does NOT provide MongoDB. Use MongoDB Atlas (the free M0 tier is a 3-node
+# replica set, so change streams + transactions work) and paste its SRV string as MONGO_URI.
+# Redis/BullMQ are OFF by default (ENABLE_BULLMQ unset), so no Redis is required.
+services:
+  - type: web
+    name: asta-api
+    runtime: node
+    region: singapore # closest Render region to India; change if you prefer
+    plan: free # free web services cold-start after ~15 min idle
+    branch: main
+    # --include=dev forces devDependencies (the Nest CLI lives there) to install even
+    # though NODE_ENV=production would otherwise make `npm ci` skip them.
+    buildCommand: npm ci --include=dev && npm run build:server
+    startCommand: node server/dist/main
+    healthCheckPath: /api/ops/health # @Public() endpoint — no auth needed
+    autoDeploy: false # GitHub Actions triggers deploys via the deploy hook instead
+    envVars:
+      - key: NODE_ENV
+        value: production
+      # Render injects PORT automatically and the app reads process.env.PORT — do not set it.
+      - key: JWT_SECRET
+        generateValue: true
+      - key: JWT_REFRESH_SECRET
+        generateValue: true
+      - key: JWT_EXPIRES_IN
+        value: 15m
+      - key: JWT_REFRESH_EXPIRES_IN
+        value: 7d
+      - key: AI_PROVIDER
+        value: auto
+      - key: LLM_PROVIDERS
+        value: groq,gemini,mistral,openrouter,deepseek,openai,claude
+      # ─── Set these in the Render dashboard (Environment tab) ───
+      - key: MONGO_URI # MongoDB Atlas SRV string, e.g. mongodb+srv://user:pass@cluster/asta?retryWrites=true&w=majority
+        sync: false
+      - key: CLIENT_ORIGIN # your Vercel URL, e.g. https://asta.vercel.app (used for CORS)
+        sync: false
+      # Optional (leave unset → mock/no-op fallbacks): AI provider keys (GROQ_API_KEY, GEMINI_API_KEY, …),
+      # RAZORPAY_KEY_ID/RAZORPAY_KEY_SECRET, VAPID_PUBLIC_KEY/VAPID_PRIVATE_KEY, GOOGLE_CLIENT_ID.
+      # Add any of these in the dashboard to switch the corresponding feature from mock to live.
