@@ -141,4 +141,11 @@ export const ADMIN_NAV: NavGroup[] = [
       { label: 'Fine-Tuning', route: '/admin/fine-tuning', icon: I.voice },
     ],
   },
+  {
+    heading: 'Platform',
+    items: [
+      { label: 'Billing Admin', route: '/admin/billing', icon: I.billing },
+      { label: 'Feature Flags', route: '/admin/feature-flags', icon: I.platform },
+    ],
+  },
 ];

@@ -103,6 +103,7 @@ export class VisualExplainerService {
       userId,
       agentType: this.type,
       operation: 'visual.generate',
+      feature: 'visual',
       tokensIn: messages.reduce((s, m) => s + m.content.length, 0),
       tokensOut: visual.content.length,
       latencyMs: Date.now() - startedAt,

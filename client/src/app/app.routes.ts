@@ -471,6 +471,18 @@ export const routes: Routes = [
         data: { title: 'Assessments Browser' },
         loadComponent: () => import('./features/admin/admin-assessments.component').then((m) => m.AdminAssessmentsComponent),
       },
+      {
+        path: 'billing',
+        title: 'Billing Admin',
+        data: { title: 'Billing Overview' },
+        loadComponent: () => import('./features/admin/admin-billing.component').then((m) => m.AdminBillingComponent),
+      },
+      {
+        path: 'feature-flags',
+        title: 'Feature Flags',
+        data: { title: 'Feature Flags' },
+        loadComponent: () => import('./features/admin/feature-flags.component').then((m) => m.AdminFeatureFlagsComponent),
+      },
     ],
   },
 

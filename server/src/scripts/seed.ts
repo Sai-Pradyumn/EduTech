@@ -93,6 +93,27 @@ import {
   MarketplaceTemplate,
   MarketplaceTemplateSchema,
 } from '../modules/marketplace/schemas/marketplace-template.schema';
+import {
+  Subscription,
+  SubscriptionSchema,
+} from '../modules/billing/schemas/subscription.schema';
+import {
+  PaymentTransaction,
+  PaymentTransactionSchema,
+} from '../modules/billing/schemas/payment-transaction.schema';
+import {
+  EntitlementUsage,
+  EntitlementUsageSchema,
+} from '../modules/entitlements/schemas/entitlement-usage.schema';
+import {
+  FeatureFlag,
+  FeatureFlagSchema,
+} from '../modules/feature-flags/schemas/feature-flag.schema';
+import {
+  AiUsageLog,
+  AiUsageLogSchema,
+} from '../modules/ai/schemas/ai-usage-log.schema';
+import { planById } from '../modules/billing/plans';
 import { buildRoadmapBlueprint } from '../modules/agents/roadmap/roadmap-blueprint.generator';
 import { buildFlowBlueprint } from '../modules/flows/flow-architect/flow-blueprint.generator';
 import { buildVisual } from '../modules/visuals/visual-explainer/visual-generator';
@@ -981,6 +1002,156 @@ async function run(): Promise<void> {
       );
     }
   }
+
+  // ── Phase 10 (M1/M2/M16): subscriptions, AI usage logs, entitlement meters, flags ──
+  const SubscriptionModel = mongoose.model(
+    Subscription.name,
+    SubscriptionSchema,
+  );
+  const PaymentTransactionModel = mongoose.model(
+    PaymentTransaction.name,
+    PaymentTransactionSchema,
+  );
+  const EntitlementUsageModel = mongoose.model(
+    EntitlementUsage.name,
+    EntitlementUsageSchema,
+  );
+  const FeatureFlagModel = mongoose.model(FeatureFlag.name, FeatureFlagSchema);
+  const AiUsageLogModel = mongoose.model(AiUsageLog.name, AiUsageLogSchema);
+
+  const now = new Date();
+  const periodStart = new Date(now.getFullYear(), now.getMonth(), 1);
+  const periodEnd = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+
+  // Subscriptions: student on Pro, mentor on Free, admin on Enterprise.
+  const subSeed: { user: typeof student._id; planId: string }[] = [
+    { user: student._id, planId: 'pro' },
+    { user: mentor?._id, planId: 'free' },
+    { user: admin!._id, planId: 'enterprise' },
+  ].filter((s) => s.user) as { user: typeof student._id; planId: string }[];
+  for (const s of subSeed) {
+    await SubscriptionModel.updateOne(
+      { user: s.user },
+      {
+        $set: {
+          planId: s.planId,
+          status: 'active',
+          provider: 'mock',
+          startedAt: periodStart,
+          currentPeriodStart: periodStart,
+          currentPeriodEnd: periodEnd,
+          cancelAtPeriodEnd: false,
+        },
+      },
+      { upsert: true },
+    );
+  }
+
+  // A paid mock invoice for the student's Pro plan.
+  await PaymentTransactionModel.updateOne(
+    { user: student._id, reference: 'mock_seed_pro' },
+    {
+      $set: {
+        user: student._id,
+        planId: 'pro',
+        amountInr: planById('pro').priceInr,
+        currency: 'INR',
+        status: 'paid',
+        provider: 'mock',
+        reference: 'mock_seed_pro',
+      },
+    },
+    { upsert: true },
+  );
+
+  // AI usage history across features (drives cost-by-feature + meters).
+  await AiUsageLogModel.deleteMany({ user: student._id });
+  const FEATURE_MIX: { feature: string; agentType: string; op: string }[] = [
+    { feature: 'tutor', agentType: 'tutor', op: 'tutor.chat' },
+    { feature: 'flow', agentType: 'roadmap', op: 'flow.generate' },
+    { feature: 'visual', agentType: 'content_creator', op: 'visual.generate' },
+    { feature: 'quiz', agentType: 'assessment', op: 'quiz.generate' },
+    {
+      feature: 'project',
+      agentType: 'project_builder',
+      op: 'project.generate',
+    },
+    { feature: 'rag', agentType: 'rag', op: 'rag.answer' },
+  ];
+  const usageDocs = [];
+  for (let d = 0; d < 28; d++) {
+    const day = new Date(now.getTime() - d * 86400000);
+    const mix = FEATURE_MIX[d % FEATURE_MIX.length];
+    const tokensIn = 400 + ((d * 37) % 600);
+    const tokensOut = 300 + ((d * 53) % 800);
+    usageDocs.push({
+      user: student._id,
+      agentType: mix.agentType,
+      feature: mix.feature,
+      provider: 'mock',
+      model: 'mock',
+      strategy: 'fallback',
+      operation: mix.op,
+      tokensIn,
+      tokensOut,
+      costUsd: ((tokensIn + tokensOut) / 1000) * 0.002,
+      latencyMs: 600 + ((d * 91) % 1400),
+      status: d % 11 === 0 ? 'fallback' : 'success',
+      fallbackUsed: d % 11 === 0,
+      validationPassed: d % 13 !== 0,
+      createdAt: day,
+      updatedAt: day,
+    });
+  }
+  await AiUsageLogModel.insertMany(usageDocs);
+
+  // Entitlement meters for the student (Pro plan limits).
+  const proPlan = planById('pro');
+  const meters: { featureKey: string; used: number }[] = [
+    { featureKey: 'ai.messages', used: 340 },
+    { featureKey: 'ai.tokens', used: 690_000 },
+    { featureKey: 'flow.generations', used: 12 },
+    { featureKey: 'visual.generations', used: 8 },
+    { featureKey: 'quiz.generations', used: 21 },
+    { featureKey: 'project.reviews', used: 4 },
+    { featureKey: 'rag.documents', used: 6 },
+  ];
+  for (const m of meters) {
+    await EntitlementUsageModel.updateOne(
+      {
+        ownerType: 'user',
+        ownerId: String(student._id),
+        featureKey: m.featureKey,
+        periodStart,
+      },
+      {
+        $set: {
+          ownerType: 'user',
+          ownerId: String(student._id),
+          featureKey: m.featureKey,
+          periodStart,
+          periodEnd,
+          resetAt: periodEnd,
+          used: m.used,
+          limit:
+            proPlan.limits[m.featureKey as keyof typeof proPlan.limits] ?? 0,
+        },
+      },
+      { upsert: true },
+    );
+  }
+
+  // Feature-flag overrides: keep image generation off (expensive), web push beta on.
+  await FeatureFlagModel.updateOne(
+    { key: 'ENABLE_IMAGE_GENERATION' },
+    { $set: { key: 'ENABLE_IMAGE_GENERATION', enabled: false } },
+    { upsert: true },
+  );
+  await FeatureFlagModel.updateOne(
+    { key: 'ENABLE_WEB_PUSH' },
+    { $set: { key: 'ENABLE_WEB_PUSH', enabled: true } },
+    { upsert: true },
+  );
 
   console.log(`Seeded demo data:
   Admin    → ${DEMO.admin.email} / ${DEMO.admin.password}  (SUPER_ADMIN, platform operator)

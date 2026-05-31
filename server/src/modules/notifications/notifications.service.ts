@@ -45,7 +45,13 @@ export class NotificationsService {
     userId: string,
     input: { type?: string; title: string; body?: string; link?: string },
   ): Promise<void> {
-    const exists = await this.model.exists({ user: new Types.ObjectId(userId), title: input.title, read: false }).exec();
+    const exists = await this.model
+      .exists({
+        user: new Types.ObjectId(userId),
+        title: input.title,
+        read: false,
+      })
+      .exec();
     if (exists) return;
     await this.create(userId, input);
   }

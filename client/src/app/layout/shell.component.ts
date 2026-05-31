@@ -19,6 +19,8 @@ import { RouteTransitionDirective } from '../shared/directives/route-transition.
 import { AuthService } from '../core/services/auth.service';
 import { OrgContextService } from '../core/services/org-context.service';
 import { IntelligenceService } from '../core/services/intelligence.service';
+import { EntitlementService } from '../core/services/entitlement.service';
+import { FeatureFlagService } from '../core/services/feature-flag.service';
 import { ADMIN_NAV, STUDENT_NAV, workspaceNav } from '../core/constants/nav';
 
 /** App shell: fixed sidebar + sticky topbar + routed content (DESIGN_SPEC §5). */
@@ -183,6 +185,8 @@ export class ShellComponent {
   private readonly auth = inject(AuthService);
   private readonly orgCtx = inject(OrgContextService);
   private readonly router = inject(Router);
+  private readonly entitlements = inject(EntitlementService);
+  private readonly featureFlags = inject(FeatureFlagService);
   readonly intel = inject(IntelligenceService);
 
   readonly user = this.auth.user;
@@ -223,6 +227,12 @@ export class ShellComponent {
 
   constructor() {
     this.orgCtx.load();
+    // Phase 10: load entitlements + feature flags once so gates/flags resolve app-wide.
+    this.featureFlags.load().subscribe({ error: () => undefined });
+    effect(() => {
+      if (this.user() && !this.isAdmin())
+        this.entitlements.load().subscribe({ error: () => undefined });
+    });
     // Real learning streak for the topbar (students only; the overview endpoint
     // is student-scoped). Cached after first fetch; errors leave the streak at 0.
     effect(() => {

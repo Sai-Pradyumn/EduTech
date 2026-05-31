@@ -60,6 +60,8 @@ import { MarketplaceModule } from './modules/marketplace/marketplace.module';
 import { InstitutionModule } from './modules/institution/institution.module';
 import { PrivacyModule } from './modules/privacy/privacy.module';
 import { NudgesModule } from './modules/nudges/nudges.module';
+import { EntitlementsModule } from './modules/entitlements/entitlements.module';
+import { FeatureFlagsModule } from './modules/feature-flags/feature-flags.module';
 import { SocketsModule } from './sockets/sockets.module';
 
 @Module({
@@ -72,6 +74,8 @@ import { SocketsModule } from './sockets/sockets.module';
     }),
     EventEmitterModule.forRoot(),
     DatabaseModule,
+    EntitlementsModule,
+    FeatureFlagsModule,
     AiModule,
     AiEvalsModule,
     AgentsModule,

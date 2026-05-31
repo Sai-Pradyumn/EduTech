@@ -121,6 +121,7 @@ export class FlowArchitectService {
       userId,
       agentType: this.type,
       operation: 'flow.generate',
+      feature: 'flow',
       tokensIn: messages.reduce((s, m) => s + m.content.length, 0),
       tokensOut: JSON.stringify(flow).length,
       latencyMs: Date.now() - startedAt,
