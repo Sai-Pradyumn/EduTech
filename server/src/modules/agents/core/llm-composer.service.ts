@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { AgentType } from '../../../common/enums';
 import { AiService } from '../../ai/ai.service';
 import { estimateTokens } from '../../ai/gateway/pricing';
@@ -25,6 +25,8 @@ export interface ComposeOptions {
  */
 @Injectable()
 export class LlmComposerService {
+  private readonly logger = new Logger(LlmComposerService.name);
+
   constructor(private readonly ai: AiService) {}
 
   get isLive(): boolean {
@@ -72,6 +74,11 @@ export class LlmComposerService {
   ): Promise<string> {
     const user = opts.user ?? ctx.request.message;
     const securityNote = ctx.request.context?.['securityNote'];
+
+    this.logger.log(
+      `[LLM-COMPOSER] Starting answer composition | operation: ${opts.operation} | agentType: ${opts.agentType} | isLive: ${this.ai.isLive} | provider: ${this.ai.providerName} | strategy: ${this.ai.strategy}`,
+    );
+
     if (this.ai.isLive) {
       try {
         const system = [
@@ -99,6 +106,9 @@ export class LlmComposerService {
 
         if (this.ai.strategy === 'fallback') {
           // Stream real tokens live (best UX / lowest latency).
+          this.logger.log(
+            `[LLM-COMPOSER] Streaming real tokens from ${this.ai.providerName} (fallback strategy)`,
+          );
           let acc = '';
           for await (const token of this.ai.streamText(messages, {
             temperature: opts.temperature ?? 0.5,
@@ -107,9 +117,15 @@ export class LlmComposerService {
             acc += token;
             ctx.emit({ type: 'chunk', messageId: '', delta: token });
           }
-          if (acc.trim()) return acc;
+          if (acc.trim()) {
+            this.logger.log(
+              `[LLM-COMPOSER] Successfully streamed ${acc.length} chars from ${this.ai.providerName}`,
+            );
+            return acc;
+          }
         } else {
           // refine (draft→self-critique) / parallel (race→judge): compute, then stream the result.
+          this.logger.log(`[LLM-COMPOSER] Using ${this.ai.strategy} strategy`);
           ctx.emit({
             type: 'thinking',
             messageId: '',
@@ -123,14 +139,27 @@ export class LlmComposerService {
             meta,
           });
           if (text.trim()) {
+            this.logger.log(
+              `[LLM-COMPOSER] Composed ${text.length} chars via ${this.ai.strategy}`,
+            );
             await this.streamFallback(text, ctx);
             return text;
           }
         }
-      } catch {
-        /* fall through to deterministic streaming */
+      } catch (err) {
+        this.logger.warn(
+          `[LLM-COMPOSER] Live API call failed (falling back to mock): ${(err as Error).message}`,
+        );
       }
+    } else {
+      this.logger.warn(
+        `[LLM-COMPOSER] No live LLM provider configured - using MOCK responses`,
+      );
     }
+
+    this.logger.log(
+      `[LLM-COMPOSER] Falling back to deterministic answer (${opts.operation})`,
+    );
     await this.streamFallback(opts.fallback, ctx);
     // Record a usage row for the deterministic path too, so analytics stay populated
     // offline (the live path is auto-logged by AiService via `meta`).

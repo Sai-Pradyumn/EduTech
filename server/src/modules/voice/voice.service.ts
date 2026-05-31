@@ -206,7 +206,7 @@ export class VoiceService {
     const s = await this.get(userId, id);
     s.status = 'completed';
     if (typeof durationMs === 'number') s.durationMs = durationMs;
-    if (!s.summary) await this.applySummary(s);
+    if (!s.summary) this.applySummary(s);
     return s.save();
   }
 
@@ -214,11 +214,11 @@ export class VoiceService {
 
   async summarize(userId: string, id: string): Promise<VoiceSessionDocument> {
     const s = await this.get(userId, id);
-    await this.applySummary(s);
+    this.applySummary(s);
     return s.save();
   }
 
-  private async applySummary(s: VoiceSessionDocument): Promise<void> {
+  private applySummary(s: VoiceSessionDocument): void {
     const userTurns = s.transcript
       .filter((t) => t.role === 'user')
       .map((t) => t.text);
@@ -267,7 +267,7 @@ export class VoiceService {
     id: string,
   ): Promise<{ notes: string; actions: string[] }> {
     const s = await this.get(userId, id);
-    if (!s.summary) await this.applySummary(s);
+    if (!s.summary) this.applySummary(s);
     const points = s.transcript
       .filter((t) => t.role === 'assistant')
       .map((t) => `- ${t.text.slice(0, 160)}`);

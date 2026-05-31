@@ -63,7 +63,7 @@ function processSteps(subject: string): string[] {
   ];
 }
 
-function conceptParts(subject: string): string[] {
+function conceptParts(_subject: string): string[] {
   return [
     'Definition',
     'Key components',
@@ -77,7 +77,7 @@ function conceptParts(subject: string): string[] {
 function esc(s: string): string {
   return s
     .replace(/"/g, "'")
-    .replace(/[\[\]{}()|]/g, ' ')
+    .replace(/[[\]{}()|]/g, ' ')
     .replace(/\s+/g, ' ')
     .trim();
 }

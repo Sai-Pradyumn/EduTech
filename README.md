@@ -1,8 +1,8 @@
 # Asta — AI Skill Mentor
 
-> An **AI-native learning & outcome operating system**. Not an LMS with a chatbot bolted on — every surface is driven by cooperating AI agents. Students get a personalized roadmap, learn with an AI tutor, ask doubts grounded in their own notes (RAG), generate & take quizzes, plan real projects, track progress — and now **prove** their skills: a verified **Skill Passport**, an explainable **Career Readiness** score against real roles, a **Proof-of-Learning Ledger**, and an **AI Outcome Council** that decides their single best next real-world move.
+> An **AI-native learning, outcome & enterprise SaaS operating system**. Not an LMS with a chatbot bolted on — every surface is driven by cooperating AI agents. Students get a personalized roadmap, learn with an AI tutor, ask doubts grounded in their own notes (RAG), generate & take quizzes, plan real projects, track progress, and **prove** their skills (verified **Skill Passport**, explainable **Career Readiness**, **Proof-of-Learning Ledger**, **AI Outcome Council**). As of **Phase 10** it's also a real platform: **plan-based entitlements & metering**, **AI cost/ops observability**, a **PWA with offline learning**, **enterprise session/branding/data controls**, a **developer API + webhooks**, **integrations**, and **feature flags** — onboard users, charge plans, control AI cost, support orgs, run on mobile, and monitor failures.
 
-**Stack:** Angular 18 · NestJS 11 · MongoDB (Mongoose) · Redis + BullMQ · Socket.IO · TypeScript (strict) · Tailwind. AI behind a provider abstraction with a **mock provider** so the whole app runs with **no API keys**.
+**Stack:** Angular 18 · NestJS 11 · MongoDB (Mongoose) · Redis + BullMQ · Socket.IO · TypeScript (strict) · Tailwind. AI behind a provider abstraction with a **mock provider** so the whole app runs with **no API keys**; payments, web-push and OAuth are likewise mock/placeholder by default.
 
 ---
 
@@ -61,6 +61,12 @@
 | P9·11 | **Creator/Template Marketplace** — publish reusable templates, admin moderation queue, browse + clone; `/app/marketplace`, `/app/creator-studio` | ✅ Phase 9 |
 | P9·12 | **Institution Outcome Layer** — org-isolated cohort placement-readiness analytics (avg readiness, at-risk, top performers, weak concepts) + assign flow/template to cohort; `/app/institution` | ✅ Phase 9 |
 | P9·13 | **Nudge intelligence** (event-driven, de-duplicated nudges + pull-based `GET /nudges`) and **Privacy/Export/Reset** (export JSON, make-private, reset Skill Twin, clear tracker); `/app/privacy` | ✅ Phase 9 |
+| P10·1 | **Entitlements & monetization** — 5-plan catalog (Free/Pro/Team/Institution/Enterprise) with full per-feature limit maps, `EntitlementsService` (check/consume/summary), `<asta-entitlement-gate>`, rebuilt billing page (plan-limit meters + AI cost-by-feature), `PaymentProvider` abstraction (mock default; Stripe/Razorpay placeholders); `/app/billing` | ✅ Phase 10 |
+| P10·2 | **AI metering & Ops** — every AI call logged (provider/model/feature/cost/latency/fallback/status) + meters entitlement counters; **AI Ops** dashboard (cost/latency/error/fallback, provider health, top spenders) + **budget policies**; `/admin/ai-ops` | ✅ Phase 10 |
+| P10·3 | **Ops Command Center** — request/error IDs (no stack leaks) + persisted error feed, queue-agnostic **job ledger with retry**, health/metrics; **Audit logs**; **Product analytics** (funnels, DAU/WAU, retention); `/admin/ops`, `/admin/audit-logs`, `/admin/product-analytics` | ✅ Phase 10 |
+| P10·4 | **PWA & offline learning** — IndexedDB offline cache + **sync queue** (replays on reconnect) + network-status banner, `<asta-offline-toggle>`, SW stale-while-revalidate for safe GET APIs, web-push foundation; `/app/offline` | ✅ Phase 10 |
+| P10·5 | **Enterprise** — session/device management (revoke / sign-out-everywhere), org **white-label branding** (cert preview), **data export + deletion** requests with retention policy; `/app/security`, `/app/org/branding`, `/app/data` | ✅ Phase 10 |
+| P10·6 | **Developer platform & integrations** — org **API keys** (hashed, shown once) + **webhooks** (HMAC test delivery + log), integrations foundation (GitHub/Calendar `.ics`/Slack/Discord/LMS), **feature flags** (16, admin kill-switches); `/app/developer`, `/app/integrations`, `/admin/feature-flags` | ✅ Phase 10 |
 | 11 | Admin dashboard + AI analytics | ⏳ Phase 6 |
 | 12 | Notifications (in-app + BullMQ) | ⏳ Phase 6 |
 | 13 | WebSocket foundation (streaming + realtime) | ⏳ Phase 3 |

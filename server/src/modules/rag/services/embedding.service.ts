@@ -15,7 +15,7 @@ export class EmbeddingService {
   constructor(private readonly ai: AiService) {}
 
   async embedAll(texts: string[]): Promise<number[][]> {
-    const out: number[][] = new Array(texts.length);
+    const out: number[][] = new Array<number[]>(texts.length);
     let cursor = 0;
     const worker = async (): Promise<void> => {
       while (cursor < texts.length) {

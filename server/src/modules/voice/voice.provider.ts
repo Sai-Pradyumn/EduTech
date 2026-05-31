@@ -27,11 +27,11 @@ export interface IVoiceProvider {
 export class MockVoiceProvider implements IVoiceProvider {
   readonly name = 'mock';
 
-  async transcribe(transcript: string): Promise<string> {
-    return transcript.trim();
+  transcribe(transcript: string): Promise<string> {
+    return Promise.resolve(transcript.trim());
   }
 
-  async synthesize(text: string, voice = 'en-US'): Promise<SynthesisResult> {
-    return { text, voice, provider: this.name };
+  synthesize(text: string, voice = 'en-US'): Promise<SynthesisResult> {
+    return Promise.resolve({ text, voice, provider: this.name });
   }
 }

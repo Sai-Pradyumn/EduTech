@@ -19,6 +19,12 @@ import { RouteTransitionDirective } from '../shared/directives/route-transition.
 import { AuthService } from '../core/services/auth.service';
 import { OrgContextService } from '../core/services/org-context.service';
 import { IntelligenceService } from '../core/services/intelligence.service';
+import { EntitlementService } from '../core/services/entitlement.service';
+import { FeatureFlagService } from '../core/services/feature-flag.service';
+import { ProductAnalyticsService } from '../core/services/product-analytics.service';
+import { NetworkStatusService } from '../core/services/network-status.service';
+import { SyncQueueService } from '../core/services/sync-queue.service';
+import { OfflineService } from '../core/services/offline.service';
 import { ADMIN_NAV, STUDENT_NAV, workspaceNav } from '../core/constants/nav';
 
 /** App shell: fixed sidebar + sticky topbar + routed content (DESIGN_SPEC §5). */
@@ -65,6 +71,16 @@ import { ADMIN_NAV, STUDENT_NAV, workspaceNav } from '../core/constants/nav';
           [title]="title()" [isAdmin]="isAdmin()" [streak]="intel.streak()"
           (toggleMenu)="drawerOpen.set(true)"
         />
+        <!-- Offline / pending-sync banner (M4) -->
+        @if (!net.online() || sync.pendingCount()) {
+          <a routerLink="/app/offline"
+            class="shrink-0 relative z-[2] flex items-center gap-2 px-5 md:px-8 py-1.5 text-[12.5px] font-medium"
+            [style.background]="net.online() ? 'var(--paper-2)' : 'color-mix(in oklch, var(--danger) 14%, var(--paper))'">
+            <span class="w-1.5 h-1.5 rounded-full" [style.background]="net.online() ? 'var(--green)' : 'var(--danger)'"></span>
+            @if (!net.online()) { <span>You’re offline — keep studying; changes sync on reconnect.</span> }
+            @else { <span>{{ sync.pendingCount() }} change(s) waiting to sync →</span> }
+          </a>
+        }
         <main
           #mainScroll id="main-content" tabindex="-1" data-asta-scroll astaRouteTransition
           class="relative z-[1] flex-1 min-h-0 overflow-y-auto overscroll-contain scroll-area"
@@ -183,6 +199,12 @@ export class ShellComponent {
   private readonly auth = inject(AuthService);
   private readonly orgCtx = inject(OrgContextService);
   private readonly router = inject(Router);
+  private readonly entitlements = inject(EntitlementService);
+  private readonly featureFlags = inject(FeatureFlagService);
+  private readonly analytics = inject(ProductAnalyticsService);
+  private readonly offline = inject(OfflineService);
+  readonly net = inject(NetworkStatusService);
+  readonly sync = inject(SyncQueueService);
   readonly intel = inject(IntelligenceService);
 
   readonly user = this.auth.user;
@@ -223,6 +245,15 @@ export class ShellComponent {
 
   constructor() {
     this.orgCtx.load();
+    // Phase 10: load entitlements + feature flags once so gates/flags resolve app-wide.
+    this.featureFlags.load().subscribe({ error: () => undefined });
+    void this.offline.refresh();
+    effect(() => {
+      if (this.user() && !this.isAdmin()) {
+        this.entitlements.load().subscribe({ error: () => undefined });
+        this.analytics.track('user_returned');
+      }
+    });
     // Real learning streak for the topbar (students only; the overview endpoint
     // is student-scoped). Cached after first fetch; errors leave the streak at 0.
     effect(() => {

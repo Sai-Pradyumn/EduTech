@@ -26,12 +26,11 @@ export class MockAIProvider implements IAIProvider {
   };
   private static readonly EMBED_DIM = 256;
 
-  async generateText(
-    messages: AIMessage[],
-    _opts?: GenOptions,
-  ): Promise<string> {
+  generateText(messages: AIMessage[], _opts?: GenOptions): Promise<string> {
     const last = messages[messages.length - 1]?.content ?? '';
-    return `Here's a clear, structured explanation based on your question: "${last.slice(0, 80)}".`;
+    return Promise.resolve(
+      `Here's a clear, structured explanation based on your question: "${last.slice(0, 80)}".`,
+    );
   }
 
   async *streamText(
@@ -46,16 +45,16 @@ export class MockAIProvider implements IAIProvider {
     }
   }
 
-  async generateStructuredOutput<T>(
+  generateStructuredOutput<T>(
     _messages: AIMessage[],
     _schema: Record<string, unknown>,
     opts?: GenOptions,
   ): Promise<T> {
-    if (opts?.mockFactory) return opts.mockFactory() as T;
-    return {} as T;
+    if (opts?.mockFactory) return Promise.resolve(opts.mockFactory() as T);
+    return Promise.resolve({} as T);
   }
 
-  async generateEmbedding(text: string): Promise<number[]> {
+  generateEmbedding(text: string): Promise<number[]> {
     const vec = new Array<number>(MockAIProvider.EMBED_DIM).fill(0);
     const tokens = text.toLowerCase().match(/[a-z0-9]+/g) ?? [];
     for (const tok of tokens) {
@@ -67,6 +66,6 @@ export class MockAIProvider implements IAIProvider {
       vec[Math.abs(h) % MockAIProvider.EMBED_DIM] += 1;
     }
     const norm = Math.sqrt(vec.reduce((s, v) => s + v * v, 0)) || 1;
-    return vec.map((v) => v / norm);
+    return Promise.resolve(vec.map((v) => v / norm));
   }
 }

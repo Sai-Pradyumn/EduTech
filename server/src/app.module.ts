@@ -60,6 +60,19 @@ import { MarketplaceModule } from './modules/marketplace/marketplace.module';
 import { InstitutionModule } from './modules/institution/institution.module';
 import { PrivacyModule } from './modules/privacy/privacy.module';
 import { NudgesModule } from './modules/nudges/nudges.module';
+import { EntitlementsModule } from './modules/entitlements/entitlements.module';
+import { FeatureFlagsModule } from './modules/feature-flags/feature-flags.module';
+import { OpsModule } from './modules/ops/ops.module';
+import { AuditModule } from './modules/audit/audit.module';
+import { AiOpsModule } from './modules/ai-ops/ai-ops.module';
+import { ProductAnalyticsModule } from './modules/product-analytics/product-analytics.module';
+import { PushModule } from './modules/push/push.module';
+import { SessionsModule } from './modules/sessions/sessions.module';
+import { OrgBrandingModule } from './modules/org-branding/org-branding.module';
+import { DataGovernanceModule } from './modules/data-governance/data-governance.module';
+import { DeveloperModule } from './modules/developer/developer.module';
+import { IntegrationsModule } from './modules/integrations/integrations.module';
+import { QueueModule } from './modules/queue/queue.module';
 import { SocketsModule } from './sockets/sockets.module';
 
 @Module({
@@ -72,7 +85,20 @@ import { SocketsModule } from './sockets/sockets.module';
     }),
     EventEmitterModule.forRoot(),
     DatabaseModule,
+    OpsModule,
+    AuditModule,
+    EntitlementsModule,
+    FeatureFlagsModule,
     AiModule,
+    AiOpsModule,
+    ProductAnalyticsModule,
+    PushModule,
+    SessionsModule,
+    OrgBrandingModule,
+    DataGovernanceModule,
+    DeveloperModule,
+    IntegrationsModule,
+    QueueModule.register(),
     AiEvalsModule,
     AgentsModule,
     RagModule,

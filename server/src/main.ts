@@ -5,11 +5,18 @@ import { AppModule } from './app.module';
 import { AppConfig } from './config/configuration';
 import { securityHeaders } from './common/middleware/security.middleware';
 import { rateLimit } from './common/middleware/rate-limit.middleware';
+import { requestId } from './common/middleware/request-id.middleware';
 
 async function bootstrap(): Promise<void> {
-  const app = await NestFactory.create(AppModule, { bufferLogs: false });
+  // rawBody: true buffers the raw request body so payment webhooks can HMAC-verify it.
+  const app = await NestFactory.create(AppModule, {
+    bufferLogs: false,
+    rawBody: true,
+  });
   const config = app.get(ConfigService<AppConfig, true>);
 
+  // Request correlation (M7): stable requestId + X-Request-Id on every request.
+  app.use(requestId);
   // Security hardening (B12): headers + per-IP rate limiting.
   app.use(securityHeaders);
   app.use(rateLimit({ windowMs: 60_000, max: 300 }));

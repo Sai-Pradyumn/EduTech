@@ -74,4 +74,19 @@ export const validationSchema = Joi.object({
   AWS_SECRET_ACCESS_KEY: Joi.string().allow('').default(''),
   AWS_REGION: Joi.string().allow('').default('ap-south-1'),
   S3_BUCKET: Joi.string().allow('').default(''),
+
+  // Phase 10 — OAuth / payments / web-push / queue (all optional; mock when unset).
+  GOOGLE_CLIENT_ID: Joi.string().allow('').default(''),
+  ENABLE_PAYMENT_PROVIDER: Joi.string().valid('true', 'false').default('false'),
+  PAYMENT_PROVIDER: Joi.string()
+    .valid('mock', 'razorpay', 'stripe')
+    .default('razorpay'),
+  RAZORPAY_KEY_ID: Joi.string().allow('').default(''),
+  RAZORPAY_KEY_SECRET: Joi.string().allow('').default(''),
+  RAZORPAY_WEBHOOK_SECRET: Joi.string().allow('').default(''),
+  STRIPE_SECRET_KEY: Joi.string().allow('').default(''),
+  VAPID_PUBLIC_KEY: Joi.string().allow('').default(''),
+  VAPID_PRIVATE_KEY: Joi.string().allow('').default(''),
+  VAPID_SUBJECT: Joi.string().allow('').default('mailto:support@asta.dev'),
+  ENABLE_BULLMQ: Joi.string().valid('true', 'false').default('false'),
 });

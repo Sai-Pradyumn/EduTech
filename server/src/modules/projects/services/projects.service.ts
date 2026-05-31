@@ -86,6 +86,7 @@ export class ProjectsService {
       userId,
       agentType: AgentType.ProjectBuilder,
       operation: 'project.generate',
+      feature: 'project',
     });
     return project;
   }
@@ -204,7 +205,10 @@ export class ProjectsService {
   }
 
   /** Phase 9 · Generate a portfolio-ready case study from the project + its review. */
-  async generateCaseStudy(userId: string, id: string): Promise<ProjectDocument> {
+  async generateCaseStudy(
+    userId: string,
+    id: string,
+  ): Promise<ProjectDocument> {
     const project = await this.owned(userId, id);
     const stack = project.techStack.join(' · ') || 'a modern stack';
     const score = project.aiReview?.overallScore;
@@ -217,10 +221,25 @@ export class ProjectsService {
       try {
         const out = await this.ai.generateText(
           [
-            { role: 'system', content: 'Write a crisp 3–4 sentence project case study for a portfolio/resume: problem, what was built, the stack, and the impact/quality. Ground ONLY in the facts. No markdown.' },
-            { role: 'user', content: `Project: ${project.title}. Goal: ${project.goal}. Stack: ${project.techStack.join(', ')}. Features: ${(project.features ?? []).join(', ')}. AI review score: ${score ?? 'n/a'}.` },
+            {
+              role: 'system',
+              content:
+                'Write a crisp 3–4 sentence project case study for a portfolio/resume: problem, what was built, the stack, and the impact/quality. Ground ONLY in the facts. No markdown.',
+            },
+            {
+              role: 'user',
+              content: `Project: ${project.title}. Goal: ${project.goal}. Stack: ${project.techStack.join(', ')}. Features: ${(project.features ?? []).join(', ')}. AI review score: ${score ?? 'n/a'}.`,
+            },
           ],
-          { temperature: 0.5, maxTokens: 200, meta: { userId, agentType: AgentType.ProjectBuilder, operation: 'project.case_study' } },
+          {
+            temperature: 0.5,
+            maxTokens: 200,
+            meta: {
+              userId,
+              agentType: AgentType.ProjectBuilder,
+              operation: 'project.case_study',
+            },
+          },
         );
         caseStudy = out?.trim() || fallback;
       } catch {

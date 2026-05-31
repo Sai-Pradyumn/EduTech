@@ -33,7 +33,7 @@ export function toStudentProfileResponse(
   doc: StudentProfileDocument,
 ): StudentProfileResponse {
   return {
-    id: doc.id,
+    id: doc.id as string,
     userId: doc.user.toString(),
     fullName: doc.fullName,
     educationLevel: doc.educationLevel,

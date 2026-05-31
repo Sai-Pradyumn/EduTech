@@ -459,25 +459,42 @@ export class SkillPassportService {
   }
 
   /** Phase 9 · Project Review 2.0 — promote a reviewed project into verified passport evidence. */
-  async addProjectEvidence(userId: string, projectId: string): Promise<SkillEvidenceDocument> {
+  async addProjectEvidence(
+    userId: string,
+    projectId: string,
+  ): Promise<SkillEvidenceDocument> {
     const project = await this.projects.get(userId, projectId);
     const skill = project.techStack[0] ?? 'Project delivery';
     const score = project.aiReview?.overallScore;
-    const verificationLevel = project.mentorReview?.decision === 'approved' ? 'mentor' : project.aiReview?.reviewedAt ? 'ai' : 'self';
+    const verificationLevel =
+      project.mentorReview?.decision === 'approved'
+        ? 'mentor'
+        : project.aiReview?.reviewedAt
+          ? 'ai'
+          : 'self';
     const created = await this.evidenceModel.create({
       user: new Types.ObjectId(userId),
       skill,
       sourceType: 'project',
       sourceId: projectId,
-      summary: `${project.title} — ${project.caseStudy || project.summary || project.goal}`.slice(0, 280),
+      summary:
+        `${project.title} — ${project.caseStudy || project.summary || project.goal}`.slice(
+          0,
+          280,
+        ),
       score,
       verificationLevel,
       url: project.submission?.demoUrl || project.submission?.githubUrl,
     });
     await this.ledger.record(userId, {
-      kind: verificationLevel === 'mentor' ? 'project_mentor_approved' : 'project_ai_reviewed',
+      kind:
+        verificationLevel === 'mentor'
+          ? 'project_mentor_approved'
+          : 'project_ai_reviewed',
       title: `Project proof added: ${project.title}`,
-      detail: project.caseStudy?.slice(0, 200) || `Added ${project.title} to your Skill Passport.`,
+      detail:
+        project.caseStudy?.slice(0, 200) ||
+        `Added ${project.title} to your Skill Passport.`,
       score,
       skills: (project.techStack ?? []).slice(0, 4),
       verificationLevel: verificationLevel === 'mentor' ? 'mentor' : 'ai',

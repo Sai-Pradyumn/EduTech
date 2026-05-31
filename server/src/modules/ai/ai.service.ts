@@ -12,6 +12,18 @@ import {
   TokenUsage,
 } from './interfaces/ai-provider.interface';
 import { AiUsageLog, AiUsageLogDocument } from './schemas/ai-usage-log.schema';
+import { EntitlementsService } from '../entitlements/entitlements.service';
+import { FeatureKey } from '../billing/plans';
+
+/** Maps a tagged AI `feature` to the entitlement counter it should consume (Phase 10 · M2). */
+const FEATURE_METER_MAP: Record<string, FeatureKey | undefined> = {
+  flow: 'flow.generations',
+  visual: 'visual.generations',
+  quiz: 'quiz.generations',
+  assessment: 'quiz.generations',
+  simulation: 'simulation.sessions',
+  project: 'project.reviews',
+};
 
 /** Instruction for the refine strategy's critic pass. */
 const CRITIC_INSTRUCTION =
@@ -25,6 +37,10 @@ export interface UsageMeta {
   tokensIn?: number;
   tokensOut?: number;
   latencyMs?: number;
+  /** Product feature/module that triggered the call (Phase 10 · M2). */
+  feature?: string;
+  orgId?: string;
+  status?: 'success' | 'error' | 'fallback';
 }
 
 /**
@@ -41,6 +57,7 @@ export class AiService {
     private readonly gateway: LlmGatewayService,
     @InjectModel(AiUsageLog.name)
     private readonly usageModel: Model<AiUsageLogDocument>,
+    private readonly entitlements: EntitlementsService,
   ) {}
 
   get providerName(): string {
@@ -64,10 +81,17 @@ export class AiService {
    * - parallel → race providers, then a judge synthesizes the best answer
    * Returns the final text (callers stream it); usage is logged.
    */
+  /** Pre-flight AI budget gate — throws a friendly 403 when over the plan's monthly budget. */
+  private async guardBudget(opts?: GenOptions): Promise<void> {
+    const userId = opts?.meta?.userId;
+    if (userId) await this.entitlements.enforceAiBudget(userId);
+  }
+
   async composeWithStrategy(
     messages: AIMessage[],
     opts?: GenOptions,
   ): Promise<string> {
+    await this.guardBudget(opts);
     const cap = this.captureOpts(opts);
     const started = Date.now();
     let out: string;
@@ -93,6 +117,7 @@ export class AiService {
     messages: AIMessage[],
     opts?: GenOptions,
   ): Promise<string> {
+    await this.guardBudget(opts);
     const cap = this.captureOpts(opts);
     const started = Date.now();
     const out = await this.provider.generateText(messages, cap.opts);
@@ -104,12 +129,32 @@ export class AiService {
     messages: AIMessage[],
     opts?: GenOptions,
   ): AsyncIterable<string> {
+    await this.guardBudget(opts);
     const cap = this.captureOpts(opts);
     const started = Date.now();
+
+    this.logger.log(
+      `[AI-SERVICE] Calling ${this.provider.name}.streamText | operation: ${opts?.meta?.operation ?? 'unknown'} | isLive: ${this.provider.isLive}`,
+    );
+
     let acc = '';
-    for await (const token of this.provider.streamText(messages, cap.opts)) {
-      acc += token;
-      yield token;
+    let tokenCount = 0;
+    try {
+      for await (const token of this.provider.streamText(messages, cap.opts)) {
+        acc += token;
+        tokenCount++;
+        yield token;
+      }
+      const latencyMs = Date.now() - started;
+      this.logger.log(
+        `[AI-SERVICE] ${this.provider.name}.streamText completed | tokens: ${tokenCount} | latency: ${latencyMs}ms | response length: ${acc.length} chars`,
+      );
+    } catch (err) {
+      const latencyMs = Date.now() - started;
+      this.logger.error(
+        `[AI-SERVICE] ${this.provider.name}.streamText FAILED after ${latencyMs}ms: ${(err as Error).message}`,
+      );
+      throw err;
     }
     await this.autolog(opts, messages, acc, cap, Date.now() - started);
   }
@@ -119,6 +164,7 @@ export class AiService {
     schema: Record<string, unknown>,
     opts?: GenOptions,
   ): Promise<T> {
+    await this.guardBudget(opts);
     const cap = this.captureOpts(opts);
     const started = Date.now();
     const out = await this.provider.generateStructuredOutput<T>(
@@ -180,6 +226,8 @@ export class AiService {
       userId: meta.userId,
       agentType: (meta.agentType as AgentType) ?? AgentType.Tutor,
       operation: meta.operation ?? 'generate',
+      feature: meta.feature,
+      orgId: meta.orgId,
       tokensIn,
       tokensOut,
       latencyMs,
@@ -292,16 +340,35 @@ export class AiService {
     try {
       const tokensIn = meta.tokensIn ?? 0;
       const tokensOut = meta.tokensOut ?? 0;
+      const feature = meta.feature ?? 'tutor';
       await this.usageModel.create({
         user: new Types.ObjectId(meta.userId),
+        org: meta.orgId ? new Types.ObjectId(meta.orgId) : undefined,
         agentType: meta.agentType,
+        feature,
         provider: this.provider.name,
+        model: meta.model,
+        strategy: this.gateway.strategy,
         operation: meta.operation,
         tokensIn,
         tokensOut,
         costUsd: estimateCostUsd(meta.model, tokensIn, tokensOut),
         latencyMs: meta.latencyMs ?? 0,
+        status: meta.status ?? 'success',
       });
+      // Meter entitlement counters (non-blocking — the call already happened).
+      void this.entitlements.consume(meta.userId, 'ai.messages', 1);
+      if (tokensIn + tokensOut > 0) {
+        void this.entitlements.consume(
+          meta.userId,
+          'ai.tokens',
+          tokensIn + tokensOut,
+        );
+      }
+      // Feature-specific meter, derived from the tagged feature (single source of truth).
+      const featureKey = FEATURE_METER_MAP[feature];
+      if (featureKey)
+        void this.entitlements.consume(meta.userId, featureKey, 1);
     } catch (err) {
       this.logger.warn(`Failed to record AI usage: ${(err as Error).message}`);
     }

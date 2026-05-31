@@ -186,6 +186,7 @@ export class AssessmentService {
       userId,
       agentType: AgentType.Assessment,
       operation: 'quiz.generate',
+      feature: 'quiz',
     });
     return quiz;
   }

@@ -29,7 +29,7 @@ export function toSessionSummary(
 ): AgentSessionSummary {
   const d = doc as unknown as { updatedAt: Date };
   return {
-    id: doc.id,
+    id: doc.id as string,
     title: doc.title,
     agentType: doc.agentType,
     lastMessageAt: (doc.lastMessageAt ?? d.updatedAt)?.toISOString() ?? null,
@@ -39,7 +39,7 @@ export function toSessionSummary(
 export function toMessageView(doc: AgentMessageDocument): AgentMessageView {
   const d = doc as unknown as { createdAt: Date };
   return {
-    id: doc.id,
+    id: doc.id as string,
     role: doc.role,
     agentType: doc.agentType,
     content: doc.content,

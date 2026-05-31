@@ -61,9 +61,25 @@ export class AuthService {
     const user = await this.users.findByEmailWithSecret(dto.email);
     if (!user) throw new UnauthorizedException('Invalid email or password');
 
+    if (!user.passwordHash)
+      throw new UnauthorizedException(
+        'This account uses Google sign-in. Continue with Google.',
+      );
     const ok = await bcrypt.compare(dto.password, user.passwordHash);
     if (!ok) throw new UnauthorizedException('Invalid email or password');
 
+    await this.users.touchLastActive(user.id);
+    return this.issueSession(user);
+  }
+
+  /** Sign in (or auto-provision) via a verified Google profile (Phase 10 · OAuth). */
+  async googleLogin(profile: {
+    googleId: string;
+    email: string;
+    name: string;
+    avatarUrl?: string;
+  }): Promise<AuthResult> {
+    const user = await this.users.findOrCreateGoogle(profile);
     await this.users.touchLastActive(user.id);
     return this.issueSession(user);
   }
@@ -104,7 +120,7 @@ export class AuthService {
 
   private async rotateTokens(user: UserDocument): Promise<AuthTokens> {
     const payload: JwtPayload = {
-      sub: user.id,
+      sub: user.id as string,
       email: user.email,
       role: user.role,
     };
@@ -119,7 +135,7 @@ export class AuthService {
     });
 
     await this.users.setRefreshTokenHash(
-      user.id,
+      user.id as string,
       await bcrypt.hash(refreshToken, SALT_ROUNDS),
     );
     return { accessToken, refreshToken };
@@ -131,7 +147,7 @@ export class AuthService {
       user.platformRole === OrgRole.PlatformAdmin ||
       user.platformRole === OrgRole.SuperAdmin;
     return {
-      id: user.id,
+      id: user.id as string,
       name: user.name,
       email: user.email,
       role: user.role,

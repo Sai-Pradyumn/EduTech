@@ -36,6 +36,18 @@ export class AuthService {
       .pipe(tap((res) => this.applySession(res)));
   }
 
+  /** Whether Google sign-in is configured + the client id to initialize GIS. */
+  googleConfig(): Observable<{ enabled: boolean; clientId: string }> {
+    return this.api.get<{ enabled: boolean; clientId: string }>('/auth/google/config');
+  }
+
+  /** Exchange a Google ID-token credential for an Asta session. */
+  googleLogin(credential: string): Observable<AuthResult> {
+    return this.api
+      .post<AuthResult>('/auth/google', { credential })
+      .pipe(tap((res) => this.applySession(res)));
+  }
+
   /** Restores the session on app start from a stored token. */
   loadCurrentUser(): Observable<{ user: User }> {
     return this.api.get<{ user: User }>('/auth/me').pipe(tap((res) => this.user.set(res.user)));

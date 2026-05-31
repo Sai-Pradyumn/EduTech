@@ -46,7 +46,7 @@ export interface RoadmapSummary {
 export function toRoadmapResponse(doc: RoadmapDocument): RoadmapResponse {
   const d = doc as unknown as { createdAt: Date; updatedAt: Date };
   return {
-    id: doc.id,
+    id: doc.id as string,
     userId: doc.user.toString(),
     title: doc.title,
     goal: doc.goal,
@@ -71,7 +71,7 @@ export function toRoadmapResponse(doc: RoadmapDocument): RoadmapResponse {
 export function toRoadmapSummary(doc: RoadmapDocument): RoadmapSummary {
   const d = doc as unknown as { createdAt: Date };
   return {
-    id: doc.id,
+    id: doc.id as string,
     title: doc.title,
     goal: doc.goal,
     difficulty: doc.difficulty,

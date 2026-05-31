@@ -75,7 +75,9 @@ export class SkillPassportController {
     @CurrentUser() user: AuthUser,
     @Param('projectId') projectId: string,
   ) {
-    return evidenceView(await this.passport.addProjectEvidence(user.id, projectId));
+    return evidenceView(
+      await this.passport.addProjectEvidence(user.id, projectId),
+    );
   }
 
   @Delete('evidence/:id')

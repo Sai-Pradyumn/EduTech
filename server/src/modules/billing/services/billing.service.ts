@@ -1,11 +1,11 @@
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
-import { randomUUID } from 'crypto';
 import {
   AiUsageLog,
   AiUsageLogDocument,
 } from '../../ai/schemas/ai-usage-log.schema';
+import { EntitlementsService } from '../../entitlements/entitlements.service';
 import {
   Subscription,
   SubscriptionDocument,
@@ -15,6 +15,10 @@ import {
   PaymentTransactionDocument,
 } from '../schemas/payment-transaction.schema';
 import { Plan, PLAN_CATALOG, PlanId, planById } from '../plans';
+import {
+  PAYMENT_PROVIDER_TOKEN,
+  PaymentProvider,
+} from '../providers/payment-provider.interface';
 
 export interface SubscriptionView {
   planId: PlanId;
@@ -22,6 +26,8 @@ export interface SubscriptionView {
   status: string;
   startedAt: string;
   currentPeriodEnd?: string;
+  cancelAtPeriodEnd: boolean;
+  provider: string;
 }
 
 export interface UsageView {
@@ -32,6 +38,8 @@ export interface UsageView {
   costUsd: number;
   periodStart: string;
   overLimit: boolean;
+  /** Cost grouped by product feature (Phase 10 · M2). */
+  byFeature: { feature: string; calls: number; costUsd: number }[];
 }
 
 export interface TransactionView {
@@ -40,6 +48,7 @@ export interface TransactionView {
   amountInr: number;
   status: string;
   reference: string;
+  provider: string;
   createdAt: string;
 }
 
@@ -52,10 +61,17 @@ export class BillingService {
     private readonly txns: Model<PaymentTransactionDocument>,
     @InjectModel(AiUsageLog.name)
     private readonly usage: Model<AiUsageLogDocument>,
+    private readonly entitlements: EntitlementsService,
+    @Inject(PAYMENT_PROVIDER_TOKEN)
+    private readonly payment: PaymentProvider,
   ) {}
 
   plans(): Plan[] {
-    return PLAN_CATALOG;
+    return PLAN_CATALOG.filter((p) => p.isPublic);
+  }
+
+  paymentProviderInfo() {
+    return { provider: this.payment.name, live: this.payment.isLive };
   }
 
   async getSubscription(userId: string): Promise<SubscriptionView> {
@@ -74,28 +90,166 @@ export class BillingService {
       currentPeriodEnd: sub?.currentPeriodEnd
         ? new Date(sub.currentPeriodEnd).toISOString()
         : undefined,
+      cancelAtPeriodEnd: sub?.cancelAtPeriodEnd ?? false,
+      provider: sub?.provider ?? 'mock',
     };
   }
 
-  /** Mock checkout — records a paid transaction and upserts the subscription. */
+  /** Mock-or-provider checkout. Mock activates instantly; a live provider returns order
+   *  handles (orderId/keyId) for the client widget, then `verifyAndActivate` finishes it. */
   async checkout(
     userId: string,
     planId: PlanId,
-  ): Promise<{ subscription: SubscriptionView; transaction: TransactionView }> {
+  ): Promise<{
+    subscription: SubscriptionView;
+    transaction: TransactionView;
+    razorpay?: {
+      orderId: string;
+      keyId: string;
+      amountInr: number;
+      currency: string;
+      planId: PlanId;
+    };
+  }> {
     const plan = planById(planId);
-    const periodEnd = new Date();
-    periodEnd.setDate(periodEnd.getDate() + 30);
+    const session = await this.payment.createCheckout({
+      userId,
+      planId,
+      amountInr: plan.priceInr,
+    });
 
     const txn = await this.txns.create({
       user: new Types.ObjectId(userId),
       planId,
-      amountInr: plan.priceInr,
-      currency: 'INR',
-      status: 'paid',
-      provider: 'mock',
-      reference: `mock_${randomUUID().slice(0, 12)}`,
+      amountInr: session.amountInr,
+      currency: session.currency,
+      status: session.status,
+      provider: session.provider,
+      reference: session.reference,
     });
 
+    if (session.status === 'paid') {
+      await this.activate(userId, planId, session.provider, session.reference);
+    }
+
+    return {
+      subscription: await this.getSubscription(userId),
+      transaction: {
+        id: String(txn._id),
+        planId,
+        amountInr: session.amountInr,
+        status: session.status,
+        reference: session.reference,
+        provider: session.provider,
+        createdAt: new Date().toISOString(),
+      },
+      razorpay:
+        session.status === 'pending' && session.orderId && session.keyId
+          ? {
+              orderId: session.orderId,
+              keyId: session.keyId,
+              amountInr: session.amountInr,
+              currency: session.currency,
+              planId,
+            }
+          : undefined,
+    };
+  }
+
+  /** Verify a client-completed payment signature, mark the txn paid, and activate the plan. */
+  async verifyAndActivate(
+    userId: string,
+    input: {
+      planId: PlanId;
+      orderId: string;
+      paymentId: string;
+      signature: string;
+    },
+  ): Promise<{ ok: boolean; subscription: SubscriptionView }> {
+    const ok =
+      this.payment.verifyPayment?.({
+        orderId: input.orderId,
+        paymentId: input.paymentId,
+        signature: input.signature,
+      }) ?? false;
+    if (!ok) {
+      return { ok: false, subscription: await this.getSubscription(userId) };
+    }
+    await this.txns
+      .updateOne(
+        { user: new Types.ObjectId(userId), reference: input.orderId },
+        { $set: { status: 'paid' } },
+      )
+      .exec();
+    await this.activate(userId, input.planId, this.payment.name, input.orderId);
+    return { ok: true, subscription: await this.getSubscription(userId) };
+  }
+
+  /** Verify + apply a provider webhook (idempotent activation on payment.captured). */
+  async handleWebhook(
+    rawBody: string,
+    signature?: string,
+  ): Promise<{ ok: boolean }> {
+    const result = this.payment.verifyWebhook?.(rawBody, signature);
+    if (!result?.verified) return { ok: false };
+    if (result.paid && result.reference) {
+      const txn = await this.txns
+        .findOne({ reference: result.reference })
+        .lean<PaymentTransactionDocument>()
+        .exec();
+      if (txn && txn.status !== 'paid') {
+        await this.txns
+          .updateOne(
+            { reference: result.reference },
+            { $set: { status: 'paid' } },
+          )
+          .exec();
+        await this.activate(
+          String(txn.user),
+          txn.planId as PlanId,
+          this.payment.name,
+          result.reference,
+        );
+      }
+    }
+    return { ok: true };
+  }
+
+  /** Switch plan. Upgrades go through checkout; downgrade to free cancels immediately. */
+  async changePlan(userId: string, planId: PlanId): Promise<SubscriptionView> {
+    if (planId === 'free') {
+      await this.activate(userId, 'free', 'mock', '');
+      return this.getSubscription(userId);
+    }
+    const { subscription } = await this.checkout(userId, planId);
+    return subscription;
+  }
+
+  /** Cancel at period end — keeps access until currentPeriodEnd, then reverts to free. */
+  async cancel(userId: string): Promise<SubscriptionView> {
+    const sub = await this.subs
+      .findOne({ user: new Types.ObjectId(userId) })
+      .exec();
+    if (sub) {
+      await this.payment
+        .cancel(sub.providerSubscriptionId ?? '')
+        .catch(() => undefined);
+      sub.cancelAtPeriodEnd = true;
+      sub.status = 'canceled';
+      await sub.save();
+    }
+    return this.getSubscription(userId);
+  }
+
+  private async activate(
+    userId: string,
+    planId: PlanId,
+    provider: string,
+    reference: string,
+  ): Promise<void> {
+    const periodStart = new Date();
+    const periodEnd = new Date(periodStart);
+    periodEnd.setDate(periodEnd.getDate() + 30);
     await this.subs
       .findOneAndUpdate(
         { user: new Types.ObjectId(userId) },
@@ -103,26 +257,17 @@ export class BillingService {
           $set: {
             planId,
             status: 'active',
-            provider: 'mock',
+            provider,
+            providerSubscriptionId: reference,
             startedAt: new Date(),
+            currentPeriodStart: periodStart,
             currentPeriodEnd: periodEnd,
+            cancelAtPeriodEnd: false,
           },
         },
         { new: true, upsert: true },
       )
       .exec();
-
-    return {
-      subscription: await this.getSubscription(userId),
-      transaction: {
-        id: String(txn._id),
-        planId,
-        amountInr: plan.priceInr,
-        status: 'paid',
-        reference: txn.reference,
-        createdAt: new Date().toISOString(),
-      },
-    };
   }
 
   async usageThisPeriod(userId: string): Promise<UsageView> {
@@ -151,6 +296,27 @@ export class BillingService {
       },
     ]);
 
+    const byFeatureAgg = await this.usage.aggregate<{
+      _id: string;
+      calls: number;
+      cost: number;
+    }>([
+      {
+        $match: {
+          user: new Types.ObjectId(userId),
+          createdAt: { $gte: periodStart },
+        },
+      },
+      {
+        $group: {
+          _id: '$feature',
+          calls: { $sum: 1 },
+          cost: { $sum: '$costUsd' },
+        },
+      },
+      { $sort: { cost: -1 } },
+    ]);
+
     const sub = await this.getSubscription(userId);
     const limit = sub.plan.aiCallsPerMonth;
     const calls = agg?.calls ?? 0;
@@ -159,9 +325,14 @@ export class BillingService {
       aiCalls: calls,
       aiLimit: limit,
       tokens: agg?.tokens ?? 0,
-      costUsd: Math.round((agg?.cost ?? 0) * 10000) / 10000,
+      costUsd: round4(agg?.cost ?? 0),
       periodStart: periodStart.toISOString(),
       overLimit: limit >= 0 && calls >= limit,
+      byFeature: byFeatureAgg.map((f) => ({
+        feature: f._id ?? 'other',
+        calls: f.calls,
+        costUsd: round4(f.cost),
+      })),
     };
   }
 
@@ -177,7 +348,68 @@ export class BillingService {
       amountInr: t.amountInr,
       status: t.status,
       reference: t.reference,
+      provider: t.provider,
       createdAt: (t as { createdAt?: Date }).createdAt?.toISOString() ?? '',
     }));
   }
+
+  /** Admin billing overview — accounts, plan distribution, MRR estimate (Phase 10 · M1). */
+  async adminOverview() {
+    const subs = await this.subs.find().lean<SubscriptionDocument[]>().exec();
+    const byPlan: Record<string, number> = {};
+    let mrr = 0;
+    for (const s of subs) {
+      const planId = s.planId ?? 'free';
+      byPlan[planId] = (byPlan[planId] ?? 0) + 1;
+      if (s.status === 'active') mrr += planById(planId).priceInr;
+    }
+    const paid = subs.filter(
+      (s) => s.planId !== 'free' && s.status === 'active',
+    ).length;
+    const txnCount = await this.txns.countDocuments({ status: 'paid' });
+    return {
+      totalAccounts: subs.length,
+      paidAccounts: paid,
+      mrrInr: mrr,
+      byPlan: PLAN_CATALOG.map((p) => ({
+        planId: p.id,
+        name: p.name,
+        count: byPlan[p.id] ?? 0,
+        priceInr: p.priceInr,
+      })),
+      paidTransactions: txnCount,
+    };
+  }
+
+  async adminAccounts(limit = 50) {
+    const subs = await this.subs
+      .find()
+      .sort({ updatedAt: -1 })
+      .limit(limit)
+      .populate('user', 'name email')
+      .lean()
+      .exec();
+    return subs.map((s) => {
+      const u = s.user as unknown as {
+        _id?: Types.ObjectId;
+        name?: string;
+        email?: string;
+      };
+      return {
+        userId: String(u?._id ?? ''),
+        name: u?.name ?? '—',
+        email: u?.email ?? '—',
+        planId: s.planId,
+        status: s.status,
+        provider: s.provider,
+        currentPeriodEnd: s.currentPeriodEnd
+          ? new Date(s.currentPeriodEnd).toISOString()
+          : null,
+      };
+    });
+  }
+}
+
+function round4(n: number): number {
+  return Math.round(n * 10000) / 10000;
 }

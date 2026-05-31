@@ -39,7 +39,14 @@ export interface GenOptions {
    * Optional attribution; when present, AiService records an ai_usage_log row with the
    * real token counts captured from this call (estimated when the provider is mock).
    */
-  meta?: { userId?: string; agentType?: string; operation?: string };
+  meta?: {
+    userId?: string;
+    agentType?: string;
+    operation?: string;
+    /** Product feature/module that triggered the call (Phase 10 · M2 metering). */
+    feature?: string;
+    orgId?: string;
+  };
 }
 
 export interface ProviderCapabilities {

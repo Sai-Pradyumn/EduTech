@@ -79,6 +79,23 @@ Legend — Rebuild: ✅ done · 🎯 next priority · ⏳ queued · ➖ keep (no
 | `documents` `roadmaps` `assessments` | Admin{Documents,Roadmaps,Assessments} | Observatory browsers (donut/bar + table) | ⏳ | `GET /admin/{…}` |
 | `fine-tuning` | FineTuningComponent | LoRA jobs (poll) | ⏳ | `/fine-tuning` (flag) |
 
+## Phase 10 — Platform / SaaS screens
+| Route | Component | Purpose | Backend |
+|---|---|---|---|
+| `/app/billing` | BillingComponent | Plan + status + cancel, plan-limit meters, AI cost-by-feature, 5-plan grid, invoices | `/billing/*`, `/entitlements/me` |
+| `/app/offline` | OfflineComponent | Connection state, offline resources, drafts, sync queue, web-push opt-in | `/push/*` + IndexedDB |
+| `/app/integrations` | IntegrationsComponent | Connect mock/manual/export connectors + `.ics` export | `/integrations/*` |
+| `/app/developer` | DeveloperComponent | API keys (shown once) + webhooks (test + delivery log) | `/developer/*` |
+| `/app/security` | SecurityComponent | Active sessions / devices, revoke, sign-out-everywhere | `/auth/sessions`, `/auth/logout-all` |
+| `/app/data` | DataGovernanceComponent | Export my data + request deletion (tracked jobs) | `/data/*` |
+| `/app/org/branding` | OrgBrandingComponent | Org white-label branding + live certificate preview | `/org/branding` |
+| `/admin/billing` | AdminBillingComponent | MRR, plan distribution, account roster | `/billing/admin/*` |
+| `/admin/ai-ops` | AdminAiOpsComponent | AI cost/latency/error, provider health, top spenders | `/admin/ai-ops/*` |
+| `/admin/ops` | AdminOpsComponent | Health, job ledger (retry), error feed | `/ops/*` |
+| `/admin/product-analytics` | AdminProductAnalyticsComponent | DAU/WAU, funnels, event volume | `/admin/product-analytics/*` |
+| `/admin/audit-logs` | AdminAuditLogsComponent | Security action trail | `/admin/audit-logs` |
+| `/admin/feature-flags` | AdminFeatureFlagsComponent | Runtime flag toggles + AI kill-switches | `/admin/feature-flags` |
+
 ## Global / shell
 | Area | Component | Notes |
 |---|---|---|

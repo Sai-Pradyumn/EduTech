@@ -39,10 +39,15 @@ export interface ParseInput {
  * Runtime-only dynamic import that bypasses the compiler's module resolution, so optional
  * parser packages (`pdf-parse` / `mammoth`) don't need to be installed for the build.
  */
-const optionalImport = (specifier: string): Promise<unknown> =>
-  (Function('s', 'return import(s)') as (s: string) => Promise<unknown>)(
-    specifier,
-  );
+const optionalImport = (specifier: string): Promise<unknown> => {
+  // Intentional runtime dynamic import the compiler won't rewrite, so optional parser
+  // packages (`pdf-parse` / `mammoth`) stay optional and need not be installed.
+  // eslint-disable-next-line @typescript-eslint/no-implied-eval
+  const dynamicImport = Function('s', 'return import(s)') as (
+    s: string,
+  ) => Promise<unknown>;
+  return dynamicImport(specifier);
+};
 
 @Injectable()
 export class DocumentParserService {
@@ -104,7 +109,8 @@ export class DocumentParserService {
 
   private flattenJson(node: unknown, prefix = ''): string[] {
     if (node === null || node === undefined) return [];
-    if (typeof node !== 'object') return [`${prefix}${String(node)}`];
+    if (typeof node !== 'object')
+      return [`${prefix}${node as string | number | boolean}`];
     if (Array.isArray(node))
       return node.flatMap((v) => this.flattenJson(v, prefix));
     return Object.entries(node as Record<string, unknown>).flatMap(([k, v]) =>

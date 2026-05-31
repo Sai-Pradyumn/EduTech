@@ -1,9 +1,16 @@
 import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
 import { ApiService } from './api.service';
-import { Plan, PlanId, SubscriptionView, TransactionView, UsageView } from '../models';
+import {
+  AdminBillingOverview,
+  Plan,
+  PlanId,
+  SubscriptionView,
+  TransactionView,
+  UsageView,
+} from '../models';
 
-/** Billing & metering API (B5/B6). */
+/** Billing & metering API (B5/B6 → Phase 10 · M1). */
 @Injectable({ providedIn: 'root' })
 export class BillingService {
   private readonly api = inject(ApiService);
@@ -20,7 +27,53 @@ export class BillingService {
   transactions(): Observable<TransactionView[]> {
     return this.api.get<TransactionView[]>('/billing/transactions');
   }
-  checkout(planId: PlanId): Observable<{ subscription: SubscriptionView; transaction: TransactionView }> {
+  invoices(): Observable<TransactionView[]> {
+    return this.api.get<TransactionView[]>('/billing/invoices');
+  }
+  checkout(planId: PlanId): Observable<{
+    subscription: SubscriptionView;
+    transaction: TransactionView;
+    razorpay?: {
+      orderId: string;
+      keyId: string;
+      amountInr: number;
+      currency: string;
+      planId: PlanId;
+    };
+  }> {
     return this.api.post('/billing/checkout', { planId });
+  }
+  /** Verify a Razorpay payment server-side; activates the plan on success. */
+  verify(payload: {
+    planId: PlanId;
+    orderId: string;
+    paymentId: string;
+    signature: string;
+  }): Observable<{ ok: boolean; subscription: SubscriptionView }> {
+    return this.api.post('/billing/verify', payload);
+  }
+  changePlan(planId: PlanId): Observable<SubscriptionView> {
+    return this.api.post<SubscriptionView>('/billing/change-plan', { planId });
+  }
+  cancel(): Observable<SubscriptionView> {
+    return this.api.post<SubscriptionView>('/billing/cancel', {});
+  }
+
+  // ── admin ──
+  adminOverview(): Observable<AdminBillingOverview> {
+    return this.api.get<AdminBillingOverview>('/billing/admin/overview');
+  }
+  adminAccounts(): Observable<
+    {
+      userId: string;
+      name: string;
+      email: string;
+      planId: string;
+      status: string;
+      provider: string;
+      currentPeriodEnd: string | null;
+    }[]
+  > {
+    return this.api.get('/billing/admin/accounts');
   }
 }

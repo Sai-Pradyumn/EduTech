@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
+import { PushService } from '../push/push.service';
 import {
   Notification,
   NotificationDocument,
@@ -25,6 +26,7 @@ export class NotificationsService {
   constructor(
     @InjectModel(Notification.name)
     private readonly model: Model<NotificationDocument>,
+    private readonly push: PushService,
   ) {}
 
   async create(
@@ -38,6 +40,12 @@ export class NotificationsService {
       body: input.body ?? '',
       link: input.link ?? '',
     });
+    // Also fire a Web Push (no-op unless VAPID is configured + the user subscribed).
+    void this.push.notify(userId, {
+      title: input.title,
+      body: input.body ?? '',
+      url: input.link || '/app/dashboard',
+    });
   }
 
   /** Phase 9 · Nudge-safe create — skips if an identical unread nudge already exists (no spam). */
@@ -45,7 +53,13 @@ export class NotificationsService {
     userId: string,
     input: { type?: string; title: string; body?: string; link?: string },
   ): Promise<void> {
-    const exists = await this.model.exists({ user: new Types.ObjectId(userId), title: input.title, read: false }).exec();
+    const exists = await this.model
+      .exists({
+        user: new Types.ObjectId(userId),
+        title: input.title,
+        read: false,
+      })
+      .exec();
     if (exists) return;
     await this.create(userId, input);
   }

@@ -62,7 +62,11 @@ export class AgentOrchestratorService {
       request.sessionId,
       request.source,
     );
-    const sessionId = session.id;
+    const sessionId = session.id as string;
+
+    this.logger.log(
+      `[ORCHESTRATOR] Starting pipeline | sessionId: ${sessionId} | requestedAgent: ${request.agentType ?? 'auto'} | message: "${request.message.slice(0, 50)}..."`,
+    );
 
     // Prior turns (before we append the current message) → multi-turn coherence.
     const history = await this.sessions.recentHistory(
@@ -75,7 +79,7 @@ export class AgentOrchestratorService {
       sessionId,
       request.message,
     );
-    const messageId = userMsg.id;
+    const messageId = userMsg.id as string;
     const tagged: StreamEmit = (e: AgentStreamEvent) =>
       emit({ ...e, messageId });
 
@@ -93,6 +97,9 @@ export class AgentOrchestratorService {
       request.agentType,
     );
     const primaryAgent = plan.steps[0].agentType;
+    this.logger.log(
+      `[ORCHESTRATOR] Classification complete | intent: ${intent} | agents: ${plan.steps.map((s) => s.agentType).join(' → ')}`,
+    );
     trace.step(
       'classify',
       `Intent: ${intent} → ${plan.steps.map((s) => s.agentType).join(' → ')}`,
@@ -191,8 +198,9 @@ export class AgentOrchestratorService {
         sessionId,
         success: true,
       });
-      emit({ type: 'completed', messageId: assistant.id, response });
-      return { sessionId, messageId: assistant.id, response };
+      const assistantId = assistant.id as string;
+      emit({ type: 'completed', messageId: assistantId, response });
+      return { sessionId, messageId: assistantId, response };
     } catch (err) {
       const message = (err as Error).message;
       this.logger.error(`Orchestrator failure: ${message}`);
