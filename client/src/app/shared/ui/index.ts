@@ -11,3 +11,4 @@ export { SkeletonComponent } from './skeleton.component';
 export { EmptyStateComponent } from './empty-state.component';
 export { ToastContainerComponent } from './toast-container.component';
 export { EntitlementGateComponent } from './entitlement-gate.component';
+export { OfflineToggleComponent } from './offline-toggle.component';

@@ -390,6 +390,12 @@ export const routes: Routes = [
         loadComponent: () => import('./features/billing/billing.component').then((m) => m.BillingComponent),
       },
       {
+        path: 'offline',
+        title: 'Offline & Sync',
+        data: { title: 'Offline & Sync' },
+        loadComponent: () => import('./features/platform/offline.component').then((m) => m.OfflineComponent),
+      },
+      {
         path: 'mentor',
         title: 'Mentor Room',
         data: { title: 'Mentor Room' },

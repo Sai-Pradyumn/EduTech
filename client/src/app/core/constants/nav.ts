@@ -122,6 +122,7 @@ export const STUDENT_NAV: NavGroup[] = [
     items: [
       { label: 'Certificates', route: '/app/certificates', icon: I.certificate },
       { label: 'Billing', route: '/app/billing', icon: I.billing },
+      { label: 'Offline & Sync', route: '/app/offline', icon: I.flow },
       { label: 'Data & Privacy', route: '/app/privacy', icon: I.privacy },
       { label: 'Profile', route: '/app/profile', icon: I.profile },
     ],

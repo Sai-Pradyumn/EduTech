@@ -18,6 +18,7 @@ import { ScrollDrawDirective } from '../../shared/directives/scroll-draw.directi
 import { AstaLearningRiverComponent, AstaStepTrackerComponent, RiverNode, StepItem, StepState } from '../../shared/ui/synapse';
 import { MagneticDirective } from '../../shared/directives/magnetic.directive';
 import { CountDirective } from '../../shared/directives/count.directive';
+import { OfflineToggleComponent } from '../../shared/ui/offline-toggle.component';
 
 @Component({
   selector: 'asta-roadmap-details',
@@ -40,6 +41,7 @@ import { CountDirective } from '../../shared/directives/count.directive';
     AstaStepTrackerComponent,
     MagneticDirective,
     CountDirective,
+    OfflineToggleComponent,
   ],
   template: `
     @if (loading()) {
@@ -76,7 +78,8 @@ import { CountDirective } from '../../shared/directives/count.directive';
             <span class="pill">{{ r.estimatedDuration }}</span>
           </div>
         </div>
-        <div class="flex gap-2.5 shrink-0">
+        <div class="flex flex-wrap items-center gap-2.5 shrink-0">
+          <asta-offline-toggle kind="roadmap" [refId]="r.id" [title]="r.title" [payload]="r" />
           <asta-btn variant="accent" astaMagnetic routerLink="/app/tutor">Ask Asta <span class="arr">→</span></asta-btn>
           <asta-btn variant="ghost" astaMagnetic routerLink="/app/roadmap/generate">Recalculate</asta-btn>
           <asta-btn variant="ghost" astaMagnetic routerLink="/app/roadmap">All roadmaps</asta-btn>

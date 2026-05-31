@@ -66,6 +66,7 @@ import { OpsModule } from './modules/ops/ops.module';
 import { AuditModule } from './modules/audit/audit.module';
 import { AiOpsModule } from './modules/ai-ops/ai-ops.module';
 import { ProductAnalyticsModule } from './modules/product-analytics/product-analytics.module';
+import { PushModule } from './modules/push/push.module';
 import { SocketsModule } from './sockets/sockets.module';
 
 @Module({
@@ -85,6 +86,7 @@ import { SocketsModule } from './sockets/sockets.module';
     AiModule,
     AiOpsModule,
     ProductAnalyticsModule,
+    PushModule,
     AiEvalsModule,
     AgentsModule,
     RagModule,

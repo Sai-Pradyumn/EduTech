@@ -146,8 +146,43 @@ error-log row, an audit entry.
 `build:server` ✅ · `build:client` ✅ · `seed` ✅ · runtime boot ✅ (all `/ops`, `/ai-ops`,
 `/product-analytics`, `/audit-logs` routes mapped, DI resolved) · Phase-10 files lint-clean.
 
-## Priority 3 — PWA / Mobile *(planned)*
-Install, offline cache, sync queue, web-push foundation.
+## Priority 3 — PWA, Mobile & Offline Learning ✅
+
+Built on the existing PWA shell (manifest + service worker + icons already shipped in B14).
+Adds real offline learning data, a sync queue and a web-push foundation.
+
+### Client services (M4)
+- `NetworkStatusService` — reactive `online` signal from browser events.
+- `LocalCacheService` — dependency-free promise-based IndexedDB wrapper (stores:
+  `resources`, `drafts`, `syncQueue`); degrades gracefully when IDB is unavailable.
+- `OfflineService` — save/list/remove offline resources (roadmaps/flows/notes/flashcards/
+  spaces) + local drafts (quiz/project/notes); reactive counts.
+- `SyncQueueService` — persists mutations made offline and **replays them oldest-first on
+  reconnect** (auto-flush effect; never queues AI generation/payments).
+- `WebPushService` — permission + PushManager subscribe behind `ENABLE_WEB_PUSH`; no-ops
+  cleanly when unsupported/unconfigured.
+
+### Service worker (enhanced → `asta-v2`)
+- Stale-while-revalidate cache for a **safe allowlist** of read-only GET APIs (roadmap,
+  flows, spaces, quizzes, projects, skill-passport) so recently-viewed data reads offline.
+- `push` + `notificationclick` handlers render and route web-push notifications.
+
+### Server (M4/M5)
+- `push` module (`@Global`): `PushSubscription` schema + `PushService`
+  (`vapidPublicKey`, `subscribe`, `unsubscribe`, `notify` — safe no-op until VAPID
+  configured) + `/push/vapid-public-key|subscribe`.
+
+### UI
+- **`/app/offline`** page — connection state, what works offline, saved resources, local
+  drafts, sync queue (with "Sync now"), web-push opt-in.
+- Shell **offline / pending-sync banner** (links to the offline page).
+- Reusable **`<asta-offline-toggle>`** — "Make available offline"; wired into the roadmap
+  detail header as the worked example.
+- "Offline & Sync" added to the Account nav group.
+
+### Build status
+`build:server` ✅ · `build:client` ✅ · runtime boot ✅ (push routes mapped) · new files
+lint-clean. No paid keys required; web push is foundation-only until VAPID is set.
 
 ## Priority 4 — Enterprise *(planned)*
 Org members/roles/security, sessions, branding, data export.
