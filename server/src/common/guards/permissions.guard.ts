@@ -1,4 +1,9 @@
-import { CanActivate, ExecutionContext, ForbiddenException, Injectable } from '@nestjs/common';
+import {
+  CanActivate,
+  ExecutionContext,
+  ForbiddenException,
+  Injectable,
+} from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { Permission } from '../enums';
 import { AuthUser } from '../interfaces';
@@ -20,10 +25,10 @@ export class PermissionsGuard implements CanActivate {
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
-    const required = this.reflector.getAllAndOverride<Permission[]>(PERMISSIONS_KEY, [
-      context.getHandler(),
-      context.getClass(),
-    ]);
+    const required = this.reflector.getAllAndOverride<Permission[]>(
+      PERMISSIONS_KEY,
+      [context.getHandler(), context.getClass()],
+    );
     if (!required || required.length === 0) return true;
 
     const request = context.switchToHttp().getRequest<{
@@ -39,7 +44,9 @@ export class PermissionsGuard implements CanActivate {
 
     const missing = required.filter((p) => !ctx.permissions.includes(p));
     if (missing.length > 0) {
-      throw new ForbiddenException(`Missing permission(s): ${missing.join(', ')}`);
+      throw new ForbiddenException(
+        `Missing permission(s): ${missing.join(', ')}`,
+      );
     }
     return true;
   }

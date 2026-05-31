@@ -4,7 +4,10 @@ import { AiModule } from '../ai/ai.module';
 import { LearningIntelligenceModule } from '../learning-intelligence/learning-intelligence.module';
 import { StudentProfileModule } from '../student-profile/student-profile.module';
 import { User, UserSchema } from '../users/schemas/user.schema';
-import { KnowledgeDocument, KnowledgeDocumentSchema } from '../rag/schemas/knowledge-document.schema';
+import {
+  KnowledgeDocument,
+  KnowledgeDocumentSchema,
+} from '../rag/schemas/knowledge-document.schema';
 import { Roadmap, RoadmapSchema } from '../roadmap/schemas/roadmap.schema';
 import { Quiz, QuizSchema } from '../assessment/schemas/quiz.schema';
 import { AdminController } from './admin.controller';

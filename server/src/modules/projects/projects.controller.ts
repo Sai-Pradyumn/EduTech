@@ -1,9 +1,25 @@
-import { Body, Controller, Delete, Get, HttpCode, HttpStatus, Param, Patch, Post } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  HttpCode,
+  HttpStatus,
+  Param,
+  Patch,
+  Post,
+} from '@nestjs/common';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { AuthUser } from '../../common/interfaces';
 import { ProjectsService } from './services/projects.service';
 import { ProjectDocument } from './schemas/project.schema';
-import { AddTaskDto, GenerateProjectDto, MoveTaskDto, SubmitProjectDto, ToggleImprovementDto } from './dto/project.dto';
+import {
+  AddTaskDto,
+  GenerateProjectDto,
+  MoveTaskDto,
+  SubmitProjectDto,
+  ToggleImprovementDto,
+} from './dto/project.dto';
 
 /** Maps a project document to the client view (id, not _id). */
 function toView(p: ProjectDocument) {
@@ -29,7 +45,12 @@ function toView(p: ProjectDocument) {
       phase: t.phase,
       estimateHours: t.estimateHours,
     })),
-    milestones: p.milestones.map((m) => ({ title: m.title, description: m.description, criteria: m.criteria, reached: m.reached })),
+    milestones: p.milestones.map((m) => ({
+      title: m.title,
+      description: m.description,
+      criteria: m.criteria,
+      reached: m.reached,
+    })),
     submission: p.submission
       ? {
           githubUrl: p.submission.githubUrl,
@@ -48,7 +69,12 @@ function toView(p: ProjectDocument) {
           overallScore: p.aiReview.overallScore,
           summary: p.aiReview.summary,
           strengths: p.aiReview.strengths,
-          improvements: p.aiReview.improvements.map((i) => ({ id: i.id, text: i.text, severity: i.severity, done: i.done })),
+          improvements: p.aiReview.improvements.map((i) => ({
+            id: i.id,
+            text: i.text,
+            severity: i.severity,
+            done: i.done,
+          })),
           model: p.aiReview.model,
           reviewedAt: p.aiReview.reviewedAt.toISOString(),
         }
@@ -62,7 +88,10 @@ function toView(p: ProjectDocument) {
           reviewedAt: p.mentorReview.reviewedAt.toISOString(),
         }
       : null,
-    createdAt: (p as ProjectDocument & { createdAt?: Date }).createdAt?.toISOString() ?? '',
+    caseStudy: p.caseStudy ?? '',
+    createdAt:
+      (p as ProjectDocument & { createdAt?: Date }).createdAt?.toISOString() ??
+      '',
   };
 }
 
@@ -72,7 +101,10 @@ export class ProjectsController {
 
   @Post()
   @HttpCode(HttpStatus.CREATED)
-  async generate(@CurrentUser() user: AuthUser, @Body() dto: GenerateProjectDto) {
+  async generate(
+    @CurrentUser() user: AuthUser,
+    @Body() dto: GenerateProjectDto,
+  ) {
     return toView(await this.projects.generate(user.id, dto));
   }
 
@@ -92,28 +124,60 @@ export class ProjectsController {
   }
 
   @Patch(':id/tasks/:taskId')
-  async moveTask(@CurrentUser() user: AuthUser, @Param('id') id: string, @Param('taskId') taskId: string, @Body() dto: MoveTaskDto) {
-    return toView(await this.projects.moveTask(user.id, id, taskId, dto.status));
+  async moveTask(
+    @CurrentUser() user: AuthUser,
+    @Param('id') id: string,
+    @Param('taskId') taskId: string,
+    @Body() dto: MoveTaskDto,
+  ) {
+    return toView(
+      await this.projects.moveTask(user.id, id, taskId, dto.status),
+    );
   }
 
   @Post(':id/tasks')
-  async addTask(@CurrentUser() user: AuthUser, @Param('id') id: string, @Body() dto: AddTaskDto) {
-    return toView(await this.projects.addTask(user.id, id, dto.title, dto.description, dto.phase));
+  async addTask(
+    @CurrentUser() user: AuthUser,
+    @Param('id') id: string,
+    @Body() dto: AddTaskDto,
+  ) {
+    return toView(
+      await this.projects.addTask(
+        user.id,
+        id,
+        dto.title,
+        dto.description,
+        dto.phase,
+      ),
+    );
   }
 
   @Delete(':id/tasks/:taskId')
-  async removeTask(@CurrentUser() user: AuthUser, @Param('id') id: string, @Param('taskId') taskId: string) {
+  async removeTask(
+    @CurrentUser() user: AuthUser,
+    @Param('id') id: string,
+    @Param('taskId') taskId: string,
+  ) {
     return toView(await this.projects.removeTask(user.id, id, taskId));
   }
 
   @Post(':id/submit')
-  async submit(@CurrentUser() user: AuthUser, @Param('id') id: string, @Body() dto: SubmitProjectDto) {
+  async submit(
+    @CurrentUser() user: AuthUser,
+    @Param('id') id: string,
+    @Body() dto: SubmitProjectDto,
+  ) {
     return toView(await this.projects.submit(user.id, id, dto));
   }
 
   @Post(':id/ai-review')
   async aiReview(@CurrentUser() user: AuthUser, @Param('id') id: string) {
     return toView(await this.projects.generateAiReview(user.id, id));
+  }
+
+  @Post(':id/generate-case-study')
+  async caseStudy(@CurrentUser() user: AuthUser, @Param('id') id: string) {
+    return toView(await this.projects.generateCaseStudy(user.id, id));
   }
 
   @Patch(':id/ai-review/items/:itemId')
@@ -123,7 +187,9 @@ export class ProjectsController {
     @Param('itemId') itemId: string,
     @Body() dto: ToggleImprovementDto,
   ) {
-    return toView(await this.projects.toggleImprovement(user.id, id, itemId, dto.done));
+    return toView(
+      await this.projects.toggleImprovement(user.id, id, itemId, dto.done),
+    );
   }
 
   @Delete(':id')

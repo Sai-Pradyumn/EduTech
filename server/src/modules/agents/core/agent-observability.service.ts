@@ -14,7 +14,8 @@ export class AgentObservabilityService {
   private readonly logger = new Logger(AgentObservabilityService.name);
 
   constructor(
-    @InjectModel(AgentWorkflowLog.name) private readonly model: Model<AgentWorkflowLogDocument>,
+    @InjectModel(AgentWorkflowLog.name)
+    private readonly model: Model<AgentWorkflowLogDocument>,
   ) {}
 
   start(): WorkflowTrace {
@@ -30,7 +31,9 @@ export class AgentObservabilityService {
     try {
       await this.model.create({
         user: new Types.ObjectId(userId),
-        session: opts.sessionId ? new Types.ObjectId(opts.sessionId) : undefined,
+        session: opts.sessionId
+          ? new Types.ObjectId(opts.sessionId)
+          : undefined,
         agentType,
         steps: trace.steps,
         latencyMs: trace.elapsed(),
@@ -38,7 +41,9 @@ export class AgentObservabilityService {
         error: opts.error,
       });
     } catch (err) {
-      this.logger.warn(`Failed to persist workflow log: ${(err as Error).message}`);
+      this.logger.warn(
+        `Failed to persist workflow log: ${(err as Error).message}`,
+      );
     }
   }
 }

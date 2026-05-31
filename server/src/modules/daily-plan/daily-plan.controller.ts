@@ -11,7 +11,16 @@ function toView(p: DailyPlanDocument) {
     date: p.date,
     mode: p.mode,
     totalMinutes: p.totalMinutes,
-    items: p.items.map((i) => ({ id: i.id, kind: i.kind, title: i.title, reason: i.reason, route: i.route, estimateMinutes: i.estimateMinutes, done: i.done, sourceId: i.sourceId ?? null })),
+    items: p.items.map((i) => ({
+      id: i.id,
+      kind: i.kind,
+      title: i.title,
+      reason: i.reason,
+      route: i.route,
+      estimateMinutes: i.estimateMinutes,
+      done: i.done,
+      sourceId: i.sourceId ?? null,
+    })),
     completed: p.items.filter((i) => i.done).length,
   };
 }

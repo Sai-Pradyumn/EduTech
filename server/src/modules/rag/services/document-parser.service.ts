@@ -40,7 +40,9 @@ export interface ParseInput {
  * parser packages (`pdf-parse` / `mammoth`) don't need to be installed for the build.
  */
 const optionalImport = (specifier: string): Promise<unknown> =>
-  (Function('s', 'return import(s)') as (s: string) => Promise<unknown>)(specifier);
+  (Function('s', 'return import(s)') as (s: string) => Promise<unknown>)(
+    specifier,
+  );
 
 @Injectable()
 export class DocumentParserService {
@@ -50,13 +52,16 @@ export class DocumentParserService {
     const mime = (input.mimeType || '').toLowerCase();
     const name = (input.filename || '').toLowerCase();
 
-    if (input.rawText !== undefined) return this.fromMarkdownOrText(input.rawText, name);
+    if (input.rawText !== undefined)
+      return this.fromMarkdownOrText(input.rawText, name);
 
     const buf = input.buffer ?? Buffer.alloc(0);
 
     if (mime.includes('pdf') || name.endsWith('.pdf')) return this.fromPdf(buf);
-    if (mime.includes('wordprocessingml') || name.endsWith('.docx')) return this.fromDocx(buf);
-    if (mime.includes('json') || name.endsWith('.json')) return this.fromJson(buf);
+    if (mime.includes('wordprocessingml') || name.endsWith('.docx'))
+      return this.fromDocx(buf);
+    if (mime.includes('json') || name.endsWith('.json'))
+      return this.fromJson(buf);
     // text/plain, text/markdown, .md, .txt, and unknown text-like uploads.
     return this.fromMarkdownOrText(buf.toString('utf8'), name);
   }
@@ -69,10 +74,19 @@ export class DocumentParserService {
       const re = /^(#{1,6})\s+(.+)$/gm;
       let m: RegExpExecArray | null;
       while ((m = re.exec(text)) !== null) {
-        outline.push({ level: m[1].length, title: m[2].trim(), charStart: m.index });
+        outline.push({
+          level: m[1].length,
+          title: m[2].trim(),
+          charStart: m.index,
+        });
       }
     }
-    return { text, outline: outline.length ? outline : undefined, language: 'en', warnings: [] };
+    return {
+      text,
+      outline: outline.length ? outline : undefined,
+      language: 'en',
+      warnings: [],
+    };
   }
 
   private fromJson(buf: Buffer): ParsedDocument {
@@ -91,7 +105,8 @@ export class DocumentParserService {
   private flattenJson(node: unknown, prefix = ''): string[] {
     if (node === null || node === undefined) return [];
     if (typeof node !== 'object') return [`${prefix}${String(node)}`];
-    if (Array.isArray(node)) return node.flatMap((v) => this.flattenJson(v, prefix));
+    if (Array.isArray(node))
+      return node.flatMap((v) => this.flattenJson(v, prefix));
     return Object.entries(node as Record<string, unknown>).flatMap(([k, v]) =>
       this.flattenJson(v, prefix ? `${prefix}.${k}: ` : `${k}: `),
     );
@@ -100,10 +115,14 @@ export class DocumentParserService {
   private async fromPdf(buf: Buffer): Promise<ParsedDocument> {
     try {
       // Lazy + optional: avoids a hard dependency when PDF support isn't installed.
-      const mod = (await optionalImport('pdf-parse').catch(() => null)) as
-        | { default?: (b: Buffer) => Promise<{ text: string; numpages: number }> }
-        | null;
-      const pdfParse = mod?.default ?? (mod as unknown as (b: Buffer) => Promise<{ text: string; numpages: number }>);
+      const mod = (await optionalImport('pdf-parse').catch(() => null)) as {
+        default?: (b: Buffer) => Promise<{ text: string; numpages: number }>;
+      } | null;
+      const pdfParse =
+        mod?.default ??
+        (mod as unknown as (
+          b: Buffer,
+        ) => Promise<{ text: string; numpages: number }>);
       if (!pdfParse) throw new Error('pdf-parse not installed');
       const result = await pdfParse(buf);
       return { text: (result.text || '').trim(), language: 'en', warnings: [] };
@@ -122,12 +141,16 @@ export class DocumentParserService {
 
   private async fromDocx(buf: Buffer): Promise<ParsedDocument> {
     try {
-      const mod = (await optionalImport('mammoth').catch(() => null)) as
-        | { extractRawText?: (o: { buffer: Buffer }) => Promise<{ value: string }> }
-        | null;
+      const mod = (await optionalImport('mammoth').catch(() => null)) as {
+        extractRawText?: (o: { buffer: Buffer }) => Promise<{ value: string }>;
+      } | null;
       if (!mod?.extractRawText) throw new Error('mammoth not installed');
       const result = await mod.extractRawText({ buffer: buf });
-      return { text: (result.value || '').trim(), language: 'en', warnings: [] };
+      return {
+        text: (result.value || '').trim(),
+        language: 'en',
+        warnings: [],
+      };
     } catch (err) {
       this.log.warn(`DOCX parsing unavailable: ${(err as Error).message}`);
       return {

@@ -1,7 +1,10 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
-import { Notification, NotificationDocument } from './schemas/notification.schema';
+import {
+  Notification,
+  NotificationDocument,
+} from './schemas/notification.schema';
 
 export interface NotificationView {
   id: string;
@@ -19,9 +22,15 @@ export interface NotificationView {
  */
 @Injectable()
 export class NotificationsService {
-  constructor(@InjectModel(Notification.name) private readonly model: Model<NotificationDocument>) {}
+  constructor(
+    @InjectModel(Notification.name)
+    private readonly model: Model<NotificationDocument>,
+  ) {}
 
-  async create(userId: string, input: { type?: string; title: string; body?: string; link?: string }): Promise<void> {
+  async create(
+    userId: string,
+    input: { type?: string; title: string; body?: string; link?: string },
+  ): Promise<void> {
     await this.model.create({
       user: new Types.ObjectId(userId),
       type: input.type ?? 'info',
@@ -31,8 +40,21 @@ export class NotificationsService {
     });
   }
 
+  /** Phase 9 · Nudge-safe create — skips if an identical unread nudge already exists (no spam). */
+  async createUnique(
+    userId: string,
+    input: { type?: string; title: string; body?: string; link?: string },
+  ): Promise<void> {
+    const exists = await this.model.exists({ user: new Types.ObjectId(userId), title: input.title, read: false }).exec();
+    if (exists) return;
+    await this.create(userId, input);
+  }
+
   /** Fan-out the same notification to many users (e.g. a cohort announcement). */
-  async createMany(userIds: string[], input: { type?: string; title: string; body?: string; link?: string }): Promise<void> {
+  async createMany(
+    userIds: string[],
+    input: { type?: string; title: string; body?: string; link?: string },
+  ): Promise<void> {
     if (userIds.length === 0) return;
     await this.model.insertMany(
       userIds.map((id) => ({
@@ -46,14 +68,19 @@ export class NotificationsService {
     );
   }
 
-  async list(userId: string, limit = 30): Promise<{ items: NotificationView[]; unread: number }> {
+  async list(
+    userId: string,
+    limit = 30,
+  ): Promise<{ items: NotificationView[]; unread: number }> {
     const items = await this.model
       .find({ user: new Types.ObjectId(userId) })
       .sort({ createdAt: -1 })
       .limit(limit)
       .lean<NotificationDocument[]>()
       .exec();
-    const unread = await this.model.countDocuments({ user: new Types.ObjectId(userId), read: false }).exec();
+    const unread = await this.model
+      .countDocuments({ user: new Types.ObjectId(userId), read: false })
+      .exec();
     return {
       items: items.map((n) => ({
         id: String(n._id),
@@ -69,12 +96,22 @@ export class NotificationsService {
   }
 
   async markRead(userId: string, id: string): Promise<{ ok: true }> {
-    await this.model.updateOne({ _id: id, user: new Types.ObjectId(userId) }, { $set: { read: true } }).exec();
+    await this.model
+      .updateOne(
+        { _id: id, user: new Types.ObjectId(userId) },
+        { $set: { read: true } },
+      )
+      .exec();
     return { ok: true };
   }
 
   async markAllRead(userId: string): Promise<{ ok: true }> {
-    await this.model.updateMany({ user: new Types.ObjectId(userId), read: false }, { $set: { read: true } }).exec();
+    await this.model
+      .updateMany(
+        { user: new Types.ObjectId(userId), read: false },
+        { $set: { read: true } },
+      )
+      .exec();
     return { ok: true };
   }
 }

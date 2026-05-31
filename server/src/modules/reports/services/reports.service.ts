@@ -62,7 +62,9 @@ export class ReportsService {
   /** Per-student outcomes for every student in the organization. */
   async studentOutcomes(orgId: string): Promise<StudentOutcomesReport> {
     const members = await this.memberships.listMembers(orgId);
-    const students = members.filter((m) => m.orgRole === OrgRole.Student).slice(0, STUDENT_CAP);
+    const students = members
+      .filter((m) => m.orgRole === OrgRole.Student)
+      .slice(0, STUDENT_CAP);
 
     const rows: StudentOutcomeRow[] = await Promise.all(
       students.map(async (s) => {
@@ -83,7 +85,9 @@ export class ReportsService {
     rows.sort((a, b) => b.health - a.health);
 
     const avg = (key: 'health' | 'readiness') =>
-      rows.length ? Math.round(rows.reduce((sum, r) => sum + r[key], 0) / rows.length) : 0;
+      rows.length
+        ? Math.round(rows.reduce((sum, r) => sum + r[key], 0) / rows.length)
+        : 0;
 
     return {
       generatedAt: new Date().toISOString(),
@@ -98,7 +102,9 @@ export class ReportsService {
   /** Aggregated weak topics across the organization's students. */
   async weakTopics(orgId: string): Promise<WeakTopicRow[]> {
     const members = await this.memberships.listMembers(orgId);
-    const students = members.filter((m) => m.orgRole === OrgRole.Student).slice(0, STUDENT_CAP);
+    const students = members
+      .filter((m) => m.orgRole === OrgRole.Student)
+      .slice(0, STUDENT_CAP);
     const acc = new Map<string, { total: number; count: number }>();
     await Promise.all(
       students.map(async (s) => {
@@ -112,8 +118,16 @@ export class ReportsService {
       }),
     );
     return [...acc.entries()]
-      .map(([topic, v]) => ({ topic, affectedStudents: v.count, avgSeverity: Math.round(v.total / v.count) }))
-      .sort((a, b) => b.affectedStudents - a.affectedStudents || b.avgSeverity - a.avgSeverity);
+      .map(([topic, v]) => ({
+        topic,
+        affectedStudents: v.count,
+        avgSeverity: Math.round(v.total / v.count),
+      }))
+      .sort(
+        (a, b) =>
+          b.affectedStudents - a.affectedStudents ||
+          b.avgSeverity - a.avgSeverity,
+      );
   }
 
   /** Platform AI usage by agent (admin / operator report). */
@@ -124,15 +138,36 @@ export class ReportsService {
       totalCalls: summary.totalCalls,
       totalTokens: summary.totalTokens,
       avgLatencyMs: summary.avgLatencyMs,
-      rows: summary.byAgent.map((a) => ({ agentType: a.agentType, count: a.count })),
+      rows: summary.byAgent.map((a) => ({
+        agentType: a.agentType,
+        count: a.count,
+      })),
     };
   }
 
   // ── CSV ───────────────────────────────────────────────────────────────────
   studentsCsv(report: StudentOutcomesReport): string {
     return this.toCsv(
-      ['Name', 'Email', 'Health', 'Readiness', 'Quizzes', 'Projects', 'Active days', 'Top weakness'],
-      report.rows.map((r) => [r.name, r.email, r.health, r.readiness, r.quizzes, r.projects, r.activeDays, r.topWeakness]),
+      [
+        'Name',
+        'Email',
+        'Health',
+        'Readiness',
+        'Quizzes',
+        'Projects',
+        'Active days',
+        'Top weakness',
+      ],
+      report.rows.map((r) => [
+        r.name,
+        r.email,
+        r.health,
+        r.readiness,
+        r.quizzes,
+        r.projects,
+        r.activeDays,
+        r.topWeakness,
+      ]),
     );
   }
 
@@ -144,7 +179,10 @@ export class ReportsService {
   }
 
   aiUsageCsv(report: AiUsageReport): string {
-    return this.toCsv(['Agent', 'Calls'], report.rows.map((r) => [r.agentType, r.count]));
+    return this.toCsv(
+      ['Agent', 'Calls'],
+      report.rows.map((r) => [r.agentType, r.count]),
+    );
   }
 
   /** RFC-4180-ish CSV: quote fields containing comma/quote/newline, double interior quotes. */

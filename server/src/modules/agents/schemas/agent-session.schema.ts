@@ -31,7 +31,12 @@ export type AgentMessageDocument = HydratedDocument<AgentMessage>;
 
 @Schema({ timestamps: true })
 export class AgentMessage {
-  @Prop({ type: Types.ObjectId, ref: 'AgentSession', required: true, index: true })
+  @Prop({
+    type: Types.ObjectId,
+    ref: 'AgentSession',
+    required: true,
+    index: true,
+  })
   session!: Types.ObjectId;
 
   @Prop({ type: Types.ObjectId, ref: 'User', required: true, index: true })

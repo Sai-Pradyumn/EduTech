@@ -1,6 +1,6 @@
 # Asta — AI Skill Mentor
 
-> An **AI-native learning operating system**. Not an LMS with a chatbot bolted on — every surface is driven by cooperating AI agents. Students get a personalized roadmap, learn with an AI tutor, ask doubts grounded in their own notes (RAG), generate & take quizzes, plan real projects, and track progress.
+> An **AI-native learning & outcome operating system**. Not an LMS with a chatbot bolted on — every surface is driven by cooperating AI agents. Students get a personalized roadmap, learn with an AI tutor, ask doubts grounded in their own notes (RAG), generate & take quizzes, plan real projects, track progress — and now **prove** their skills: a verified **Skill Passport**, an explainable **Career Readiness** score against real roles, a **Proof-of-Learning Ledger**, and an **AI Outcome Council** that decides their single best next real-world move.
 
 **Stack:** Angular 18 · NestJS 11 · MongoDB (Mongoose) · Redis + BullMQ · Socket.IO · TypeScript (strict) · Tailwind. AI behind a provider abstraction with a **mock provider** so the whole app runs with **no API keys**.
 
@@ -48,6 +48,19 @@
 | P8·9 | **Course Builder** — mentors/admins turn a goal/outline/roadmap into a full course (modules + lessons + per-module quiz/visual/voice-script + capstone project + flow + certificate criteria), editable, **role-gated publish** to org/cohort; `/app/course-builder` | ✅ Phase 8 |
 | P8·10 | **Peer Rooms** — collaborative study rooms (join by code, shared board, **AI moderator**, auto-summary + action items, shared learning flow); `/app/peer-rooms` | ✅ Phase 8 |
 | P8·11 | **Breakthroughs** — **Proof-of-Learning Ledger** (verified event timeline), **AI Mentor Council** (5 agents debate → chair picks), **Learning Replay** (narrated recap + TTS), **Weakness-to-Project** generator; `/app/ledger`, `/app/mentor-council`, `/app/replay` | ✅ Phase 8 |
+| P9·1 | **Skill Passport** — a living, verified profile blending Skill Twin + ledger + certificates + projects + manual evidence: identity card, skill graph (mastery/confidence/evidence/risk), proof summary, project evidence, learning timeline with **per-event public toggle**, granular **privacy controls**, and a public, trust-styled profile at `/u/:username`; `/app/skill-passport` | ✅ Phase 9 |
+| P9·2 | **Career Readiness Engine** — maps you against an **11-role rubric catalog** into an explainable score across 5 weighted dimensions (skills/projects/interview/consistency/portfolio). Skill-gap matrix, top-3 blockers, portfolio checklist, **7-day plan**, AI explanation; readiness is **proof-based** — it credits proven ledger evidence, not just self-claims; `/app/career-readiness` | ✅ Phase 9 |
+| P9·3 | **Proof-of-Learning Ledger 2.0** — extends the Phase-8 ledger with **skill tags**, **verification levels** (self/ai/system/mentor/certificate), per-event passport visibility, a rich summary, manual self-reported events, and new event kinds (review/interview/viva/mentor); `/proof-ledger` | ✅ Phase 9 |
+| P9·4 | **AI Outcome Council** — six specialist perspectives (Skill Twin, Career Readiness, Project Reviewer, Interview Coach, Portfolio, Consistency) each propose a grounded next action; deterministic **impact ranking** + an agent-narrated **verdict** with alternatives, accept/dismiss, and a deep-link to act; `/app/outcome-council` | ✅ Phase 9 |
+| P9·5 | **Dashboard 3.0** — compact outcome cockpit strip (career-readiness top blocker + Skill Passport status) added to the dashboard, plus grouped **Outcome** + **Ecosystem** nav sections | ✅ Phase 9 |
+| P9·6 | **Portfolio Builder** — public portfolio generated from verified evidence (AI about copy + per-project case studies via `PortfolioBuilderAgent`), publish controls, public `/p/:username`; `/app/portfolio` | ✅ Phase 9 |
+| P9·7 | **Project Review 2.0** — case-study generator + **add-to-passport** (creates verified `SkillEvidence` + ledger event) + **add-to-portfolio**, turning a reviewed project into portable proof | ✅ Phase 9 |
+| P9·8 | **Interview OS** — role-based mock interviews (9 types), `InterviewCoachAgent` answer scoring, feedback report; a verified ledger event **feeds Career Readiness** and weak areas flow into **Mistake OS**; `/app/interview` | ✅ Phase 9 |
+| P9·9 | **Resume & Application Assistant** — resume generated from verified evidence (copy-as-Markdown); **JD analyzer** (deterministic skill detection → match score, missing skills, tailored cover letter, prep plan) + application tracker; `/app/resume`, `/app/applications` | ✅ Phase 9 |
+| P9·10 | **Mentor Marketplace** — mentor profiles, session requests (project/interview/portfolio reviews), accept/complete → **mentor-verified** ledger event; `/app/mentors` | ✅ Phase 9 |
+| P9·11 | **Creator/Template Marketplace** — publish reusable templates, admin moderation queue, browse + clone; `/app/marketplace`, `/app/creator-studio` | ✅ Phase 9 |
+| P9·12 | **Institution Outcome Layer** — org-isolated cohort placement-readiness analytics (avg readiness, at-risk, top performers, weak concepts) + assign flow/template to cohort; `/app/institution` | ✅ Phase 9 |
+| P9·13 | **Nudge intelligence** (event-driven, de-duplicated nudges + pull-based `GET /nudges`) and **Privacy/Export/Reset** (export JSON, make-private, reset Skill Twin, clear tracker); `/app/privacy` | ✅ Phase 9 |
 | 11 | Admin dashboard + AI analytics | ⏳ Phase 6 |
 | 12 | Notifications (in-app + BullMQ) | ⏳ Phase 6 |
 | 13 | WebSocket foundation (streaming + realtime) | ⏳ Phase 3 |

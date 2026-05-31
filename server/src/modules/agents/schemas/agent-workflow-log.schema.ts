@@ -34,4 +34,5 @@ export class AgentWorkflowLog {
   @Prop()
   error?: string;
 }
-export const AgentWorkflowLogSchema = SchemaFactory.createForClass(AgentWorkflowLog);
+export const AgentWorkflowLogSchema =
+  SchemaFactory.createForClass(AgentWorkflowLog);

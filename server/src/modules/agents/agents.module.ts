@@ -35,7 +35,10 @@ import {
   AgentMessageSchema,
 } from './schemas/agent-session.schema';
 import { AgentMemory, AgentMemorySchema } from './schemas/agent-memory.schema';
-import { AgentWorkflowLog, AgentWorkflowLogSchema } from './schemas/agent-workflow-log.schema';
+import {
+  AgentWorkflowLog,
+  AgentWorkflowLogSchema,
+} from './schemas/agent-workflow-log.schema';
 import { AiAgentController } from './ai-agent.controller';
 import { TutorController } from './tutor.controller';
 

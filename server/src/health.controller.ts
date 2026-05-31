@@ -13,7 +13,11 @@ export class HealthController {
   @Public()
   @Get()
   check() {
-    return { status: 'ok', service: 'asta-api', time: new Date().toISOString() };
+    return {
+      status: 'ok',
+      service: 'asta-api',
+      time: new Date().toISOString(),
+    };
   }
 
   /** Readiness probe: process + dependency health for monitors / admin platform-health. */
@@ -28,7 +32,11 @@ export class HealthController {
       uptimeSec: Math.round(process.uptime()),
       checks: {
         db: { status: db === 'connected' ? 'up' : 'down', state: db },
-        process: { status: 'up', rssMb: Math.round(mem.rss / 1048576), heapUsedMb: Math.round(mem.heapUsed / 1048576) },
+        process: {
+          status: 'up',
+          rssMb: Math.round(mem.rss / 1048576),
+          heapUsedMb: Math.round(mem.heapUsed / 1048576),
+        },
       },
       node: process.version,
       time: new Date().toISOString(),

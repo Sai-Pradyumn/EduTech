@@ -24,10 +24,21 @@ export class RagAgentService implements IAgent {
 
   async handle(ctx: AgentRuntimeContext): Promise<AgentResponse> {
     const documentIds = this.readDocumentIds(ctx.request.context);
-    const scopeLabel = documentIds?.length ? `${documentIds.length} selected doc(s)` : 'all your documents';
+    const scopeLabel = documentIds?.length
+      ? `${documentIds.length} selected doc(s)`
+      : 'all your documents';
 
-    ctx.emit({ type: 'thinking', messageId: '', label: `Searching ${scopeLabel}` });
-    ctx.emit({ type: 'tool_call', messageId: '', tool: 'rag.retrieve', label: 'Hybrid retrieval (dense + keyword + RRF)' });
+    ctx.emit({
+      type: 'thinking',
+      messageId: '',
+      label: `Searching ${scopeLabel}`,
+    });
+    ctx.emit({
+      type: 'tool_call',
+      messageId: '',
+      tool: 'rag.retrieve',
+      label: 'Hybrid retrieval (dense + keyword + RRF)',
+    });
 
     const result = await this.ragAnswer.answer(ctx.request.message, {
       userId: ctx.request.userId,
@@ -42,13 +53,18 @@ export class RagAgentService implements IAgent {
         ? `${result.citations.length} passage(s) · ${result.groundedness} (${Math.round(result.confidence * 100)}%)`
         : 'No matching passages — answering honestly',
     });
-    ctx.emit({ type: 'thinking', messageId: '', label: 'Grounding the answer in your sources' });
+    ctx.emit({
+      type: 'thinking',
+      messageId: '',
+      label: 'Grounding the answer in your sources',
+    });
 
     const answer = this.withSourceList(result.answer, result.citations);
     await this.stream(answer, ctx);
 
     const visualBlocks = this.buildBlocks(result.citations);
-    for (const block of visualBlocks) ctx.emit({ type: 'visual_block', messageId: '', block });
+    for (const block of visualBlocks)
+      ctx.emit({ type: 'visual_block', messageId: '', block });
 
     return {
       agentType: AgentType.Rag,
@@ -56,9 +72,18 @@ export class RagAgentService implements IAgent {
       mode: 'mixed',
       answer,
       actions: [
-        { id: 'ask-all', label: 'Ask across all docs', kind: 'custom', payload: { scope: 'all' } },
+        {
+          id: 'ask-all',
+          label: 'Ask across all docs',
+          kind: 'custom',
+          payload: { scope: 'all' },
+        },
         { id: 'quiz', label: 'Quiz me on this', kind: 'generate_quiz' },
-        { id: 'summary', label: 'Summarize the source', kind: 'generate_notes' },
+        {
+          id: 'summary',
+          label: 'Summarize the source',
+          kind: 'generate_notes',
+        },
       ],
       visualBlocks,
       sources: this.toSources(result.citations),
@@ -66,20 +91,31 @@ export class RagAgentService implements IAgent {
       followUpQuestions: this.followUps(result.suggestedNextTopic),
       recommendedNextActions:
         result.groundedness === 'insufficient'
-          ? ['Upload a document that covers this topic', 'Rephrase the question with more specifics']
-          : ['Open a citation to read the source passage', 'Generate a quiz from this document'],
+          ? [
+              'Upload a document that covers this topic',
+              'Rephrase the question with more specifics',
+            ]
+          : [
+              'Open a citation to read the source passage',
+              'Generate a quiz from this document',
+            ],
     };
   }
 
-  private readDocumentIds(context?: Record<string, unknown>): string[] | undefined {
+  private readDocumentIds(
+    context?: Record<string, unknown>,
+  ): string[] | undefined {
     const raw = context?.['documentIds'];
-    if (Array.isArray(raw)) return raw.filter((x): x is string => typeof x === 'string');
+    if (Array.isArray(raw))
+      return raw.filter((x): x is string => typeof x === 'string');
     return undefined;
   }
 
   private withSourceList(answer: string, citations: Citation[]): string {
     if (citations.length === 0) return answer;
-    const list = citations.map((c) => `[${c.n}] ${c.documentTitle} — ${c.locator}`).join('\n');
+    const list = citations
+      .map((c) => `[${c.n}] ${c.documentTitle} — ${c.locator}`)
+      .join('\n');
     return `${answer}\n\n**Sources**\n${list}`;
   }
 
@@ -101,16 +137,28 @@ export class RagAgentService implements IAgent {
       rootConcept: 'Answer',
       nodes: [
         { id: 'root', label: 'Answer', group: 'root' },
-        ...citations.map((c) => ({ id: `c${c.n}`, label: `[${c.n}] ${c.locator}`, group: 'source' })),
+        ...citations.map((c) => ({
+          id: `c${c.n}`,
+          label: `[${c.n}] ${c.locator}`,
+          group: 'source',
+        })),
       ],
-      edges: citations.map((c) => ({ from: 'root', to: `c${c.n}`, label: c.documentTitle })),
+      edges: citations.map((c) => ({
+        from: 'root',
+        to: `c${c.n}`,
+        label: c.documentTitle,
+      })),
     };
     return [map];
   }
 
   private followUps(nextTopic?: string): string[] {
-    const base = ['What else do my documents say about this?', 'Give me a 1-line summary with the source.'];
-    if (nextTopic) base.unshift(`Tell me more about ${nextTopic} from my notes.`);
+    const base = [
+      'What else do my documents say about this?',
+      'Give me a 1-line summary with the source.',
+    ];
+    if (nextTopic)
+      base.unshift(`Tell me more about ${nextTopic} from my notes.`);
     return base.slice(0, 3);
   }
 

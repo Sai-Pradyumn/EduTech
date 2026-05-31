@@ -25,19 +25,53 @@ export const GRAPH_TEMPLATES: GraphTemplate[] = [
     title: 'Master a topic',
     description: 'Explain → quiz → suggest a practice project for any topic.',
     nodes: [
-      { key: 'explain', label: 'Explain the concept', agentType: AgentType.Tutor, prompt: (t) => `Explain ${t} clearly with a concrete example and the key ideas to remember.` },
-      { key: 'quiz', label: 'Generate a quiz', agentType: AgentType.Assessment, prompt: (t) => `Create a short quiz to test understanding of ${t}.` },
-      { key: 'project', label: 'Suggest a project', agentType: AgentType.ProjectBuilder, prompt: (t) => `Suggest a small hands-on project to practice ${t}.` },
+      {
+        key: 'explain',
+        label: 'Explain the concept',
+        agentType: AgentType.Tutor,
+        prompt: (t) =>
+          `Explain ${t} clearly with a concrete example and the key ideas to remember.`,
+      },
+      {
+        key: 'quiz',
+        label: 'Generate a quiz',
+        agentType: AgentType.Assessment,
+        prompt: (t) => `Create a short quiz to test understanding of ${t}.`,
+      },
+      {
+        key: 'project',
+        label: 'Suggest a project',
+        agentType: AgentType.ProjectBuilder,
+        prompt: (t) => `Suggest a small hands-on project to practice ${t}.`,
+      },
     ],
   },
   {
     name: 'interview_prep',
     title: 'Interview prep',
-    description: 'Career readiness → targeted explanation → practice questions.',
+    description:
+      'Career readiness → targeted explanation → practice questions.',
     nodes: [
-      { key: 'gap', label: 'Assess readiness', agentType: AgentType.Career, prompt: (t) => `Assess my readiness for a ${t} role and name the top gap to close.` },
-      { key: 'teach', label: 'Teach the gap', agentType: AgentType.Tutor, prompt: (t) => `Teach the most commonly-tested concept for a ${t} interview.` },
-      { key: 'practice', label: 'Practice questions', agentType: AgentType.Assessment, prompt: (t) => `Create practice interview questions for a ${t} role.` },
+      {
+        key: 'gap',
+        label: 'Assess readiness',
+        agentType: AgentType.Career,
+        prompt: (t) =>
+          `Assess my readiness for a ${t} role and name the top gap to close.`,
+      },
+      {
+        key: 'teach',
+        label: 'Teach the gap',
+        agentType: AgentType.Tutor,
+        prompt: (t) =>
+          `Teach the most commonly-tested concept for a ${t} interview.`,
+      },
+      {
+        key: 'practice',
+        label: 'Practice questions',
+        agentType: AgentType.Assessment,
+        prompt: (t) => `Create practice interview questions for a ${t} role.`,
+      },
     ],
   },
 ];

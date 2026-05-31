@@ -35,13 +35,32 @@ export const FLOW_EDGE_RELATIONS = [
 ] as const;
 export type FlowEdgeRelation = (typeof FLOW_EDGE_RELATIONS)[number];
 
-export const FLOW_NODE_STATUSES = ['locked', 'available', 'in_progress', 'completed', 'skipped'] as const;
+export const FLOW_NODE_STATUSES = [
+  'locked',
+  'available',
+  'in_progress',
+  'completed',
+  'skipped',
+] as const;
 export type FlowNodeStatus = (typeof FLOW_NODE_STATUSES)[number];
 
-export const FLOW_STATUSES = ['draft', 'active', 'completed', 'archived'] as const;
+export const FLOW_STATUSES = [
+  'draft',
+  'active',
+  'completed',
+  'archived',
+] as const;
 export type FlowStatus = (typeof FLOW_STATUSES)[number];
 
-export const FLOW_SOURCE_TYPES = ['manual', 'roadmap', 'document', 'quiz', 'project', 'voice', 'generated'] as const;
+export const FLOW_SOURCE_TYPES = [
+  'manual',
+  'roadmap',
+  'document',
+  'quiz',
+  'project',
+  'voice',
+  'generated',
+] as const;
 export type FlowSourceType = (typeof FLOW_SOURCE_TYPES)[number];
 
 @Schema({ _id: false })
@@ -109,7 +128,8 @@ export class FlowTimelineBucket {
   @Prop({ default: '' }) focus!: string;
   @Prop({ type: [String], default: [] }) nodeIds!: string[];
 }
-const FlowTimelineBucketSchema = SchemaFactory.createForClass(FlowTimelineBucket);
+const FlowTimelineBucketSchema =
+  SchemaFactory.createForClass(FlowTimelineBucket);
 
 export type FlowDocument = HydratedDocument<Flow>;
 
@@ -138,7 +158,8 @@ export class Flow {
 
   @Prop({ type: [FlowNodeSchema], default: [] }) nodes!: FlowNode[];
   @Prop({ type: [FlowEdgeSchema], default: [] }) edges!: FlowEdge[];
-  @Prop({ type: [FlowTimelineBucketSchema], default: [] }) timeline!: FlowTimelineBucket[];
+  @Prop({ type: [FlowTimelineBucketSchema], default: [] })
+  timeline!: FlowTimelineBucket[];
 
   @Prop({ default: 0, min: 0, max: 100 }) progressPercentage!: number;
 

@@ -27,32 +27,54 @@ export class MetadataTaggingService {
       .map(([t]) => t);
   }
 
-  async inferDocumentTags(userId: string, title: string, chunks: Chunk[]): Promise<DocumentTags> {
-    const sample = chunks.slice(0, 4).map((c) => c.text).join('\n').slice(0, 1200);
+  async inferDocumentTags(
+    userId: string,
+    title: string,
+    chunks: Chunk[],
+  ): Promise<DocumentTags> {
+    const sample = chunks
+      .slice(0, 4)
+      .map((c) => c.text)
+      .join('\n')
+      .slice(0, 1200);
 
     // Deterministic fallback (also the mock result): most frequent corpus terms.
     const fallback = (): DocumentTags => {
       const all = `${title}\n${sample}`;
       const counts = new Map<string, number>();
       for (const t of tokenize(all)) counts.set(t, (counts.get(t) ?? 0) + 1);
-      const tags = [...counts.entries()].sort((a, b) => b[1] - a[1]).slice(0, 5).map(([t]) => t);
+      const tags = [...counts.entries()]
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 5)
+        .map(([t]) => t);
       return { topic: tags[0] ? this.titleCase(tags[0]) : title, tags };
     };
 
     try {
       const result = await this.ai.generateStructuredOutput<DocumentTags>(
         [
-          { role: 'system', content: 'Extract a one-word topic and up to 5 lowercase tags from the document sample.' },
+          {
+            role: 'system',
+            content:
+              'Extract a one-word topic and up to 5 lowercase tags from the document sample.',
+          },
           { role: 'user', content: `Title: ${title}\n\n${sample}` },
         ],
         {
           type: 'object',
-          properties: { topic: { type: 'string' }, tags: { type: 'array', items: { type: 'string' } } },
+          properties: {
+            topic: { type: 'string' },
+            tags: { type: 'array', items: { type: 'string' } },
+          },
           required: ['topic', 'tags'],
         },
         { mockFactory: fallback },
       );
-      await this.ai.logUsage({ userId, agentType: AgentType.Rag, operation: 'rag.tag' });
+      await this.ai.logUsage({
+        userId,
+        agentType: AgentType.Rag,
+        operation: 'rag.tag',
+      });
       return result?.topic ? result : fallback();
     } catch {
       return fallback();

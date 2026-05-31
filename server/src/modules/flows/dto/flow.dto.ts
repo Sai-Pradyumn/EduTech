@@ -71,7 +71,7 @@ export class UpdateFlowDto {
   description?: string;
 
   @IsOptional()
-  @IsIn(FLOW_STATUSES as unknown as string[])
+  @IsIn(FLOW_STATUSES)
   status?: FlowStatus;
 }
 
@@ -81,7 +81,7 @@ export class PositionDto {
 }
 
 export class AddNodeDto {
-  @IsIn(FLOW_NODE_TYPES as unknown as string[])
+  @IsIn(FLOW_NODE_TYPES)
   type!: FlowNodeType;
 
   @IsString()
@@ -112,7 +112,7 @@ export class UpdateNodeDto {
   @IsOptional() @IsNumber() @Min(0) @Max(100) masteryScore?: number;
 
   @IsOptional()
-  @IsIn(FLOW_NODE_STATUSES as unknown as string[])
+  @IsIn(FLOW_NODE_STATUSES)
   status?: FlowNodeStatus;
 
   @IsOptional()

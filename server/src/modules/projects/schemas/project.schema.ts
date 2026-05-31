@@ -49,7 +49,8 @@ export class ReviewChecklistItem {
   severity!: 'high' | 'medium' | 'low';
   @Prop({ default: false }) done!: boolean;
 }
-const ReviewChecklistItemSchema = SchemaFactory.createForClass(ReviewChecklistItem);
+const ReviewChecklistItemSchema =
+  SchemaFactory.createForClass(ReviewChecklistItem);
 
 /**
  * Automated AI review of a submitted project (Phase 4 · B8). Scores quality, architecture,
@@ -66,7 +67,8 @@ export class AiProjectReview {
   @Prop({ default: 0, min: 0, max: 100 }) overallScore!: number;
   @Prop({ default: '' }) summary!: string;
   @Prop({ type: [String], default: [] }) strengths!: string[];
-  @Prop({ type: [ReviewChecklistItemSchema], default: [] }) improvements!: ReviewChecklistItem[];
+  @Prop({ type: [ReviewChecklistItemSchema], default: [] })
+  improvements!: ReviewChecklistItem[];
   @Prop() reviewedAt?: Date;
   @Prop({ default: '' }) model!: string;
 }
@@ -77,7 +79,11 @@ const AiProjectReviewSchema = SchemaFactory.createForClass(AiProjectReview);
 export class MentorReview {
   @Prop({ type: Types.ObjectId, ref: 'User' }) reviewer?: Types.ObjectId;
   @Prop() reviewerName?: string;
-  @Prop({ type: String, enum: ['approved', 'changes_requested'], default: 'changes_requested' })
+  @Prop({
+    type: String,
+    enum: ['approved', 'changes_requested'],
+    default: 'changes_requested',
+  })
   decision!: 'approved' | 'changes_requested';
   @Prop({ default: '' }) feedback!: string;
   @Prop({ min: 0, max: 100 }) score?: number;
@@ -116,7 +122,11 @@ export class Project {
   @Prop({ default: 2 })
   estimatedWeeks!: number;
 
-  @Prop({ type: String, enum: ['planning', 'in_progress', 'completed'], default: 'planning' })
+  @Prop({
+    type: String,
+    enum: ['planning', 'in_progress', 'completed'],
+    default: 'planning',
+  })
   status!: ProjectStatus;
 
   @Prop({ type: String, enum: ['goal', 'roadmap', 'agent'], default: 'goal' })
@@ -136,6 +146,10 @@ export class Project {
 
   @Prop({ type: MentorReviewSchema })
   mentorReview?: MentorReview;
+
+  /** Phase 9 · Project Review 2.0 — portfolio-ready case study generated from the review. */
+  @Prop({ default: '' })
+  caseStudy!: string;
 
   @Prop({ default: 0, min: 0, max: 100 })
   progressPercentage!: number;

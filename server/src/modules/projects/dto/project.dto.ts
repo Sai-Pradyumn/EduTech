@@ -1,4 +1,12 @@
-import { IsBoolean, IsEnum, IsOptional, IsString, IsUrl, MaxLength, MinLength } from 'class-validator';
+import {
+  IsBoolean,
+  IsEnum,
+  IsOptional,
+  IsString,
+  IsUrl,
+  MaxLength,
+  MinLength,
+} from 'class-validator';
 import { Difficulty, ItemStatus } from '../../../common/enums';
 
 export class GenerateProjectDto {

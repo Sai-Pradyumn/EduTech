@@ -1,8 +1,16 @@
-import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
-import { FineTuningJob, FineTuningJobDocument, JobStatus } from './schemas/fine-tuning-job.schema';
+import {
+  FineTuningJob,
+  FineTuningJobDocument,
+  JobStatus,
+} from './schemas/fine-tuning-job.schema';
 
 export interface CreateJobInput {
   name: string;
@@ -37,7 +45,8 @@ const RUN_DURATION_SEC = 45;
 @Injectable()
 export class FineTuningService {
   constructor(
-    @InjectModel(FineTuningJob.name) private readonly jobs: Model<FineTuningJobDocument>,
+    @InjectModel(FineTuningJob.name)
+    private readonly jobs: Model<FineTuningJobDocument>,
     private readonly config: ConfigService,
   ) {}
 
@@ -66,7 +75,10 @@ export class FineTuningService {
   }
 
   async list(userId: string): Promise<JobView[]> {
-    const jobs = await this.jobs.find({ createdBy: new Types.ObjectId(userId) }).sort({ createdAt: -1 }).exec();
+    const jobs = await this.jobs
+      .find({ createdBy: new Types.ObjectId(userId) })
+      .sort({ createdAt: -1 })
+      .exec();
     return Promise.all(jobs.map((j) => this.tick(j).then((d) => this.view(d))));
   }
 
@@ -86,18 +98,27 @@ export class FineTuningService {
 
   // ── simulation ──────────────────────────────────────────────────────────────
   /** Advance a running job's progress based on wall-clock elapsed since it started. */
-  private async tick(job: FineTuningJobDocument): Promise<FineTuningJobDocument> {
+  private async tick(
+    job: FineTuningJobDocument,
+  ): Promise<FineTuningJobDocument> {
     if (job.status !== 'running') return job;
     const elapsedSec = (Date.now() - new Date(job.startedAt).getTime()) / 1000;
-    const progress = Math.min(100, Math.round((elapsedSec / RUN_DURATION_SEC) * 100));
+    const progress = Math.min(
+      100,
+      Math.round((elapsedSec / RUN_DURATION_SEC) * 100),
+    );
     if (progress >= 100) {
       job.progress = 100;
       job.status = 'succeeded';
       job.finishedAt = new Date();
       // Deterministic mock metrics that improve with epochs / dataset size.
-      const evalAccuracy = Math.min(0.98, 0.7 + job.epochs * 0.05 + job.datasetSize / 10000);
+      const evalAccuracy = Math.min(
+        0.98,
+        0.7 + job.epochs * 0.05 + job.datasetSize / 10000,
+      );
       job.metrics = {
-        finalLoss: Math.round((0.9 - Math.min(0.5, job.epochs * 0.12)) * 1000) / 1000,
+        finalLoss:
+          Math.round((0.9 - Math.min(0.5, job.epochs * 0.12)) * 1000) / 1000,
         evalAccuracy: Math.round(evalAccuracy * 1000) / 1000,
       };
       await job.save();
@@ -109,12 +130,22 @@ export class FineTuningService {
   }
 
   private assertEnabled(): void {
-    if (!this.enabled) throw new ForbiddenException('Fine-Tuning Lab is disabled. Set ENABLE_FINE_TUNING=true to enable it.');
+    if (!this.enabled)
+      throw new ForbiddenException(
+        'Fine-Tuning Lab is disabled. Set ENABLE_FINE_TUNING=true to enable it.',
+      );
   }
 
-  private async owned(userId: string, id: string): Promise<FineTuningJobDocument> {
-    if (!Types.ObjectId.isValid(id)) throw new NotFoundException('Job not found');
-    const job = await this.jobs.findOne({ _id: id, createdBy: new Types.ObjectId(userId) });
+  private async owned(
+    userId: string,
+    id: string,
+  ): Promise<FineTuningJobDocument> {
+    if (!Types.ObjectId.isValid(id))
+      throw new NotFoundException('Job not found');
+    const job = await this.jobs.findOne({
+      _id: id,
+      createdBy: new Types.ObjectId(userId),
+    });
     if (!job) throw new NotFoundException('Job not found');
     return job;
   }
@@ -131,7 +162,10 @@ export class FineTuningService {
       progress: j.progress,
       metrics: j.metrics ?? {},
       errorMessage: j.errorMessage,
-      createdAt: (j as FineTuningJobDocument & { createdAt?: Date }).createdAt?.toISOString() ?? '',
+      createdAt:
+        (
+          j as FineTuningJobDocument & { createdAt?: Date }
+        ).createdAt?.toISOString() ?? '',
     };
   }
 }

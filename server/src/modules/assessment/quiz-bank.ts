@@ -28,12 +28,14 @@ export const QUIZ_BANK: Record<string, BankQuestion[]> = {
         'A CSS layout technique',
       ],
       answerIndex: 0,
-      explanation: 'A closure keeps access to variables from the scope where it was created, even after that scope returns.',
+      explanation:
+        'A closure keeps access to variables from the scope where it was created, even after that scope returns.',
       difficulty: Difficulty.Beginner,
     },
     {
       type: QuestionType.Mcq,
-      prompt: 'Why does a closure created inside a `for` loop with `var` often capture the wrong value?',
+      prompt:
+        'Why does a closure created inside a `for` loop with `var` often capture the wrong value?',
       options: [
         'Because `var` is function-scoped, so all closures share one binding',
         'Because `var` cannot be used in loops',
@@ -41,15 +43,18 @@ export const QUIZ_BANK: Record<string, BankQuestion[]> = {
         'Because the loop runs in parallel',
       ],
       answerIndex: 0,
-      explanation: '`var` has a single function-scoped binding; `let` creates a fresh binding per iteration.',
+      explanation:
+        '`var` has a single function-scoped binding; `let` creates a fresh binding per iteration.',
       difficulty: Difficulty.Intermediate,
     },
     {
       type: QuestionType.ShortAnswer,
       prompt: 'In one sentence, how can closures cause memory leaks?',
-      modelAnswer: 'A long-lived closure keeps references to captured variables alive, preventing garbage collection.',
+      modelAnswer:
+        'A long-lived closure keeps references to captured variables alive, preventing garbage collection.',
       keywords: ['reference', 'captured', 'garbage', 'memory', 'retain'],
-      explanation: 'Closures retain their captured scope; if the closure lives long, so do those objects.',
+      explanation:
+        'Closures retain their captured scope; if the closure lives long, so do those objects.',
       difficulty: Difficulty.Advanced,
     },
   ],
@@ -57,14 +62,21 @@ export const QUIZ_BANK: Record<string, BankQuestion[]> = {
     {
       type: QuestionType.Mcq,
       prompt: 'Every correct recursive function must have a…',
-      options: ['Base case', 'Global variable', 'While loop', 'Try/catch block'],
+      options: [
+        'Base case',
+        'Global variable',
+        'While loop',
+        'Try/catch block',
+      ],
       answerIndex: 0,
-      explanation: 'The base case stops the recursion; without it you get infinite recursion / stack overflow.',
+      explanation:
+        'The base case stops the recursion; without it you get infinite recursion / stack overflow.',
       difficulty: Difficulty.Beginner,
     },
     {
       type: QuestionType.Mcq,
-      prompt: 'What typically causes a "Maximum call stack size exceeded" error?',
+      prompt:
+        'What typically causes a "Maximum call stack size exceeded" error?',
       options: [
         'Missing or unreachable base case',
         'Too many comments',
@@ -72,7 +84,8 @@ export const QUIZ_BANK: Record<string, BankQuestion[]> = {
         'A correct tail call',
       ],
       answerIndex: 0,
-      explanation: 'If the recursion never reaches the base case, the call stack grows without bound.',
+      explanation:
+        'If the recursion never reaches the base case, the call stack grows without bound.',
       difficulty: Difficulty.Intermediate,
     },
   ],
@@ -82,7 +95,8 @@ export const QUIZ_BANK: Record<string, BankQuestion[]> = {
       prompt: 'What is the time complexity of binary search on a sorted array?',
       options: ['O(log n)', 'O(n)', 'O(n log n)', 'O(1)'],
       answerIndex: 0,
-      explanation: 'Binary search halves the search space each step, giving logarithmic time.',
+      explanation:
+        'Binary search halves the search space each step, giving logarithmic time.',
       difficulty: Difficulty.Beginner,
     },
     {
@@ -90,7 +104,8 @@ export const QUIZ_BANK: Record<string, BankQuestion[]> = {
       prompt: 'Which is the dominant term in O(n² + n log n + 100)?',
       options: ['n²', 'n log n', '100', 'log n'],
       answerIndex: 0,
-      explanation: 'Big-O keeps the fastest-growing term and drops constants and lower-order terms.',
+      explanation:
+        'Big-O keeps the fastest-growing term and drops constants and lower-order terms.',
       difficulty: Difficulty.Intermediate,
     },
   ],
@@ -100,15 +115,22 @@ export const QUIZ_BANK: Record<string, BankQuestion[]> = {
       prompt: 'Which clause filters rows BEFORE aggregation in SQL?',
       options: ['WHERE', 'HAVING', 'ORDER BY', 'GROUP BY'],
       answerIndex: 0,
-      explanation: '`WHERE` filters rows before grouping; `HAVING` filters after aggregation.',
+      explanation:
+        '`WHERE` filters rows before grouping; `HAVING` filters after aggregation.',
       difficulty: Difficulty.Beginner,
     },
     {
       type: QuestionType.Mcq,
       prompt: 'A JOIN without an ON condition typically produces a…',
-      options: ['Cartesian (cross) product', 'Syntax error always', 'Single row', 'Sorted result'],
+      options: [
+        'Cartesian (cross) product',
+        'Syntax error always',
+        'Single row',
+        'Sorted result',
+      ],
       answerIndex: 0,
-      explanation: 'Without a join predicate every row pairs with every other row — a Cartesian product.',
+      explanation:
+        'Without a join predicate every row pairs with every other row — a Cartesian product.',
       difficulty: Difficulty.Intermediate,
     },
   ],
@@ -123,15 +145,23 @@ export const QUIZ_BANK: Record<string, BankQuestion[]> = {
         'Hooks are alphabetical',
       ],
       answerIndex: 0,
-      explanation: 'React associates state with the order of hook calls; conditional hooks break that mapping.',
+      explanation:
+        'React associates state with the order of hook calls; conditional hooks break that mapping.',
       difficulty: Difficulty.Intermediate,
     },
     {
       type: QuestionType.Mcq,
-      prompt: 'An empty dependency array `[]` in useEffect means the effect runs…',
-      options: ['Once after the first render', 'On every render', 'Never', 'Only on unmount'],
+      prompt:
+        'An empty dependency array `[]` in useEffect means the effect runs…',
+      options: [
+        'Once after the first render',
+        'On every render',
+        'Never',
+        'Only on unmount',
+      ],
       answerIndex: 0,
-      explanation: 'An empty deps array runs the effect once on mount (and cleanup on unmount).',
+      explanation:
+        'An empty deps array runs the effect once on mount (and cleanup on unmount).',
       difficulty: Difficulty.Beginner,
     },
   ],
@@ -139,17 +169,26 @@ export const QUIZ_BANK: Record<string, BankQuestion[]> = {
     {
       type: QuestionType.Mcq,
       prompt: 'A Promise can be in which of these states?',
-      options: ['Pending, fulfilled, or rejected', 'Open or closed', 'True or false', 'Sync or async'],
+      options: [
+        'Pending, fulfilled, or rejected',
+        'Open or closed',
+        'True or false',
+        'Sync or async',
+      ],
       answerIndex: 0,
-      explanation: 'Promises are pending until they settle as fulfilled or rejected.',
+      explanation:
+        'Promises are pending until they settle as fulfilled or rejected.',
       difficulty: Difficulty.Beginner,
     },
     {
       type: QuestionType.ShortAnswer,
-      prompt: 'What is a common bug when you forget to `return` a promise inside `.then()`?',
-      modelAnswer: 'The chain does not wait for the inner promise, so ordering/errors are lost.',
+      prompt:
+        'What is a common bug when you forget to `return` a promise inside `.then()`?',
+      modelAnswer:
+        'The chain does not wait for the inner promise, so ordering/errors are lost.',
       keywords: ['return', 'chain', 'wait', 'unhandled', 'order'],
-      explanation: 'Without returning, the outer chain continues before the inner promise settles.',
+      explanation:
+        'Without returning, the outer chain continues before the inner promise settles.',
       difficulty: Difficulty.Advanced,
     },
   ],

@@ -28,7 +28,11 @@ export class AgentToolRegistryService {
   }
 
   list(): { name: string; description: string; readOnly: boolean }[] {
-    return [...this.tools.values()].map(({ name, description, readOnly }) => ({ name, description, readOnly }));
+    return [...this.tools.values()].map(({ name, description, readOnly }) => ({
+      name,
+      description,
+      readOnly,
+    }));
   }
 
   has(name: string): boolean {
@@ -49,7 +53,9 @@ export class AgentToolRegistryService {
     const tool = this.tools.get(name);
     if (!tool) throw new Error(`Tool "${name}" is not registered.`);
     if (!tool.readOnly && !opts.allowWrites) {
-      throw new Error(`Tool "${name}" performs writes and was not explicitly allowed.`);
+      throw new Error(
+        `Tool "${name}" performs writes and was not explicitly allowed.`,
+      );
     }
     const safeArgs: Record<string, unknown> = {};
     for (const key of tool.argKeys) {

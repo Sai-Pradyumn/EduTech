@@ -16,13 +16,27 @@ export interface Plan {
  */
 @Injectable()
 export class PlannerService {
-  plan(message: string, classification: Classification, forcedAgent?: AgentType): Plan {
+  plan(
+    message: string,
+    classification: Classification,
+    forcedAgent?: AgentType,
+  ): Plan {
     const primaryAgent = forcedAgent ?? INTENT_AGENT_MAP[classification.intent];
     const topic = classification.entities.topic;
-    const steps: PlanStep[] = [{ agentType: primaryAgent, goal: this.goalFor(primaryAgent, message, topic) }];
+    const steps: PlanStep[] = [
+      {
+        agentType: primaryAgent,
+        goal: this.goalFor(primaryAgent, message, topic),
+      },
+    ];
 
     if (!forcedAgent) {
-      const extra = this.secondaryStep(message, classification, primaryAgent, topic);
+      const extra = this.secondaryStep(
+        message,
+        classification,
+        primaryAgent,
+        topic,
+      );
       if (extra) steps.push(extra);
     }
 
@@ -48,14 +62,27 @@ export class PlannerService {
     const t = topic ?? 'this topic';
 
     if (wantsQuiz && primary !== AgentType.Assessment) {
-      return { agentType: AgentType.Assessment, goal: `Quiz the student on ${t}.` };
+      return {
+        agentType: AgentType.Assessment,
+        goal: `Quiz the student on ${t}.`,
+      };
     }
     if (wantsProject && primary !== AgentType.ProjectBuilder) {
-      return { agentType: AgentType.ProjectBuilder, goal: `Suggest a project to practice ${t}.` };
+      return {
+        agentType: AgentType.ProjectBuilder,
+        goal: `Suggest a project to practice ${t}.`,
+      };
     }
     // Explaining a brand-new concept naturally pairs with a quick check for understanding.
-    if (primary === AgentType.Tutor && classification.intent === Intent.ConceptExplanation && /\bquiz|test\b/.test(m)) {
-      return { agentType: AgentType.Assessment, goal: `Quiz the student on ${t}.` };
+    if (
+      primary === AgentType.Tutor &&
+      classification.intent === Intent.ConceptExplanation &&
+      /\bquiz|test\b/.test(m)
+    ) {
+      return {
+        agentType: AgentType.Assessment,
+        goal: `Quiz the student on ${t}.`,
+      };
     }
     return null;
   }

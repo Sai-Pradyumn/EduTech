@@ -41,7 +41,8 @@ function hasReplicaSet(uri: string): boolean {
 async function buildMongooseOptions(
   config: ConfigService<AppConfig, true>,
 ): Promise<MongooseModuleFactoryOptions> {
-  const configured = config.get('mongoUri', { infer: true }) || DEFAULT_LOCAL_URI;
+  const configured =
+    config.get('mongoUri', { infer: true }) || DEFAULT_LOCAL_URI;
   const base: MongooseModuleFactoryOptions = {
     serverSelectionTimeoutMS: 5000,
     connectionFactory: (connection: Connection) => {
@@ -49,7 +50,9 @@ async function buildMongooseOptions(
         logger.log(`MongoDB connected → ${redact(connection.host ?? '')}`),
       );
       connection.on('disconnected', () => logger.warn('MongoDB disconnected'));
-      connection.on('error', (err: Error) => logger.error(`MongoDB error: ${err.message}`));
+      connection.on('error', (err: Error) =>
+        logger.error(`MongoDB error: ${err.message}`),
+      );
       return connection;
     },
   };
@@ -78,9 +81,11 @@ async function canConnect(uri: string): Promise<boolean> {
   // Lazy import keeps the driver out of the module's static surface.
   const mongoose = await import('mongoose');
   try {
-    const conn = await mongoose.createConnection(uri, {
-      serverSelectionTimeoutMS: 4000,
-    }).asPromise();
+    const conn = await mongoose
+      .createConnection(uri, {
+        serverSelectionTimeoutMS: 4000,
+      })
+      .asPromise();
     await conn.close();
     return true;
   } catch {
@@ -98,7 +103,8 @@ function redact(uri: string): string {
   imports: [
     MongooseModule.forRootAsync({
       inject: [ConfigService],
-      useFactory: (config: ConfigService<AppConfig, true>) => buildMongooseOptions(config),
+      useFactory: (config: ConfigService<AppConfig, true>) =>
+        buildMongooseOptions(config),
     }),
   ],
 })

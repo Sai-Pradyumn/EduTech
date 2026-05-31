@@ -9,7 +9,14 @@ export interface AgentRequest {
   /** Force a specific agent (e.g. Mentor Room); otherwise routed by intent. */
   agentType?: AgentType;
   sessionId?: string;
-  source?: 'chat' | 'dashboard' | 'roadmap' | 'voice' | 'quiz' | 'project' | 'admin';
+  source?:
+    | 'chat'
+    | 'dashboard'
+    | 'roadmap'
+    | 'voice'
+    | 'quiz'
+    | 'project'
+    | 'admin';
   /** Free-form, agent-specific context (e.g. tutor mode, documentIds). */
   context?: Record<string, unknown>;
 }
@@ -84,7 +91,11 @@ export interface StudyPlanBlock {
 export interface RoadmapTimelineBlock {
   type: 'roadmap_timeline';
   title: string;
-  weeks: { weekNumber: number; focus: string; status: 'done' | 'current' | 'todo' }[];
+  weeks: {
+    weekNumber: number;
+    focus: string;
+    status: 'done' | 'current' | 'todo';
+  }[];
 }
 
 export interface ProjectPlanBlock {
@@ -143,7 +154,14 @@ export interface NextAction {
   agentType?: AgentType;
   /** Prefilled prompt for the follow-up. */
   prompt?: string;
-  kind: 'revise' | 'roadmap' | 'quiz' | 'project' | 'career' | 'explore' | 'session';
+  kind:
+    | 'revise'
+    | 'roadmap'
+    | 'quiz'
+    | 'project'
+    | 'career'
+    | 'explore'
+    | 'session';
 }
 
 /** One step in an orchestration plan (usually a single step). */
@@ -171,10 +189,26 @@ export interface AgentResponse {
 /* ───────────────────── Streaming workflow events ───────────────────── */
 
 export type AgentStreamEvent =
-  | { type: 'started'; sessionId: string; messageId: string; agentType: AgentType }
+  | {
+      type: 'started';
+      sessionId: string;
+      messageId: string;
+      agentType: AgentType;
+    }
   | { type: 'plan'; messageId: string; steps: PlanStep[]; rationale: string }
-  | { type: 'step_started'; messageId: string; index: number; agentType: AgentType; goal: string }
-  | { type: 'step_completed'; messageId: string; index: number; agentType: AgentType }
+  | {
+      type: 'step_started';
+      messageId: string;
+      index: number;
+      agentType: AgentType;
+      goal: string;
+    }
+  | {
+      type: 'step_completed';
+      messageId: string;
+      index: number;
+      agentType: AgentType;
+    }
   | { type: 'thinking'; messageId: string; label: string }
   | { type: 'tool_call'; messageId: string; tool: string; label: string }
   | { type: 'tool_result'; messageId: string; tool: string; summary: string }

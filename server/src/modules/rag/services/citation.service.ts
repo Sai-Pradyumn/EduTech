@@ -28,7 +28,9 @@ export class CitationService {
 
   private locator(h: ChunkHit): string {
     if (h.pageStart != null) {
-      return h.pageEnd && h.pageEnd !== h.pageStart ? `p.${h.pageStart}–${h.pageEnd}` : `p.${h.pageStart}`;
+      return h.pageEnd && h.pageEnd !== h.pageStart
+        ? `p.${h.pageStart}–${h.pageEnd}`
+        : `p.${h.pageStart}`;
     }
     if (h.tStart != null) return this.timecode(h.tStart);
     if (h.headingPath) return h.headingPath;

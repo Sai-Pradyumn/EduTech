@@ -6,7 +6,10 @@ import { AiService } from '../ai/ai.service';
 import { LearningIntelligenceService } from '../learning-intelligence/learning-intelligence.service';
 import { StudentProfileService } from '../student-profile/student-profile.service';
 import { User, UserDocument } from '../users/schemas/user.schema';
-import { KnowledgeDocument, KnowledgeDocumentDocument } from '../rag/schemas/knowledge-document.schema';
+import {
+  KnowledgeDocument,
+  KnowledgeDocumentDocument,
+} from '../rag/schemas/knowledge-document.schema';
 import { Roadmap, RoadmapDocument } from '../roadmap/schemas/roadmap.schema';
 import { Quiz, QuizDocument } from '../assessment/schemas/quiz.schema';
 
@@ -71,8 +74,10 @@ const BROWSE_CAP = 200;
 export class AdminService {
   constructor(
     @InjectModel(User.name) private readonly users: Model<UserDocument>,
-    @InjectModel(KnowledgeDocument.name) private readonly documents: Model<KnowledgeDocumentDocument>,
-    @InjectModel(Roadmap.name) private readonly roadmaps: Model<RoadmapDocument>,
+    @InjectModel(KnowledgeDocument.name)
+    private readonly documents: Model<KnowledgeDocumentDocument>,
+    @InjectModel(Roadmap.name)
+    private readonly roadmaps: Model<RoadmapDocument>,
     @InjectModel(Quiz.name) private readonly quizzes: Model<QuizDocument>,
     private readonly ai: AiService,
     private readonly intelligence: LearningIntelligenceService,
@@ -91,13 +96,24 @@ export class AdminService {
       .select('name email isOnboarded lastActiveAt')
       .sort({ createdAt: -1 })
       .limit(STUDENT_CAP)
-      .lean<{ _id: Types.ObjectId; name: string; email: string; isOnboarded: boolean; lastActiveAt?: Date }[]>()
+      .lean<
+        {
+          _id: Types.ObjectId;
+          name: string;
+          email: string;
+          isOnboarded: boolean;
+          lastActiveAt?: Date;
+        }[]
+      >()
       .exec();
 
     return Promise.all(
       students.map(async (s) => {
         const id = String(s._id);
-        const [profile, li] = await Promise.all([this.profiles.findByUser(id), this.intelligence.overview(id)]);
+        const [profile, li] = await Promise.all([
+          this.profiles.findByUser(id),
+          this.intelligence.overview(id),
+        ]);
         return {
           userId: id,
           name: s.name,
@@ -108,7 +124,9 @@ export class AdminService {
           health: li.healthScore,
           readiness: li.readinessScore,
           quizzes: li.momentum.attempts,
-          lastActiveAt: s.lastActiveAt ? new Date(s.lastActiveAt).toISOString() : undefined,
+          lastActiveAt: s.lastActiveAt
+            ? new Date(s.lastActiveAt).toISOString()
+            : undefined,
         };
       }),
     );
@@ -122,8 +140,15 @@ export class AdminService {
       .limit(BROWSE_CAP)
       .lean<
         {
-          _id: Types.ObjectId; user: Types.ObjectId; title: string; source: string; status: string;
-          chunkCount: number; tokenCount: number; language: string; createdAt?: Date;
+          _id: Types.ObjectId;
+          user: Types.ObjectId;
+          title: string;
+          source: string;
+          status: string;
+          chunkCount: number;
+          tokenCount: number;
+          language: string;
+          createdAt?: Date;
         }[]
       >()
       .exec();
@@ -145,13 +170,22 @@ export class AdminService {
   async roadmapsBrowse(): Promise<AdminRoadmapRow[]> {
     const rows = await this.roadmaps
       .find()
-      .select('title goal user status progressPercentage weeklyPlan completedWeeks createdAt')
+      .select(
+        'title goal user status progressPercentage weeklyPlan completedWeeks createdAt',
+      )
       .sort({ createdAt: -1 })
       .limit(BROWSE_CAP)
       .lean<
         {
-          _id: Types.ObjectId; user: Types.ObjectId; title: string; goal: string; status: string;
-          progressPercentage: number; weeklyPlan: unknown[]; completedWeeks: number[]; createdAt?: Date;
+          _id: Types.ObjectId;
+          user: Types.ObjectId;
+          title: string;
+          goal: string;
+          status: string;
+          progressPercentage: number;
+          weeklyPlan: unknown[];
+          completedWeeks: number[];
+          createdAt?: Date;
         }[]
       >()
       .exec();
@@ -173,13 +207,23 @@ export class AdminService {
   async quizzesBrowse(): Promise<AdminQuizRow[]> {
     const rows = await this.quizzes
       .find()
-      .select('title topic user difficulty source questions attemptCount bestScore createdAt')
+      .select(
+        'title topic user difficulty source questions attemptCount bestScore createdAt',
+      )
       .sort({ createdAt: -1 })
       .limit(BROWSE_CAP)
       .lean<
         {
-          _id: Types.ObjectId; user: Types.ObjectId; title: string; topic: string; difficulty: string;
-          source: string; questions: unknown[]; attemptCount: number; bestScore?: number; createdAt?: Date;
+          _id: Types.ObjectId;
+          user: Types.ObjectId;
+          title: string;
+          topic: string;
+          difficulty: string;
+          source: string;
+          questions: unknown[];
+          attemptCount: number;
+          bestScore?: number;
+          createdAt?: Date;
         }[]
       >()
       .exec();
@@ -199,7 +243,9 @@ export class AdminService {
   }
 
   /** Resolve a set of owner ObjectIds to display names in a single query. */
-  private async ownerNames(ids: Types.ObjectId[]): Promise<Map<string, string>> {
+  private async ownerNames(
+    ids: Types.ObjectId[],
+  ): Promise<Map<string, string>> {
     const unique = [...new Set(ids.map((id) => String(id)))];
     if (!unique.length) return new Map();
     const owners = await this.users

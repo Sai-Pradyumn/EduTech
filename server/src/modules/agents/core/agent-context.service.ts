@@ -22,7 +22,8 @@ export interface LoadedContext {
 export class AgentContextService {
   constructor(
     private readonly profiles: StudentProfileService,
-    @InjectModel(Roadmap.name) private readonly roadmaps: Model<RoadmapDocument>,
+    @InjectModel(Roadmap.name)
+    private readonly roadmaps: Model<RoadmapDocument>,
     private readonly memory: AgentMemoryService,
   ) {}
 
@@ -30,7 +31,10 @@ export class AgentContextService {
     const [profile, activeRoadmap, memories] = await Promise.all([
       this.profiles.findByUser(userId),
       this.roadmaps
-        .findOne({ user: new Types.ObjectId(userId), status: RoadmapStatus.Active })
+        .findOne({
+          user: new Types.ObjectId(userId),
+          status: RoadmapStatus.Active,
+        })
         .sort({ updatedAt: -1 })
         .exec(),
       this.memory.retrieve(userId, query),

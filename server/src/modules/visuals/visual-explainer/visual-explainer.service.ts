@@ -1,9 +1,20 @@
-import { Inject, Injectable, InternalServerErrorException, Logger } from '@nestjs/common';
+import {
+  Inject,
+  Injectable,
+  InternalServerErrorException,
+  Logger,
+} from '@nestjs/common';
 import { AgentType } from '../../../common/enums';
 import { AiService } from '../../ai/ai.service';
 import { AIMessage } from '../../ai/interfaces/ai-provider.interface';
-import { IImageProvider, IMAGE_PROVIDER_TOKEN } from '../providers/image-provider';
-import { VISUAL_CONTENT_FORMATS, VISUAL_TYPES } from '../schemas/visual-asset.schema';
+import {
+  IImageProvider,
+  IMAGE_PROVIDER_TOKEN,
+} from '../providers/image-provider';
+import {
+  VISUAL_CONTENT_FORMATS,
+  VISUAL_TYPES,
+} from '../schemas/visual-asset.schema';
 import { buildVisual, typeLabel } from './visual-generator';
 import { GeneratedVisual, VisualGenInput } from './generated-visual.types';
 
@@ -12,7 +23,10 @@ const VISUAL_SCHEMA: Record<string, unknown> = {
   required: ['type', 'contentFormat', 'content'],
   properties: {
     type: { type: 'string', enum: VISUAL_TYPES as unknown as string[] },
-    contentFormat: { type: 'string', enum: VISUAL_CONTENT_FORMATS as unknown as string[] },
+    contentFormat: {
+      type: 'string',
+      enum: VISUAL_CONTENT_FORMATS as unknown as string[],
+    },
     content: { type: 'string' },
     mermaid: { type: 'string' },
     caption: { type: 'string' },
@@ -35,7 +49,10 @@ export class VisualExplainerService {
     @Inject(IMAGE_PROVIDER_TOKEN) private readonly images: IImageProvider,
   ) {}
 
-  async generate(userId: string, input: VisualGenInput): Promise<GeneratedVisual> {
+  async generate(
+    userId: string,
+    input: VisualGenInput,
+  ): Promise<GeneratedVisual> {
     const startedAt = Date.now();
     const messages: AIMessage[] = [
       { role: 'system', content: this.systemPrompt() },
@@ -44,10 +61,18 @@ export class VisualExplainerService {
 
     let visual: GeneratedVisual;
     try {
-      visual = await this.ai.generateStructuredOutput<GeneratedVisual>(messages, VISUAL_SCHEMA, {
-        mockFactory: () => buildVisual(input),
-        meta: { userId, agentType: AgentType.ContentCreator, operation: 'visual.generate' },
-      });
+      visual = await this.ai.generateStructuredOutput<GeneratedVisual>(
+        messages,
+        VISUAL_SCHEMA,
+        {
+          mockFactory: () => buildVisual(input),
+          meta: {
+            userId,
+            agentType: AgentType.ContentCreator,
+            operation: 'visual.generate',
+          },
+        },
+      );
       visual = this.normalize(visual, input);
     } catch (err) {
       this.logger.error(`Visual generation failed: ${(err as Error).message}`);
@@ -57,12 +82,17 @@ export class VisualExplainerService {
     if (!this.isValid(visual)) {
       visual = buildVisual(input);
       if (!this.isValid(visual)) {
-        throw new InternalServerErrorException('Could not generate a valid visual. Please try again.');
+        throw new InternalServerErrorException(
+          'Could not generate a valid visual. Please try again.',
+        );
       }
     }
 
     // Illustration/analogy go through the image-provider abstraction (mock by default).
-    if ((visual.type === 'illustration' || visual.type === 'analogy') && (!visual.content || visual.contentFormat !== 'imageUrl')) {
+    if (
+      (visual.type === 'illustration' || visual.type === 'analogy') &&
+      (!visual.content || visual.contentFormat !== 'imageUrl')
+    ) {
       const img = await this.images.generate(input.concept);
       visual.content = img.url;
       visual.contentFormat = 'imageUrl';
@@ -80,12 +110,17 @@ export class VisualExplainerService {
     return visual;
   }
 
-  private normalize(v: GeneratedVisual, input: VisualGenInput): GeneratedVisual {
+  private normalize(
+    v: GeneratedVisual,
+    input: VisualGenInput,
+  ): GeneratedVisual {
     if (!v || !v.content) return buildVisual(input);
     const fb = buildVisual(input);
     return {
       type: VISUAL_TYPES.includes(v.type) ? v.type : fb.type,
-      contentFormat: VISUAL_CONTENT_FORMATS.includes(v.contentFormat) ? v.contentFormat : fb.contentFormat,
+      contentFormat: VISUAL_CONTENT_FORMATS.includes(v.contentFormat)
+        ? v.contentFormat
+        : fb.contentFormat,
       content: v.content || fb.content,
       mermaid: v.mermaid || fb.mermaid,
       caption: v.caption || fb.caption,
@@ -96,7 +131,12 @@ export class VisualExplainerService {
   }
 
   private isValid(v: GeneratedVisual | undefined): boolean {
-    return Boolean(v && typeof v.content === 'string' && v.content.length > 0 && VISUAL_TYPES.includes(v.type));
+    return Boolean(
+      v &&
+      typeof v.content === 'string' &&
+      v.content.length > 0 &&
+      VISUAL_TYPES.includes(v.type),
+    );
   }
 
   private systemPrompt(): string {
@@ -110,6 +150,11 @@ export class VisualExplainerService {
   }
 
   private userPrompt(i: VisualGenInput): string {
-    return JSON.stringify({ concept: i.concept, instruction: i.prompt, requestedType: i.type, level: i.level ?? 'beginner' });
+    return JSON.stringify({
+      concept: i.concept,
+      instruction: i.prompt,
+      requestedType: i.type,
+      level: i.level ?? 'beginner',
+    });
   }
 }

@@ -1,6 +1,10 @@
 import { Injectable } from '@nestjs/common';
 import { AgentType, Intent } from '../../../common/enums';
-import { AgentResponse, QuizBlock, VisualBlock } from '../../ai/types/agent.types';
+import {
+  AgentResponse,
+  QuizBlock,
+  VisualBlock,
+} from '../../ai/types/agent.types';
 import { AssessmentService } from '../../assessment/services/assessment.service';
 import { AgentRuntimeContext, IAgent } from '../core/agent.interface';
 import { LlmComposerService } from '../core/llm-composer.service';
@@ -25,8 +29,19 @@ export class AssessmentAgentService implements IAgent {
     const documentId = this.readDocumentId(ctx.request.context);
     const topic = this.extractTopic(ctx.request.message);
 
-    ctx.emit({ type: 'thinking', messageId: '', label: 'Choosing difficulty from your level & recent scores' });
-    ctx.emit({ type: 'tool_call', messageId: '', tool: 'assessment.generate', label: documentId ? 'Generating a quiz from your document' : `Generating a quiz on ${topic}` });
+    ctx.emit({
+      type: 'thinking',
+      messageId: '',
+      label: 'Choosing difficulty from your level & recent scores',
+    });
+    ctx.emit({
+      type: 'tool_call',
+      messageId: '',
+      tool: 'assessment.generate',
+      label: documentId
+        ? 'Generating a quiz from your document'
+        : `Generating a quiz on ${topic}`,
+    });
 
     const quiz = await this.assessment.generate(ctx.request.userId, {
       source: documentId ? 'document' : 'topic',
@@ -35,7 +50,12 @@ export class AssessmentAgentService implements IAgent {
       count: 5,
     });
 
-    ctx.emit({ type: 'tool_result', messageId: '', tool: 'assessment.generate', summary: `${quiz.questions.length} ${quiz.difficulty} questions ready` });
+    ctx.emit({
+      type: 'tool_result',
+      messageId: '',
+      tool: 'assessment.generate',
+      summary: `${quiz.questions.length} ${quiz.difficulty} questions ready`,
+    });
 
     const fallback = [
       `Here's a **${quiz.difficulty}** quiz on **${this.titleCase(quiz.topic)}** — ${quiz.questions.length} questions.`,
@@ -63,9 +83,24 @@ export class AssessmentAgentService implements IAgent {
       mode: 'mixed',
       answer,
       actions: [
-        { id: 'take', label: 'Open in Quiz Studio', kind: 'open_route', payload: { route: '/app/quizzes', quizId: String(quiz._id) } },
-        { id: 'harder', label: 'Make it harder', kind: 'custom', payload: { topic, difficulty: 'advanced' } },
-        { id: 'doc-quiz', label: 'Quiz me from my notes', kind: 'custom', payload: { source: 'document' } },
+        {
+          id: 'take',
+          label: 'Open in Quiz Studio',
+          kind: 'open_route',
+          payload: { route: '/app/quizzes', quizId: String(quiz._id) },
+        },
+        {
+          id: 'harder',
+          label: 'Make it harder',
+          kind: 'custom',
+          payload: { topic, difficulty: 'advanced' },
+        },
+        {
+          id: 'doc-quiz',
+          label: 'Quiz me from my notes',
+          kind: 'custom',
+          payload: { source: 'document' },
+        },
       ],
       visualBlocks: [block],
       confidence: 0.9,
@@ -75,12 +110,22 @@ export class AssessmentAgentService implements IAgent {
       ],
       recommendedNextActions: [
         'Take the quiz in the Quiz Studio for graded feedback',
-        ctx.roadmap ? `Tie this to your roadmap: ${ctx.roadmap.currentWeekFocus ?? ctx.roadmap.title}` : 'Generate a roadmap to structure your practice',
+        ctx.roadmap
+          ? `Tie this to your roadmap: ${ctx.roadmap.currentWeekFocus ?? ctx.roadmap.title}`
+          : 'Generate a roadmap to structure your practice',
       ],
     };
   }
 
-  private toQuizBlock(title: string, questions: { prompt: string; options: string[]; answerIndex?: number; explanation: string }[]): QuizBlock {
+  private toQuizBlock(
+    title: string,
+    questions: {
+      prompt: string;
+      options: string[];
+      answerIndex?: number;
+      explanation: string;
+    }[],
+  ): QuizBlock {
     return {
       type: 'quiz',
       title,
@@ -93,7 +138,9 @@ export class AssessmentAgentService implements IAgent {
     } satisfies VisualBlock;
   }
 
-  private readDocumentId(context?: Record<string, unknown>): string | undefined {
+  private readDocumentId(
+    context?: Record<string, unknown>,
+  ): string | undefined {
     const ids = context?.['documentIds'];
     if (Array.isArray(ids) && typeof ids[0] === 'string') return ids[0];
     const single = context?.['documentId'];
@@ -104,7 +151,10 @@ export class AssessmentAgentService implements IAgent {
     const cleaned = message
       .toLowerCase()
       .replace(/^(can you |please )?(quiz|test) me (on|about)\s+/i, '')
-      .replace(/^(generate|create|make) (a |an )?(quiz|test|mcq[s]?) (on|about|for)\s+/i, '')
+      .replace(
+        /^(generate|create|make) (a |an )?(quiz|test|mcq[s]?) (on|about|for)\s+/i,
+        '',
+      )
       .replace(/\b(quiz|test) me\b/i, '')
       .replace(/[?.!]+$/, '')
       .trim();

@@ -12,7 +12,11 @@ import {
   IAIProvider,
   ProviderCapabilities,
 } from '../interfaces/ai-provider.interface';
-import { jsonSchemaInstruction, parseJsonLoose, splitSystem } from './provider-utils';
+import {
+  jsonSchemaInstruction,
+  parseJsonLoose,
+  splitSystem,
+} from './provider-utils';
 
 const EMBED_MODEL = 'text-embedding-004';
 
@@ -66,7 +70,10 @@ export class GeminiProvider implements IAIProvider {
     return cfg;
   }
 
-  async generateText(messages: AIMessage[], opts?: GenOptions): Promise<string> {
+  async generateText(
+    messages: AIMessage[],
+    opts?: GenOptions,
+  ): Promise<string> {
     const client = this.ensure();
     const { system, turns } = splitSystem(messages, opts?.system);
     const modelName = opts?.model ?? this.defaultModel;
@@ -76,7 +83,10 @@ export class GeminiProvider implements IAIProvider {
         systemInstruction: system || undefined,
       });
       const res = await model.generateContent(
-        { contents: this.mapTurns(turns), generationConfig: this.genConfig(opts) },
+        {
+          contents: this.mapTurns(turns),
+          generationConfig: this.genConfig(opts),
+        },
         { signal: opts?.signal },
       );
       this.reportUsage(res.response, opts, modelName);
@@ -86,7 +96,10 @@ export class GeminiProvider implements IAIProvider {
     }
   }
 
-  async *streamText(messages: AIMessage[], opts?: GenOptions): AsyncIterable<string> {
+  async *streamText(
+    messages: AIMessage[],
+    opts?: GenOptions,
+  ): AsyncIterable<string> {
     const client = this.ensure();
     const { system, turns } = splitSystem(messages, opts?.system);
     const modelName = opts?.model ?? this.defaultModel;
@@ -96,7 +109,10 @@ export class GeminiProvider implements IAIProvider {
         systemInstruction: system || undefined,
       });
       const res = await model.generateContentStream(
-        { contents: this.mapTurns(turns), generationConfig: this.genConfig(opts) },
+        {
+          contents: this.mapTurns(turns),
+          generationConfig: this.genConfig(opts),
+        },
         { signal: opts?.signal },
       );
       for await (const chunk of res.stream) {
@@ -121,10 +137,15 @@ export class GeminiProvider implements IAIProvider {
     try {
       const model = client.getGenerativeModel({
         model: modelName,
-        systemInstruction: [system, jsonSchemaInstruction(schema)].filter(Boolean).join('\n\n'),
+        systemInstruction: [system, jsonSchemaInstruction(schema)]
+          .filter(Boolean)
+          .join('\n\n'),
       });
       const res = await model.generateContent(
-        { contents: this.mapTurns(turns), generationConfig: this.genConfig(opts, true) },
+        {
+          contents: this.mapTurns(turns),
+          generationConfig: this.genConfig(opts, true),
+        },
         { signal: opts?.signal },
       );
       this.reportUsage(res.response, opts, modelName);
@@ -146,14 +167,22 @@ export class GeminiProvider implements IAIProvider {
   }
 
   private reportUsage(
-    response: { usageMetadata?: { promptTokenCount?: number; candidatesTokenCount?: number } },
+    response: {
+      usageMetadata?: {
+        promptTokenCount?: number;
+        candidatesTokenCount?: number;
+      };
+    },
     opts: GenOptions | undefined,
     model: string,
   ): void {
     const u = response.usageMetadata;
     if (u) {
       opts?.onUsage?.(
-        { promptTokens: u.promptTokenCount ?? 0, completionTokens: u.candidatesTokenCount ?? 0 },
+        {
+          promptTokens: u.promptTokenCount ?? 0,
+          completionTokens: u.candidatesTokenCount ?? 0,
+        },
         { provider: this.name, model },
       );
     }

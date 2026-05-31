@@ -5,7 +5,10 @@ import { VisualAsset, VisualAssetSchema } from './schemas/visual-asset.schema';
 import { VisualsController } from './visuals.controller';
 import { VisualsService } from './visuals.service';
 import { VisualExplainerService } from './visual-explainer/visual-explainer.service';
-import { IMAGE_PROVIDER_TOKEN, MockImageProvider } from './providers/image-provider';
+import {
+  IMAGE_PROVIDER_TOKEN,
+  MockImageProvider,
+} from './providers/image-provider';
 
 /**
  * Phase 8 · Visual Intelligence Studio — turns concepts/flow-nodes into structured educational
@@ -15,7 +18,9 @@ import { IMAGE_PROVIDER_TOKEN, MockImageProvider } from './providers/image-provi
  */
 @Module({
   imports: [
-    MongooseModule.forFeature([{ name: VisualAsset.name, schema: VisualAssetSchema }]),
+    MongooseModule.forFeature([
+      { name: VisualAsset.name, schema: VisualAssetSchema },
+    ]),
     FlowsModule,
   ],
   controllers: [VisualsController],

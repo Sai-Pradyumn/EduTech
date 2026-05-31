@@ -1,7 +1,12 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { HydratedDocument, Types } from 'mongoose';
 
-export type JobStatus = 'queued' | 'running' | 'succeeded' | 'failed' | 'cancelled';
+export type JobStatus =
+  | 'queued'
+  | 'running'
+  | 'succeeded'
+  | 'failed'
+  | 'cancelled';
 
 export type FineTuningJobDocument = HydratedDocument<FineTuningJob>;
 
@@ -30,7 +35,12 @@ export class FineTuningJob {
   @Prop({ default: 3 })
   epochs!: number;
 
-  @Prop({ type: String, enum: ['queued', 'running', 'succeeded', 'failed', 'cancelled'], default: 'running', index: true })
+  @Prop({
+    type: String,
+    enum: ['queued', 'running', 'succeeded', 'failed', 'cancelled'],
+    default: 'running',
+    index: true,
+  })
   status!: JobStatus;
 
   @Prop({ default: 0, min: 0, max: 100 })

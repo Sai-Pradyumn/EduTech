@@ -5,7 +5,10 @@ import { AgentType } from '../../common/enums';
 import { AgentOrchestratorService } from './agent-orchestrator.service';
 import { AgentSessionService } from './core/agent-session.service';
 import { AgentMessageDto } from './dto/agent.dto';
-import { AgentSessionSummary, toSessionSummary } from './dto/agent-response.dto';
+import {
+  AgentSessionSummary,
+  toSessionSummary,
+} from './dto/agent-response.dto';
 
 /** Tutor-scoped convenience endpoints (forces the Tutor agent). Streaming is via WS. */
 @Controller('tutor')
@@ -26,11 +29,17 @@ export class TutorController {
       source: 'chat',
       context: dto.mode ? { mode: dto.mode } : undefined,
     });
-    return { sessionId: result.sessionId, messageId: result.messageId, response: result.response };
+    return {
+      sessionId: result.sessionId,
+      messageId: result.messageId,
+      response: result.response,
+    };
   }
 
   @Get('sessions')
-  async sessions_(@CurrentUser() user: AuthUser): Promise<AgentSessionSummary[]> {
+  async sessions_(
+    @CurrentUser() user: AuthUser,
+  ): Promise<AgentSessionSummary[]> {
     const list = await this.sessions.listSessions(user.id);
     return list.map(toSessionSummary);
   }

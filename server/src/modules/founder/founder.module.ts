@@ -2,8 +2,14 @@ import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { AiModule } from '../ai/ai.module';
 import { User, UserSchema } from '../users/schemas/user.schema';
-import { Organization, OrganizationSchema } from '../tenancy/schemas/organization.schema';
-import { Subscription, SubscriptionSchema } from '../billing/schemas/subscription.schema';
+import {
+  Organization,
+  OrganizationSchema,
+} from '../tenancy/schemas/organization.schema';
+import {
+  Subscription,
+  SubscriptionSchema,
+} from '../billing/schemas/subscription.schema';
 import { Cohort, CohortSchema } from '../cohort/schemas/cohort.schema';
 import { Project, ProjectSchema } from '../projects/schemas/project.schema';
 import { Quiz, QuizSchema } from '../assessment/schemas/quiz.schema';

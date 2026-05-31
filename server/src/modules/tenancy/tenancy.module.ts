@@ -1,7 +1,10 @@
 import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { UsersModule } from '../users/users.module';
-import { Organization, OrganizationSchema } from './schemas/organization.schema';
+import {
+  Organization,
+  OrganizationSchema,
+} from './schemas/organization.schema';
 import { Membership, MembershipSchema } from './schemas/membership.schema';
 import { OrganizationsController } from './organizations.controller';
 import { PlatformController } from './platform.controller';

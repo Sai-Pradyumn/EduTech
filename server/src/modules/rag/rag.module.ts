@@ -1,7 +1,13 @@
 import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
-import { KnowledgeDocument, KnowledgeDocumentSchema } from './schemas/knowledge-document.schema';
-import { DocumentChunk, DocumentChunkSchema } from './schemas/document-chunk.schema';
+import {
+  KnowledgeDocument,
+  KnowledgeDocumentSchema,
+} from './schemas/knowledge-document.schema';
+import {
+  DocumentChunk,
+  DocumentChunkSchema,
+} from './schemas/document-chunk.schema';
 import { KnowledgeController } from './knowledge.controller';
 import { IngestionService } from './services/ingestion.service';
 import { KnowledgeService } from './services/knowledge.service';

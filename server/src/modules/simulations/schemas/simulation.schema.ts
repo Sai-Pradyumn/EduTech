@@ -53,7 +53,8 @@ export class Simulation {
   @Prop({ default: '' }) role!: string;
 
   @Prop({ default: '' }) scenario!: string;
-  @Prop({ type: [RubricCriterionSchema], default: [] }) rubric!: RubricCriterion[];
+  @Prop({ type: [RubricCriterionSchema], default: [] })
+  rubric!: RubricCriterion[];
   @Prop({ type: [SimTurnSchema], default: [] }) transcript!: SimTurn[];
 
   @Prop({ default: 0, min: 0, max: 100 }) score!: number;

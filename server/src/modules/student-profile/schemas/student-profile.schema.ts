@@ -14,7 +14,13 @@ export type StudentProfileDocument = HydratedDocument<StudentProfile>;
 
 @Schema({ timestamps: true })
 export class StudentProfile {
-  @Prop({ type: Types.ObjectId, ref: 'User', required: true, unique: true, index: true })
+  @Prop({
+    type: Types.ObjectId,
+    ref: 'User',
+    required: true,
+    unique: true,
+    index: true,
+  })
   user!: Types.ObjectId;
 
   @Prop({ required: true, trim: true })
@@ -57,4 +63,5 @@ export class StudentProfile {
   onboardingCompleted!: boolean;
 }
 
-export const StudentProfileSchema = SchemaFactory.createForClass(StudentProfile);
+export const StudentProfileSchema =
+  SchemaFactory.createForClass(StudentProfile);

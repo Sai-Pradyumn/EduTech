@@ -51,7 +51,12 @@ export class LlmGatewayService implements IAIProvider {
   snapshot(): {
     strategy: string;
     live: boolean;
-    providers: { name: string; isLive: boolean; available: boolean; capabilities: ProviderCapabilities }[];
+    providers: {
+      name: string;
+      isLive: boolean;
+      available: boolean;
+      capabilities: ProviderCapabilities;
+    }[];
     health: ReturnType<HealthTrackerService['snapshot']>;
   } {
     return {
@@ -69,14 +74,22 @@ export class LlmGatewayService implements IAIProvider {
 
   /** Providers eligible right now (healthy), in chain order. Mock always qualifies. */
   private eligible(): IAIProvider[] {
-    const healthy = this.chain.filter((p) => p.name === 'mock' || this.health.isAvailable(p.name));
+    const healthy = this.chain.filter(
+      (p) => p.name === 'mock' || this.health.isAvailable(p.name),
+    );
     return healthy.length ? healthy : this.chain;
   }
 
   // ───────────────────────── IAIProvider surface ─────────────────────────
 
-  async generateText(messages: AIMessage[], opts?: GenOptions): Promise<string> {
-    return this.run((p, signal) => p.generateText(messages, { ...opts, signal }), opts);
+  async generateText(
+    messages: AIMessage[],
+    opts?: GenOptions,
+  ): Promise<string> {
+    return this.run(
+      (p, signal) => p.generateText(messages, { ...opts, signal }),
+      opts,
+    );
   }
 
   generateStructuredOutput<T>(
@@ -84,16 +97,26 @@ export class LlmGatewayService implements IAIProvider {
     schema: Record<string, unknown>,
     opts?: GenOptions,
   ): Promise<T> {
-    return this.run((p, signal) => p.generateStructuredOutput<T>(messages, schema, { ...opts, signal }), opts);
+    return this.run(
+      (p, signal) =>
+        p.generateStructuredOutput<T>(messages, schema, { ...opts, signal }),
+      opts,
+    );
   }
 
-  async *streamText(messages: AIMessage[], opts?: GenOptions): AsyncIterable<string> {
+  async *streamText(
+    messages: AIMessage[],
+    opts?: GenOptions,
+  ): AsyncIterable<string> {
     let lastErr: unknown;
     for (const provider of this.eligible()) {
       const { signal, clear } = this.deadline(opts?.signal);
       let emitted = false;
       try {
-        for await (const token of provider.streamText(messages, { ...opts, signal })) {
+        for await (const token of provider.streamText(messages, {
+          ...opts,
+          signal,
+        })) {
           emitted = true;
           yield token;
         }
@@ -203,8 +226,13 @@ export class LlmGatewayService implements IAIProvider {
    * repo). Degrades to fallback when fewer than two providers are live, and to the
    * longest draft if the judge fails.
    */
-  async parallelText(messages: AIMessage[], opts?: GenOptions): Promise<string> {
-    const live = this.eligible().filter((p) => p.isLive).slice(0, 3);
+  async parallelText(
+    messages: AIMessage[],
+    opts?: GenOptions,
+  ): Promise<string> {
+    const live = this.eligible()
+      .filter((p) => p.isLive)
+      .slice(0, 3);
     if (live.length < 2) return this.generateText(messages, opts);
 
     const settled = await Promise.allSettled(
@@ -224,14 +252,18 @@ export class LlmGatewayService implements IAIProvider {
       }),
     );
     const drafts = settled
-      .filter((r): r is PromiseFulfilledResult<string> => r.status === 'fulfilled' && !!r.value.trim())
+      .filter(
+        (r): r is PromiseFulfilledResult<string> =>
+          r.status === 'fulfilled' && !!r.value.trim(),
+      )
       .map((r) => r.value);
 
     if (drafts.length === 0) return this.generateText(messages, opts);
     if (drafts.length === 1) return drafts[0];
 
     // Judge: synthesize the best answer from the drafts.
-    const question = [...messages].reverse().find((m) => m.role === 'user')?.content ?? '';
+    const question =
+      [...messages].reverse().find((m) => m.role === 'user')?.content ?? '';
     const judgePrompt: AIMessage[] = [
       {
         role: 'system',
@@ -247,7 +279,10 @@ export class LlmGatewayService implements IAIProvider {
       },
     ];
     try {
-      const judged = await this.generateText(judgePrompt, { ...opts, temperature: 0.2 });
+      const judged = await this.generateText(judgePrompt, {
+        ...opts,
+        temperature: 0.2,
+      });
       return judged.trim() || drafts.sort((a, b) => b.length - a.length)[0];
     } catch {
       return drafts.sort((a, b) => b.length - a.length)[0]; // judge failed → longest draft
@@ -257,9 +292,15 @@ export class LlmGatewayService implements IAIProvider {
   // ───────────────────────── helpers ─────────────────────────
 
   /** Builds an AbortSignal that fires on timeout or when the caller aborts. */
-  private deadline(external?: AbortSignal): { signal: AbortSignal; clear: () => void } {
+  private deadline(external?: AbortSignal): {
+    signal: AbortSignal;
+    clear: () => void;
+  } {
     const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(new Error('LLM request timed out')), this.timeoutMs);
+    const timer = setTimeout(
+      () => controller.abort(new Error('LLM request timed out')),
+      this.timeoutMs,
+    );
     const onAbort = () => controller.abort(external?.reason);
     if (external) {
       if (external.aborted) controller.abort(external.reason);
@@ -277,11 +318,14 @@ export class LlmGatewayService implements IAIProvider {
   private note(provider: string, err: unknown): void {
     const status = err instanceof AIProviderCallError ? err.status : undefined;
     this.health.recordFailure(provider, status);
-    this.logger.warn(`Provider "${provider}" failed: ${(err as Error).message} — failing over.`);
+    this.logger.warn(
+      `Provider "${provider}" failed: ${(err as Error).message} — failing over.`,
+    );
   }
 
   private terminal(lastErr: unknown): Error {
-    const msg = lastErr instanceof Error ? lastErr.message : 'all providers failed';
+    const msg =
+      lastErr instanceof Error ? lastErr.message : 'all providers failed';
     return new Error(`LLM gateway exhausted all providers: ${msg}`);
   }
 }

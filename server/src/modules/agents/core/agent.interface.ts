@@ -1,5 +1,9 @@
 import { AgentType } from '../../../common/enums';
-import { AgentRequest, AgentResponse, StreamEmit } from '../../ai/types/agent.types';
+import {
+  AgentRequest,
+  AgentResponse,
+  StreamEmit,
+} from '../../ai/types/agent.types';
 import { StudentProfileDocument } from '../../student-profile/schemas/student-profile.schema';
 
 /** Lightweight roadmap context handed to agents (avoids importing the full model). */

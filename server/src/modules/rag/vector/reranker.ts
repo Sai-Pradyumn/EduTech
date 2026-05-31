@@ -20,7 +20,13 @@ export class NoopReranker implements IReranker {
 
 const RERANK_SCHEMA = {
   type: 'object',
-  properties: { order: { type: 'array', items: { type: 'number' }, description: 'candidate indices, most relevant first' } },
+  properties: {
+    order: {
+      type: 'array',
+      items: { type: 'number' },
+      description: 'candidate indices, most relevant first',
+    },
+  },
   required: ['order'],
 } as const;
 
@@ -39,7 +45,10 @@ export class LlmReranker implements IReranker {
     const pool = hits.slice(0, 8);
     try {
       const list = pool
-        .map((h, i) => `[${i}] ${h.text.replace(/\s+/g, ' ').trim().slice(0, 240)}`)
+        .map(
+          (h, i) =>
+            `[${i}] ${h.text.replace(/\s+/g, ' ').trim().slice(0, 240)}`,
+        )
         .join('\n');
       const res = await this.ai.generateStructuredOutput<{ order: number[] }>(
         [
@@ -51,12 +60,19 @@ export class LlmReranker implements IReranker {
           },
           { role: 'user', content: `Question: ${query}\n\nPassages:\n${list}` },
         ],
-        RERANK_SCHEMA as unknown as Record<string, unknown>,
+        RERANK_SCHEMA,
         { temperature: 0 },
       );
       const seen = new Set<number>();
       const ordered = (res.order ?? [])
-        .filter((i) => Number.isInteger(i) && i >= 0 && i < pool.length && !seen.has(i) && seen.add(i))
+        .filter(
+          (i) =>
+            Number.isInteger(i) &&
+            i >= 0 &&
+            i < pool.length &&
+            !seen.has(i) &&
+            seen.add(i),
+        )
         .map((i) => pool[i]);
       const remaining = pool.filter((_, i) => !seen.has(i));
       return [...ordered, ...remaining, ...hits.slice(8)];

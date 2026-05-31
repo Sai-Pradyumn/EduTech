@@ -53,12 +53,12 @@ export class ProgressionService {
         body: e.nextWeekFocus
           ? `Next up in "${e.roadmapTitle}": ${e.nextWeekFocus}. Want a quick checkpoint quiz before you move on?`
           : `You've finished "${e.roadmapTitle}". Time to consolidate with a project!`,
-        link: e.nextWeekFocus
-          ? `/app/quizzes`
-          : `/app/projects`,
+        link: e.nextWeekFocus ? `/app/quizzes` : `/app/projects`,
       });
     } catch (err) {
-      this.logger.warn(`week.completed handler failed: ${(err as Error).message}`);
+      this.logger.warn(
+        `week.completed handler failed: ${(err as Error).message}`,
+      );
     }
   }
 
@@ -72,7 +72,9 @@ export class ProgressionService {
         link: `/app/projects/${e.projectId}`,
       });
     } catch (err) {
-      this.logger.warn(`project.submitted handler failed: ${(err as Error).message}`);
+      this.logger.warn(
+        `project.submitted handler failed: ${(err as Error).message}`,
+      );
     }
   }
 }

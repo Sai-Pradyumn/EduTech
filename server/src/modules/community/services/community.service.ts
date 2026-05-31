@@ -1,4 +1,9 @@
-import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { ProjectsService } from '../../projects/services/projects.service';
@@ -53,18 +58,41 @@ export interface ReplyView {
   createdAt: string;
 }
 
-const DEFAULT_CHANNELS: { name: string; slug: string; description: string; kind: ChannelKind }[] = [
-  { name: 'General', slug: 'general', description: 'Introductions and general discussion.', kind: 'discussion' },
-  { name: 'Help & Doubts', slug: 'help', description: 'Ask questions and get unblocked.', kind: 'help' },
-  { name: 'Showcase', slug: 'showcase', description: 'Share what you built.', kind: 'showcase' },
+const DEFAULT_CHANNELS: {
+  name: string;
+  slug: string;
+  description: string;
+  kind: ChannelKind;
+}[] = [
+  {
+    name: 'General',
+    slug: 'general',
+    description: 'Introductions and general discussion.',
+    kind: 'discussion',
+  },
+  {
+    name: 'Help & Doubts',
+    slug: 'help',
+    description: 'Ask questions and get unblocked.',
+    kind: 'help',
+  },
+  {
+    name: 'Showcase',
+    slug: 'showcase',
+    description: 'Share what you built.',
+    kind: 'showcase',
+  },
 ];
 
 @Injectable()
 export class CommunityService {
   constructor(
-    @InjectModel(CommunityChannel.name) private readonly channels: Model<CommunityChannelDocument>,
-    @InjectModel(CommunityThread.name) private readonly threads: Model<CommunityThreadDocument>,
-    @InjectModel(CommunityReply.name) private readonly replies: Model<CommunityReplyDocument>,
+    @InjectModel(CommunityChannel.name)
+    private readonly channels: Model<CommunityChannelDocument>,
+    @InjectModel(CommunityThread.name)
+    private readonly threads: Model<CommunityThreadDocument>,
+    @InjectModel(CommunityReply.name)
+    private readonly replies: Model<CommunityReplyDocument>,
     private readonly projects: ProjectsService,
   ) {}
 
@@ -72,18 +100,43 @@ export class CommunityService {
   /** List org channels, lazily seeding the defaults on first access. */
   async listChannels(orgId: string): Promise<ChannelView[]> {
     const org = new Types.ObjectId(orgId);
-    let list = await this.channels.find({ organization: org }).sort({ createdAt: 1 }).lean<CommunityChannelDocument[]>().exec();
+    let list = await this.channels
+      .find({ organization: org })
+      .sort({ createdAt: 1 })
+      .lean<CommunityChannelDocument[]>()
+      .exec();
     if (list.length === 0) {
-      await this.channels.insertMany(DEFAULT_CHANNELS.map((c) => ({ ...c, organization: org, threadCount: 0 })), { ordered: false }).catch(() => undefined);
-      list = await this.channels.find({ organization: org }).sort({ createdAt: 1 }).lean<CommunityChannelDocument[]>().exec();
+      await this.channels
+        .insertMany(
+          DEFAULT_CHANNELS.map((c) => ({
+            ...c,
+            organization: org,
+            threadCount: 0,
+          })),
+          { ordered: false },
+        )
+        .catch(() => undefined);
+      list = await this.channels
+        .find({ organization: org })
+        .sort({ createdAt: 1 })
+        .lean<CommunityChannelDocument[]>()
+        .exec();
     }
     return list.map((c) => this.channelView(c));
   }
 
-  async createChannel(orgId: string, userId: string, dto: CreateChannelDto): Promise<ChannelView> {
+  async createChannel(
+    orgId: string,
+    userId: string,
+    dto: CreateChannelDto,
+  ): Promise<ChannelView> {
     const slug = this.slugify(dto.name);
-    const existing = await this.channels.findOne({ organization: new Types.ObjectId(orgId), slug }).lean().exec();
-    if (existing) throw new BadRequestException('A channel with that name already exists.');
+    const existing = await this.channels
+      .findOne({ organization: new Types.ObjectId(orgId), slug })
+      .lean()
+      .exec();
+    if (existing)
+      throw new BadRequestException('A channel with that name already exists.');
     const c = await this.channels.create({
       organization: new Types.ObjectId(orgId),
       name: dto.name,
@@ -96,19 +149,30 @@ export class CommunityService {
   }
 
   async orgIdOfChannel(channelId: string): Promise<string> {
-    const c = await this.channels.findById(channelId).select('organization').lean<{ organization: Types.ObjectId }>().exec();
+    const c = await this.channels
+      .findById(channelId)
+      .select('organization')
+      .lean<{ organization: Types.ObjectId }>()
+      .exec();
     if (!c) throw new NotFoundException('Channel not found');
     return String(c.organization);
   }
 
   async orgIdOfThread(threadId: string): Promise<string> {
-    const t = await this.threads.findById(threadId).select('organization').lean<{ organization: Types.ObjectId }>().exec();
+    const t = await this.threads
+      .findById(threadId)
+      .select('organization')
+      .lean<{ organization: Types.ObjectId }>()
+      .exec();
     if (!t) throw new NotFoundException('Thread not found');
     return String(t.organization);
   }
 
   // ── threads ────────────────────────────────────────────────────────────────
-  async listThreads(channelId: string, viewerId: string): Promise<ThreadView[]> {
+  async listThreads(
+    channelId: string,
+    viewerId: string,
+  ): Promise<ThreadView[]> {
     const list = await this.threads
       .find({ channel: new Types.ObjectId(channelId) })
       .sort({ pinned: -1, updatedAt: -1 })
@@ -118,7 +182,12 @@ export class CommunityService {
     return list.map((t) => this.threadView(t, viewerId));
   }
 
-  async createThread(orgId: string, userId: string, authorName: string, dto: CreateThreadDto): Promise<ThreadView> {
+  async createThread(
+    orgId: string,
+    userId: string,
+    authorName: string,
+    dto: CreateThreadDto,
+  ): Promise<ThreadView> {
     const channel = await this.channels.findById(dto.channelId).exec();
     if (!channel) throw new NotFoundException('Channel not found');
 
@@ -127,7 +196,7 @@ export class CommunityService {
     if (dto.projectId) {
       // Confirms the showcasing user owns the project (throws otherwise) and grabs its title.
       const p = await this.projects.get(userId, dto.projectId);
-      project = p._id as Types.ObjectId;
+      project = p._id;
       projectTitle = p.title;
     }
 
@@ -138,16 +207,27 @@ export class CommunityService {
       authorName,
       title: dto.title,
       body: dto.body ?? '',
-      kind: dto.kind ?? (channel.kind === 'help' ? 'question' : channel.kind === 'showcase' ? 'showcase' : 'discussion'),
+      kind:
+        dto.kind ??
+        (channel.kind === 'help'
+          ? 'question'
+          : channel.kind === 'showcase'
+            ? 'showcase'
+            : 'discussion'),
       tags: dto.tags ?? [],
       project,
       projectTitle,
     });
-    await this.channels.updateOne({ _id: channel._id }, { $inc: { threadCount: 1 } }).exec();
+    await this.channels
+      .updateOne({ _id: channel._id }, { $inc: { threadCount: 1 } })
+      .exec();
     return this.threadView(thread, userId);
   }
 
-  async getThread(threadId: string, viewerId: string): Promise<{ thread: ThreadView; replies: ReplyView[] }> {
+  async getThread(
+    threadId: string,
+    viewerId: string,
+  ): Promise<{ thread: ThreadView; replies: ReplyView[] }> {
     const thread = await this.threadDoc(threadId);
     const replies = await this.replies
       .find({ thread: thread._id })
@@ -160,26 +240,46 @@ export class CommunityService {
     };
   }
 
-  async toggleThreadUpvote(threadId: string, userId: string): Promise<ThreadView> {
+  async toggleThreadUpvote(
+    threadId: string,
+    userId: string,
+  ): Promise<ThreadView> {
     const thread = await this.threadDoc(threadId);
     this.toggleVote(thread.upvotes, userId);
     await thread.save();
     return this.threadView(thread, userId);
   }
 
-  async deleteThread(threadId: string, userId: string, canModerate: boolean): Promise<{ ok: true }> {
+  async deleteThread(
+    threadId: string,
+    userId: string,
+    canModerate: boolean,
+  ): Promise<{ ok: true }> {
     const thread = await this.threadDoc(threadId);
-    if (!canModerate && String(thread.author) !== userId) throw new ForbiddenException('You can only delete your own threads.');
+    if (!canModerate && String(thread.author) !== userId)
+      throw new ForbiddenException('You can only delete your own threads.');
     await this.replies.deleteMany({ thread: thread._id }).exec();
     await this.threads.deleteOne({ _id: thread._id }).exec();
-    await this.channels.updateOne({ _id: thread.channel }, { $inc: { threadCount: -1 } }).exec();
+    await this.channels
+      .updateOne({ _id: thread.channel }, { $inc: { threadCount: -1 } })
+      .exec();
     return { ok: true };
   }
 
   // ── replies ──────────────────────────────────────────────────────────────
-  async addReply(threadId: string, userId: string, authorName: string, body: string): Promise<ReplyView> {
+  async addReply(
+    threadId: string,
+    userId: string,
+    authorName: string,
+    body: string,
+  ): Promise<ReplyView> {
     const thread = await this.threadDoc(threadId);
-    const reply = await this.replies.create({ thread: thread._id, author: new Types.ObjectId(userId), authorName, body });
+    const reply = await this.replies.create({
+      thread: thread._id,
+      author: new Types.ObjectId(userId),
+      authorName,
+      body,
+    });
     thread.replyCount += 1;
     await thread.save();
     return this.replyView(reply, userId);
@@ -193,11 +293,20 @@ export class CommunityService {
   }
 
   /** Thread author (or a moderator) accepts a reply as the answer; marks the thread resolved. */
-  async acceptAnswer(replyId: string, userId: string, canModerate: boolean): Promise<{ ok: true }> {
+  async acceptAnswer(
+    replyId: string,
+    userId: string,
+    canModerate: boolean,
+  ): Promise<{ ok: true }> {
     const reply = await this.replyDoc(replyId);
     const thread = await this.threadDoc(String(reply.thread));
-    if (!canModerate && String(thread.author) !== userId) throw new ForbiddenException('Only the thread author can accept an answer.');
-    await this.replies.updateMany({ thread: thread._id }, { $set: { isAnswer: false } }).exec();
+    if (!canModerate && String(thread.author) !== userId)
+      throw new ForbiddenException(
+        'Only the thread author can accept an answer.',
+      );
+    await this.replies
+      .updateMany({ thread: thread._id }, { $set: { isAnswer: false } })
+      .exec();
     reply.isAnswer = true;
     await reply.save();
     thread.resolved = true;
@@ -205,24 +314,33 @@ export class CommunityService {
     return { ok: true };
   }
 
-  async deleteReply(replyId: string, userId: string, canModerate: boolean): Promise<{ ok: true }> {
+  async deleteReply(
+    replyId: string,
+    userId: string,
+    canModerate: boolean,
+  ): Promise<{ ok: true }> {
     const reply = await this.replyDoc(replyId);
-    if (!canModerate && String(reply.author) !== userId) throw new ForbiddenException('You can only delete your own replies.');
+    if (!canModerate && String(reply.author) !== userId)
+      throw new ForbiddenException('You can only delete your own replies.');
     await this.replies.deleteOne({ _id: reply._id }).exec();
-    await this.threads.updateOne({ _id: reply.thread }, { $inc: { replyCount: -1 } }).exec();
+    await this.threads
+      .updateOne({ _id: reply.thread }, { $inc: { replyCount: -1 } })
+      .exec();
     return { ok: true };
   }
 
   // ── helpers ──────────────────────────────────────────────────────────────
   private async threadDoc(id: string): Promise<CommunityThreadDocument> {
-    if (!Types.ObjectId.isValid(id)) throw new NotFoundException('Thread not found');
+    if (!Types.ObjectId.isValid(id))
+      throw new NotFoundException('Thread not found');
     const t = await this.threads.findById(id);
     if (!t) throw new NotFoundException('Thread not found');
     return t;
   }
 
   private async replyDoc(id: string): Promise<CommunityReplyDocument> {
-    if (!Types.ObjectId.isValid(id)) throw new NotFoundException('Reply not found');
+    if (!Types.ObjectId.isValid(id))
+      throw new NotFoundException('Reply not found');
     const r = await this.replies.findById(id);
     if (!r) throw new NotFoundException('Reply not found');
     return r;
@@ -235,11 +353,25 @@ export class CommunityService {
   }
 
   private slugify(name: string): string {
-    return name.toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 40) || 'channel';
+    return (
+      name
+        .toLowerCase()
+        .trim()
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/^-+|-+$/g, '')
+        .slice(0, 40) || 'channel'
+    );
   }
 
   private channelView(c: CommunityChannelDocument): ChannelView {
-    return { id: String(c._id), name: c.name, slug: c.slug, description: c.description, kind: c.kind, threadCount: c.threadCount ?? 0 };
+    return {
+      id: String(c._id),
+      name: c.name,
+      slug: c.slug,
+      description: c.description,
+      kind: c.kind,
+      threadCount: c.threadCount ?? 0,
+    };
   }
 
   private threadView(t: CommunityThreadDocument, viewerId: string): ThreadView {
@@ -259,7 +391,10 @@ export class CommunityService {
       replyCount: t.replyCount,
       resolved: t.resolved,
       pinned: t.pinned,
-      createdAt: (t as CommunityThreadDocument & { createdAt?: Date }).createdAt?.toISOString() ?? '',
+      createdAt:
+        (
+          t as CommunityThreadDocument & { createdAt?: Date }
+        ).createdAt?.toISOString() ?? '',
     };
   }
 
@@ -272,7 +407,10 @@ export class CommunityService {
       upvotes: r.upvotes.length,
       hasUpvoted: r.upvotes.some((v) => String(v) === viewerId),
       isAnswer: r.isAnswer,
-      createdAt: (r as CommunityReplyDocument & { createdAt?: Date }).createdAt?.toISOString() ?? '',
+      createdAt:
+        (
+          r as CommunityReplyDocument & { createdAt?: Date }
+        ).createdAt?.toISOString() ?? '',
     };
   }
 }

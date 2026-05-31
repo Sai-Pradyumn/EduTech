@@ -1,4 +1,8 @@
-import { Injectable, InternalServerErrorException, Logger } from '@nestjs/common';
+import {
+  Injectable,
+  InternalServerErrorException,
+  Logger,
+} from '@nestjs/common';
 import { AgentType } from '../../../common/enums';
 import { AiService } from '../../ai/ai.service';
 import { AIMessage } from '../../ai/interfaces/ai-provider.interface';
@@ -17,7 +21,10 @@ const ROADMAP_SCHEMA: Record<string, unknown> = {
     goal: { type: 'string' },
     overview: { type: 'string' },
     estimatedDuration: { type: 'string' },
-    difficulty: { type: 'string', enum: ['beginner', 'intermediate', 'advanced'] },
+    difficulty: {
+      type: 'string',
+      enum: ['beginner', 'intermediate', 'advanced'],
+    },
     weeklyPlan: { type: 'array' },
     milestones: { type: 'array' },
     recommendedProjects: { type: 'array' },
@@ -35,7 +42,10 @@ export class RoadmapAgentService {
   constructor(private readonly ai: AiService) {}
 
   /** Generate a structured, personalized roadmap for a student. */
-  async generate(userId: string, input: RoadmapBlueprintInput): Promise<GeneratedRoadmap> {
+  async generate(
+    userId: string,
+    input: RoadmapBlueprintInput,
+  ): Promise<GeneratedRoadmap> {
     const startedAt = Date.now();
     const messages: AIMessage[] = [
       { role: 'system', content: this.systemPrompt() },
@@ -44,10 +54,14 @@ export class RoadmapAgentService {
 
     let roadmap: GeneratedRoadmap;
     try {
-      roadmap = await this.ai.generateStructuredOutput<GeneratedRoadmap>(messages, ROADMAP_SCHEMA, {
-        // Mock provider returns this; real providers honor the schema instead.
-        mockFactory: () => buildRoadmapBlueprint(input),
-      });
+      roadmap = await this.ai.generateStructuredOutput<GeneratedRoadmap>(
+        messages,
+        ROADMAP_SCHEMA,
+        {
+          // Mock provider returns this; real providers honor the schema instead.
+          mockFactory: () => buildRoadmapBlueprint(input),
+        },
+      );
     } catch (err) {
       this.logger.error(`Roadmap generation failed: ${(err as Error).message}`);
       // Safe fallback so the flow never dead-ends in dev.
@@ -55,10 +69,14 @@ export class RoadmapAgentService {
     }
 
     if (!this.isValid(roadmap)) {
-      this.logger.warn('AI roadmap output failed validation — using local blueprint fallback.');
+      this.logger.warn(
+        'AI roadmap output failed validation — using local blueprint fallback.',
+      );
       roadmap = buildRoadmapBlueprint(input);
       if (!this.isValid(roadmap)) {
-        throw new InternalServerErrorException('Could not generate a valid roadmap. Please try again.');
+        throw new InternalServerErrorException(
+          'Could not generate a valid roadmap. Please try again.',
+        );
       }
     }
 
@@ -77,19 +95,19 @@ export class RoadmapAgentService {
   private isValid(r: GeneratedRoadmap | undefined): boolean {
     return Boolean(
       r &&
-        typeof r.title === 'string' &&
-        r.title.length > 0 &&
-        Array.isArray(r.weeklyPlan) &&
-        r.weeklyPlan.length > 0 &&
-        Array.isArray(r.milestones) &&
-        r.milestones.length > 0,
+      typeof r.title === 'string' &&
+      r.title.length > 0 &&
+      Array.isArray(r.weeklyPlan) &&
+      r.weeklyPlan.length > 0 &&
+      Array.isArray(r.milestones) &&
+      r.milestones.length > 0,
     );
   }
 
   private systemPrompt(): string {
     return [
-      'You are Asta\'s Roadmap Agent. Produce a structured, realistic, week-by-week learning roadmap.',
-      'Personalize to the student\'s skill level, weak areas, available time, timeline and career target.',
+      "You are Asta's Roadmap Agent. Produce a structured, realistic, week-by-week learning roadmap.",
+      "Personalize to the student's skill level, weak areas, available time, timeline and career target.",
       'Return strictly the GeneratedRoadmap JSON shape. Be concrete; avoid vague filler.',
     ].join(' ');
   }

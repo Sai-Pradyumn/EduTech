@@ -30,8 +30,32 @@ const DIFF_POINTS: Record<Difficulty, number> = {
 };
 
 const STOP = new Set([
-  'the', 'a', 'an', 'and', 'or', 'of', 'to', 'in', 'is', 'are', 'for', 'on', 'with', 'as',
-  'by', 'at', 'be', 'this', 'that', 'it', 'from', 'into', 'which', 'using', 'used', 'can',
+  'the',
+  'a',
+  'an',
+  'and',
+  'or',
+  'of',
+  'to',
+  'in',
+  'is',
+  'are',
+  'for',
+  'on',
+  'with',
+  'as',
+  'by',
+  'at',
+  'be',
+  'this',
+  'that',
+  'it',
+  'from',
+  'into',
+  'which',
+  'using',
+  'used',
+  'can',
 ]);
 
 /**
@@ -45,7 +69,11 @@ export class QuizGeneratorService {
     return this.matchKey(topic) !== null;
   }
 
-  fromTopic(topic: string, difficulty: Difficulty, count: number): GeneratedQuestion[] {
+  fromTopic(
+    topic: string,
+    difficulty: Difficulty,
+    count: number,
+  ): GeneratedQuestion[] {
     const key = this.matchKey(topic);
     const curated = key ? this.fromBank(key, QUIZ_BANK[key], difficulty) : [];
     const out = [...curated];
@@ -56,7 +84,12 @@ export class QuizGeneratorService {
     return out.slice(0, count);
   }
 
-  fromDocument(topic: string, chunks: DocChunk[], difficulty: Difficulty, count: number): GeneratedQuestion[] {
+  fromDocument(
+    topic: string,
+    chunks: DocChunk[],
+    difficulty: Difficulty,
+    count: number,
+  ): GeneratedQuestion[] {
     const out: GeneratedQuestion[] = [];
     const corpusKeywords = this.corpusKeywords(chunks);
     for (const chunk of chunks) {
@@ -71,10 +104,16 @@ export class QuizGeneratorService {
   }
 
   // ── bank ──────────────────────────────────────────────────────────────────
-  private fromBank(topic: string, bank: BankQuestion[], difficulty: Difficulty): GeneratedQuestion[] {
+  private fromBank(
+    topic: string,
+    bank: BankQuestion[],
+    difficulty: Difficulty,
+  ): GeneratedQuestion[] {
     // Prefer the requested difficulty, then fill with the rest (keeps quizzes full).
     const ordered = [...bank].sort(
-      (a, b) => this.diffDistance(a.difficulty, difficulty) - this.diffDistance(b.difficulty, difficulty),
+      (a, b) =>
+        this.diffDistance(a.difficulty, difficulty) -
+        this.diffDistance(b.difficulty, difficulty),
     );
     return ordered.map((q) => this.materialize(q, topic));
   }
@@ -95,7 +134,11 @@ export class QuizGeneratorService {
   }
 
   // ── templated (generic) ─────────────────────────────────────────────────────
-  private templated(topic: string, difficulty: Difficulty, seed: number): GeneratedQuestion {
+  private templated(
+    topic: string,
+    difficulty: Difficulty,
+    seed: number,
+  ): GeneratedQuestion {
     const t = this.titleCase(topic);
     const templates = [
       {
@@ -155,19 +198,27 @@ export class QuizGeneratorService {
     const target = this.salientTerm(sentence, chunk.keywords);
     if (!target) return null;
 
-    const blanked = sentence.replace(new RegExp(`\\b${this.escape(target)}\\b`, 'i'), '_____');
+    const blanked = sentence.replace(
+      new RegExp(`\\b${this.escape(target)}\\b`, 'i'),
+      '_____',
+    );
     const distractors = corpusKeywords
       .filter((k) => k.toLowerCase() !== target.toLowerCase())
       .slice(0, 3)
       .map((k) => this.titleCase(k));
     if (distractors.length < 3) return null;
 
-    const options = this.placeAnswer([this.titleCase(target), ...distractors], chunk.text.length);
+    const options = this.placeAnswer(
+      [this.titleCase(target), ...distractors],
+      chunk.text.length,
+    );
     return {
       type: QuestionType.Mcq,
       prompt: `Fill in the blank (from your document):\n\n"${blanked}"`,
       options,
-      answerIndex: options.findIndex((o) => o.toLowerCase() === target.toLowerCase()),
+      answerIndex: options.findIndex(
+        (o) => o.toLowerCase() === target.toLowerCase(),
+      ),
       modelAnswer: target,
       keywords: [target],
       explanation: `From the source: "${this.trim(sentence, 160)}"`,
@@ -184,7 +235,9 @@ export class QuizGeneratorService {
       .replace(/^…\s*/, '')
       .split(/(?<=[.!?])\s+/)
       .map((s) => s.trim())
-      .filter((s) => s.length > 30 && s.length < 220 && this.terms(s).length >= 5);
+      .filter(
+        (s) => s.length > 30 && s.length < 220 && this.terms(s).length >= 5,
+      );
     return sentences[0] ?? null;
   }
 
@@ -193,7 +246,9 @@ export class QuizGeneratorService {
     // Prefer a chunk keyword that appears in the sentence; else the longest content word.
     const kw = keywords.find((k) => terms.includes(k.toLowerCase()));
     if (kw) return kw;
-    const longest = terms.filter((t) => t.length >= 5).sort((a, b) => b.length - a.length)[0];
+    const longest = terms
+      .filter((t) => t.length >= 5)
+      .sort((a, b) => b.length - a.length)[0];
     return longest ?? null;
   }
 
@@ -227,11 +282,17 @@ export class QuizGeneratorService {
     return KNOWN_TOPICS.find((k) => t.includes(k) || k.includes(t)) ?? null;
   }
   private diffDistance(a: Difficulty, b: Difficulty): number {
-    const order = [Difficulty.Beginner, Difficulty.Intermediate, Difficulty.Advanced];
+    const order = [
+      Difficulty.Beginner,
+      Difficulty.Intermediate,
+      Difficulty.Advanced,
+    ];
     return Math.abs(order.indexOf(a) - order.indexOf(b));
   }
   private terms(text: string): string[] {
-    return (text.toLowerCase().match(/[a-z0-9]+/g) ?? []).filter((t) => t.length > 2 && !STOP.has(t));
+    return (text.toLowerCase().match(/[a-z0-9]+/g) ?? []).filter(
+      (t) => t.length > 2 && !STOP.has(t),
+    );
   }
   private titleCase(s: string): string {
     return s.replace(/\b\w/g, (c) => c.toUpperCase());

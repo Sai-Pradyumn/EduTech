@@ -60,7 +60,11 @@ export class Quiz {
   @Prop({ default: 'general' })
   topic!: string;
 
-  @Prop({ type: String, enum: ['topic', 'document', 'weak_area', 'roadmap'], default: 'topic' })
+  @Prop({
+    type: String,
+    enum: ['topic', 'document', 'weak_area', 'roadmap'],
+    default: 'topic',
+  })
   source!: QuizSource;
 
   @Prop({ type: String, enum: Difficulty, default: Difficulty.Beginner })

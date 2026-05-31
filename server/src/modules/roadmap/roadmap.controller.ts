@@ -49,7 +49,10 @@ export class RoadmapController {
   }
 
   @Get(':id')
-  async byId(@CurrentUser() user: AuthUser, @Param('id') id: string): Promise<RoadmapResponse> {
+  async byId(
+    @CurrentUser() user: AuthUser,
+    @Param('id') id: string,
+  ): Promise<RoadmapResponse> {
     return toRoadmapResponse(await this.roadmaps.findByIdForUser(user.id, id));
   }
 
@@ -59,7 +62,9 @@ export class RoadmapController {
     @Param('id') id: string,
     @Body() dto: UpdateRoadmapProgressDto,
   ): Promise<RoadmapResponse> {
-    return toRoadmapResponse(await this.roadmaps.updateProgress(user.id, id, dto));
+    return toRoadmapResponse(
+      await this.roadmaps.updateProgress(user.id, id, dto),
+    );
   }
 
   @Patch(':id/status')
@@ -68,11 +73,16 @@ export class RoadmapController {
     @Param('id') id: string,
     @Body() dto: UpdateRoadmapStatusDto,
   ): Promise<RoadmapResponse> {
-    return toRoadmapResponse(await this.roadmaps.updateStatus(user.id, id, dto));
+    return toRoadmapResponse(
+      await this.roadmaps.updateStatus(user.id, id, dto),
+    );
   }
 
   @Delete(':id')
-  remove(@CurrentUser() user: AuthUser, @Param('id') id: string): Promise<{ ok: true }> {
+  remove(
+    @CurrentUser() user: AuthUser,
+    @Param('id') id: string,
+  ): Promise<{ ok: true }> {
     return this.roadmaps.remove(user.id, id);
   }
 }

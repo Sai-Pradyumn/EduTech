@@ -84,7 +84,12 @@ export class Roadmap {
   @Prop({ type: [String], default: [] })
   successTips!: string[];
 
-  @Prop({ type: String, enum: RoadmapStatus, default: RoadmapStatus.Active, index: true })
+  @Prop({
+    type: String,
+    enum: RoadmapStatus,
+    default: RoadmapStatus.Active,
+    index: true,
+  })
   status!: RoadmapStatus;
 
   @Prop({ default: 0, min: 0, max: 100 })

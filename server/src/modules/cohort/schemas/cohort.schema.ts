@@ -22,7 +22,8 @@ export class CohortAnnouncement {
   @Prop({ type: Date, default: () => new Date() })
   createdAt!: Date;
 }
-export const CohortAnnouncementSchema = SchemaFactory.createForClass(CohortAnnouncement);
+export const CohortAnnouncementSchema =
+  SchemaFactory.createForClass(CohortAnnouncement);
 
 /**
  * Cohort (Phase 4 · B3): an org-scoped group of students guided by mentors toward a
@@ -31,7 +32,12 @@ export const CohortAnnouncementSchema = SchemaFactory.createForClass(CohortAnnou
  */
 @Schema({ timestamps: true, collection: 'cohorts' })
 export class Cohort {
-  @Prop({ type: Types.ObjectId, ref: 'Organization', required: true, index: true })
+  @Prop({
+    type: Types.ObjectId,
+    ref: 'Organization',
+    required: true,
+    index: true,
+  })
   organization!: Types.ObjectId;
 
   @Prop({ required: true })
@@ -43,7 +49,11 @@ export class Cohort {
   @Prop({ type: [{ type: Types.ObjectId, ref: 'User' }], default: [] })
   mentors!: Types.ObjectId[];
 
-  @Prop({ type: [{ type: Types.ObjectId, ref: 'User' }], default: [], index: true })
+  @Prop({
+    type: [{ type: Types.ObjectId, ref: 'User' }],
+    default: [],
+    index: true,
+  })
   students!: Types.ObjectId[];
 
   /** Shared roadmap target for the cohort (e.g. "MERN Developer"). */

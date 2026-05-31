@@ -49,6 +49,17 @@ import { PeerRoomsModule } from './modules/peer-rooms/peer-rooms.module';
 import { LedgerModule } from './modules/ledger/ledger.module';
 import { MentorCouncilModule } from './modules/mentor-council/mentor-council.module';
 import { ReplayModule } from './modules/replay/replay.module';
+import { SkillPassportModule } from './modules/skill-passport/skill-passport.module';
+import { CareerReadinessModule } from './modules/career-readiness/career-readiness.module';
+import { OutcomeCouncilModule } from './modules/outcome-council/outcome-council.module';
+import { PortfolioModule } from './modules/portfolio/portfolio.module';
+import { InterviewModule } from './modules/interview/interview.module';
+import { ResumeModule } from './modules/resume/resume.module';
+import { MentorMarketplaceModule } from './modules/mentor-marketplace/mentor-marketplace.module';
+import { MarketplaceModule } from './modules/marketplace/marketplace.module';
+import { InstitutionModule } from './modules/institution/institution.module';
+import { PrivacyModule } from './modules/privacy/privacy.module';
+import { NudgesModule } from './modules/nudges/nudges.module';
 import { SocketsModule } from './sockets/sockets.module';
 
 @Module({
@@ -99,6 +110,17 @@ import { SocketsModule } from './sockets/sockets.module';
     LedgerModule,
     MentorCouncilModule,
     ReplayModule,
+    SkillPassportModule,
+    CareerReadinessModule,
+    OutcomeCouncilModule,
+    PortfolioModule,
+    InterviewModule,
+    ResumeModule,
+    MentorMarketplaceModule,
+    MarketplaceModule,
+    InstitutionModule,
+    PrivacyModule,
+    NudgesModule,
     SocketsModule,
   ],
   controllers: [HealthController],

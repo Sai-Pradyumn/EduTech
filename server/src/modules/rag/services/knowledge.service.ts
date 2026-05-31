@@ -3,8 +3,14 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { AgentType } from '../../../common/enums';
 import { AiService } from '../../ai/ai.service';
-import { KnowledgeDocument, KnowledgeDocumentDocument } from '../schemas/knowledge-document.schema';
-import { DocumentChunk, DocumentChunkDocument } from '../schemas/document-chunk.schema';
+import {
+  KnowledgeDocument,
+  KnowledgeDocumentDocument,
+} from '../schemas/knowledge-document.schema';
+import {
+  DocumentChunk,
+  DocumentChunkDocument,
+} from '../schemas/document-chunk.schema';
 import { FILE_STORAGE_TOKEN, IFileStorage } from '../storage/file-storage';
 
 export interface DocumentView {
@@ -37,8 +43,10 @@ export interface Flashcard {
 @Injectable()
 export class KnowledgeService {
   constructor(
-    @InjectModel(KnowledgeDocument.name) private readonly docs: Model<KnowledgeDocumentDocument>,
-    @InjectModel(DocumentChunk.name) private readonly chunks: Model<DocumentChunkDocument>,
+    @InjectModel(KnowledgeDocument.name)
+    private readonly docs: Model<KnowledgeDocumentDocument>,
+    @InjectModel(DocumentChunk.name)
+    private readonly chunks: Model<DocumentChunkDocument>,
     @Inject(FILE_STORAGE_TOKEN) private readonly storage: IFileStorage,
     private readonly ai: AiService,
   ) {}
@@ -67,7 +75,10 @@ export class KnowledgeService {
   async summary(userId: string, id: string): Promise<DocumentSummary> {
     const doc = await this.owned(userId, id);
     const chunks = await this.docChunks(doc._id, 8);
-    const sample = chunks.map((c) => c.text).join('\n').slice(0, 2000);
+    const sample = chunks
+      .map((c) => c.text)
+      .join('\n')
+      .slice(0, 2000);
 
     const fallback = (): DocumentSummary => {
       const keyPoints = chunks
@@ -85,25 +96,43 @@ export class KnowledgeService {
 
     const result = await this.ai.generateStructuredOutput<DocumentSummary>(
       [
-        { role: 'system', content: 'Summarize the document grounded ONLY in the provided text. Return a TL;DR and key points.' },
+        {
+          role: 'system',
+          content:
+            'Summarize the document grounded ONLY in the provided text. Return a TL;DR and key points.',
+        },
         { role: 'user', content: `Title: ${doc.title}\n\n${sample}` },
       ],
       {
         type: 'object',
-        properties: { tldr: { type: 'string' }, keyPoints: { type: 'array', items: { type: 'string' } } },
+        properties: {
+          tldr: { type: 'string' },
+          keyPoints: { type: 'array', items: { type: 'string' } },
+        },
         required: ['tldr', 'keyPoints'],
       },
       { mockFactory: fallback },
     );
-    await this.ai.logUsage({ userId, agentType: AgentType.Rag, operation: 'rag.summary' });
+    await this.ai.logUsage({
+      userId,
+      agentType: AgentType.Rag,
+      operation: 'rag.summary',
+    });
     return result?.tldr ? result : fallback();
   }
 
-  async flashcards(userId: string, id: string, count = 6): Promise<Flashcard[]> {
+  async flashcards(
+    userId: string,
+    id: string,
+    count = 6,
+  ): Promise<Flashcard[]> {
     const doc = await this.owned(userId, id);
     const chunks = await this.docChunks(doc._id, count);
     return chunks.map((c) => {
-      const topic = (c.keywords[0] ?? doc.topic ?? 'this topic').replace(/\b\w/g, (x) => x.toUpperCase());
+      const topic = (c.keywords[0] ?? doc.topic ?? 'this topic').replace(
+        /\b\w/g,
+        (x) => x.toUpperCase(),
+      );
       const sentence = c.text.replace(/\s+/g, ' ').replace(/^…\s*/, '').trim();
       return {
         question: `What does "${doc.title}" say about ${topic}?`,
@@ -121,17 +150,31 @@ export class KnowledgeService {
   ): Promise<{ text: string; headingPath?: string; keywords: string[] }[]> {
     const doc = await this.owned(userId, documentId);
     const chunks = await this.docChunks(doc._id, limit);
-    return chunks.map((c) => ({ text: c.text, headingPath: c.headingPath, keywords: c.keywords ?? [] }));
+    return chunks.map((c) => ({
+      text: c.text,
+      headingPath: c.headingPath,
+      keywords: c.keywords ?? [],
+    }));
   }
 
-  private async owned(userId: string, id: string): Promise<KnowledgeDocumentDocument> {
-    if (!Types.ObjectId.isValid(id)) throw new NotFoundException('Document not found');
-    const doc = await this.docs.findOne({ _id: id, user: new Types.ObjectId(userId) });
+  private async owned(
+    userId: string,
+    id: string,
+  ): Promise<KnowledgeDocumentDocument> {
+    if (!Types.ObjectId.isValid(id))
+      throw new NotFoundException('Document not found');
+    const doc = await this.docs.findOne({
+      _id: id,
+      user: new Types.ObjectId(userId),
+    });
     if (!doc) throw new NotFoundException('Document not found');
     return doc;
   }
 
-  private async docChunks(docId: Types.ObjectId, limit: number): Promise<DocumentChunkDocument[]> {
+  private async docChunks(
+    docId: Types.ObjectId,
+    limit: number,
+  ): Promise<DocumentChunkDocument[]> {
     return this.chunks
       .find({ document: docId })
       .sort({ chunkIndex: 1 })
@@ -153,7 +196,10 @@ export class KnowledgeService {
       tags: d.tags ?? [],
       warnings: d.warnings ?? [],
       error: d.error,
-      createdAt: (d as KnowledgeDocumentDocument & { createdAt?: Date }).createdAt?.toISOString() ?? '',
+      createdAt:
+        (
+          d as KnowledgeDocumentDocument & { createdAt?: Date }
+        ).createdAt?.toISOString() ?? '',
     };
   }
 }

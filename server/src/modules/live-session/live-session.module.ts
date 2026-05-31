@@ -15,7 +15,9 @@ import { LiveSessionService } from './services/live-session.service';
  */
 @Module({
   imports: [
-    MongooseModule.forFeature([{ name: LiveSession.name, schema: LiveSessionSchema }]),
+    MongooseModule.forFeature([
+      { name: LiveSession.name, schema: LiveSessionSchema },
+    ]),
     UsersModule,
     TenancyModule,
     CohortModule,

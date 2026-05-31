@@ -58,7 +58,9 @@ export class LocalFileStorage implements IFileStorage {
 export class S3FileStorage implements IFileStorage {
   readonly name = 's3';
   async save(): Promise<void> {
-    throw new Error('S3 storage selected but not configured. Use STORAGE_PROVIDER=local for local dev.');
+    throw new Error(
+      'S3 storage selected but not configured. Use STORAGE_PROVIDER=local for local dev.',
+    );
   }
   async read(): Promise<Buffer> {
     throw new Error('S3 storage selected but not configured.');

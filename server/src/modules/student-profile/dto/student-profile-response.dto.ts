@@ -29,7 +29,9 @@ export interface StudentProfileResponse {
   updatedAt: string;
 }
 
-export function toStudentProfileResponse(doc: StudentProfileDocument): StudentProfileResponse {
+export function toStudentProfileResponse(
+  doc: StudentProfileDocument,
+): StudentProfileResponse {
   return {
     id: doc.id,
     userId: doc.user.toString(),

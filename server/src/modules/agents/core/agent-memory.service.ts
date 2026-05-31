@@ -1,7 +1,11 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
-import { AgentMemory, AgentMemoryDocument, MemoryKind } from '../schemas/agent-memory.schema';
+import {
+  AgentMemory,
+  AgentMemoryDocument,
+  MemoryKind,
+} from '../schemas/agent-memory.schema';
 import { MemoryItem } from './agent.interface';
 
 /**
@@ -11,11 +15,16 @@ import { MemoryItem } from './agent.interface';
 @Injectable()
 export class AgentMemoryService {
   constructor(
-    @InjectModel(AgentMemory.name) private readonly model: Model<AgentMemoryDocument>,
+    @InjectModel(AgentMemory.name)
+    private readonly model: Model<AgentMemoryDocument>,
   ) {}
 
   /** Top memories by weight for a user, for prompt grounding. */
-  async retrieve(userId: string, query?: string, limit = 8): Promise<MemoryItem[]> {
+  async retrieve(
+    userId: string,
+    query?: string,
+    limit = 8,
+  ): Promise<MemoryItem[]> {
     if (!query?.trim()) {
       const docs = await this.model
         .find({ user: new Types.ObjectId(userId) })
@@ -37,7 +46,9 @@ export class AgentMemoryService {
     return pool
       .map((d) => ({
         item: { kind: d.kind, content: d.content },
-        score: 0.6 * this.overlap(terms, d.content) + 0.4 * ((d.weight ?? 1) / maxWeight),
+        score:
+          0.6 * this.overlap(terms, d.content) +
+          0.4 * ((d.weight ?? 1) / maxWeight),
       }))
       .sort((a, b) => b.score - a.score)
       .slice(0, limit)
@@ -45,7 +56,9 @@ export class AgentMemoryService {
   }
 
   private tokenize(text: string): string[] {
-    return (text.toLowerCase().match(/[a-z0-9]+/g) ?? []).filter((t) => t.length > 2);
+    return (text.toLowerCase().match(/[a-z0-9]+/g) ?? []).filter(
+      (t) => t.length > 2,
+    );
   }
 
   private overlap(terms: Set<string>, content: string): number {
@@ -57,7 +70,13 @@ export class AgentMemoryService {
   }
 
   /** Upsert a memory; dedupes by (kind, content) and bumps weight on repeat. */
-  async remember(userId: string, kind: MemoryKind, content: string, weight = 1, source = 'agent'): Promise<void> {
+  async remember(
+    userId: string,
+    kind: MemoryKind,
+    content: string,
+    weight = 1,
+    source = 'agent',
+  ): Promise<void> {
     const trimmed = content.trim();
     if (!trimmed) return;
     await this.model
@@ -70,6 +89,8 @@ export class AgentMemoryService {
   }
 
   async forget(userId: string, id: string): Promise<void> {
-    await this.model.deleteOne({ _id: id, user: new Types.ObjectId(userId) }).exec();
+    await this.model
+      .deleteOne({ _id: id, user: new Types.ObjectId(userId) })
+      .exec();
   }
 }

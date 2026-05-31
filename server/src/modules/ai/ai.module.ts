@@ -16,7 +16,11 @@ import { AiUsageLog, AiUsageLogSchema } from './schemas/ai-usage-log.schema';
  */
 @Global()
 @Module({
-  imports: [MongooseModule.forFeature([{ name: AiUsageLog.name, schema: AiUsageLogSchema }])],
+  imports: [
+    MongooseModule.forFeature([
+      { name: AiUsageLog.name, schema: AiUsageLogSchema },
+    ]),
+  ],
   providers: [
     MockAIProvider,
     HealthTrackerService,
@@ -27,6 +31,11 @@ import { AiUsageLog, AiUsageLogSchema } from './schemas/ai-usage-log.schema';
     AiRateLimitService,
     PromptInjectionGuard,
   ],
-  exports: [AiService, LlmGatewayService, AiRateLimitService, PromptInjectionGuard],
+  exports: [
+    AiService,
+    LlmGatewayService,
+    AiRateLimitService,
+    PromptInjectionGuard,
+  ],
 })
 export class AiModule {}

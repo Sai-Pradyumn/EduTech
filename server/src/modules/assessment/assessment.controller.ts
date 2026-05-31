@@ -1,4 +1,12 @@
-import { Body, Controller, Get, HttpCode, HttpStatus, Param, Post } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  HttpCode,
+  HttpStatus,
+  Param,
+  Post,
+} from '@nestjs/common';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { AuthUser } from '../../common/interfaces';
 import { AssessmentService } from './services/assessment.service';
@@ -27,7 +35,11 @@ export class AssessmentController {
   }
 
   @Post('quizzes/:id/attempts')
-  submit(@CurrentUser() user: AuthUser, @Param('id') id: string, @Body() dto: SubmitAttemptDto) {
+  submit(
+    @CurrentUser() user: AuthUser,
+    @Param('id') id: string,
+    @Body() dto: SubmitAttemptDto,
+  ) {
     return this.assessment.submit(user.id, id, dto);
   }
 

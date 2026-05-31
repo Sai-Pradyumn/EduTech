@@ -25,6 +25,14 @@ export const routes: Routes = [
     loadComponent: () => import('./features/certificates/cert-verify.component').then((m) => m.CertVerifyComponent),
   },
   {
+    path: 'u/:username',
+    loadComponent: () => import('./features/skill-passport/public-passport.component').then((m) => m.PublicPassportComponent),
+  },
+  {
+    path: 'p/:username',
+    loadComponent: () => import('./features/portfolio/public-portfolio.component').then((m) => m.PublicPortfolioComponent),
+  },
+  {
     path: '',
     loadComponent: () => import('./features/auth/auth-layout.component').then((m) => m.AuthLayoutComponent),
     children: [
@@ -250,6 +258,90 @@ export const routes: Routes = [
         loadComponent: () => import('./features/ledger/ledger.component').then((m) => m.LedgerComponent),
       },
       {
+        path: 'skill-passport',
+        title: 'Skill Passport',
+        data: { title: 'Skill Passport' },
+        loadComponent: () => import('./features/skill-passport/skill-passport.component').then((m) => m.SkillPassportComponent),
+      },
+      {
+        path: 'skill-passport/public-preview',
+        title: 'Public Preview',
+        data: { title: 'Public Preview' },
+        loadComponent: () => import('./features/skill-passport/public-passport.component').then((m) => m.PublicPassportComponent),
+      },
+      {
+        path: 'career-readiness',
+        title: 'Career Readiness',
+        data: { title: 'Career Readiness' },
+        loadComponent: () => import('./features/career-readiness/career-readiness.component').then((m) => m.CareerReadinessComponent),
+      },
+      {
+        path: 'outcome-council',
+        title: 'Outcome Council',
+        data: { title: 'AI Outcome Council' },
+        loadComponent: () => import('./features/outcome-council/outcome-council.component').then((m) => m.OutcomeCouncilComponent),
+      },
+      {
+        path: 'portfolio',
+        title: 'Portfolio',
+        data: { title: 'Portfolio Builder' },
+        loadComponent: () => import('./features/portfolio/portfolio.component').then((m) => m.PortfolioComponent),
+      },
+      {
+        path: 'interview',
+        title: 'Interview OS',
+        data: { title: 'Interview OS' },
+        loadComponent: () => import('./features/interview/interview.component').then((m) => m.InterviewComponent),
+      },
+      {
+        path: 'interview/sessions/:id',
+        title: 'Interview',
+        data: { title: 'Interview Session' },
+        loadComponent: () => import('./features/interview/interview.component').then((m) => m.InterviewComponent),
+      },
+      {
+        path: 'resume',
+        title: 'Resume',
+        data: { title: 'Resume' },
+        loadComponent: () => import('./features/resume/resume.component').then((m) => m.ResumeComponent),
+      },
+      {
+        path: 'applications',
+        title: 'Applications',
+        data: { title: 'Applications' },
+        loadComponent: () => import('./features/applications/applications.component').then((m) => m.ApplicationsComponent),
+      },
+      {
+        path: 'mentors',
+        title: 'Mentors',
+        data: { title: 'Mentors' },
+        loadComponent: () => import('./features/mentor-marketplace/mentors.component').then((m) => m.MentorsComponent),
+      },
+      {
+        path: 'mentor-sessions',
+        title: 'Mentor Sessions',
+        data: { title: 'Mentor Sessions' },
+        loadComponent: () => import('./features/mentor-marketplace/mentors.component').then((m) => m.MentorsComponent),
+      },
+      {
+        path: 'marketplace',
+        title: 'Marketplace',
+        data: { title: 'Template Marketplace' },
+        loadComponent: () => import('./features/marketplace/marketplace.component').then((m) => m.MarketplaceComponent),
+      },
+      {
+        path: 'creator-studio',
+        title: 'Creator Studio',
+        data: { title: 'Creator Studio' },
+        loadComponent: () => import('./features/creator-studio/creator-studio.component').then((m) => m.CreatorStudioComponent),
+      },
+      {
+        path: 'institution',
+        title: 'Institution',
+        data: { title: 'Institution Outcomes' },
+        loadComponent: () => import('./features/institution/institution.component').then((m) => m.InstitutionComponent),
+      },
+      {
         path: 'replay',
         title: 'Learning Replay',
         data: { title: 'Learning Replay' },
@@ -314,6 +406,12 @@ export const routes: Routes = [
         title: 'Platform',
         data: { title: 'Platform' },
         loadComponent: () => import('./features/platform/platform-orgs.component').then((m) => m.PlatformOrgsComponent),
+      },
+      {
+        path: 'privacy',
+        title: 'Data & Privacy',
+        data: { title: 'Data & Privacy' },
+        loadComponent: () => import('./features/privacy/privacy.component').then((m) => m.PrivacyComponent),
       },
       {
         path: 'profile',

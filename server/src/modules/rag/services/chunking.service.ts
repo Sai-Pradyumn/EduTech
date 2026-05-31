@@ -35,7 +35,13 @@ export class ChunkingService {
     const sections = this.toSections(parsed);
     const chunks: Chunk[] = [];
     for (const section of sections) {
-      chunks.push(...this.chunkSection(section.text, section.charBase, section.headingPath));
+      chunks.push(
+        ...this.chunkSection(
+          section.text,
+          section.charBase,
+          section.headingPath,
+        ),
+      );
     }
     return this.coalesce(chunks);
   }
@@ -46,29 +52,43 @@ export class ChunkingService {
     const outline = parsed.outline ?? [];
     if (outline.length === 0) return [{ text: parsed.text, charBase: 0 }];
 
-    const sections: { text: string; charBase: number; headingPath?: string }[] = [];
+    const sections: { text: string; charBase: number; headingPath?: string }[] =
+      [];
     const stack: { level: number; title: string }[] = [];
 
     // Preamble before the first heading.
     if (outline[0].charStart > 0) {
-      sections.push({ text: parsed.text.slice(0, outline[0].charStart), charBase: 0 });
+      sections.push({
+        text: parsed.text.slice(0, outline[0].charStart),
+        charBase: 0,
+      });
     }
 
     for (let i = 0; i < outline.length; i++) {
       const h = outline[i];
-      const end = i + 1 < outline.length ? outline[i + 1].charStart : parsed.text.length;
-      while (stack.length && stack[stack.length - 1].level >= h.level) stack.pop();
+      const end =
+        i + 1 < outline.length ? outline[i + 1].charStart : parsed.text.length;
+      while (stack.length && stack[stack.length - 1].level >= h.level)
+        stack.pop();
       stack.push({ level: h.level, title: h.title });
       const headingPath = stack.map((s) => s.title).join(' ▸ ');
       // Body excludes the heading line itself.
       const lineEnd = parsed.text.indexOf('\n', h.charStart);
       const bodyStart = lineEnd === -1 ? h.charStart : lineEnd + 1;
-      sections.push({ text: parsed.text.slice(bodyStart, end), charBase: bodyStart, headingPath });
+      sections.push({
+        text: parsed.text.slice(bodyStart, end),
+        charBase: bodyStart,
+        headingPath,
+      });
     }
     return sections;
   }
 
-  private chunkSection(text: string, charBase: number, headingPath?: string): Chunk[] {
+  private chunkSection(
+    text: string,
+    charBase: number,
+    headingPath?: string,
+  ): Chunk[] {
     const blocks = this.splitBlocks(text);
     const chunks: Chunk[] = [];
     let buf = '';
@@ -95,14 +115,16 @@ export class ChunkingService {
       if (blockTokens > MAX_TOKENS) {
         if (buf) flush(cursor);
         for (const sent of this.splitSentences(block.text, block.offset)) {
-          if (estimateTokens(buf + sent.text) > TARGET_TOKENS && buf) flush(cursor);
+          if (estimateTokens(buf + sent.text) > TARGET_TOKENS && buf)
+            flush(cursor);
           if (!buf) bufStart = sent.offset - charBase;
           buf += (buf ? ' ' : '') + sent.text;
           cursor = sent.offset - charBase + sent.text.length;
         }
         continue;
       }
-      if (estimateTokens(buf + block.text) > TARGET_TOKENS && buf) flush(cursor);
+      if (estimateTokens(buf + block.text) > TARGET_TOKENS && buf)
+        flush(cursor);
       if (!buf) bufStart = block.offset - charBase;
       buf += (buf ? '\n\n' : '') + block.text;
       cursor = block.offset - charBase + block.text.length;
@@ -128,7 +150,10 @@ export class ChunkingService {
     return blocks;
   }
 
-  private splitSentences(text: string, base: number): { text: string; offset: number }[] {
+  private splitSentences(
+    text: string,
+    base: number,
+  ): { text: string; offset: number }[] {
     const out: { text: string; offset: number }[] = [];
     const re = /[^.!?]+[.!?]+(\s|$)|[^.!?]+$/g;
     let m: RegExpExecArray | null;
@@ -157,7 +182,11 @@ export class ChunkingService {
     const out: Chunk[] = [];
     for (const c of chunks) {
       const prev = out[out.length - 1];
-      if (prev && c.tokenCount < MIN_TOKENS && prev.headingPath === c.headingPath) {
+      if (
+        prev &&
+        c.tokenCount < MIN_TOKENS &&
+        prev.headingPath === c.headingPath
+      ) {
         prev.text = `${prev.text}\n\n${c.text}`;
         prev.charEnd = c.charEnd;
         prev.tokenCount = estimateTokens(prev.text);

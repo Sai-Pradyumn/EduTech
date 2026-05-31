@@ -55,13 +55,41 @@ const DIFFICULTY_BY_SKILL: Record<SkillLevel, `${Difficulty}`> = {
 
 /** Maps a weak-area keyword to a concrete reinforcement task injected into a week. */
 const WEAK_AREA_TASKS: { match: string[]; task: string; practice: string }[] = [
-  { match: ['dsa', 'data structure', 'algorithm'], task: 'Reinforce DSA: solve 5 targeted problems on this week’s topic', practice: 'Revisit one previously-failed DSA problem' },
-  { match: ['system design', 'system-design', 'scal'], task: 'Sketch a small system design relevant to this week’s topic', practice: 'Read one system-design case study' },
-  { match: ['backend', 'api', 'database'], task: 'Reinforce backend: add an API/DB feature for this week’s topic', practice: 'Refactor one endpoint for clarity' },
-  { match: ['frontend', 'css', 'ui', 'react', 'angular'], task: 'Reinforce frontend: rebuild one UI piece for this week’s topic', practice: 'Improve responsiveness/accessibility of a component' },
-  { match: ['communication', 'soft skill', 'speaking'], task: 'Explain this week’s topic out loud / write a short blog post', practice: 'Record a 2-min explanation and review it' },
-  { match: ['deploy', 'devops', 'ci', 'docker'], task: 'Reinforce deployment: containerize/deploy this week’s work', practice: 'Add one CI/CD improvement' },
-  { match: ['test', 'testing', 'qa'], task: 'Write tests covering this week’s code', practice: 'Add edge-case tests for one module' },
+  {
+    match: ['dsa', 'data structure', 'algorithm'],
+    task: 'Reinforce DSA: solve 5 targeted problems on this week’s topic',
+    practice: 'Revisit one previously-failed DSA problem',
+  },
+  {
+    match: ['system design', 'system-design', 'scal'],
+    task: 'Sketch a small system design relevant to this week’s topic',
+    practice: 'Read one system-design case study',
+  },
+  {
+    match: ['backend', 'api', 'database'],
+    task: 'Reinforce backend: add an API/DB feature for this week’s topic',
+    practice: 'Refactor one endpoint for clarity',
+  },
+  {
+    match: ['frontend', 'css', 'ui', 'react', 'angular'],
+    task: 'Reinforce frontend: rebuild one UI piece for this week’s topic',
+    practice: 'Improve responsiveness/accessibility of a component',
+  },
+  {
+    match: ['communication', 'soft skill', 'speaking'],
+    task: 'Explain this week’s topic out loud / write a short blog post',
+    practice: 'Record a 2-min explanation and review it',
+  },
+  {
+    match: ['deploy', 'devops', 'ci', 'docker'],
+    task: 'Reinforce deployment: containerize/deploy this week’s work',
+    practice: 'Add one CI/CD improvement',
+  },
+  {
+    match: ['test', 'testing', 'qa'],
+    task: 'Write tests covering this week’s code',
+    practice: 'Add edge-case tests for one module',
+  },
 ];
 
 function clampPhasesForSkill(track: Track, skill: SkillLevel) {
@@ -79,18 +107,30 @@ function buildWeeks(
 ): RoadmapWeek[] {
   const weeks: RoadmapWeek[] = [];
   const weakTaskPool = weakAreas
-    .map((wa) => WEAK_AREA_TASKS.find((w) => w.match.some((m) => wa.toLowerCase().includes(m))))
+    .map((wa) =>
+      WEAK_AREA_TASKS.find((w) =>
+        w.match.some((m) => wa.toLowerCase().includes(m)),
+      ),
+    )
     .filter((w): w is (typeof WEAK_AREA_TASKS)[number] => Boolean(w));
   // Distribute weak-area reinforcement across spaced weeks.
   const weakWeeks = new Set<number>();
-  weakTaskPool.forEach((_, i) => weakWeeks.add(Math.min(weekCount - 1, 1 + i * 2)));
+  weakTaskPool.forEach((_, i) =>
+    weakWeeks.add(Math.min(weekCount - 1, 1 + i * 2)),
+  );
 
   for (let i = 0; i < weekCount; i++) {
-    const phaseIndex = Math.min(phases.length - 1, Math.floor((i * phases.length) / weekCount));
+    const phaseIndex = Math.min(
+      phases.length - 1,
+      Math.floor((i * phases.length) / weekCount),
+    );
     const phase = phases[phaseIndex];
     // Rotate the topic window so consecutive weeks in the same phase differ.
     const rot = i % phase.topics.length;
-    const topics = [...phase.topics.slice(rot), ...phase.topics.slice(0, rot)].slice(0, 3);
+    const topics = [
+      ...phase.topics.slice(rot),
+      ...phase.topics.slice(0, rot),
+    ].slice(0, 3);
     const tasks = [...phase.tasks];
     const practiceItems = [...phase.practice];
 
@@ -115,39 +155,58 @@ function buildWeeks(
   return weeks;
 }
 
-function buildMilestones(weeks: RoadmapWeek[], track: Track): RoadmapMilestone[] {
+function buildMilestones(
+  weeks: RoadmapWeek[],
+  track: Track,
+): RoadmapMilestone[] {
   const n = weeks.length;
   const at = (frac: number) => Math.max(1, Math.round(n * frac));
-  const focusAt = (week: number) => weeks[Math.min(n, week) - 1]?.focus ?? track.label;
+  const focusAt = (week: number) =>
+    weeks[Math.min(n, week) - 1]?.focus ?? track.label;
   return [
     {
       title: 'Foundations locked in',
       description: `Complete the early phases up to "${focusAt(at(0.25))}".`,
       targetWeek: at(0.25),
-      completionCriteria: ['Finish all weekly tasks so far', 'Pass the first checkpoint quiz'],
+      completionCriteria: [
+        'Finish all weekly tasks so far',
+        'Pass the first checkpoint quiz',
+      ],
     },
     {
       title: 'Core competency',
       description: `Reach working competency around "${focusAt(at(0.5))}".`,
       targetWeek: at(0.5),
-      completionCriteria: ['Ship the mid-track project', 'Score 70%+ on the mid assessment'],
+      completionCriteria: [
+        'Ship the mid-track project',
+        'Score 70%+ on the mid assessment',
+      ],
     },
     {
       title: 'Advanced & applied',
       description: `Handle advanced topics up to "${focusAt(at(0.75))}".`,
       targetWeek: at(0.75),
-      completionCriteria: ['Complete advanced weekly tasks', 'Extend your project with an advanced feature'],
+      completionCriteria: [
+        'Complete advanced weekly tasks',
+        'Extend your project with an advanced feature',
+      ],
     },
     {
       title: 'Job/goal ready',
       description: `Finish the track and a capstone for "${track.label}".`,
       targetWeek: n,
-      completionCriteria: ['Ship the capstone project', 'Pass the final assessment / mock interview'],
+      completionCriteria: [
+        'Ship the capstone project',
+        'Pass the final assessment / mock interview',
+      ],
     },
   ];
 }
 
-function buildAssessments(weekCount: number, career: CareerTarget): RoadmapAssessment[] {
+function buildAssessments(
+  weekCount: number,
+  career: CareerTarget,
+): RoadmapAssessment[] {
   const out: RoadmapAssessment[] = [];
   const step = weekCount <= 6 ? 2 : weekCount <= 12 ? 3 : 4;
   for (let w = step; w < weekCount; w += step) {
@@ -155,7 +214,8 @@ function buildAssessments(weekCount: number, career: CareerTarget): RoadmapAsses
       title: `Checkpoint Quiz — Week ${w}`,
       week: w,
       type: 'quiz',
-      description: 'A short quiz on the topics covered since the last checkpoint.',
+      description:
+        'A short quiz on the topics covered since the last checkpoint.',
     });
   }
   out.push({
@@ -169,7 +229,9 @@ function buildAssessments(weekCount: number, career: CareerTarget): RoadmapAsses
     CareerTarget.FullTime,
   ];
   out.push({
-    title: interviewCareers.includes(career) ? 'Mock Interview' : 'Final Assignment',
+    title: interviewCareers.includes(career)
+      ? 'Mock Interview'
+      : 'Final Assignment',
     week: weekCount,
     type: interviewCareers.includes(career) ? 'interview' : 'assignment',
     description: interviewCareers.includes(career)
@@ -181,23 +243,35 @@ function buildAssessments(weekCount: number, career: CareerTarget): RoadmapAsses
 
 function buildDailyPlan(track: Track, time: TimePerDay): string[] {
   const plan = [...track.dailyPlan];
-  if (time === TimePerDay.HalfHour) return ['Focus on one concept (15 min)', 'One hands-on exercise (15 min)'];
-  if (time === TimePerDay.ThreePlusHours) plan.push('Extra: build/extend your project (45 min)', 'Optional: read docs or solve a bonus problem');
+  if (time === TimePerDay.HalfHour)
+    return ['Focus on one concept (15 min)', 'One hands-on exercise (15 min)'];
+  if (time === TimePerDay.ThreePlusHours)
+    plan.push(
+      'Extra: build/extend your project (45 min)',
+      'Optional: read docs or solve a bonus problem',
+    );
   return plan;
 }
 
 function buildTips(track: Track, input: RoadmapBlueprintInput): string[] {
   const tips = [...track.tips];
   const styleTip: Record<LearningStyle, string> = {
-    [LearningStyle.Video]: 'Pair each video with immediately building the thing you watched.',
-    [LearningStyle.Reading]: 'Turn what you read into a tiny code experiment the same day.',
-    [LearningStyle.Project]: 'Keep one project growing — fold every new topic into it.',
-    [LearningStyle.Practice]: 'Bias toward problems and reps; theory follows practice.',
-    [LearningStyle.Mixed]: 'Alternate watch/read with build/practice to stay engaged.',
+    [LearningStyle.Video]:
+      'Pair each video with immediately building the thing you watched.',
+    [LearningStyle.Reading]:
+      'Turn what you read into a tiny code experiment the same day.',
+    [LearningStyle.Project]:
+      'Keep one project growing — fold every new topic into it.',
+    [LearningStyle.Practice]:
+      'Bias toward problems and reps; theory follows practice.',
+    [LearningStyle.Mixed]:
+      'Alternate watch/read with build/practice to stay engaged.',
   };
   tips.push(styleTip[input.preferredLearningStyle]);
   if (input.weakAreas.length) {
-    tips.push(`Give extra reps to your weak areas: ${input.weakAreas.slice(0, 3).join(', ')}.`);
+    tips.push(
+      `Give extra reps to your weak areas: ${input.weakAreas.slice(0, 3).join(', ')}.`,
+    );
   }
   return tips;
 }
@@ -207,7 +281,9 @@ function buildTips(track: Track, input: RoadmapBlueprintInput): string[] {
  * weak areas, timeline, time/day, learning style and career target.
  * Reused by the Roadmap Agent (runtime) and the seed script.
  */
-export function buildRoadmapBlueprint(input: RoadmapBlueprintInput): GeneratedRoadmap {
+export function buildRoadmapBlueprint(
+  input: RoadmapBlueprintInput,
+): GeneratedRoadmap {
   const track = matchTrack(input.mainGoal);
   const weekCount = WEEKS_BY_TIMELINE[input.targetTimeline];
   const phases = clampPhasesForSkill(track, input.currentSkillLevel);

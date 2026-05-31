@@ -26,12 +26,18 @@ export class MockAIProvider implements IAIProvider {
   };
   private static readonly EMBED_DIM = 256;
 
-  async generateText(messages: AIMessage[], _opts?: GenOptions): Promise<string> {
+  async generateText(
+    messages: AIMessage[],
+    _opts?: GenOptions,
+  ): Promise<string> {
     const last = messages[messages.length - 1]?.content ?? '';
     return `Here's a clear, structured explanation based on your question: "${last.slice(0, 80)}".`;
   }
 
-  async *streamText(messages: AIMessage[], _opts?: GenOptions): AsyncIterable<string> {
+  async *streamText(
+    messages: AIMessage[],
+    _opts?: GenOptions,
+  ): AsyncIterable<string> {
     const full = await this.generateText(messages, _opts);
     for (const token of full.split(/(\s+)/)) {
       // Small jitter to look like real token streaming; deterministic enough for dev.

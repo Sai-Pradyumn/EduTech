@@ -19,7 +19,11 @@ import { AuthUser } from '../../common/interfaces';
 import { OrgContext } from '../tenancy/rbac.types';
 import { UsersService } from '../users/users.service';
 import { LiveSessionService } from './services/live-session.service';
-import { CreateLiveSessionDto, EndSessionDto, UpdateLiveSessionDto } from './dto/live-session.dto';
+import {
+  CreateLiveSessionDto,
+  EndSessionDto,
+  UpdateLiveSessionDto,
+} from './dto/live-session.dto';
 
 /**
  * Live session surface (Phase 4 · B4). Hosting/management requires CohortCreate
@@ -42,15 +46,21 @@ export class LiveSessionController {
   @Get()
   @Permissions(Permission.CohortView)
   list(@CurrentOrg() ctx: OrgContext) {
-    if (!ctx.organizationId) throw new BadRequestException('Select an organization (x-org-id) first.');
+    if (!ctx.organizationId)
+      throw new BadRequestException('Select an organization (x-org-id) first.');
     return this.sessions.listForOrg(ctx.organizationId);
   }
 
   @Post()
   @Permissions(Permission.CohortCreate)
   @HttpCode(HttpStatus.CREATED)
-  async create(@CurrentUser() user: AuthUser, @CurrentOrg() ctx: OrgContext, @Body() dto: CreateLiveSessionDto) {
-    if (!ctx.organizationId) throw new BadRequestException('Select an organization (x-org-id) first.');
+  async create(
+    @CurrentUser() user: AuthUser,
+    @CurrentOrg() ctx: OrgContext,
+    @Body() dto: CreateLiveSessionDto,
+  ) {
+    if (!ctx.organizationId)
+      throw new BadRequestException('Select an organization (x-org-id) first.');
     const host = await this.users.findByIdOrThrow(user.id);
     return this.sessions.create(ctx.organizationId, user.id, host.name, dto);
   }
@@ -71,7 +81,11 @@ export class LiveSessionController {
 
   @Post(':id/end')
   @Permissions(Permission.CohortCreate)
-  async end(@CurrentOrg() ctx: OrgContext, @Param('id') id: string, @Body() dto: EndSessionDto) {
+  async end(
+    @CurrentOrg() ctx: OrgContext,
+    @Param('id') id: string,
+    @Body() dto: EndSessionDto,
+  ) {
     await this.assertOrg(ctx, id);
     return this.sessions.end(id, dto.notes ?? '');
   }
@@ -85,7 +99,11 @@ export class LiveSessionController {
 
   @Patch(':id')
   @Permissions(Permission.CohortCreate)
-  async update(@CurrentOrg() ctx: OrgContext, @Param('id') id: string, @Body() dto: UpdateLiveSessionDto) {
+  async update(
+    @CurrentOrg() ctx: OrgContext,
+    @Param('id') id: string,
+    @Body() dto: UpdateLiveSessionDto,
+  ) {
     await this.assertOrg(ctx, id);
     return this.sessions.update(id, dto);
   }
@@ -101,6 +119,7 @@ export class LiveSessionController {
   private async assertOrg(ctx: OrgContext, sessionId: string): Promise<void> {
     if (ctx.isPlatform) return;
     const orgId = await this.sessions.orgIdOf(sessionId);
-    if (ctx.organizationId !== orgId) throw new ForbiddenException('You do not have access to this session.');
+    if (ctx.organizationId !== orgId)
+      throw new ForbiddenException('You do not have access to this session.');
   }
 }

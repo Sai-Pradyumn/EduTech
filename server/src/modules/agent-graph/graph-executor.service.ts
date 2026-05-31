@@ -1,4 +1,9 @@
-import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
@@ -44,17 +49,35 @@ export class GraphExecutorService {
       name: g.name,
       title: g.title,
       description: g.description,
-      nodes: g.nodes.map((n) => ({ key: n.key, label: n.label, agentType: n.agentType })),
+      nodes: g.nodes.map((n) => ({
+        key: n.key,
+        label: n.label,
+        agentType: n.agentType,
+      })),
     }));
   }
 
-  async run(userId: string, role: Role, graphName: string, input: string): Promise<GraphRunView> {
-    if (!this.enabled) throw new ForbiddenException('Agent-graph workflows are disabled. Set ENABLE_LANGGRAPH=true to enable them.');
+  async run(
+    userId: string,
+    role: Role,
+    graphName: string,
+    input: string,
+  ): Promise<GraphRunView> {
+    if (!this.enabled)
+      throw new ForbiddenException(
+        'Agent-graph workflows are disabled. Set ENABLE_LANGGRAPH=true to enable them.',
+      );
     const graph = graphByName(graphName);
     if (!graph) throw new BadRequestException(`Unknown graph "${graphName}".`);
 
     const startedAt = Date.now();
-    const run = await this.runs.create({ user: new Types.ObjectId(userId), graph: graph.name, input, status: 'running', steps: [] });
+    const run = await this.runs.create({
+      user: new Types.ObjectId(userId),
+      graph: graph.name,
+      input,
+      status: 'running',
+      steps: [],
+    });
 
     let sessionId: string | undefined;
     try {
@@ -88,19 +111,31 @@ export class GraphExecutorService {
   }
 
   async list(userId: string): Promise<GraphRunView[]> {
-    const runs = await this.runs.find({ user: new Types.ObjectId(userId) }).sort({ createdAt: -1 }).limit(50).exec();
+    const runs = await this.runs
+      .find({ user: new Types.ObjectId(userId) })
+      .sort({ createdAt: -1 })
+      .limit(50)
+      .exec();
     return runs.map((r) => this.view(r));
   }
 
   async get(userId: string, id: string): Promise<GraphRunView> {
-    if (!Types.ObjectId.isValid(id)) throw new NotFoundException('Run not found');
-    const run = await this.runs.findOne({ _id: id, user: new Types.ObjectId(userId) });
+    if (!Types.ObjectId.isValid(id))
+      throw new NotFoundException('Run not found');
+    const run = await this.runs.findOne({
+      _id: id,
+      user: new Types.ObjectId(userId),
+    });
     if (!run) throw new NotFoundException('Run not found');
     return this.view(run);
   }
 
   private snippet(markdown: string): string {
-    return markdown.replace(/[#*_>`~|]/g, '').replace(/\s+/g, ' ').trim().slice(0, 280);
+    return markdown
+      .replace(/[#*_>`~|]/g, '')
+      .replace(/\s+/g, ' ')
+      .trim()
+      .slice(0, 280);
   }
 
   private view(r: GraphRunDocument): GraphRunView {
@@ -111,8 +146,16 @@ export class GraphExecutorService {
       status: r.status,
       sessionId: r.sessionId,
       latencyMs: r.latencyMs,
-      steps: r.steps.map((s) => ({ key: s.key, label: s.label, agentType: s.agentType, summary: s.summary })),
-      createdAt: (r as GraphRunDocument & { createdAt?: Date }).createdAt?.toISOString() ?? '',
+      steps: r.steps.map((s) => ({
+        key: s.key,
+        label: s.label,
+        agentType: s.agentType,
+        summary: s.summary,
+      })),
+      createdAt:
+        (
+          r as GraphRunDocument & { createdAt?: Date }
+        ).createdAt?.toISOString() ?? '',
     };
   }
 }

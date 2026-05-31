@@ -67,8 +67,11 @@ export class EvaluationService {
     });
 
     const topicScores = this.topicScores(results);
-    const weakTopics = topicScores.filter((t) => t.severity >= 50).map((t) => t.topic);
-    const score = pointsTotal === 0 ? 0 : Math.round((earnedTotal / pointsTotal) * 100);
+    const weakTopics = topicScores
+      .filter((t) => t.severity >= 50)
+      .map((t) => t.topic);
+    const score =
+      pointsTotal === 0 ? 0 : Math.round((earnedTotal / pointsTotal) * 100);
 
     return {
       score,
@@ -84,14 +87,18 @@ export class EvaluationService {
   private isCorrect(q: QuizQuestion, a?: SubmittedAnswer): boolean {
     if (!a) return false;
     if (q.type === QuestionType.Mcq) {
-      return typeof a.answerIndex === 'number' && a.answerIndex === q.answerIndex;
+      return (
+        typeof a.answerIndex === 'number' && a.answerIndex === q.answerIndex
+      );
     }
     // short_answer / coding — keyword coverage against expected terms (mock grading).
     const text = (a.text ?? '').toLowerCase();
     if (!text.trim()) return false;
     const expected = q.keywords.length ? q.keywords : this.terms(q.modelAnswer);
     if (expected.length === 0) return text.length > 10; // no rubric → accept a real attempt
-    const matched = expected.filter((k) => text.includes(k.toLowerCase())).length;
+    const matched = expected.filter((k) =>
+      text.includes(k.toLowerCase()),
+    ).length;
     return matched / expected.length >= KEYWORD_PASS;
   }
 
@@ -113,9 +120,17 @@ export class EvaluationService {
       .sort((a, b) => b.severity - a.severity);
   }
 
-  private feedback(score: number, weakTopics: string[], topics: TopicScore[]): string {
+  private feedback(
+    score: number,
+    weakTopics: string[],
+    topics: TopicScore[],
+  ): string {
     const band =
-      score >= 80 ? 'Strong work' : score >= 50 ? 'Solid start' : 'Keep going — this is how you improve';
+      score >= 80
+        ? 'Strong work'
+        : score >= 50
+          ? 'Solid start'
+          : 'Keep going — this is how you improve';
     const weakLine = weakTopics.length
       ? `Focus next on: ${weakTopics.join(', ')}.`
       : 'No major weak spots detected — try a harder difficulty next.';
@@ -125,6 +140,8 @@ export class EvaluationService {
   }
 
   private terms(text: string): string[] {
-    return (text.toLowerCase().match(/[a-z0-9]+/g) ?? []).filter((t) => t.length > 3);
+    return (text.toLowerCase().match(/[a-z0-9]+/g) ?? []).filter(
+      (t) => t.length > 3,
+    );
   }
 }

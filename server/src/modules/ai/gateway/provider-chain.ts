@@ -19,7 +19,10 @@ export const PROVIDER_CHAIN_TOKEN = 'PROVIDER_CHAIN_TOKEN';
 export const providerChainFactory: Provider = {
   provide: PROVIDER_CHAIN_TOKEN,
   inject: [ConfigService, MockAIProvider],
-  useFactory: (config: ConfigService<AppConfig, true>, mock: MockAIProvider): IAIProvider[] => {
+  useFactory: (
+    config: ConfigService<AppConfig, true>,
+    mock: MockAIProvider,
+  ): IAIProvider[] => {
     const logger = new Logger('LlmProviderChain');
     const ai = config.get('ai', { infer: true });
     const p = ai.providers;
@@ -29,15 +32,33 @@ export const providerChainFactory: Provider = {
       claude: new ClaudeProvider(p.claude.apiKey, p.claude.model, max),
       gemini: new GeminiProvider(p.gemini.apiKey, p.gemini.model, max),
       openai: new OpenAICompatibleProvider(
-        { name: 'openai', label: 'OpenAI', apiKey: p.openai.apiKey, model: p.openai.model, embeddings: true },
+        {
+          name: 'openai',
+          label: 'OpenAI',
+          apiKey: p.openai.apiKey,
+          model: p.openai.model,
+          embeddings: true,
+        },
         max,
       ),
       groq: new OpenAICompatibleProvider(
-        { name: 'groq', label: 'Groq', apiKey: p.groq.apiKey, model: p.groq.model, baseURL: p.groq.baseURL },
+        {
+          name: 'groq',
+          label: 'Groq',
+          apiKey: p.groq.apiKey,
+          model: p.groq.model,
+          baseURL: p.groq.baseURL,
+        },
         max,
       ),
       mistral: new OpenAICompatibleProvider(
-        { name: 'mistral', label: 'Mistral', apiKey: p.mistral.apiKey, model: p.mistral.model, baseURL: p.mistral.baseURL },
+        {
+          name: 'mistral',
+          label: 'Mistral',
+          apiKey: p.mistral.apiKey,
+          model: p.mistral.model,
+          baseURL: p.mistral.baseURL,
+        },
         max,
       ),
       openrouter: new OpenAICompatibleProvider(
@@ -52,7 +73,13 @@ export const providerChainFactory: Provider = {
         max,
       ),
       deepseek: new OpenAICompatibleProvider(
-        { name: 'deepseek', label: 'DeepSeek', apiKey: p.deepseek.apiKey, model: p.deepseek.model, baseURL: p.deepseek.baseURL },
+        {
+          name: 'deepseek',
+          label: 'DeepSeek',
+          apiKey: p.deepseek.apiKey,
+          model: p.deepseek.model,
+          baseURL: p.deepseek.baseURL,
+        },
         max,
       ),
     };
@@ -75,7 +102,9 @@ export const providerChainFactory: Provider = {
     chain.push(mock); // always-available terminal fallback
 
     if (selected.length) {
-      const embedder = chain.find((c) => c.capabilities.embeddings && c.isLive)?.name ?? 'mock-hashed';
+      const embedder =
+        chain.find((c) => c.capabilities.embeddings && c.isLive)?.name ??
+        'mock-hashed';
       logger.log(
         `LLM chain: ${selected.join(' → ')} → mock (strategy: ${ai.strategy}, embeddings: ${embedder}).`,
       );

@@ -23,10 +23,25 @@ export const VISUAL_TYPES = [
 export type VisualType = (typeof VISUAL_TYPES)[number];
 
 /** How `content` should be interpreted/rendered. Structured-first; image last. */
-export const VISUAL_CONTENT_FORMATS = ['svg', 'mermaid', 'jsonGraph', 'imageUrl', 'markdown', 'html'] as const;
+export const VISUAL_CONTENT_FORMATS = [
+  'svg',
+  'mermaid',
+  'jsonGraph',
+  'imageUrl',
+  'markdown',
+  'html',
+] as const;
 export type VisualContentFormat = (typeof VISUAL_CONTENT_FORMATS)[number];
 
-export const VISUAL_SOURCE_TYPES = ['tutor', 'roadmap', 'flow', 'knowledge', 'quiz', 'project', 'manual'] as const;
+export const VISUAL_SOURCE_TYPES = [
+  'tutor',
+  'roadmap',
+  'flow',
+  'knowledge',
+  'quiz',
+  'project',
+  'manual',
+] as const;
 export type VisualSourceType = (typeof VISUAL_SOURCE_TYPES)[number];
 
 export const VISUAL_STATUSES = ['generating', 'ready', 'failed'] as const;
@@ -67,7 +82,11 @@ export class VisualAsset {
   @Prop({ default: '' }) caption!: string;
   @Prop({ default: '' }) howToRead!: string;
   /** Learner level this version targets. */
-  @Prop({ type: String, enum: ['beginner', 'intermediate', 'advanced'], default: 'beginner' })
+  @Prop({
+    type: String,
+    enum: ['beginner', 'intermediate', 'advanced'],
+    default: 'beginner',
+  })
   level!: 'beginner' | 'intermediate' | 'advanced';
 
   @Prop({ type: String, enum: VISUAL_STATUSES, default: 'ready' })

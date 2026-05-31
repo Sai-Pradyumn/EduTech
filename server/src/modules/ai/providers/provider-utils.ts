@@ -14,7 +14,10 @@ export function splitSystem(
   }
   // A chat must start with a user turn; if it doesn't, prepend a neutral one.
   if (turns.length === 0 || turns[0].role !== 'user') {
-    turns.unshift({ role: 'user', content: systemParts.length ? 'Continue.' : '...' });
+    turns.unshift({
+      role: 'user',
+      content: systemParts.length ? 'Continue.' : '...',
+    });
   }
   return { system: systemParts.join('\n\n').trim(), turns };
 }

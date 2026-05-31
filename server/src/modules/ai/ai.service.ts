@@ -39,7 +39,8 @@ export class AiService {
   constructor(
     @Inject(AI_PROVIDER_TOKEN) private readonly provider: IAIProvider,
     private readonly gateway: LlmGatewayService,
-    @InjectModel(AiUsageLog.name) private readonly usageModel: Model<AiUsageLogDocument>,
+    @InjectModel(AiUsageLog.name)
+    private readonly usageModel: Model<AiUsageLogDocument>,
   ) {}
 
   get providerName(): string {
@@ -63,13 +64,20 @@ export class AiService {
    * - parallel → race providers, then a judge synthesizes the best answer
    * Returns the final text (callers stream it); usage is logged.
    */
-  async composeWithStrategy(messages: AIMessage[], opts?: GenOptions): Promise<string> {
+  async composeWithStrategy(
+    messages: AIMessage[],
+    opts?: GenOptions,
+  ): Promise<string> {
     const cap = this.captureOpts(opts);
     const started = Date.now();
     let out: string;
     switch (this.gateway.strategy) {
       case 'refine':
-        out = await this.gateway.refineText(messages, CRITIC_INSTRUCTION, cap.opts);
+        out = await this.gateway.refineText(
+          messages,
+          CRITIC_INSTRUCTION,
+          cap.opts,
+        );
         break;
       case 'parallel':
         out = await this.gateway.parallelText(messages, cap.opts);
@@ -81,7 +89,10 @@ export class AiService {
     return out;
   }
 
-  async generateText(messages: AIMessage[], opts?: GenOptions): Promise<string> {
+  async generateText(
+    messages: AIMessage[],
+    opts?: GenOptions,
+  ): Promise<string> {
     const cap = this.captureOpts(opts);
     const started = Date.now();
     const out = await this.provider.generateText(messages, cap.opts);
@@ -89,7 +100,10 @@ export class AiService {
     return out;
   }
 
-  async *streamText(messages: AIMessage[], opts?: GenOptions): AsyncIterable<string> {
+  async *streamText(
+    messages: AIMessage[],
+    opts?: GenOptions,
+  ): AsyncIterable<string> {
     const cap = this.captureOpts(opts);
     const started = Date.now();
     let acc = '';
@@ -107,8 +121,18 @@ export class AiService {
   ): Promise<T> {
     const cap = this.captureOpts(opts);
     const started = Date.now();
-    const out = await this.provider.generateStructuredOutput<T>(messages, schema, cap.opts);
-    await this.autolog(opts, messages, JSON.stringify(out), cap, Date.now() - started);
+    const out = await this.provider.generateStructuredOutput<T>(
+      messages,
+      schema,
+      cap.opts,
+    );
+    await this.autolog(
+      opts,
+      messages,
+      JSON.stringify(out),
+      cap,
+      Date.now() - started,
+    );
     return out;
   }
 
@@ -148,7 +172,9 @@ export class AiService {
     const meta = opts?.meta;
     if (!meta?.userId) return; // only attributed calls are logged here
     const { usage, model } = cap.get();
-    const tokensIn = usage?.promptTokens ?? estimateTokens(messages.map((m) => m.content).join(' '));
+    const tokensIn =
+      usage?.promptTokens ??
+      estimateTokens(messages.map((m) => m.content).join(' '));
     const tokensOut = usage?.completionTokens ?? estimateTokens(output);
     await this.record({
       userId: meta.userId,
@@ -170,7 +196,11 @@ export class AiService {
     avgLatencyMs: number;
     byAgent: { agentType: string; count: number }[];
   }> {
-    const [totals] = await this.usageModel.aggregate<{ totalCalls: number; totalTokens: number; avgLatencyMs: number }>([
+    const [totals] = await this.usageModel.aggregate<{
+      totalCalls: number;
+      totalTokens: number;
+      avgLatencyMs: number;
+    }>([
       {
         $group: {
           _id: null,
@@ -180,7 +210,10 @@ export class AiService {
         },
       },
     ]);
-    const byAgent = await this.usageModel.aggregate<{ agentType: string; count: number }>([
+    const byAgent = await this.usageModel.aggregate<{
+      agentType: string;
+      count: number;
+    }>([
       { $group: { _id: '$agentType', count: { $sum: 1 } } },
       { $project: { _id: 0, agentType: '$_id', count: 1 } },
       { $sort: { count: -1 } },
@@ -199,7 +232,13 @@ export class AiService {
     totalTokens: number;
     avgLatencyMs: number;
     estCostUsd: number;
-    byAgent: { agentType: string; count: number; tokens: number; avgLatencyMs: number; estCostUsd: number }[];
+    byAgent: {
+      agentType: string;
+      count: number;
+      tokens: number;
+      avgLatencyMs: number;
+      estCostUsd: number;
+    }[];
   }> {
     const rows = await this.usageModel.aggregate<{
       _id: string;
@@ -230,8 +269,13 @@ export class AiService {
     return {
       totalCalls: byAgent.reduce((s, a) => s + a.count, 0),
       totalTokens,
-      avgLatencyMs: byAgent.length ? Math.round(byAgent.reduce((s, a) => s + a.avgLatencyMs, 0) / byAgent.length) : 0,
-      estCostUsd: Math.round(byAgent.reduce((s, a) => s + a.estCostUsd, 0) * 100) / 100,
+      avgLatencyMs: byAgent.length
+        ? Math.round(
+            byAgent.reduce((s, a) => s + a.avgLatencyMs, 0) / byAgent.length,
+          )
+        : 0,
+      estCostUsd:
+        Math.round(byAgent.reduce((s, a) => s + a.estCostUsd, 0) * 100) / 100,
       byAgent,
     };
   }

@@ -25,7 +25,12 @@ export interface AppConfig {
       openai: { apiKey: string; model: string };
       groq: { apiKey: string; model: string; baseURL: string };
       mistral: { apiKey: string; model: string; baseURL: string };
-      openrouter: { apiKey: string; model: string; baseURL: string; headers: Record<string, string> };
+      openrouter: {
+        apiKey: string;
+        model: string;
+        baseURL: string;
+        headers: Record<string, string>;
+      };
       deepseek: { apiKey: string; model: string; baseURL: string };
       gemini: { apiKey: string; model: string };
     };
@@ -56,7 +61,12 @@ export interface AppConfig {
   storage: {
     provider: 'local' | 's3';
     localDir: string;
-    aws: { accessKeyId: string; secretAccessKey: string; region: string; bucket: string };
+    aws: {
+      accessKeyId: string;
+      secretAccessKey: string;
+      region: string;
+      bucket: string;
+    };
   };
 }
 
@@ -77,17 +87,30 @@ export default (): AppConfig => ({
   },
   ai: {
     provider: process.env.AI_PROVIDER ?? 'auto',
-    strategy: (process.env.LLM_STRATEGY as AppConfig['ai']['strategy']) ?? 'fallback',
-    order: (process.env.LLM_PROVIDERS ?? 'groq,gemini,mistral,openrouter,deepseek,openai,claude')
+    strategy:
+      (process.env.LLM_STRATEGY as AppConfig['ai']['strategy']) ?? 'fallback',
+    order: (
+      process.env.LLM_PROVIDERS ??
+      'groq,gemini,mistral,openrouter,deepseek,openai,claude'
+    )
       .split(',')
       .map((s) => s.trim())
       .filter(Boolean),
-    requestTimeoutMs: parseInt(process.env.AI_REQUEST_TIMEOUT_MS ?? '45000', 10),
+    requestTimeoutMs: parseInt(
+      process.env.AI_REQUEST_TIMEOUT_MS ?? '45000',
+      10,
+    ),
     maxOutputTokens: parseInt(process.env.AI_MAX_OUTPUT_TOKENS ?? '2048', 10),
     userRatePerMin: parseInt(process.env.AI_USER_RATE_PER_MIN ?? '20', 10),
     providers: {
-      claude: { apiKey: process.env.CLAUDE_API_KEY ?? '', model: process.env.CLAUDE_MODEL ?? 'claude-sonnet-4-6' },
-      openai: { apiKey: process.env.OPENAI_API_KEY ?? '', model: process.env.OPENAI_MODEL ?? 'gpt-4o-mini' },
+      claude: {
+        apiKey: process.env.CLAUDE_API_KEY ?? '',
+        model: process.env.CLAUDE_MODEL ?? 'claude-sonnet-4-6',
+      },
+      openai: {
+        apiKey: process.env.OPENAI_API_KEY ?? '',
+        model: process.env.OPENAI_MODEL ?? 'gpt-4o-mini',
+      },
       groq: {
         apiKey: process.env.GROQ_API_KEY ?? '',
         model: process.env.GROQ_MODEL ?? 'llama-3.3-70b-versatile',
@@ -100,8 +123,11 @@ export default (): AppConfig => ({
       },
       openrouter: {
         apiKey: process.env.OPENROUTER_API_KEY ?? '',
-        model: process.env.OPENROUTER_MODEL ?? 'meta-llama/llama-3.3-70b-instruct:free',
-        baseURL: process.env.OPENROUTER_BASE_URL ?? 'https://openrouter.ai/api/v1',
+        model:
+          process.env.OPENROUTER_MODEL ??
+          'meta-llama/llama-3.3-70b-instruct:free',
+        baseURL:
+          process.env.OPENROUTER_BASE_URL ?? 'https://openrouter.ai/api/v1',
         headers: {
           'HTTP-Referer': process.env.OPENROUTER_REFERER ?? 'https://asta.ai',
           'X-Title': process.env.OPENROUTER_TITLE ?? 'Asta AI',
@@ -142,7 +168,9 @@ export default (): AppConfig => ({
     hybrid: process.env.RAG_HYBRID !== 'false',
   },
   storage: {
-    provider: (process.env.STORAGE_PROVIDER as AppConfig['storage']['provider']) ?? 'local',
+    provider:
+      (process.env.STORAGE_PROVIDER as AppConfig['storage']['provider']) ??
+      'local',
     localDir: process.env.STORAGE_LOCAL_DIR ?? 'storage-data',
     aws: {
       accessKeyId: process.env.AWS_ACCESS_KEY_ID ?? '',

@@ -1,0 +1,41 @@
+import { Injectable, inject } from '@angular/core';
+import { Observable } from 'rxjs';
+import { ApiService } from './api.service';
+
+export interface Template {
+  id: string;
+  type: string;
+  title: string;
+  description: string;
+  tags: string[];
+  level: string;
+  targetRole: string;
+  creatorName: string;
+  status: string;
+  usageCount: number;
+  rating: { avg: number; count: number };
+  reviewNote?: string;
+  content?: Record<string, unknown>;
+}
+export interface CreateTemplateInput {
+  type: string;
+  title: string;
+  description?: string;
+  tags?: string[];
+  level?: string;
+  targetRole?: string;
+  content?: Record<string, unknown>;
+}
+
+@Injectable({ providedIn: 'root' })
+export class MarketplaceService {
+  private readonly api = inject(ApiService);
+  list(type?: string): Observable<Template[]> { return this.api.get<Template[]>('/marketplace/templates', type ? { type } : undefined); }
+  mine(): Observable<Template[]> { return this.api.get<Template[]>('/marketplace/templates/mine'); }
+  pending(): Observable<Template[]> { return this.api.get<Template[]>('/marketplace/templates/pending'); }
+  get(id: string): Observable<Template> { return this.api.get<Template>(`/marketplace/templates/${id}`); }
+  create(input: CreateTemplateInput): Observable<{ id: string; status: string }> { return this.api.post<{ id: string; status: string }>('/marketplace/templates', input); }
+  submit(id: string): Observable<{ id: string; status: string }> { return this.api.post<{ id: string; status: string }>(`/marketplace/templates/${id}/publish`); }
+  review(id: string, decision: 'published' | 'rejected', note?: string): Observable<{ id: string; status: string }> { return this.api.post<{ id: string; status: string }>(`/marketplace/templates/${id}/review`, { decision, note }); }
+  use(id: string): Observable<{ ok: true; type: string; cloneRoute: string }> { return this.api.post<{ ok: true; type: string; cloneRoute: string }>(`/marketplace/templates/${id}/use`); }
+}

@@ -23,12 +23,30 @@ export class ProjectBuilderAgentService implements IAgent {
   async handle(ctx: AgentRuntimeContext): Promise<AgentResponse> {
     const goal = this.extractGoal(ctx.request.message);
 
-    ctx.emit({ type: 'thinking', messageId: '', label: 'Scoping the project to your level & stack' });
-    ctx.emit({ type: 'tool_call', messageId: '', tool: 'project.generate', label: `Designing a blueprint for "${goal}"` });
+    ctx.emit({
+      type: 'thinking',
+      messageId: '',
+      label: 'Scoping the project to your level & stack',
+    });
+    ctx.emit({
+      type: 'tool_call',
+      messageId: '',
+      tool: 'project.generate',
+      label: `Designing a blueprint for "${goal}"`,
+    });
 
-    const project = await this.projects.generate(ctx.request.userId, { goal }, 'agent');
+    const project = await this.projects.generate(
+      ctx.request.userId,
+      { goal },
+      'agent',
+    );
 
-    ctx.emit({ type: 'tool_result', messageId: '', tool: 'project.generate', summary: `${project.tasks.length} tasks across ${this.phaseCount(project.tasks)} phases · ${project.estimatedWeeks}w` });
+    ctx.emit({
+      type: 'tool_result',
+      messageId: '',
+      tool: 'project.generate',
+      summary: `${project.tasks.length} tasks across ${this.phaseCount(project.tasks)} phases · ${project.estimatedWeeks}w`,
+    });
 
     const fallback = [
       `Here's a **${project.difficulty}** build plan for **${project.title}** — ${project.estimatedWeeks} weeks, ${project.tasks.length} tasks.`,
@@ -54,7 +72,9 @@ export class ProjectBuilderAgentService implements IAgent {
       title: project.title,
       techStack: project.techStack,
       features: project.features,
-      tasks: project.tasks.slice(0, 8).map((t) => ({ title: t.title, done: false })),
+      tasks: project.tasks
+        .slice(0, 8)
+        .map((t) => ({ title: t.title, done: false })),
     };
     ctx.emit({ type: 'visual_block', messageId: '', block });
 
@@ -64,8 +84,18 @@ export class ProjectBuilderAgentService implements IAgent {
       mode: 'mixed',
       answer,
       actions: [
-        { id: 'open', label: 'Open in Project Studio', kind: 'open_route', payload: { route: '/app/projects', projectId: String(project._id) } },
-        { id: 'harder', label: 'Make it more advanced', kind: 'custom', payload: { goal, difficulty: 'advanced' } },
+        {
+          id: 'open',
+          label: 'Open in Project Studio',
+          kind: 'open_route',
+          payload: { route: '/app/projects', projectId: String(project._id) },
+        },
+        {
+          id: 'harder',
+          label: 'Make it more advanced',
+          kind: 'custom',
+          payload: { goal, difficulty: 'advanced' },
+        },
       ],
       visualBlocks: [block],
       confidence: 0.9,
@@ -75,7 +105,9 @@ export class ProjectBuilderAgentService implements IAgent {
       ],
       recommendedNextActions: [
         'Open the Project Studio and start the first task',
-        ctx.roadmap ? `Tie this project to your roadmap: ${ctx.roadmap.title}` : 'Generate a roadmap to sequence your projects',
+        ctx.roadmap
+          ? `Tie this project to your roadmap: ${ctx.roadmap.title}`
+          : 'Generate a roadmap to sequence your projects',
       ],
     };
   }
@@ -83,7 +115,10 @@ export class ProjectBuilderAgentService implements IAgent {
   private extractGoal(message: string): string {
     const cleaned = message
       .toLowerCase()
-      .replace(/^(can you |please )?(help me )?(build|create|make|design|plan|architect)\s+(me\s+)?(a |an )?/i, '')
+      .replace(
+        /^(can you |please )?(help me )?(build|create|make|design|plan|architect)\s+(me\s+)?(a |an )?/i,
+        '',
+      )
       .replace(/\bproject (for|on|about)\s+/i, '')
       .replace(/[?.!]+$/, '')
       .trim();

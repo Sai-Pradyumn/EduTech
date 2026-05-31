@@ -2,7 +2,13 @@ import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { HydratedDocument, Types } from 'mongoose';
 
 /** Lifecycle of an uploaded document through the ingestion pipeline. */
-export type IngestStatus = 'pending' | 'parsing' | 'chunking' | 'embedding' | 'ready' | 'failed';
+export type IngestStatus =
+  | 'pending'
+  | 'parsing'
+  | 'chunking'
+  | 'embedding'
+  | 'ready'
+  | 'failed';
 export type DocSource = 'upload' | 'text' | 'youtube';
 
 export type KnowledgeDocumentDocument = HydratedDocument<KnowledgeDocument>;
@@ -15,7 +21,11 @@ export class KnowledgeDocument {
   @Prop({ required: true })
   title!: string;
 
-  @Prop({ type: String, enum: ['upload', 'text', 'youtube'], default: 'upload' })
+  @Prop({
+    type: String,
+    enum: ['upload', 'text', 'youtube'],
+    default: 'upload',
+  })
   source!: DocSource;
 
   /** Storage key for the original file (LocalFileStorage / S3). Empty for pasted text. */
@@ -29,7 +39,12 @@ export class KnowledgeDocument {
   @Prop({ index: true })
   contentHash?: string;
 
-  @Prop({ type: String, enum: ['pending', 'parsing', 'chunking', 'embedding', 'ready', 'failed'], default: 'pending', index: true })
+  @Prop({
+    type: String,
+    enum: ['pending', 'parsing', 'chunking', 'embedding', 'ready', 'failed'],
+    default: 'pending',
+    index: true,
+  })
   status!: IngestStatus;
 
   @Prop({ default: 0 })
@@ -63,6 +78,7 @@ export class KnowledgeDocument {
   error?: string;
 }
 
-export const KnowledgeDocumentSchema = SchemaFactory.createForClass(KnowledgeDocument);
+export const KnowledgeDocumentSchema =
+  SchemaFactory.createForClass(KnowledgeDocument);
 KnowledgeDocumentSchema.index({ user: 1, status: 1 });
 KnowledgeDocumentSchema.index({ tags: 1 });

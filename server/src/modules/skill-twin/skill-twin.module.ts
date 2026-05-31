@@ -14,7 +14,12 @@ import { SkillTwinService } from './skill-twin.service';
  * (except the memory-reset, which clears Mistake OS + flagged weak areas).
  */
 @Module({
-  imports: [LearningIntelligenceModule, MistakesModule, FlowsModule, StudentProfileModule],
+  imports: [
+    LearningIntelligenceModule,
+    MistakesModule,
+    FlowsModule,
+    StudentProfileModule,
+  ],
   controllers: [SkillTwinController],
   providers: [SkillTwinService],
   exports: [SkillTwinService],

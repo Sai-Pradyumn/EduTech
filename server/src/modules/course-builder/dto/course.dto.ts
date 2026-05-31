@@ -1,7 +1,19 @@
 import { Type } from 'class-transformer';
-import { IsArray, IsEnum, IsIn, IsOptional, IsString, MaxLength, MinLength, ValidateNested } from 'class-validator';
+import {
+  IsArray,
+  IsEnum,
+  IsIn,
+  IsOptional,
+  IsString,
+  MaxLength,
+  MinLength,
+  ValidateNested,
+} from 'class-validator';
 import { Difficulty } from '../../../common/enums';
-import { COURSE_VISIBILITIES, CourseVisibility } from '../schemas/course.schema';
+import {
+  COURSE_VISIBILITIES,
+  CourseVisibility,
+} from '../schemas/course.schema';
 
 export class GenerateCourseDto {
   @IsString() @MinLength(2) @MaxLength(160) goal!: string;
@@ -19,16 +31,25 @@ class ModuleDto {
   @IsString() id!: string;
   @IsString() @MaxLength(160) title!: string;
   @IsOptional() @IsString() @MaxLength(600) summary?: string;
-  @IsOptional() @IsArray() @ValidateNested({ each: true }) @Type(() => LessonDto) lessons?: LessonDto[];
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => LessonDto)
+  lessons?: LessonDto[];
 }
 
 export class UpdateCourseDto {
   @IsOptional() @IsString() @MaxLength(160) title?: string;
   @IsOptional() @IsString() @MaxLength(600) description?: string;
   @IsOptional() @IsString() @MaxLength(120) audience?: string;
-  @IsOptional() @IsArray() @ValidateNested({ each: true }) @Type(() => ModuleDto) modules?: ModuleDto[];
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => ModuleDto)
+  modules?: ModuleDto[];
 }
 
 export class PublishCourseDto {
-  @IsIn(COURSE_VISIBILITIES as unknown as string[]) visibility!: CourseVisibility;
+  @IsIn(COURSE_VISIBILITIES)
+  visibility!: CourseVisibility;
 }

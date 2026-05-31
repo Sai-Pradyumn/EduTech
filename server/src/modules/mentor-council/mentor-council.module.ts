@@ -11,7 +11,12 @@ import { MentorCouncilService } from './mentor-council.service';
  * scores urgency and picks one with an explainable synthesis. Read-only; reuses LI + Flows + Mistakes.
  */
 @Module({
-  imports: [LearningIntelligenceModule, FlowsModule, MistakesModule, StudentProfileModule],
+  imports: [
+    LearningIntelligenceModule,
+    FlowsModule,
+    MistakesModule,
+    StudentProfileModule,
+  ],
   controllers: [MentorCouncilController],
   providers: [MentorCouncilService],
   exports: [MentorCouncilService],

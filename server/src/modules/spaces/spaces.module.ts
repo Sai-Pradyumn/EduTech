@@ -14,7 +14,9 @@ import { SpacesService } from './spaces.service';
  */
 @Module({
   imports: [
-    MongooseModule.forFeature([{ name: StudySpace.name, schema: StudySpaceSchema }]),
+    MongooseModule.forFeature([
+      { name: StudySpace.name, schema: StudySpaceSchema },
+    ]),
     FlowsModule,
     AssessmentModule,
     VisualsModule,

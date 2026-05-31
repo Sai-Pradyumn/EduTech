@@ -10,7 +10,12 @@ export class Membership {
   @Prop({ type: Types.ObjectId, ref: 'User', required: true, index: true })
   user!: Types.ObjectId;
 
-  @Prop({ type: Types.ObjectId, ref: 'Organization', required: true, index: true })
+  @Prop({
+    type: Types.ObjectId,
+    ref: 'Organization',
+    required: true,
+    index: true,
+  })
   organization!: Types.ObjectId;
 
   @Prop({ type: String, enum: OrgRole, default: OrgRole.Student })
@@ -20,7 +25,11 @@ export class Membership {
   @Prop({ type: [String], enum: Permission, default: [] })
   extraPermissions!: Permission[];
 
-  @Prop({ type: String, enum: MembershipStatus, default: MembershipStatus.Active })
+  @Prop({
+    type: String,
+    enum: MembershipStatus,
+    default: MembershipStatus.Active,
+  })
   status!: MembershipStatus;
 
   @Prop({ type: Types.ObjectId, ref: 'User' })

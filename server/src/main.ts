@@ -15,7 +15,10 @@ async function bootstrap(): Promise<void> {
   app.use(rateLimit({ windowMs: 60_000, max: 300 }));
 
   app.setGlobalPrefix('api');
-  app.enableCors({ origin: config.get('clientOrigin', { infer: true }), credentials: true });
+  app.enableCors({
+    origin: config.get('clientOrigin', { infer: true }),
+    credentials: true,
+  });
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,

@@ -1,10 +1,21 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { HydratedDocument, Types } from 'mongoose';
 
-export const DAILY_PLAN_MODES = ['normal', 'quick', 'exam', 'burnout_recovery'] as const;
+export const DAILY_PLAN_MODES = [
+  'normal',
+  'quick',
+  'exam',
+  'burnout_recovery',
+] as const;
 export type DailyPlanMode = (typeof DAILY_PLAN_MODES)[number];
 
-export const DAILY_ITEM_KINDS = ['flow_node', 'mistake', 'quiz', 'revision', 'project'] as const;
+export const DAILY_ITEM_KINDS = [
+  'flow_node',
+  'mistake',
+  'quiz',
+  'revision',
+  'project',
+] as const;
 export type DailyItemKind = (typeof DAILY_ITEM_KINDS)[number];
 
 @Schema({ _id: false })
