@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
+import * as webpush from 'web-push';
 import {
   PushSubscription,
   PushSubscriptionDocument,
@@ -14,24 +15,37 @@ export interface WebPushInput {
 }
 
 /**
- * Web Push foundation (Phase 10 · M4/M5). Stores per-device subscriptions and exposes a
- * `notify()` that is a safe no-op until a VAPID key + web-push sender are configured — so
- * local dev works without keys and the notification layer can call it unconditionally.
+ * Web Push (Phase 10 · M4/M5). Stores per-device subscriptions and sends real Web Push
+ * notifications via VAPID when keys are configured; a safe no-op otherwise — so local dev
+ * works without keys and the notification layer can call notify() unconditionally.
  */
 @Injectable()
 export class PushService {
   private readonly logger = new Logger(PushService.name);
+  private readonly configured: boolean;
 
   constructor(
     @InjectModel(PushSubscription.name)
     private readonly subs: Model<PushSubscriptionDocument>,
     private readonly config: ConfigService,
-  ) {}
+  ) {
+    const pub = this.config.get<string>('VAPID_PUBLIC_KEY') ?? '';
+    const priv = this.config.get<string>('VAPID_PRIVATE_KEY') ?? '';
+    this.configured = !!(pub && priv);
+    if (this.configured) {
+      webpush.setVapidDetails(
+        this.config.get<string>('VAPID_SUBJECT') ?? 'mailto:support@asta.dev',
+        pub,
+        priv,
+      );
+      this.logger.log('Web Push configured (VAPID).');
+    }
+  }
 
   /** Public VAPID key for the browser to subscribe with (empty when not configured). */
   vapidPublicKey(): { key: string; configured: boolean } {
     const key = this.config.get<string>('VAPID_PUBLIC_KEY') ?? '';
-    return { key, configured: !!key };
+    return { key, configured: this.configured };
   }
 
   async subscribe(userId: string, input: WebPushInput) {
@@ -57,7 +71,8 @@ export class PushService {
     return { unsubscribed: true };
   }
 
-  /** Best-effort push. Placeholder sender — logs intent until web-push is wired. */
+  /** Send a Web Push to all of a user's devices. No-op (returns 0) when VAPID isn't
+   *  configured. Prunes subscriptions the push service reports as gone (404/410). */
   async notify(
     userId: string,
     payload: { title: string; body: string; url?: string },
@@ -66,13 +81,35 @@ export class PushService {
       .find({ user: new Types.ObjectId(userId) })
       .lean<PushSubscriptionDocument[]>()
       .exec();
-    if (!this.vapidPublicKey().configured) {
+    if (!this.configured) {
       this.logger.debug(
         `web-push not configured; skipping ${subs.length} sub(s) for "${payload.title}"`,
       );
       return { sent: 0 };
     }
-    // Real send would import 'web-push' and call sendNotification per sub here.
-    return { sent: subs.length };
+    const body = JSON.stringify(payload);
+    let sent = 0;
+    await Promise.all(
+      subs.map(async (s) => {
+        try {
+          await webpush.sendNotification(
+            {
+              endpoint: s.endpoint,
+              keys: s.keys as { p256dh: string; auth: string },
+            },
+            body,
+          );
+          sent += 1;
+        } catch (err) {
+          const code = (err as { statusCode?: number }).statusCode;
+          if (code === 404 || code === 410) {
+            await this.subs.deleteOne({ endpoint: s.endpoint }).exec();
+          } else {
+            this.logger.warn(`push send failed: ${(err as Error).message}`);
+          }
+        }
+      }),
+    );
+    return { sent };
   }
 }

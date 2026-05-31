@@ -8,7 +8,11 @@ import { rateLimit } from './common/middleware/rate-limit.middleware';
 import { requestId } from './common/middleware/request-id.middleware';
 
 async function bootstrap(): Promise<void> {
-  const app = await NestFactory.create(AppModule, { bufferLogs: false });
+  // rawBody: true buffers the raw request body so payment webhooks can HMAC-verify it.
+  const app = await NestFactory.create(AppModule, {
+    bufferLogs: false,
+    rawBody: true,
+  });
   const config = app.get(ConfigService<AppConfig, true>);
 
   // Request correlation (M7): stable requestId + X-Request-Id on every request.

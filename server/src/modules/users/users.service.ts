@@ -11,6 +11,13 @@ export interface CreateUserInput {
   role?: Role;
 }
 
+export interface GoogleProfile {
+  googleId: string;
+  email: string;
+  name: string;
+  avatarUrl?: string;
+}
+
 @Injectable()
 export class UsersService {
   constructor(
@@ -21,6 +28,29 @@ export class UsersService {
     return this.userModel.create({
       ...input,
       role: input.role ?? Role.Student,
+    });
+  }
+
+  /** Find a Google-linked account by email and link/create as needed (Phase 10 · OAuth). */
+  async findOrCreateGoogle(profile: GoogleProfile): Promise<UserDocument> {
+    const existing = await this.userModel
+      .findOne({ email: profile.email.toLowerCase() })
+      .exec();
+    if (existing) {
+      if (!existing.googleId) {
+        existing.googleId = profile.googleId;
+        if (profile.avatarUrl && !existing.avatarUrl)
+          existing.avatarUrl = profile.avatarUrl;
+        await existing.save();
+      }
+      return existing;
+    }
+    return this.userModel.create({
+      email: profile.email.toLowerCase(),
+      name: profile.name,
+      googleId: profile.googleId,
+      avatarUrl: profile.avatarUrl,
+      role: Role.Student,
     });
   }
 

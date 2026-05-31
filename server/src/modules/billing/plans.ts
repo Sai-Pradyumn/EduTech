@@ -316,6 +316,17 @@ export function planById(id: string): Plan {
   return PLAN_CATALOG.find((p) => p.id === id) ?? PLAN_CATALOG[0];
 }
 
+/** Tier rank (catalog order) — used to pick the higher of a user vs inherited org plan. */
+export function planRank(id: string): number {
+  const i = PLAN_CATALOG.findIndex((p) => p.id === id);
+  return i < 0 ? 0 : i;
+}
+
+/** Return the higher-tier of two plan ids. */
+export function higherPlan(a: string, b: string): PlanId {
+  return planRank(a) >= planRank(b) ? (a as PlanId) : (b as PlanId);
+}
+
 export function limitFor(planId: string, key: FeatureKey): number {
   return planById(planId).limits[key] ?? 0;
 }

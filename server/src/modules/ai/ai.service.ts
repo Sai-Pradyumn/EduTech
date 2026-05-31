@@ -81,10 +81,17 @@ export class AiService {
    * - parallel → race providers, then a judge synthesizes the best answer
    * Returns the final text (callers stream it); usage is logged.
    */
+  /** Pre-flight AI budget gate — throws a friendly 403 when over the plan's monthly budget. */
+  private async guardBudget(opts?: GenOptions): Promise<void> {
+    const userId = opts?.meta?.userId;
+    if (userId) await this.entitlements.enforceAiBudget(userId);
+  }
+
   async composeWithStrategy(
     messages: AIMessage[],
     opts?: GenOptions,
   ): Promise<string> {
+    await this.guardBudget(opts);
     const cap = this.captureOpts(opts);
     const started = Date.now();
     let out: string;
@@ -110,6 +117,7 @@ export class AiService {
     messages: AIMessage[],
     opts?: GenOptions,
   ): Promise<string> {
+    await this.guardBudget(opts);
     const cap = this.captureOpts(opts);
     const started = Date.now();
     const out = await this.provider.generateText(messages, cap.opts);
@@ -121,6 +129,7 @@ export class AiService {
     messages: AIMessage[],
     opts?: GenOptions,
   ): AsyncIterable<string> {
+    await this.guardBudget(opts);
     const cap = this.captureOpts(opts);
     const started = Date.now();
     
@@ -155,6 +164,7 @@ export class AiService {
     schema: Record<string, unknown>,
     opts?: GenOptions,
   ): Promise<T> {
+    await this.guardBudget(opts);
     const cap = this.captureOpts(opts);
     const started = Date.now();
     const out = await this.provider.generateStructuredOutput<T>(

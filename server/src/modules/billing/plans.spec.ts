@@ -1,9 +1,11 @@
 import {
   FEATURE_KEYS,
   PLAN_CATALOG,
+  higherPlan,
   isAllowed,
   limitFor,
   planById,
+  planRank,
 } from './plans';
 
 /** Entitlement-plan invariants (Phase 10 · M1). Pure logic — no DB. */
@@ -45,5 +47,15 @@ describe('plans catalog', () => {
 
   it('falls back to free for an unknown plan id', () => {
     expect(planById('does-not-exist').id).toBe('free');
+  });
+
+  it('ranks plans by catalog tier order', () => {
+    expect(planRank('free')).toBeLessThan(planRank('pro'));
+    expect(planRank('team')).toBeLessThan(planRank('enterprise'));
+  });
+
+  it('org inheritance picks the higher tier (institution over a member free plan)', () => {
+    expect(higherPlan('free', 'institution')).toBe('institution');
+    expect(higherPlan('pro', 'free')).toBe('pro');
   });
 });

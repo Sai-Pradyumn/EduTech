@@ -1135,6 +1135,28 @@ async function run(): Promise<void> {
     );
   }
 
+  // Org-scoped subscription (Institution) so members inherit the plan (org-inheritance).
+  const seedOrg = await OrgModel.findOne({ slug: 'sreenidhi-college' }).exec();
+  if (seedOrg) {
+    await SubscriptionModel.updateOne(
+      { org: seedOrg._id },
+      {
+        $set: {
+          org: seedOrg._id,
+          user: seedOrg._id, // satisfies the unique `user` index for the org row
+          planId: 'institution',
+          status: 'active',
+          provider: 'mock',
+          startedAt: periodStart,
+          currentPeriodStart: periodStart,
+          currentPeriodEnd: periodEnd,
+          cancelAtPeriodEnd: false,
+        },
+      },
+      { upsert: true },
+    );
+  }
+
   // A paid mock invoice for the student's Pro plan.
   await PaymentTransactionModel.updateOne(
     { user: student._id, reference: 'mock_seed_pro' },

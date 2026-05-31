@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { AuditService } from '../audit/audit.service';
+import { JobQueueService } from '../queue/job-queue.service';
 import { DataJob, DataJobDocument } from './schemas/data-job.schema';
 
 /** Default retention windows (days). Surfaced to admins; enforcement is a future job. */
@@ -20,6 +21,7 @@ export class DataGovernanceService {
     @InjectModel(DataJob.name)
     private readonly jobs: Model<DataJobDocument>,
     private readonly audit: AuditService,
+    private readonly queue: JobQueueService,
   ) {}
 
   /** Create an export job. Marked ready immediately in dev (no queue); a heavy export
@@ -41,6 +43,8 @@ export class DataGovernanceService {
       targetType: ownerType,
       targetId: ownerId,
     });
+    // Heavy export runs on the queue when ENABLE_BULLMQ=true; otherwise inline + ledgered.
+    await this.queue.enqueue('data.export', { ownerType, ownerId, jobId: String(job._id) });
     return this.view(job);
   }
 

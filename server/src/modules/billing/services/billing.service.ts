@@ -95,11 +95,22 @@ export class BillingService {
     };
   }
 
-  /** Mock-or-provider checkout — records a transaction and upserts the subscription. */
+  /** Mock-or-provider checkout. Mock activates instantly; a live provider returns order
+   *  handles (orderId/keyId) for the client widget, then `verifyAndActivate` finishes it. */
   async checkout(
     userId: string,
     planId: PlanId,
-  ): Promise<{ subscription: SubscriptionView; transaction: TransactionView }> {
+  ): Promise<{
+    subscription: SubscriptionView;
+    transaction: TransactionView;
+    razorpay?: {
+      orderId: string;
+      keyId: string;
+      amountInr: number;
+      currency: string;
+      planId: PlanId;
+    };
+  }> {
     const plan = planById(planId);
     const session = await this.payment.createCheckout({
       userId,
@@ -132,7 +143,76 @@ export class BillingService {
         provider: session.provider,
         createdAt: new Date().toISOString(),
       },
+      razorpay:
+        session.status === 'pending' && session.orderId && session.keyId
+          ? {
+              orderId: session.orderId,
+              keyId: session.keyId,
+              amountInr: session.amountInr,
+              currency: session.currency,
+              planId,
+            }
+          : undefined,
     };
+  }
+
+  /** Verify a client-completed payment signature, mark the txn paid, and activate the plan. */
+  async verifyAndActivate(
+    userId: string,
+    input: {
+      planId: PlanId;
+      orderId: string;
+      paymentId: string;
+      signature: string;
+    },
+  ): Promise<{ ok: boolean; subscription: SubscriptionView }> {
+    const ok =
+      this.payment.verifyPayment?.({
+        orderId: input.orderId,
+        paymentId: input.paymentId,
+        signature: input.signature,
+      }) ?? false;
+    if (!ok) {
+      return { ok: false, subscription: await this.getSubscription(userId) };
+    }
+    await this.txns
+      .updateOne(
+        { user: new Types.ObjectId(userId), reference: input.orderId },
+        { $set: { status: 'paid' } },
+      )
+      .exec();
+    await this.activate(userId, input.planId, this.payment.name, input.orderId);
+    return { ok: true, subscription: await this.getSubscription(userId) };
+  }
+
+  /** Verify + apply a provider webhook (idempotent activation on payment.captured). */
+  async handleWebhook(
+    rawBody: string,
+    signature?: string,
+  ): Promise<{ ok: boolean }> {
+    const result = this.payment.verifyWebhook?.(rawBody, signature);
+    if (!result?.verified) return { ok: false };
+    if (result.paid && result.reference) {
+      const txn = await this.txns
+        .findOne({ reference: result.reference })
+        .lean<PaymentTransactionDocument>()
+        .exec();
+      if (txn && txn.status !== 'paid') {
+        await this.txns
+          .updateOne(
+            { reference: result.reference },
+            { $set: { status: 'paid' } },
+          )
+          .exec();
+        await this.activate(
+          String(txn.user),
+          txn.planId as PlanId,
+          this.payment.name,
+          result.reference,
+        );
+      }
+    }
+    return { ok: true };
   }
 
   /** Switch plan. Upgrades go through checkout; downgrade to free cancels immediately. */

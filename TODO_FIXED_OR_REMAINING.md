@@ -17,9 +17,12 @@ green + seed + 10 unit tests passing + runtime-smoked:
 - **P5 — Platform/growth:** `developer` (hashed API keys + HMAC webhooks + delivery log), `integrations`
   (GitHub/Calendar `.ics`/Slack/Discord/LMS), Jest tests + CI test step.
 
-**Phase-10 follow-ups (foundation by design):** enforce entitlement org-inheritance + AI budget at the gateway;
-turn Stripe/Razorpay, VAPID web-push and real OAuth live behind their flags; back the job ledger with a real
-BullMQ worker; e2e/Playwright smoke suite.
+**Phase-10 follow-ups — now DONE (Phase 10.1):** ✅ Google OAuth login (google-auth-library + GIS button),
+✅ real VAPID web-push (web-push, fired on notifications), ✅ live payments via **Razorpay** (chosen over Stripe —
+flat ~2% for INR, no fixed per-txn fee; HMAC verify + webhook), ✅ entitlement **org-inheritance** (members inherit
+the org plan) + ✅ **AI budget enforcement** at the gateway, ✅ **BullMQ worker** behind the job ledger (flag-gated by
+`ENABLE_BULLMQ`; inline + ledgered when off). All activate behind env keys with graceful mock fallback (local/CI green).
+**Still remaining:** ⏳ Playwright e2e smoke suite (only deferred item).
 
 ## ✅ Shipped — Phase 9 · Outcome Network (ALL 15 modules)
 Priorities 1–4 complete end-to-end (backend + frontend + seed). In addition to the Priority-1 + Council

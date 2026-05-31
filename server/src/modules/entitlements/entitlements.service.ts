@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { ForbiddenException, Injectable, Logger } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import {
@@ -6,12 +6,17 @@ import {
   SubscriptionDocument,
 } from '../billing/schemas/subscription.schema';
 import {
+  Membership,
+  MembershipDocument,
+} from '../tenancy/schemas/membership.schema';
+import {
   FeatureKey,
   FEATURE_KEYS,
   FEATURE_LABELS,
   MONTHLY_FEATURES,
   Plan,
   PlanId,
+  higherPlan,
   limitFor,
   planById,
 } from '../billing/plans';
@@ -58,18 +63,72 @@ export class EntitlementsService {
     private readonly subs: Model<SubscriptionDocument>,
     @InjectModel(EntitlementUsage.name)
     private readonly usage: Model<EntitlementUsageDocument>,
+    @InjectModel(Membership.name)
+    private readonly memberships: Model<MembershipDocument>,
   ) {}
 
-  /** Resolve the effective plan for a user (their own sub today; org override is future work). */
+  /**
+   * Resolve the effective plan for a user = the higher tier of (their own active sub) and
+   * (any active org-scoped plan inherited from an organization they belong to). This is the
+   * org-inheritance rule — an Institution-plan org lifts all its members.
+   */
   async resolvePlan(userId: string): Promise<Plan> {
     const sub = await this.subs
       .findOne({ user: new Types.ObjectId(userId) })
       .lean<SubscriptionDocument>()
       .exec();
-    if (sub && (sub.status === 'active' || sub.status === 'past_due')) {
-      return planById(sub.planId);
+    let planId: PlanId =
+      sub && (sub.status === 'active' || sub.status === 'past_due')
+        ? (sub.planId as PlanId)
+        : 'free';
+
+    const orgPlan = await this.inheritedOrgPlan(userId);
+    if (orgPlan) planId = higherPlan(planId, orgPlan);
+    return planById(planId);
+  }
+
+  /** Highest active org plan across the user's memberships (org-scoped subscriptions). */
+  private async inheritedOrgPlan(userId: string): Promise<PlanId | null> {
+    try {
+      const orgIds = await this.memberships
+        .find({ user: new Types.ObjectId(userId), status: 'active' })
+        .distinct('organization')
+        .exec();
+      if (!orgIds.length) return null;
+      const orgSubs = await this.subs
+        .find({
+          org: { $in: orgIds },
+          status: { $in: ['active', 'past_due'] },
+        })
+        .lean<SubscriptionDocument[]>()
+        .exec();
+      if (!orgSubs.length) return null;
+      return orgSubs.reduce<PlanId>(
+        (best, s) => higherPlan(best, s.planId),
+        'free',
+      );
+    } catch {
+      return null;
     }
-    return planById('free');
+  }
+
+  /**
+   * Pre-flight AI budget gate (Phase 10). Throws a friendly 403 when the user is over their
+   * plan's monthly AI message budget. Called by the AI gateway before generating. Token
+   * overage is soft (logged) so a long single answer never hard-fails mid-stream.
+   */
+  async enforceAiBudget(userId: string): Promise<void> {
+    const msgs = await this.check(userId, 'ai.messages', 1);
+    if (!msgs.allowed && msgs.reason === 'hard_limit') {
+      throw new ForbiddenException(
+        'You have reached your monthly AI message limit. Upgrade your plan to keep using AI features.',
+      );
+    }
+    if (!msgs.allowed && msgs.reason === 'blocked') {
+      throw new ForbiddenException(
+        'AI features are not included in your current plan.',
+      );
+    }
   }
 
   /** Current billing period: monthly features roll on the calendar month. */

@@ -257,19 +257,81 @@ export class BillingComponent implements OnInit {
   }
 
   upgrade(id: PlanId): void {
+    if (id === 'free') {
+      this.busy.set(true);
+      this.billing.changePlan(id).subscribe({
+        next: (s) => this.onPlanChanged(s, id),
+        error: () => this.busy.set(false),
+      });
+      return;
+    }
     this.busy.set(true);
     this.analytics.track('billing_upgrade_clicked', { plan: id });
-    this.billing.changePlan(id).subscribe({
-      next: (subscription) => {
-        this.sub.set(subscription);
-        this.busy.set(false);
-        if (id !== 'free') this.analytics.track('subscription_started', { plan: id });
-        this.billing.transactions().subscribe({ next: (t) => this.txns.set(t) });
-        this.entitlements.load().subscribe({ next: (e) => this.ent.set(e) });
-        this.toast.success(`You're now on the ${subscription.plan.name} plan`);
+    this.billing.checkout(id).subscribe({
+      next: (res) => {
+        if (res.razorpay) {
+          // Live provider — open the Razorpay widget, then verify server-side.
+          void this.openRazorpay(res.razorpay, id);
+        } else {
+          // Mock provider — already activated.
+          this.onPlanChanged(res.subscription, id);
+        }
       },
       error: () => this.busy.set(false),
     });
+  }
+
+  private onPlanChanged(subscription: SubscriptionView, id: PlanId): void {
+    this.sub.set(subscription);
+    this.busy.set(false);
+    if (id !== 'free') this.analytics.track('subscription_started', { plan: id });
+    this.billing.transactions().subscribe({ next: (t) => this.txns.set(t) });
+    this.entitlements.load().subscribe({ next: (e) => this.ent.set(e) });
+    this.toast.success(`You're now on the ${subscription.plan.name} plan`);
+  }
+
+  private async openRazorpay(
+    order: { orderId: string; keyId: string; amountInr: number; currency: string },
+    planId: PlanId,
+  ): Promise<void> {
+    const ok = await loadRazorpay();
+    if (!ok || !window.Razorpay) {
+      this.busy.set(false);
+      this.toast.error('Could not load the payment widget. Please try again.');
+      return;
+    }
+    const rzp = new window.Razorpay({
+      key: order.keyId,
+      amount: order.amountInr * 100,
+      currency: order.currency,
+      name: 'Asta',
+      description: `${planId} plan`,
+      order_id: order.orderId,
+      handler: (resp: RazorpaySuccess) => {
+        this.billing
+          .verify({
+            planId,
+            orderId: resp.razorpay_order_id,
+            paymentId: resp.razorpay_payment_id,
+            signature: resp.razorpay_signature,
+          })
+          .subscribe({
+            next: (r) => {
+              if (r.ok) this.onPlanChanged(r.subscription, planId);
+              else {
+                this.busy.set(false);
+                this.toast.error('Payment could not be verified.');
+              }
+            },
+            error: () => {
+              this.busy.set(false);
+              this.toast.error('Payment verification failed.');
+            },
+          });
+      },
+      modal: { ondismiss: () => this.busy.set(false) },
+    });
+    rzp.open();
   }
 
   cancel(): void {
@@ -283,4 +345,48 @@ export class BillingComponent implements OnInit {
       error: () => this.busy.set(false),
     });
   }
+}
+
+const RZP_SRC = 'https://checkout.razorpay.com/v1/checkout.js';
+
+interface RazorpaySuccess {
+  razorpay_order_id: string;
+  razorpay_payment_id: string;
+  razorpay_signature: string;
+}
+interface RazorpayOptions {
+  key: string;
+  amount: number;
+  currency: string;
+  name: string;
+  description: string;
+  order_id: string;
+  handler: (resp: RazorpaySuccess) => void;
+  modal?: { ondismiss?: () => void };
+}
+interface RazorpayInstance {
+  open: () => void;
+}
+declare global {
+  interface Window {
+    Razorpay?: new (opts: RazorpayOptions) => RazorpayInstance;
+  }
+}
+
+/** Lazily inject the Razorpay Checkout script (only when a live payment is initiated). */
+function loadRazorpay(): Promise<boolean> {
+  if (window.Razorpay) return Promise.resolve(true);
+  return new Promise((resolve) => {
+    const existing = document.querySelector(`script[src="${RZP_SRC}"]`);
+    if (existing) {
+      existing.addEventListener('load', () => resolve(true));
+      existing.addEventListener('error', () => resolve(false));
+      return;
+    }
+    const s = document.createElement('script');
+    s.src = RZP_SRC;
+    s.onload = () => resolve(true);
+    s.onerror = () => resolve(false);
+    document.head.appendChild(s);
+  });
 }

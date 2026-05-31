@@ -5,6 +5,10 @@ import {
   SubscriptionSchema,
 } from '../billing/schemas/subscription.schema';
 import {
+  Membership,
+  MembershipSchema,
+} from '../tenancy/schemas/membership.schema';
+import {
   EntitlementUsage,
   EntitlementUsageSchema,
 } from './schemas/entitlement-usage.schema';
@@ -23,6 +27,7 @@ import { EntitlementsService } from './entitlements.service';
     MongooseModule.forFeature([
       { name: Subscription.name, schema: SubscriptionSchema },
       { name: EntitlementUsage.name, schema: EntitlementUsageSchema },
+      { name: Membership.name, schema: MembershipSchema },
     ]),
   ],
   controllers: [EntitlementsController],

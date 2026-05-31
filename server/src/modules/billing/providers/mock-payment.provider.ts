@@ -32,7 +32,11 @@ export class MockPaymentProvider implements PaymentProvider {
     return Promise.resolve({ status: 'cancelled' });
   }
 
-  verifyWebhook(): Promise<WebhookResult> {
-    return Promise.resolve({ verified: true, event: 'mock.noop' });
+  verifyPayment(): boolean {
+    return true;
+  }
+
+  verifyWebhook(): WebhookResult {
+    return { verified: true, event: 'mock.noop', paid: true };
   }
 }

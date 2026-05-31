@@ -15,8 +15,16 @@ export class User {
   })
   email!: string;
 
-  @Prop({ required: true, select: false })
-  passwordHash!: string;
+  /** Optional: OAuth-only accounts (Google) have no password. */
+  @Prop({ select: false })
+  passwordHash?: string;
+
+  /** Google OAuth subject id (set when the account is linked to Google). */
+  @Prop({ index: true })
+  googleId?: string;
+
+  @Prop()
+  avatarUrl?: string;
 
   @Prop({ required: true, trim: true })
   name!: string;

@@ -72,6 +72,7 @@ import { OrgBrandingModule } from './modules/org-branding/org-branding.module';
 import { DataGovernanceModule } from './modules/data-governance/data-governance.module';
 import { DeveloperModule } from './modules/developer/developer.module';
 import { IntegrationsModule } from './modules/integrations/integrations.module';
+import { QueueModule } from './modules/queue/queue.module';
 import { SocketsModule } from './sockets/sockets.module';
 
 @Module({
@@ -97,6 +98,7 @@ import { SocketsModule } from './sockets/sockets.module';
     DataGovernanceModule,
     DeveloperModule,
     IntegrationsModule,
+    QueueModule.register(),
     AiEvalsModule,
     AgentsModule,
     RagModule,

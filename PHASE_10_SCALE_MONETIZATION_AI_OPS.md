@@ -255,12 +255,39 @@ PushService (no-op until VAPID), integration connectors (mock/manual/export/oaut
 errors carry IDs and never leak stacks; audit trail on sensitive actions; product analytics
 whitelisted + sanitized; metering never blocks the product path.
 
-### Known limitations
-- Entitlement org-inheritance is modeled but not enforced; hard-blocking over-limit AI is
-  opt-in via `consume(enforce:true)` / the gate.
-- Live Stripe/Razorpay, VAPID web-push and real OAuth are placeholders (flag-gated).
-- The job ledger is queue-agnostic — no BullMQ worker yet.
+---
 
-### Next phase recommendation
-Wire a real BullMQ worker behind the job ledger, enforce AI budget policies at the gateway,
-and turn the OAuth/payment/web-push placeholders live behind their flags.
+## Phase 10.1 — Live integrations (post-launch hardening) ✅
+
+The Phase-10 placeholders are now real, all activating behind env keys/flags with graceful
+mock fallback so local dev + CI stay green without any keys.
+
+- **Google OAuth login** — `google-auth-library` verifies the GIS credential server-side
+  (`POST /auth/google`, `GET /auth/google/config`); `findOrCreateGoogle` links/provisions
+  the account. Client `<asta-google-signin>` self-configures and renders only when
+  `GOOGLE_CLIENT_ID` is set. Password login rejects OAuth-only accounts cleanly.
+- **Web Push (VAPID)** — `web-push` wired into `PushService`; `notify()` sends real
+  notifications (prunes 404/410 subs) and is fired on every in-app notification. SW already
+  renders `push`/`notificationclick`. Keys via `VAPID_PUBLIC_KEY/PRIVATE_KEY` (no-op when unset).
+- **Payments = Razorpay** (chosen over Stripe — flat ~2% for INR, **no fixed per-txn fee**;
+  Stripe India adds a fixed fee + onboarding friction). `RazorpayPaymentProvider` creates an
+  Order; client opens the Razorpay Checkout widget; server **HMAC-verifies** the signature
+  (`POST /billing/verify`) and the **webhook** (`POST /billing/webhook/razorpay`, raw-body
+  HMAC, idempotent). Stripe remains a same-shape placeholder selectable via `PAYMENT_PROVIDER`.
+- **Entitlement org-inheritance** — `resolvePlan` now takes the higher tier of the user's own
+  plan and any active **org-scoped subscription** they inherit via membership (seeded:
+  Sreenidhi College on Institution).
+- **AI budget enforcement at the gateway** — `enforceAiBudget` runs pre-flight on every
+  `AiService` generate path (compose/generateText/stream/structured); over the monthly AI
+  budget → a friendly 403 instead of a silent overage.
+- **BullMQ worker** — `QueueModule.register()` wires a real BullMQ queue + `JobsProcessor`
+  **only when `ENABLE_BULLMQ=true`** (Redis reachable); otherwise jobs run inline and are
+  still recorded in the Ops ledger. Data-export requests enqueue through it.
+
+Config: all new vars added to Joi validation + `.env.example`. New deps: `razorpay`,
+`web-push`, `google-auth-library`. Tests: 12 passing (added plan-tier/inheritance specs).
+
+### Known limitations / remaining
+- **Playwright e2e smoke suite — NOT yet implemented** (the one deferred follow-up).
+- Stripe is a placeholder (Razorpay is the implemented provider); real keys are required to
+  exercise live payments/OAuth/push (mock/no-op without them).

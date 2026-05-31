@@ -30,10 +30,27 @@ export class BillingService {
   invoices(): Observable<TransactionView[]> {
     return this.api.get<TransactionView[]>('/billing/invoices');
   }
-  checkout(
-    planId: PlanId,
-  ): Observable<{ subscription: SubscriptionView; transaction: TransactionView }> {
+  checkout(planId: PlanId): Observable<{
+    subscription: SubscriptionView;
+    transaction: TransactionView;
+    razorpay?: {
+      orderId: string;
+      keyId: string;
+      amountInr: number;
+      currency: string;
+      planId: PlanId;
+    };
+  }> {
     return this.api.post('/billing/checkout', { planId });
+  }
+  /** Verify a Razorpay payment server-side; activates the plan on success. */
+  verify(payload: {
+    planId: PlanId;
+    orderId: string;
+    paymentId: string;
+    signature: string;
+  }): Observable<{ ok: boolean; subscription: SubscriptionView }> {
+    return this.api.post('/billing/verify', payload);
   }
   changePlan(planId: PlanId): Observable<SubscriptionView> {
     return this.api.post<SubscriptionView>('/billing/change-plan', { planId });

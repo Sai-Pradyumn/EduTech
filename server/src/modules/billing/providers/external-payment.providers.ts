@@ -8,9 +8,10 @@ import {
 type CheckoutInput = { userId: string; planId: PlanId; amountInr: number };
 
 /**
- * Stripe placeholder (Phase 10 · M1). Wired but inert until STRIPE_SECRET_KEY is set and
- * ENABLE_PAYMENT_PROVIDER is on. Implement createCheckout with the Stripe SDK here; the
- * controller/service already speak the PaymentProvider shape.
+ * Stripe placeholder (Phase 10). Wired but inert until STRIPE_SECRET_KEY is set,
+ * ENABLE_PAYMENT_PROVIDER=true and PAYMENT_PROVIDER=stripe. Razorpay is the recommended
+ * (and fully implemented) provider for INR — see razorpay-payment.provider.ts. Implement
+ * createCheckout with the Stripe SDK here; the service already speaks the PaymentProvider shape.
  */
 export class StripePaymentProvider implements PaymentProvider {
   readonly name = 'stripe';
@@ -27,31 +28,7 @@ export class StripePaymentProvider implements PaymentProvider {
     return Promise.reject(new Error('StripePaymentProvider not configured'));
   }
 
-  verifyWebhook(): Promise<WebhookResult> {
-    return Promise.resolve({ verified: false });
-  }
-}
-
-/** Razorpay placeholder for India — same contract, inert until configured. */
-export class RazorpayPaymentProvider implements PaymentProvider {
-  readonly name = 'razorpay';
-  readonly isLive = false;
-
-  constructor(
-    private readonly keyId?: string,
-    private readonly keySecret?: string,
-  ) {}
-
-  createCheckout(input: CheckoutInput): Promise<CheckoutSession> {
-    void input;
-    return Promise.reject(new Error('RazorpayPaymentProvider not configured'));
-  }
-
-  cancel(): Promise<{ status: 'cancelled' }> {
-    return Promise.reject(new Error('RazorpayPaymentProvider not configured'));
-  }
-
-  verifyWebhook(): Promise<WebhookResult> {
-    return Promise.resolve({ verified: false });
+  verifyWebhook(): WebhookResult {
+    return { verified: false };
   }
 }
