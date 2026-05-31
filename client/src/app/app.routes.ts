@@ -29,6 +29,10 @@ export const routes: Routes = [
     loadComponent: () => import('./features/skill-passport/public-passport.component').then((m) => m.PublicPassportComponent),
   },
   {
+    path: 'p/:username',
+    loadComponent: () => import('./features/portfolio/public-portfolio.component').then((m) => m.PublicPortfolioComponent),
+  },
+  {
     path: '',
     loadComponent: () => import('./features/auth/auth-layout.component').then((m) => m.AuthLayoutComponent),
     children: [
@@ -276,6 +280,36 @@ export const routes: Routes = [
         title: 'Outcome Council',
         data: { title: 'AI Outcome Council' },
         loadComponent: () => import('./features/outcome-council/outcome-council.component').then((m) => m.OutcomeCouncilComponent),
+      },
+      {
+        path: 'portfolio',
+        title: 'Portfolio',
+        data: { title: 'Portfolio Builder' },
+        loadComponent: () => import('./features/portfolio/portfolio.component').then((m) => m.PortfolioComponent),
+      },
+      {
+        path: 'interview',
+        title: 'Interview OS',
+        data: { title: 'Interview OS' },
+        loadComponent: () => import('./features/interview/interview.component').then((m) => m.InterviewComponent),
+      },
+      {
+        path: 'interview/sessions/:id',
+        title: 'Interview',
+        data: { title: 'Interview Session' },
+        loadComponent: () => import('./features/interview/interview.component').then((m) => m.InterviewComponent),
+      },
+      {
+        path: 'resume',
+        title: 'Resume',
+        data: { title: 'Resume' },
+        loadComponent: () => import('./features/resume/resume.component').then((m) => m.ResumeComponent),
+      },
+      {
+        path: 'applications',
+        title: 'Applications',
+        data: { title: 'Applications' },
+        loadComponent: () => import('./features/applications/applications.component').then((m) => m.ApplicationsComponent),
       },
       {
         path: 'replay',

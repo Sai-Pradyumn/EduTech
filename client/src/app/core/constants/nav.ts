@@ -45,6 +45,10 @@ const I = {
   live: 'M15 10l4.55-2.28A1 1 0 0 1 21 8.62v6.76a1 1 0 0 1-1.45.9L15 14M4 6h9a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2Z',
   community: 'M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8ZM23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75',
   passport: 'M4 4a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v16a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V4Zm8 3a3 3 0 1 0 0 6 3 3 0 0 0 0-6Zm-3 11h6',
+  portfolioIcon: 'M2 7h20v13a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V7Zm6 0V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M2 12h20',
+  interview: 'M3 5h18a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1h-7l-4 4v-4H3a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1Zm5 5h.01M12 10h.01M16 10h.01',
+  resume: 'M7 3h7l5 5v13a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1Zm7 0v5h5M9 13h6M9 17h6M9 9h2',
+  applications: 'M9 11l3 3L22 4M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11',
 };
 
 /** Org/platform nav appended for members + operators (permission-aware, built at runtime). */
@@ -96,6 +100,10 @@ export const STUDENT_NAV: NavGroup[] = [
       { label: 'Skill Passport', route: '/app/skill-passport', icon: I.passport },
       { label: 'Career Readiness', route: '/app/career-readiness', icon: I.career },
       { label: 'Outcome Council', route: '/app/outcome-council', icon: I.council },
+      { label: 'Portfolio', route: '/app/portfolio', icon: I.portfolioIcon },
+      { label: 'Interview OS', route: '/app/interview', icon: I.interview },
+      { label: 'Resume', route: '/app/resume', icon: I.resume },
+      { label: 'Applications', route: '/app/applications', icon: I.applications },
       { label: 'Proof-of-Learning', route: '/app/ledger', icon: I.ledger },
     ],
   },
