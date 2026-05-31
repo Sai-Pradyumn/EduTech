@@ -1,5 +1,22 @@
 # Asta — Fixed / Remaining
 
+## ✅ Shipped — Phase 8 · Skill Twin (Priority 1 · module 4)
+A **live, explainable learner model** that powers recommendations. Full detail in [`PHASE_8_MULTIMODAL_LEARNING_OS.md`](PHASE_8_MULTIMODAL_LEARNING_OS.md).
+- **Backend** `server/src/modules/skill-twin/`: `SkillTwinService.compute()` blends `LearningIntelligence`
+  overview + **Mistake OS** + active **Flow** + profile into readiness/health, retention & burnout risk,
+  pace + projected days, mastery graph, weakness roots, misconception memory, an **Adaptive Modality
+  Router** and **explainable next-best-actions** (each with a `reason`). `resetMemory()` clears Mistake
+  OS + flagged weak areas (added `MistakesService.clearForUser` + `StudentProfileService.clearWeakAreas`).
+  Read-only (no new persistence). 2 routes.
+- **Frontend** `client/src/app/features/skill-twin/`: readiness/health rings + retention/burnout gauges,
+  next-best-actions with a **"Why?" drawer**, recommended-modality card, mastery graph (value vs target),
+  weakness roots, misconception memory, strengths, transparent signals list, guarded reset. `skill-twin.service.ts`;
+  route `/app/skill-twin`; nav "Skill Twin"; voice rule.
+- **Verification**: builds green; client warning-free (519.29 kB < 540 kB); server boots clean (skill-twin
+  routes mapped); API smoked (compute returns full model w/ modality + explainable actions; burnout
+  heuristic softened to use streak; reset clears 5 mistakes → twin recomputes). Re-seeded demo data.
+- **Priority 1 now COMPLETE except Voice Room** (Flow Studio ✅, Visual Studio ✅, Mistake OS ✅, Skill Twin ✅).
+
 ## ✅ Shipped — Phase 8 · Mistake OS (Priority 1 · module 3)
 Remembers **misconceptions, not just scores**. Full detail in [`PHASE_8_MULTIMODAL_LEARNING_OS.md`](PHASE_8_MULTIMODAL_LEARNING_OS.md).
 - **Backend** `server/src/modules/mistakes/`: `Mistake` schema (8 types, severity/frequency, repair

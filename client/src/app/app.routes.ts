@@ -172,6 +172,12 @@ export const routes: Routes = [
         loadComponent: () => import('./features/mistakes/mistakes.component').then((m) => m.MistakesComponent),
       },
       {
+        path: 'skill-twin',
+        title: 'Skill Twin',
+        data: { title: 'Skill Twin' },
+        loadComponent: () => import('./features/skill-twin/skill-twin.component').then((m) => m.SkillTwinComponent),
+      },
+      {
         path: 'cohorts',
         title: 'Cohorts',
         data: { title: 'Cohorts' },

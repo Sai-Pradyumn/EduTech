@@ -171,4 +171,10 @@ export class MistakesService {
     await m.deleteOne();
     return { ok: true };
   }
+
+  /** Wipe all mistakes for a user (Phase 8 · Skill Twin "reset learning memory"). Returns count. */
+  async clearForUser(userId: string): Promise<number> {
+    const res = await this.model.deleteMany({ user: new Types.ObjectId(userId) }).exec();
+    return res.deletedCount ?? 0;
+  }
 }

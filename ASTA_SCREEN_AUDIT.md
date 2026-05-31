@@ -35,6 +35,7 @@ Legend — Rebuild: ✅ done · 🎯 next priority · ⏳ queued · ➖ keep (no
 | `projects` | ProjectStudioComponent | **Project Forge** (blueprint + journey + AI review) | ⏳ | `/projects/*` |
 | `progress` | IntelligenceCockpitComponent | **Skill Observatory** (radar/heatmap/momentum + rings) | 🎯 | `/intelligence/overview` |
 | `mistakes` | MistakesComponent | **Mistake OS** — repair inbox: stats, top focus, weakness heatmap, repair loops (Phase 8) | ✅ | `/mistakes` |
+| `skill-twin` | SkillTwinComponent | **Skill Twin** — live learner model: readiness/risk gauges, mastery graph, modality router, explainable next-best-actions (Phase 8) | ✅ | `/skill-twin` |
 | `cohorts` | CohortsComponent | Leaderboard + announcements (signal timeline) | ⏳ | `/cohorts/*` |
 | `live-sessions` | LiveSessionsComponent | Session + recap | ⏳ | `/live-sessions/*` |
 | `community` | CommunityComponent | Channels + threads | ⏳ | `/community/*` |

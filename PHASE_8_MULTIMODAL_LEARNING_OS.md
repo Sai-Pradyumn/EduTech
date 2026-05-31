@@ -14,17 +14,18 @@
 | **1** | **Flow Studio** (visual learning graphs) | ✅ **Shipped** |
 | **1** | **Visual Intelligence Studio** | ✅ **Shipped** |
 | **1** | **Mistake OS foundation** | ✅ **Shipped** |
+| **1** | **Skill Twin foundation** | ✅ **Shipped** |
 | 1 | Complete Voice Room (browser STT/TTS + sessions) | ⏳ queued (stub `voice` module + browser STT/TTS services already exist) |
-| 1 | Skill Twin foundation | ⏳ queued (builds on `learning-intelligence` + `student-profile` + Mistake OS) |
 | 2 | Study Spaces · Simulation Labs · Daily Autopilot | ⏳ queued |
 | 3 | Course Builder · Peer Rooms | ⏳ queued |
 | 4 | AI Mentor Council · Proof-of-Learning · Learning Replay · Modality Router | ⏳ queued |
 
 Build status: **`npm run build:server` green**, **`npm run build:client` green & warning-free**
-(initial bundle **518.80 kB**, < 540 kB budget). Server **boots clean** (all flow + visual + mistake
-routes mapped, no DI errors); all three modules **runtime-smoked** with the mock provider (incl. the
-Mistake-OS quiz auto-capture event path). Seed inserts **2 demo flows** (22-node MERN, 20-node DSA),
-**4 demo visuals**, and **4 demo mistakes**.
+(initial bundle **519.29 kB**, < 540 kB budget). Server **boots clean** (all flow + visual + mistake +
+skill-twin routes mapped, no DI errors); all four modules **runtime-smoked** with the mock provider
+(incl. the Mistake-OS quiz auto-capture event path and the Skill-Twin compute + memory-reset). Seed
+inserts **2 demo flows** (22-node MERN, 20-node DSA), **4 demo visuals**, and **4 demo mistakes** (the
+Skill Twin is computed live from these + Learning-Intelligence).
 
 ---
 
@@ -280,6 +281,63 @@ module reads mistakes next.)
 
 ---
 
+## Module — Skill Twin ✅ (Priority 1)
+
+A **live, explainable model of the learner** that powers recommendations across Asta. Read-only — it
+owns no persistence; it blends signals the platform already produces into one model.
+
+### Route (client)
+- `/app/skill-twin` — readiness/health rings + retention/burnout-risk gauges, pace + projected days to
+  goal, **next-best-actions with a "Why?" explainability drawer**, **recommended modality** card, a
+  mastery graph (value vs target), weakness roots, misconception memory, strengths, and a transparent
+  **"signals feeding your twin"** list. Includes a guarded **Reset memory** action.
+
+### What it computes (transparent heuristics)
+- **readiness / health** — reused from `LearningIntelligenceService.overview()`.
+- **retentionRisk** (0–100) — from activity window + streak (low activity → high risk to forget/disengage).
+- **burnoutRisk** (0–100) — *sustained* per-day load weighted by streak (a single busy day isn't burnout).
+- **pace** (behind/steady/ahead) + **projectedDaysToGoal** — from readiness gap × pace factor.
+- **mastery graph** — from the LI skill radar (value vs target).
+- **weaknessRoots / misconceptionMemory** — from open/repairing **Mistake OS** entries (severity-sorted).
+
+### Adaptive Modality Router (breakthrough feature)
+Picks **how** to study next — read / voice / quiz / project / visual / mentor / simulation — from the
+dominant open-mistake type (misconception→visual, weak_recall→quiz, communication→voice,
+implementation→project), retention risk, the active flow, and the profile's preferred style — each with
+a one-line reason.
+
+### Explainability drawer ("Why Asta recommends this")
+Every next-best-action carries a `reason` rendered in a drawer, e.g. *"Seen wrong 1× with severity
+100/100 — your highest-impact gap"*, *"Next unlocked step toward 'Prepare for a system design round'"*,
+*"Asta's modality router picked quiz based on your current gaps"*.
+
+### Backend
+```
+server/src/modules/skill-twin/
+  skill-twin.service.ts     compute() blends LI + Mistake OS + active flow + profile; routeModality;
+                            nextActions (explainable); resetMemory()
+  skill-twin.controller.ts  GET /skill-twin · POST /skill-twin/reset
+  skill-twin.module.ts      imports LearningIntelligence + Mistakes + Flows + StudentProfile modules
+```
+Added `StudentProfileService.clearWeakAreas` + `MistakesService.clearForUser` for the memory reset.
+
+### API
+`GET /skill-twin` (the live model) · `POST /skill-twin/reset` (clears Mistake OS + flagged weak areas).
+
+### Cross-module integration
+Reads **Learning-Intelligence** (readiness/health/radar/momentum/weaknesses/strengths), **Mistake OS**
+(weakness roots, misconception memory, modality routing), the **active Flow** (next step), and the
+**profile** (preferred modality, goal). Next-best-actions deep-link into Mistakes / Flows / Quizzes /
+Visuals / Voice / Projects.
+
+### Acceptance (Skill Twin) — all met
+✅ shows learner state (readiness/health/retention/burnout/pace/mastery/weaknesses) · ✅ recommendations
+use the twin · ✅ explainable AI recommendations ("Why?") · ✅ adaptive modality recommendation · ✅ no
+creepy wording · ✅ user can reset/clear learning memory · ✅ updates live after quizzes/flows (computed
+on read) · ✅ build green & warning-free.
+
+---
+
 ## Data relationships wired this pass
 - **Roadmap → Flow**: `POST /flows/from-roadmap/:roadmapId` seeds the graph backbone from roadmap weeks.
 - **Flow node → Tutor / Quiz / Project / Voice / Mentor / Knowledge**: `execute-node` returns the route + prompt + agent.
@@ -305,7 +363,7 @@ Shipped: `ENABLE_FLOW_STUDIO` (default on), `ENABLE_VISUAL_STUDIO` (default on),
 exists for the stub voice module.)
 
 ## Next-pass recommendations
-1. **Skill Twin** — fold flow progress + quiz mastery + **Mistake OS** entries into `learning-intelligence` as a learner graph that powers recommendations with an explainability drawer ("because you have 3 open repairs in DP…").
-2. **Complete Voice Room** — promote the stub `voice` module to persisted `VoiceSession`s + socket events, using the existing browser STT/TTS services; add "speak a goal → generate flow", voice viva for `voice_practice` flow nodes, and the Mistake-OS `voice_viva` repair action.
-3. On resolve, have Mistake OS nudge the Skill Twin / profile weak-areas; surface "top repair focus" on the dashboard.
-4. Point flow `diagram`/`image` nodes at Visual Studio and add the remaining Visual `from-*` source endpoints.
+1. **Complete Voice Room** — promote the stub `voice` module to persisted `VoiceSession`s + socket events, using the existing browser STT/TTS services; add "speak a goal → generate flow", voice viva for `voice_practice` flow nodes, and the Mistake-OS `voice_viva` repair action. (Last Priority-1 module.)
+2. Surface the Skill Twin's top next-best-action + "top repair focus" on the **dashboard** (the API already returns them).
+3. Point flow `diagram`/`image` nodes at Visual Studio and add the remaining Visual `from-*` source endpoints.
+4. Then Priority 2: Study Spaces, Simulation Labs, Daily Autopilot.

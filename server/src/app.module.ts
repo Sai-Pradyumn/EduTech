@@ -40,6 +40,7 @@ import { ProgressionModule } from './modules/progression/progression.module';
 import { FlowsModule } from './modules/flows/flows.module';
 import { VisualsModule } from './modules/visuals/visuals.module';
 import { MistakesModule } from './modules/mistakes/mistakes.module';
+import { SkillTwinModule } from './modules/skill-twin/skill-twin.module';
 import { SocketsModule } from './sockets/sockets.module';
 
 @Module({
@@ -81,6 +82,7 @@ import { SocketsModule } from './sockets/sockets.module';
     FlowsModule,
     VisualsModule,
     MistakesModule,
+    SkillTwinModule,
     SocketsModule,
   ],
   controllers: [HealthController],
