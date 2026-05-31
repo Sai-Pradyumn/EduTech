@@ -67,6 +67,9 @@ import { AuditModule } from './modules/audit/audit.module';
 import { AiOpsModule } from './modules/ai-ops/ai-ops.module';
 import { ProductAnalyticsModule } from './modules/product-analytics/product-analytics.module';
 import { PushModule } from './modules/push/push.module';
+import { SessionsModule } from './modules/sessions/sessions.module';
+import { OrgBrandingModule } from './modules/org-branding/org-branding.module';
+import { DataGovernanceModule } from './modules/data-governance/data-governance.module';
 import { SocketsModule } from './sockets/sockets.module';
 
 @Module({
@@ -87,6 +90,9 @@ import { SocketsModule } from './sockets/sockets.module';
     AiOpsModule,
     ProductAnalyticsModule,
     PushModule,
+    SessionsModule,
+    OrgBrandingModule,
+    DataGovernanceModule,
     AiEvalsModule,
     AgentsModule,
     RagModule,

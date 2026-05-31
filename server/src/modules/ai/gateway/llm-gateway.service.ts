@@ -36,7 +36,16 @@ export class LlmGatewayService implements IAIProvider {
   }
 
   get isLive(): boolean {
-    return this.chain.some((p) => p.isLive);
+    const live = this.chain.some((p) => p.isLive);
+    if (!live) {
+      // Log once per startup (not on every call)
+      if (this.chain.length > 1 || (this.chain.length === 1 && this.chain[0].name !== 'mock')) {
+        this.logger.warn(
+          '⚠️  All providers are offline. Check API keys and network connectivity.',
+        );
+      }
+    }
+    return live;
   }
 
   get capabilities(): ProviderCapabilities {

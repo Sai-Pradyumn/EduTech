@@ -101,17 +101,35 @@ export const providerChainFactory: Provider = {
     const chain: IAIProvider[] = selected.map((n) => registry[n]);
     chain.push(mock); // always-available terminal fallback
 
+    // Debug: show which keys are configured (non-empty)
+    const configuredKeys = Object.entries({
+      GROQ: p.groq.apiKey,
+      GEMINI: p.gemini.apiKey,
+      MISTRAL: p.mistral.apiKey,
+      OPENROUTER: p.openrouter.apiKey,
+      DEEPSEEK: p.deepseek.apiKey,
+      OPENAI: p.openai.apiKey,
+      CLAUDE: p.claude.apiKey,
+    })
+      .filter(([, key]) => key && key.trim())
+      .map(([name]) => name);
+
     if (selected.length) {
       const embedder =
         chain.find((c) => c.capabilities.embeddings && c.isLive)?.name ??
         'mock-hashed';
       logger.log(
-        `LLM chain: ${selected.join(' → ')} → mock (strategy: ${ai.strategy}, embeddings: ${embedder}).`,
+        `✓ LLM providers configured: ${configuredKeys.join(', ')}`,
+      );
+      logger.log(
+        `✓ Provider chain: ${selected.join(' → ')} → mock | Strategy: ${ai.strategy} | Embeddings: ${embedder}`,
       );
     } else {
-      logger.warn(
-        'No live LLM keys found — running on Mock AI provider. Set any of GROQ_API_KEY / GEMINI_API_KEY / ' +
-          'MISTRAL_API_KEY / OPENROUTER_API_KEY / DEEPSEEK_API_KEY / OPENAI_API_KEY / CLAUDE_API_KEY to go live.',
+      logger.error(
+        `❌ NO LIVE LLM KEYS FOUND! Running in MOCK MODE.\n` +
+          `   Check your .env: GROQ_API_KEY, GEMINI_API_KEY, MISTRAL_API_KEY, OPENROUTER_API_KEY, DEEPSEEK_API_KEY, OPENAI_API_KEY, CLAUDE_API_KEY\n` +
+          `   Then restart the app with 'npm run dev'.\n` +
+          `   Configured keys: ${configuredKeys.length > 0 ? configuredKeys.join(', ') : 'NONE'}`,
       );
     }
     return chain;
