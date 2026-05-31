@@ -104,16 +104,18 @@ export class CareerReadinessService {
   async analyze(userId: string): Promise<ReadinessAnalysis> {
     const state = await this.getState(userId);
     const role = findRole(state.targetRoleId) ?? CAREER_ROLES[0];
-    const [twin, summary, projects] = await Promise.all([
+    const [twin, summary, projects, ledgerEntries] = await Promise.all([
       this.twin.compute(userId),
       this.ledger.summary(userId),
       this.projects.list(userId),
+      this.ledger.list(userId, 200),
     ]);
 
     const kindCount = (k: string) => summary.byKind.find((b) => b.kind === k)?.count ?? 0;
 
-    // ── skills dimension ──
-    const masteryFor = this.masteryLookup(twin);
+    // ── skills dimension (radar mastery blended with proven ledger evidence) ──
+    const ledgerSkillScore = this.ledgerSkillScores(ledgerEntries);
+    const masteryFor = this.masteryLookup(twin, ledgerSkillScore);
     const skillGaps: SkillGap[] = role.requiredSkills.map((rs) => {
       const current = masteryFor(rs.name);
       return { skill: rs.name, current, target: rs.target, gap: Math.max(0, rs.target - current), met: current >= rs.target };
@@ -129,7 +131,7 @@ export class CareerReadinessService {
     const projectsScore = clamp(Math.round((coverage * 0.6 + quality * 0.4) * 100));
 
     // ── interview dimension ──
-    const interviewScore = await this.interviewScore(userId, summary);
+    const interviewScore = this.interviewScoreFrom(ledgerEntries);
 
     // ── consistency dimension (inverse of retention risk) ──
     const consistencyScore = clamp(100 - twin.retentionRisk);
@@ -213,12 +215,34 @@ export class CareerReadinessService {
 
   // ───────────────────────── helpers ─────────────────────────
 
-  private masteryLookup(twin: SkillTwin): (name: string) => number {
+  /** Average score per skill from scored ledger evidence (quizzes, reviews, vivas, sims). */
+  private ledgerSkillScores(entries: { skills?: string[]; score?: number; kind: string }[]): Map<string, number> {
+    const acc = new Map<string, { sum: number; n: number }>();
+    for (const e of entries) {
+      if (typeof e.score !== 'number' || e.kind === 'quiz_failed') continue;
+      for (const sk of e.skills ?? []) {
+        const key = sk.toLowerCase();
+        const cur = acc.get(key) ?? { sum: 0, n: 0 };
+        cur.sum += e.score;
+        cur.n += 1;
+        acc.set(key, cur);
+      }
+    }
+    const out = new Map<string, number>();
+    acc.forEach((v, k) => out.set(k, Math.round(v.sum / v.n)));
+    return out;
+  }
+
+  /** Best mastery for a role skill: the higher of radar mastery and proven ledger evidence. */
+  private masteryLookup(twin: SkillTwin, ledgerScore: Map<string, number>): (name: string) => number {
     const map = twin.skills.map((s) => ({ key: s.skill.toLowerCase(), mastery: s.mastery }));
+    const ledger = [...ledgerScore.entries()];
+    const match = (n: string, key: string) => key === n || key.includes(n) || n.includes(key);
     return (name: string) => {
       const n = name.toLowerCase();
-      const hit = map.find((m) => m.key === n || m.key.includes(n) || n.includes(m.key));
-      return hit ? hit.mastery : 0;
+      const radar = map.find((m) => match(n, m.key))?.mastery ?? 0;
+      const proven = ledger.find(([k]) => match(n, k))?.[1] ?? 0;
+      return Math.max(radar, proven);
     };
   }
 
@@ -231,9 +255,8 @@ export class CareerReadinessService {
     return clamp(Math.round(sum / totalW));
   }
 
-  private async interviewScore(userId: string, summary: { byKind: { kind: string; count: number }[] }): Promise<number> {
-    // Average score of interview/simulation ledger events; 0 when none.
-    const entries = await this.ledger.list(userId, 100);
+  /** Average score of interview/simulation/viva ledger events; 0 when none. */
+  private interviewScoreFrom(entries: { kind: string; score?: number }[]): number {
     const scored = entries.filter(
       (e) => ['simulation_finished', 'interview_completed', 'interview_passed', 'voice_viva_passed'].includes(e.kind) && typeof e.score === 'number',
     );

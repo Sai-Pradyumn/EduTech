@@ -25,6 +25,10 @@ export const routes: Routes = [
     loadComponent: () => import('./features/certificates/cert-verify.component').then((m) => m.CertVerifyComponent),
   },
   {
+    path: 'u/:username',
+    loadComponent: () => import('./features/skill-passport/public-passport.component').then((m) => m.PublicPassportComponent),
+  },
+  {
     path: '',
     loadComponent: () => import('./features/auth/auth-layout.component').then((m) => m.AuthLayoutComponent),
     children: [
@@ -248,6 +252,24 @@ export const routes: Routes = [
         title: 'Proof-of-Learning',
         data: { title: 'Proof-of-Learning' },
         loadComponent: () => import('./features/ledger/ledger.component').then((m) => m.LedgerComponent),
+      },
+      {
+        path: 'skill-passport',
+        title: 'Skill Passport',
+        data: { title: 'Skill Passport' },
+        loadComponent: () => import('./features/skill-passport/skill-passport.component').then((m) => m.SkillPassportComponent),
+      },
+      {
+        path: 'skill-passport/public-preview',
+        title: 'Public Preview',
+        data: { title: 'Public Preview' },
+        loadComponent: () => import('./features/skill-passport/public-passport.component').then((m) => m.PublicPassportComponent),
+      },
+      {
+        path: 'career-readiness',
+        title: 'Career Readiness',
+        data: { title: 'Career Readiness' },
+        loadComponent: () => import('./features/career-readiness/career-readiness.component').then((m) => m.CareerReadinessComponent),
       },
       {
         path: 'replay',

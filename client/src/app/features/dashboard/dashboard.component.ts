@@ -17,6 +17,8 @@ import { AstaLearningRiverComponent, RiverNode } from '../../shared/ui/synapse';
 import { MagneticDirective } from '../../shared/directives/magnetic.directive';
 import { CountDirective } from '../../shared/directives/count.directive';
 import { ConfettiService } from '../../core/services/confetti.service';
+import { CareerReadinessService, ReadinessAnalysis } from '../../core/services/career-readiness.service';
+import { SkillPassportService, SkillPassport } from '../../core/services/skill-passport.service';
 
 /**
  * Dashboard — compact Noir cockpit. Command header → active-roadmap + progress
@@ -152,6 +154,33 @@ import { ConfettiService } from '../../core/services/confetti.service';
         </a>
       }
 
+      <!-- Outcome cockpit strip (Phase 9) — readiness + passport, compact -->
+      @if (readiness(); as cr) {
+        <div class="grid gap-5 lg:grid-cols-3 mt-5 motion-row-panel">
+          <a routerLink="/app/career-readiness" class="card hover-lift block lg:col-span-2 dashboard-reveal" style="padding:16px 18px;text-decoration:none;--motion-card-index:0">
+            <div class="flex flex-wrap items-center gap-5">
+              <div class="text-center"><asta-ring [value]="cr.readinessScore" [size]="62" /><p class="text-[11px] text-txt-mute mt-1">Job-ready</p></div>
+              <div class="flex-1 min-w-[200px]">
+                <p class="kicker mb-1">Career readiness · {{ cr.role.title }}</p>
+                @if (cr.blockers[0]; as b) {
+                  <p class="text-sm text-txt-soft"><span class="font-semibold text-txt">Top blocker:</span> {{ b.title }}</p>
+                  <p class="text-[13px] text-txt-mute mt-0.5">{{ b.impact }}</p>
+                } @else { <p class="text-sm text-txt-soft">No major blockers — keep stacking proof.</p> }
+              </div>
+              <span class="text-sm font-semibold shrink-0" style="color:var(--green-deep)">See gaps <span class="arr">→</span></span>
+            </div>
+          </a>
+          <a routerLink="/app/skill-passport" class="card hover-lift block dashboard-reveal" style="padding:16px 18px;text-decoration:none;--motion-card-index:1">
+            <p class="kicker mb-2">Skill Passport</p>
+            @if (passport(); as pp) {
+              <p class="text-[22px] font-bold" style="font-variant-numeric:tabular-nums">{{ pp.proofSummary.verifiedEvents }} <span class="text-sm font-normal text-txt-mute">verified proofs</span></p>
+              <p class="text-[13px] text-txt-soft mt-1">{{ pp.visibility === 'public' ? 'Public — recruiters can verify it' : 'Private — publish to share your proof' }}</p>
+            } @else { <p class="text-sm text-txt-soft">Build your verified profile of proven skills.</p> }
+            <span class="text-sm font-semibold mt-2 inline-block" style="color:var(--green-deep)">Open passport <span class="arr">→</span></span>
+          </a>
+        </div>
+      }
+
       <!-- Three compact intelligence panels — same row, same reveal + hover family -->
       <div class="grid gap-5 md:grid-cols-3 mt-5 motion-row-panel">
         <asta-card class="dashboard-panel-card dashboard-reveal" style="--motion-card-index:0" [interactive]="true" [routerLink]="['/app/roadmap', r.id]">
@@ -268,11 +297,15 @@ export class DashboardComponent {
   private readonly agent = inject(AgentService);
   private readonly router = inject(Router);
   private readonly confetti = inject(ConfettiService);
+  private readonly career = inject(CareerReadinessService);
+  private readonly passportApi = inject(SkillPassportService);
 
   readonly profile = signal<StudentProfile | null>(null);
   readonly roadmap = signal<Roadmap | null>(null);
   readonly intel = signal<LearningIntelligence | null>(null);
   readonly nextMove = signal<NextAction | null>(null);
+  readonly readiness = signal<ReadinessAnalysis | null>(null);
+  readonly passport = signal<SkillPassport | null>(null);
   readonly loading = signal(true);
   readonly error = signal(false);
 
@@ -386,6 +419,8 @@ export class DashboardComponent {
         this.loading.set(false);
         if (profile) {
           this.agent.nextAction().subscribe({ next: (n) => this.nextMove.set(n), error: () => undefined });
+          this.career.me().subscribe({ next: (a) => this.readiness.set(a), error: () => undefined });
+          this.passportApi.me().subscribe({ next: (p) => this.passport.set(p), error: () => undefined });
         }
         if (profile && roadmap) {
           this.intelligence.overview().subscribe({ next: (d) => this.intel.set(d), error: () => undefined });

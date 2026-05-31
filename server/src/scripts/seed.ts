@@ -29,6 +29,9 @@ import { Course, CourseSchema } from '../modules/course-builder/schemas/course.s
 import { buildCourseBlueprint } from '../modules/course-builder/course-blueprint.generator';
 import { PeerRoom, PeerRoomSchema } from '../modules/peer-rooms/schemas/peer-room.schema';
 import { LedgerEntry, LedgerEntrySchema } from '../modules/ledger/schemas/ledger-entry.schema';
+import { SkillPassport, SkillPassportSchema } from '../modules/skill-passport/schemas/skill-passport.schema';
+import { SkillEvidence, SkillEvidenceSchema } from '../modules/skill-passport/schemas/skill-evidence.schema';
+import { CareerReadinessState, CareerReadinessStateSchema } from '../modules/career-readiness/schemas/career-readiness.schema';
 import { buildRoadmapBlueprint } from '../modules/agents/roadmap/roadmap-blueprint.generator';
 import { buildFlowBlueprint } from '../modules/flows/flow-architect/flow-blueprint.generator';
 import { buildVisual } from '../modules/visuals/visual-explainer/visual-generator';
@@ -76,6 +79,9 @@ async function run(): Promise<void> {
   const CourseModel = mongoose.model(Course.name, CourseSchema);
   const PeerRoomModel = mongoose.model(PeerRoom.name, PeerRoomSchema);
   const LedgerModel = mongoose.model(LedgerEntry.name, LedgerEntrySchema);
+  const SkillPassportModel = mongoose.model(SkillPassport.name, SkillPassportSchema);
+  const SkillEvidenceModel = mongoose.model(SkillEvidence.name, SkillEvidenceSchema);
+  const CareerReadinessModel = mongoose.model(CareerReadinessState.name, CareerReadinessStateSchema);
 
   await UserModel.updateOne(
     { email: DEMO.admin.email },
@@ -390,14 +396,48 @@ async function run(): Promise<void> {
     const now = Date.now();
     const day = 24 * 60 * 60 * 1000;
     const entries = [
-      { kind: 'node_completed', title: 'Completed: JavaScript & ES2023 foundations', detail: 'In flow "Learn the MERN stack and land an internship".', at: new Date(now - 5 * day) },
-      { kind: 'quiz_passed', title: 'Passed quiz: JavaScript basics', detail: 'Scored 80% on JavaScript.', score: 80, at: new Date(now - 4 * day) },
-      { kind: 'node_completed', title: 'Completed: React components & hooks', detail: 'In flow "Learn the MERN stack and land an internship".', at: new Date(now - 3 * day) },
-      { kind: 'simulation_finished', title: 'Finished interview: REST API design', detail: 'Scored 72/100.', score: 72, at: new Date(now - 2 * day) },
-      { kind: 'week_completed', title: 'Completed week 1', detail: 'MERN Stack Developer — next: React fundamentals.', at: new Date(now - 1 * day) },
+      { kind: 'node_completed', title: 'Completed: JavaScript & ES2023 foundations', detail: 'In flow "Learn the MERN stack and land an internship".', skills: ['JavaScript'], verificationLevel: 'system', at: new Date(now - 9 * day) },
+      { kind: 'quiz_passed', title: 'Passed quiz: JavaScript basics', detail: 'Scored 80% on JavaScript.', score: 80, skills: ['JavaScript'], verificationLevel: 'system', at: new Date(now - 8 * day) },
+      { kind: 'node_completed', title: 'Completed: React components & hooks', detail: 'In flow "Learn the MERN stack and land an internship".', skills: ['React'], verificationLevel: 'system', at: new Date(now - 7 * day) },
+      { kind: 'quiz_passed', title: 'Passed quiz: React fundamentals', detail: 'Scored 74% on React.', score: 74, skills: ['React'], verificationLevel: 'system', at: new Date(now - 6 * day) },
+      { kind: 'project_submitted', title: 'Submitted project: MERN Task Tracker', detail: 'Full-stack CRUD app with auth.', skills: ['React', 'Node', 'MongoDB'], verificationLevel: 'self', at: new Date(now - 5 * day) },
+      { kind: 'project_ai_reviewed', title: 'AI review: MERN Task Tracker', detail: 'Overall 78/100 — strong architecture, add tests.', score: 78, skills: ['React', 'Node'], verificationLevel: 'ai', at: new Date(now - 5 * day) },
+      { kind: 'simulation_finished', title: 'Finished interview: REST API design', detail: 'Scored 72/100.', score: 72, skills: ['REST API design'], verificationLevel: 'system', at: new Date(now - 4 * day) },
+      { kind: 'voice_viva_passed', title: 'Voice viva: explained closures', detail: 'Clear explanation, scored 81/100.', score: 81, skills: ['JavaScript'], verificationLevel: 'system', at: new Date(now - 3 * day) },
+      { kind: 'mistake_resolved', title: 'Resolved: REST API design', detail: 'Repaired via micro-quiz + tutor.', skills: ['REST API design'], verificationLevel: 'system', at: new Date(now - 2 * day) },
+      { kind: 'week_completed', title: 'Completed week 1', detail: 'MERN Stack Developer — next: React fundamentals.', verificationLevel: 'system', at: new Date(now - 1 * day) },
     ] as const;
     for (const e of entries) await LedgerModel.create({ user: student._id, ...e });
   }
+
+  // ── Phase 9 · Skill Passport: a published, lived-in passport for the demo student.
+  const existingPassport = await SkillPassportModel.findOne({ user: student._id }).exec();
+  if (!existingPassport) {
+    await SkillPassportModel.create({
+      user: student._id,
+      username: `aarav-sharma-${String(student._id).slice(-4)}`,
+      headline: 'Aspiring Full-Stack Developer — building proof one project at a time.',
+      targetRole: 'Full Stack Developer',
+      visibility: 'public',
+      readinessScore: 64,
+      publishedAt: new Date(),
+      lastComputedAt: new Date(),
+    });
+  }
+
+  // ── Phase 9 · Skill evidence: a couple of manually-attached artifacts.
+  const existingEvidence = await SkillEvidenceModel.findOne({ user: student._id }).exec();
+  if (!existingEvidence) {
+    await SkillEvidenceModel.create({ user: student._id, skill: 'React', sourceType: 'link', summary: 'MERN Task Tracker — deployed demo + repo', url: 'https://github.com/example/mern-task-tracker', verificationLevel: 'self', score: 78 });
+    await SkillEvidenceModel.create({ user: student._id, skill: 'JavaScript', sourceType: 'manual', summary: 'Built 20+ vanilla-JS DOM mini-projects', verificationLevel: 'self' });
+  }
+
+  // ── Phase 9 · Career Readiness: target the Full Stack Developer role.
+  await CareerReadinessModel.updateOne(
+    { user: student._id },
+    { $set: { user: student._id, targetRoleId: 'full-stack-developer', lastScore: 64, lastAnalyzedAt: new Date() } },
+    { upsert: true },
+  );
 
   // ── Multi-tenant demo (B1): a sample college org with admin as owner + student member.
   if (admin) {

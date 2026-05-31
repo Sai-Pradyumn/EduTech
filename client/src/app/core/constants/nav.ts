@@ -44,6 +44,7 @@ const I = {
   billing: 'M2 7h20v12H2zM2 11h20M6 15h4',
   live: 'M15 10l4.55-2.28A1 1 0 0 1 21 8.62v6.76a1 1 0 0 1-1.45.9L15 14M4 6h9a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2Z',
   community: 'M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8ZM23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75',
+  passport: 'M4 4a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v16a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V4Zm8 3a3 3 0 1 0 0 6 3 3 0 0 0 0-6Zm-3 11h6',
 };
 
 /** Org/platform nav appended for members + operators (permission-aware, built at runtime). */
@@ -87,6 +88,13 @@ export const STUDENT_NAV: NavGroup[] = [
       { label: 'Mistakes', route: '/app/mistakes', icon: I.mistakes },
       { label: 'Mentor Council', route: '/app/mentor-council', icon: I.council },
       { label: 'Learning Replay', route: '/app/replay', icon: I.replay },
+    ],
+  },
+  {
+    heading: 'Outcome',
+    items: [
+      { label: 'Skill Passport', route: '/app/skill-passport', icon: I.passport },
+      { label: 'Career Readiness', route: '/app/career-readiness', icon: I.career },
       { label: 'Proof-of-Learning', route: '/app/ledger', icon: I.ledger },
     ],
   },
