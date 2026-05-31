@@ -95,6 +95,7 @@ export const STUDENT_NAV: NavGroup[] = [
     items: [
       { label: 'Skill Passport', route: '/app/skill-passport', icon: I.passport },
       { label: 'Career Readiness', route: '/app/career-readiness', icon: I.career },
+      { label: 'Outcome Council', route: '/app/outcome-council', icon: I.council },
       { label: 'Proof-of-Learning', route: '/app/ledger', icon: I.ledger },
     ],
   },

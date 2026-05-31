@@ -272,6 +272,12 @@ export const routes: Routes = [
         loadComponent: () => import('./features/career-readiness/career-readiness.component').then((m) => m.CareerReadinessComponent),
       },
       {
+        path: 'outcome-council',
+        title: 'Outcome Council',
+        data: { title: 'AI Outcome Council' },
+        loadComponent: () => import('./features/outcome-council/outcome-council.component').then((m) => m.OutcomeCouncilComponent),
+      },
+      {
         path: 'replay',
         title: 'Learning Replay',
         data: { title: 'Learning Replay' },

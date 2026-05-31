@@ -51,6 +51,7 @@ import { MentorCouncilModule } from './modules/mentor-council/mentor-council.mod
 import { ReplayModule } from './modules/replay/replay.module';
 import { SkillPassportModule } from './modules/skill-passport/skill-passport.module';
 import { CareerReadinessModule } from './modules/career-readiness/career-readiness.module';
+import { OutcomeCouncilModule } from './modules/outcome-council/outcome-council.module';
 import { SocketsModule } from './sockets/sockets.module';
 
 @Module({
@@ -103,6 +104,7 @@ import { SocketsModule } from './sockets/sockets.module';
     ReplayModule,
     SkillPassportModule,
     CareerReadinessModule,
+    OutcomeCouncilModule,
     SocketsModule,
   ],
   controllers: [HealthController],
