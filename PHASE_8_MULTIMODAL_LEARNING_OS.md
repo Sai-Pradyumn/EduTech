@@ -17,17 +17,24 @@
 | **1** | **Skill Twin foundation** | ✅ **Shipped** |
 | **1** | **Complete Voice Room** (browser STT/TTS + persisted sessions) | ✅ **Shipped** |
 
-**Priority 1 is COMPLETE** (all 5 modules). Priority 2 (Study Spaces · Simulation Labs · Daily Autopilot) is next.
+**Priority 1 COMPLETE** (5 modules). **Priority 2 COMPLETE** (3 modules):
+
+| Priority | Module | Status |
+|---|---|---|
+| **2** | **Study Spaces** (multimodal notebooks) | ✅ **Shipped** |
+| **2** | **Simulation Labs** (rubric-scored practice) | ✅ **Shipped** |
+| **2** | **Daily Autopilot** (today plan) | ✅ **Shipped** |
 | 2 | Study Spaces · Simulation Labs · Daily Autopilot | ⏳ queued |
 | 3 | Course Builder · Peer Rooms | ⏳ queued |
 | 4 | AI Mentor Council · Proof-of-Learning · Learning Replay · Modality Router | ⏳ queued |
 
 Build status: **`npm run build:server` green**, **`npm run build:client` green & warning-free**
-(initial bundle **519.60 kB**, < 540 kB budget). Server **boots clean** (all flow + visual + mistake +
-skill-twin + voice routes mapped, no DI errors); all five modules **runtime-smoked** with the mock
-provider (incl. Mistake-OS quiz auto-capture, Skill-Twin compute + reset, and the full voice session
-lifecycle → flow/quiz). Seed inserts **2 demo flows**, **4 demo visuals**, **4 demo mistakes**, and **1
-demo voice session** (the Skill Twin is computed live).
+(initial bundle **521.46 kB**, < 540 kB budget). Server **boots clean** (all 8 Phase-8 module route
+groups mapped, no DI errors); every module **runtime-smoked** with the mock provider (incl. Mistake-OS
+quiz auto-capture, Skill-Twin compute + reset, the full voice session lifecycle → flow/quiz, Study-Space
+ask + generators, Simulation finish → Mistake-OS feed, and Daily-Plan modes). Seed inserts **2 flows**,
+**4 visuals**, **4 mistakes**, **1 voice session**, **1 study space**, and **1 simulation** (Skill Twin
++ Daily Plan are computed live).
 
 ---
 
@@ -401,6 +408,61 @@ answers (TTS) · ✅ stop speaking + replay · ✅ switch modes · ✅ mobile-fr
 
 ---
 
+## Module — Study Spaces ✅ (Priority 2)
+
+NotebookLM-style **multimodal workspaces**. Add sources (text/url/transcript/…), then ask grounded
+questions and generate a summary, flashcards, an audio-overview script, a learning flow, a quiz, or a
+concept-graph visual — all from the same space.
+
+- **Routes**: `/app/spaces` (grid + create), `/app/spaces/:id` (cockpit: ask panel + artifacts on the
+  left; source rail + generator buttons on the right).
+- **Backend** `server/src/modules/spaces/`: `StudySpace` (sources[], artifacts[], linked flow/visual/
+  quiz/voice ids). `SpacesService`: source CRUD, **grounded `ask`** (AI gateway over source text, with a
+  deterministic fallback), `summary`/`flashcards`/`audioOverview` artifacts, and `createFlow` (→
+  FlowsService) / `createQuiz` (→ AssessmentService) / `createVisual` (→ VisualsService, concept_graph).
+- **API**: `POST/GET /spaces` · `GET/PATCH/DELETE /spaces/:id` · `POST /spaces/:id/sources` ·
+  `DELETE /spaces/:id/sources/:sourceId` · `POST /spaces/:id/{ask,summary,flashcards,audio-overview,flow,quiz,visuals}`.
+- **Audio overview**: generates a script; the client reads it via the browser TTS service.
+- **Flag**: `ENABLE_STUDY_SPACES` (default on). **Acceptance met**: create · add sources · grounded
+  ask · summary · quiz · flow · concept visual · audio playback · states · works offline (mock).
+
+## Module — Simulation Labs ✅ (Priority 2)
+
+Real, **rubric-scored practice** across 10 round types (interview / viva / debugging / system-design /
+code-walkthrough / product-thinking / mentor-review / group-discussion / client-requirements /
+teaching-back). Each round runs through the Agent OS; finishing scores against a rubric and writes an
+improvement plan.
+
+- **Routes**: `/app/simulations` (type + topic picker + history), `/app/simulations/:id` (scenario +
+  transcript + respond + finish → score/rubric/feedback/plan + retry easier/harder + repair-flow).
+- **Backend** `server/src/modules/simulations/`: `Simulation` (type, topic, rubric[], transcript[],
+  score, feedback, improvementPlan, links). `simulation-coach.ts` holds per-type blueprints (agent +
+  scenario + rubric + response framing) and a deterministic engagement-based scorer. `SimulationsService`:
+  start / respond (Agent OS) / **finish** (scores, writes plan, and on a sub-60 score **feeds Mistake OS**
+  via `captureManual` + links it) / retry (difficulty step) / **createRepairFlow** (→ FlowsService.addRepairNode).
+- **API**: `POST /simulations/start` · `GET /simulations` · `GET /simulations/:id` ·
+  `POST /simulations/:id/{respond,finish,retry,create-repair-flow}` · `DELETE /simulations/:id`.
+- **Flag**: `ENABLE_SIMULATIONS` (default on). **Acceptance met**: create · respond · rubric-based
+  feedback · mistakes saved (verified `linkedMistakes:1` on a low score) · retry · repair flow.
+
+## Module — Daily Autopilot ✅ (Priority 2)
+
+Turns the active flow + open mistakes + roadmap into a **today plan** with energy-aware modes.
+
+- **Route**: `/app/today` — mode pills (Today / Quick / Exam / Recover), a checklist of reasoned items,
+  and a completion ring + quick-mode shortcuts.
+- **Backend** `server/src/modules/daily-plan/`: `DailyPlan` (one per user per day; items with kind,
+  reason, route, estimate, done). `DailyPlanService` builds items from `FlowsService.findActive`
+  (next node) + `MistakesService` (top open gap) + the active Roadmap (current week) + a quiz nudge.
+  Modes: **normal** (~5 items), **quick** ("I only have 20 minutes" — budget-trimmed), **exam** ("exam
+  tomorrow" — quiz + cram-repairs + a viva sim), **burnout_recovery** (one light item). Completion
+  carries over across recalcs.
+- **API**: `GET /daily-plan/today` · `POST /daily-plan/{generate,complete-item,recalculate,quick-mode}`.
+- **Acceptance met**: dashboard-ready today plan · complete items · recalculate · quick mode builds a
+  smaller plan. Every item carries a "why" (its `reason`).
+
+---
+
 ## Data relationships wired this pass
 - **Roadmap → Flow**: `POST /flows/from-roadmap/:roadmapId` seeds the graph backbone from roadmap weeks.
 - **Flow node → Tutor / Quiz / Project / Voice / Mentor / Knowledge**: `execute-node` returns the route + prompt + agent.
@@ -420,13 +482,12 @@ answers (TTS) · ✅ stop speaking + replay · ✅ switch modes · ✅ mobile-fr
   orchestrator's agent registry; registry entries can be added when voice "speak-a-goal → flow" lands.
 
 ## Feature flags (Phase 8 roster)
-Shipped: `ENABLE_FLOW_STUDIO` (default on), `ENABLE_VISUAL_STUDIO` (default on), `ENABLE_VOICE`
-(default on; browser STT/TTS need no keys), `ENABLE_IMAGE_GENERATION` (default off → mock SVG).
-`ENABLE_REALTIME_VOICE` (default off) gates future server-side STT/TTS providers. Planned:
-`ENABLE_SIMULATIONS`, `ENABLE_STUDY_SPACES`.
+All default **on** unless noted: `ENABLE_FLOW_STUDIO`, `ENABLE_VISUAL_STUDIO`, `ENABLE_VOICE`
+(browser STT/TTS need no keys), `ENABLE_STUDY_SPACES`, `ENABLE_SIMULATIONS`. Off by default:
+`ENABLE_IMAGE_GENERATION` (→ mock SVG) and `ENABLE_REALTIME_VOICE` (future server-side STT/TTS).
 
-## Next-pass recommendations (Priority 1 complete → Priority 2)
-1. **Study Spaces** — NotebookLM-style multimodal workspaces (sources → ask/summary/flashcards/quiz/flow/visuals/audio-overview), reusing RAG + Flow + Visual + Voice.
-2. **Simulation Labs** — interview / viva / debugging / system-design rounds with rubric scoring that feeds Mistake OS + Skill Twin (the `simulation` flow node + voice `interview` mode are ready to host it).
-3. **Daily Autopilot** — convert the active flow/roadmap into a today plan; surface the Skill Twin's top next-best-action + "top repair focus" on the dashboard (the API already returns them).
-4. Wire the Voice Room socket events for token streaming; add a real STT/TTS provider behind `ENABLE_REALTIME_VOICE`.
+## Next-pass recommendations (Priority 1 & 2 complete → Priority 3 / 4)
+1. **Priority 3 — Course Builder** (teacher/mentor: goal/syllabus/space/flow → modules + lessons + quiz + project + visuals + certificate criteria) and **Peer Rooms** (Socket.IO study rooms + AI moderator/summary).
+2. **Priority 4 breakthroughs** still open: **AI Mentor Council** (multi-agent debate → orchestrator picks), **Proof-of-Learning Ledger**, **Learning Replay**. (Adaptive Modality Router + Explainability Drawer already shipped in the Skill Twin; Mode-Morphing largely covered by Flow execute + Visual + Voice.)
+3. Surface the Skill-Twin top action + Daily-Plan "today" on the **dashboard** widget.
+4. Wire Voice Room socket streaming; add a real STT/TTS + image provider behind their flags.

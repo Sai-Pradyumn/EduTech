@@ -42,6 +42,10 @@ export interface AppConfig {
     imageGeneration: boolean;
     /** Phase 8 · Voice Room (browser STT/TTS). On by default; ENABLE_VOICE=false to disable. */
     voice: boolean;
+    /** Phase 8 · Study Spaces. On by default. */
+    studySpaces: boolean;
+    /** Phase 8 · Simulation Labs. On by default. */
+    simulations: boolean;
   };
   vector: { backend: 'keyword' | 'atlas' };
   rag: { topK: number; minScore: number; hybrid: boolean };
@@ -118,6 +122,8 @@ export default (): AppConfig => ({
     visualStudio: process.env.ENABLE_VISUAL_STUDIO !== 'false',
     imageGeneration: process.env.ENABLE_IMAGE_GENERATION === 'true',
     voice: process.env.ENABLE_VOICE !== 'false',
+    studySpaces: process.env.ENABLE_STUDY_SPACES !== 'false',
+    simulations: process.env.ENABLE_SIMULATIONS !== 'false',
   },
   vector: {
     backend: (process.env.VECTOR_STORE_PROVIDER ??

@@ -42,6 +42,9 @@
 | P8·3 | **Mistake OS** — remembers misconceptions, not just scores. **Auto-captures** weak topics from graded quizzes (event-driven), builds **repair loops** (tutor/visual/micro-quiz/voice-viva), injects `weak_area_repair` nodes into the active flow, weakness heatmap + top repair focus; `/app/mistakes` | ✅ Phase 8 |
 | P8·4 | **Skill Twin** — a live, explainable learner model (readiness/health, retention & burnout risk, pace, mastery graph, weakness roots, misconception memory). **Adaptive modality router** + next-best-actions each with a **"Why?" explainability drawer**; reset-learning-memory. Blends Learning-Intelligence + Mistake OS + active flow + profile; `/app/skill-twin` | ✅ Phase 8 |
 | P8·5 | **Voice Room** — voice-native learning: persisted multi-turn sessions across **8 modes** (tutor/viva/interview/doubt/flow-builder/revision/mentor/project-review), browser STT/TTS with type fallback, speaking orb, **voice→flow** + **voice→quiz** + notes/summary; `/app/voice-room` | ✅ Phase 8 |
+| P8·6 | **Study Spaces** — NotebookLM-style multimodal notebooks: add sources, ask grounded questions, generate summary/flashcards/audio-overview, and spawn a flow/quiz/concept-map; `/app/spaces` | ✅ Phase 8 |
+| P8·7 | **Simulation Labs** — rubric-scored practice across 10 round types (interview/viva/debugging/system-design/…); finishing scores you, writes an improvement plan, feeds Mistake OS + can patch your flow; `/app/simulations` | ✅ Phase 8 |
+| P8·8 | **Daily Autopilot** — turns your active flow + open mistakes + roadmap into a **today plan** with energy-aware modes (quick / exam / burnout-recovery); `/app/today` | ✅ Phase 8 |
 | 11 | Admin dashboard + AI analytics | ⏳ Phase 6 |
 | 12 | Notifications (in-app + BullMQ) | ⏳ Phase 6 |
 | 13 | WebSocket foundation (streaming + realtime) | ⏳ Phase 3 |
@@ -144,6 +147,8 @@ npm run build            # builds server then client
 | `ENABLE_IMAGE_GENERATION` | Real image generation provider. **Off by default** — a deterministic mock SVG is used so no paid image API is required. |
 | `ENABLE_VOICE` | Phase 8 Voice Room. **On by default** (browser STT/TTS need no keys); set `false` to disable `/app/voice-room`. |
 | `ENABLE_REALTIME_VOICE` | Server-side STT/TTS provider (OpenAI Realtime / ElevenLabs / Azure). Off by default — the browser Web Speech API does mic + speech. |
+| `ENABLE_STUDY_SPACES` | Phase 8 Study Spaces (`/app/spaces`). **On by default.** |
+| `ENABLE_SIMULATIONS` | Phase 8 Simulation Labs (`/app/simulations`). **On by default.** |
 | `STORAGE_PROVIDER` | `local` \| `s3` |
 | `AWS_*` / `S3_BUCKET` | S3 storage (optional) |
 

@@ -136,6 +136,36 @@ export const routes: Routes = [
         loadComponent: () => import('./features/flows/flow-detail.component').then((m) => m.FlowDetailComponent),
       },
       {
+        path: 'today',
+        title: 'Today',
+        data: { title: 'Today' },
+        loadComponent: () => import('./features/today/today.component').then((m) => m.TodayComponent),
+      },
+      {
+        path: 'spaces',
+        title: 'Study Spaces',
+        data: { title: 'Study Spaces' },
+        loadComponent: () => import('./features/spaces/spaces-list.component').then((m) => m.SpacesListComponent),
+      },
+      {
+        path: 'spaces/:id',
+        title: 'Study Space',
+        data: { title: 'Study Space' },
+        loadComponent: () => import('./features/spaces/space-detail.component').then((m) => m.SpaceDetailComponent),
+      },
+      {
+        path: 'simulations',
+        title: 'Simulation Labs',
+        data: { title: 'Simulation Labs' },
+        loadComponent: () => import('./features/simulations/simulations-list.component').then((m) => m.SimulationsListComponent),
+      },
+      {
+        path: 'simulations/:id',
+        title: 'Simulation',
+        data: { title: 'Simulation' },
+        loadComponent: () => import('./features/simulations/simulation-detail.component').then((m) => m.SimulationDetailComponent),
+      },
+      {
         path: 'visuals',
         title: 'Visual Studio',
         data: { title: 'Visual Studio' },

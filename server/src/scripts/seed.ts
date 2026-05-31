@@ -22,6 +22,9 @@ import { VisualAsset, VisualAssetSchema } from '../modules/visuals/schemas/visua
 import { Mistake, MistakeSchema } from '../modules/mistakes/schemas/mistake.schema';
 import { buildRepairPlan, severityToType } from '../modules/mistakes/mistake-repair.generator';
 import { VoiceSession, VoiceSessionSchema } from '../modules/voice/schemas/voice-session.schema';
+import { StudySpace, StudySpaceSchema } from '../modules/spaces/schemas/study-space.schema';
+import { Simulation, SimulationSchema } from '../modules/simulations/schemas/simulation.schema';
+import { SIM_BLUEPRINTS } from '../modules/simulations/simulation-coach';
 import { buildRoadmapBlueprint } from '../modules/agents/roadmap/roadmap-blueprint.generator';
 import { buildFlowBlueprint } from '../modules/flows/flow-architect/flow-blueprint.generator';
 import { buildVisual } from '../modules/visuals/visual-explainer/visual-generator';
@@ -64,6 +67,8 @@ async function run(): Promise<void> {
   const VisualModel = mongoose.model(VisualAsset.name, VisualAssetSchema);
   const MistakeModel = mongoose.model(Mistake.name, MistakeSchema);
   const VoiceSessionModel = mongoose.model(VoiceSession.name, VoiceSessionSchema);
+  const StudySpaceModel = mongoose.model(StudySpace.name, StudySpaceSchema);
+  const SimulationModel = mongoose.model(Simulation.name, SimulationSchema);
 
   await UserModel.updateOne(
     { email: DEMO.admin.email },
@@ -291,6 +296,45 @@ async function run(): Promise<void> {
       extractedActions: ['Follow up on: how closures work', 'Follow up on: a private counter example'],
       durationMs: 95000,
       status: 'completed',
+    });
+  }
+
+  // ── Phase 8 · Study Spaces: seed one space with a couple of sources.
+  const existingSpace = await StudySpaceModel.findOne({ user: student._id }).exec();
+  if (!existingSpace) {
+    await StudySpaceModel.create({
+      user: student._id,
+      title: 'System Design Basics',
+      description: 'Notes and transcripts for the system design round.',
+      sources: [
+        { id: 'src_caching', type: 'text', title: 'Caching notes', text: 'A cache stores hot data closer to the consumer to cut latency. Use a TTL to bound staleness. Cache-aside is the most common pattern: read-through on miss, write to the DB then invalidate the cache.', addedAt: new Date() },
+        { id: 'src_lb', type: 'text', title: 'Load balancing', text: 'A load balancer spreads traffic across servers. Round-robin is simple; least-connections suits long-lived requests. Health checks remove unhealthy nodes.', addedAt: new Date() },
+      ],
+    });
+  }
+
+  // ── Phase 8 · Simulation Labs: seed one finished interview simulation.
+  const existingSim = await SimulationModel.findOne({ user: student._id }).exec();
+  if (!existingSim) {
+    const bp = SIM_BLUEPRINTS.interview;
+    await SimulationModel.create({
+      user: student._id,
+      type: 'interview',
+      topic: 'REST API design',
+      difficulty: Difficulty.Intermediate,
+      role: bp.role,
+      scenario: bp.scenario('REST API design'),
+      rubric: bp.rubric.map((c) => ({ criterion: c, weight: 1, score: 72 })),
+      transcript: [
+        { role: 'coach', text: bp.scenario('REST API design'), at: new Date() },
+        { role: 'user', text: 'REST uses resources and HTTP verbs; I would version the API and use proper status codes.', at: new Date() },
+        { role: 'coach', text: 'Good. How would you handle pagination and partial failures?', at: new Date() },
+      ],
+      score: 72,
+      feedback: 'Solid performance (72/100). Tighten the weaker rubric areas and retry.',
+      improvementPlan: ['Strengthen "Depth" on REST API design.'],
+      linkedSkills: ['REST API design'],
+      status: 'finished',
     });
   }
 

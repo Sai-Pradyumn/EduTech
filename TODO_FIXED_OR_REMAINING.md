@@ -1,5 +1,24 @@
 # Asta — Fixed / Remaining
 
+## ✅ Shipped — Phase 8 · PRIORITY 2 (Study Spaces + Simulation Labs + Daily Autopilot) — in one pass
+All three Priority-2 modules built end-to-end. Full detail in [`PHASE_8_MULTIMODAL_LEARNING_OS.md`](PHASE_8_MULTIMODAL_LEARNING_OS.md).
+- **Study Spaces** `server/src/modules/spaces/` + `client/.../features/spaces/`: NotebookLM-style spaces
+  (sources → grounded ask, summary, flashcards, audio-overview script, + spawn flow/quiz/concept-visual).
+  14 routes; `ENABLE_STUDY_SPACES`. Reuses AI gateway + Flows + Assessment + Visuals. Seed 1 space.
+- **Simulation Labs** `server/src/modules/simulations/` + `features/simulations/`: 10 round types,
+  per-type blueprints (agent + scenario + rubric), start/respond(Agent OS)/finish(rubric score +
+  improvement plan + **feeds Mistake OS** on sub-60)/retry/create-repair-flow. 8 routes;
+  `ENABLE_SIMULATIONS`. Seed 1 finished sim.
+- **Daily Autopilot** `server/src/modules/daily-plan/` + `features/today/`: builds today's plan from
+  active flow + open mistakes + roadmap + quiz nudge; modes normal/quick/exam/burnout_recovery;
+  complete/recalculate. 5 routes. `/app/today`.
+- **Wiring**: 8 new routes + nav items (Today, Study Spaces, Simulations) + voice-command rules.
+- **Verification**: builds green; client warning-free (521.46 kB < 540 kB); server boots clean (all
+  route groups mapped); API runtime-smoked across all three (grounded ask + generators; sim finish →
+  Mistake-OS link verified; daily-plan normal/quick/exam).
+- **PRIORITY 2 COMPLETE.** Remaining Phase 8: Priority 3 (Course Builder, Peer Rooms), Priority 4
+  breakthroughs (AI Mentor Council, Proof-of-Learning, Learning Replay).
+
 ## ✅ Shipped — Phase 8 · Complete Voice Room (Priority 1 · module 5) — PRIORITY 1 DONE
 Voice-native learning, end-to-end. Full detail in [`PHASE_8_MULTIMODAL_LEARNING_OS.md`](PHASE_8_MULTIMODAL_LEARNING_OS.md).
 - **Backend** `server/src/modules/voice/`: promoted the stub to **persisted `VoiceSession`** (8 modes,

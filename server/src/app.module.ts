@@ -41,6 +41,9 @@ import { FlowsModule } from './modules/flows/flows.module';
 import { VisualsModule } from './modules/visuals/visuals.module';
 import { MistakesModule } from './modules/mistakes/mistakes.module';
 import { SkillTwinModule } from './modules/skill-twin/skill-twin.module';
+import { SpacesModule } from './modules/spaces/spaces.module';
+import { SimulationsModule } from './modules/simulations/simulations.module';
+import { DailyPlanModule } from './modules/daily-plan/daily-plan.module';
 import { SocketsModule } from './sockets/sockets.module';
 
 @Module({
@@ -83,6 +86,9 @@ import { SocketsModule } from './sockets/sockets.module';
     VisualsModule,
     MistakesModule,
     SkillTwinModule,
+    SpacesModule,
+    SimulationsModule,
+    DailyPlanModule,
     SocketsModule,
   ],
   controllers: [HealthController],

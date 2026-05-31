@@ -1,0 +1,164 @@
+import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { Router } from '@angular/router';
+import { ButtonComponent } from '../../shared/ui/button.component';
+import { CardComponent } from '../../shared/ui/card.component';
+import { EmptyStateComponent } from '../../shared/ui/empty-state.component';
+import { SkeletonComponent } from '../../shared/ui/skeleton.component';
+import { ToastService } from '../../core/services/toast.service';
+import { DAILY_KIND_GLYPH, DailyItem, DailyPlan, DailyPlanMode, DailyPlanService } from '../../core/services/daily-plan.service';
+
+@Component({
+  selector: 'asta-today',
+  standalone: true,
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [ButtonComponent, CardComponent, EmptyStateComponent, SkeletonComponent],
+  template: `
+    <header class="asta-page-command-header">
+      <div class="min-w-0">
+        <h1 class="text-[26px] leading-tight mb-2 grad-flow">Today</h1>
+        <span class="goal-pill"><span class="dot"></span>Daily Autopilot · your plan, built from your flow, gaps & roadmap</span>
+      </div>
+      <div class="flex gap-2.5 shrink-0">
+        <asta-btn variant="ghost" size="sm" [disabled]="busy()" (click)="recalculate()">Recalculate</asta-btn>
+      </div>
+    </header>
+
+    <div class="mode-row mb-4">
+      @for (m of modes; track m.id) {
+        <button class="mode-pill" [class.active]="plan()?.mode === m.id" [disabled]="busy()" (click)="setMode(m.id)" [title]="m.hint">{{ m.label }}</button>
+      }
+    </div>
+
+    @if (loading()) {
+      <asta-card><asta-skeleton h="200px" /></asta-card>
+    } @else if (loadError()) {
+      <asta-card><asta-empty-state title="Could not load today's plan" description=""><asta-btn variant="accent" (click)="load()">Retry</asta-btn></asta-empty-state></asta-card>
+    } @else if (plan()) {
+      @if (plan()!; as p) {
+      <div class="grid gap-4 lg:grid-cols-[1fr_280px] items-start">
+        <asta-card class="block motion-card-reveal motion-row-primary">
+          <div class="flex items-center justify-between mb-3">
+            <p class="kicker !mb-0">{{ modeLabel(p.mode) }} · {{ p.totalMinutes }} min</p>
+            <span class="text-xs text-txt-mute">{{ p.completed }}/{{ p.items.length }} done</span>
+          </div>
+          @if (p.items.length === 0) {
+            <asta-empty-state title="Nothing scheduled" description="Generate a flow or take a quiz and Asta will build your day here.">
+              <asta-btn variant="accent" (click)="go('/app/flows')">Open Flow Studio</asta-btn>
+            </asta-empty-state>
+          } @else {
+            <div class="space-y-2">
+              @for (it of p.items; track it.id) {
+                <div class="item" [class.done]="it.done">
+                  <button class="check" (click)="toggle(it)" [attr.aria-pressed]="it.done">{{ it.done ? '✓' : '' }}</button>
+                  <span class="i-glyph">{{ glyph(it.kind) }}</span>
+                  <span class="min-w-0 flex-1">
+                    <span class="i-title">{{ it.title }}</span>
+                    <span class="i-reason">{{ it.reason }}</span>
+                  </span>
+                  <span class="i-min">{{ it.estimateMinutes }}m</span>
+                  <asta-btn size="sm" variant="ghost" (click)="go(it.route)">Start</asta-btn>
+                </div>
+              }
+            </div>
+          }
+        </asta-card>
+
+        <div class="space-y-4">
+          <asta-card class="block motion-card-reveal motion-row-2 text-center">
+            <p class="ring-num">{{ pct() }}%</p>
+            <div class="prog-track"><span class="prog-fill" [style.width.%]="pct()"></span></div>
+            <p class="text-xs text-txt-mute mt-2">of today's plan complete</p>
+          </asta-card>
+          <asta-card class="block motion-card-reveal motion-row-3">
+            <p class="kicker mb-2">Quick modes</p>
+            <div class="grid gap-2">
+              <asta-btn variant="ghost" size="sm" [disabled]="busy()" (click)="setMode('quick')">⏱ I only have 20 minutes</asta-btn>
+              <asta-btn variant="ghost" size="sm" [disabled]="busy()" (click)="setMode('exam')">📝 Exam tomorrow</asta-btn>
+              <asta-btn variant="ghost" size="sm" [disabled]="busy()" (click)="setMode('burnout_recovery')">🌙 Burnout recovery</asta-btn>
+            </div>
+          </asta-card>
+        </div>
+      </div>
+      }
+    }
+  `,
+  styles: [
+    `
+      :host { display: block; }
+      .mode-row { display: inline-flex; gap: 2px; background: var(--paper-2); border: 1px solid var(--paper-3); border-radius: 999px; padding: 3px; }
+      .mode-pill { font-size: 12px; padding: 5px 12px; border-radius: 999px; border: none; background: transparent; color: var(--text-soft); cursor: pointer; }
+      .mode-pill.active { background: color-mix(in oklab, var(--green) 22%, transparent); color: var(--text); }
+      .item { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 12px; border: 1px solid var(--paper-3); background: var(--paper-2); }
+      .item.done { opacity: .55; }
+      .item.done .i-title { text-decoration: line-through; }
+      .check { width: 22px; height: 22px; border-radius: 6px; border: 1.5px solid var(--paper-3); background: transparent; color: var(--green); cursor: pointer; flex-shrink: 0; font-size: 13px; }
+      .i-glyph { font-size: 16px; }
+      .i-title { display: block; font-size: 14px; font-weight: 600; }
+      .i-reason { display: block; font-size: 11px; color: var(--text-mute); }
+      .i-min { font-size: 11px; color: var(--text-mute); white-space: nowrap; }
+      .ring-num { font-size: 34px; font-weight: 700; font-variant-numeric: tabular-nums; }
+      .prog-track { height: 6px; border-radius: 999px; background: var(--paper-3); overflow: hidden; }
+      .prog-fill { display: block; height: 100%; background: linear-gradient(90deg, var(--green-deep), var(--green)); transition: width .4s var(--ease); }
+    `,
+  ],
+})
+export class TodayComponent {
+  private readonly api = inject(DailyPlanService);
+  private readonly toast = inject(ToastService);
+  private readonly router = inject(Router);
+
+  readonly plan = signal<DailyPlan | null>(null);
+  readonly loading = signal(true);
+  readonly loadError = signal(false);
+  readonly busy = signal(false);
+
+  readonly modes: { id: DailyPlanMode; label: string; hint: string }[] = [
+    { id: 'normal', label: 'Today', hint: 'A balanced daily plan' },
+    { id: 'quick', label: 'Quick', hint: 'Only 20 minutes' },
+    { id: 'exam', label: 'Exam', hint: 'Exam tomorrow' },
+    { id: 'burnout_recovery', label: 'Recover', hint: 'Light, low-pressure' },
+  ];
+
+  readonly pct = computed(() => {
+    const p = this.plan();
+    return p && p.items.length ? Math.round((p.completed / p.items.length) * 100) : 0;
+  });
+
+  constructor() { this.load(); }
+
+  load(): void {
+    this.loading.set(true);
+    this.loadError.set(false);
+    this.api.today().subscribe({
+      next: (p) => { this.plan.set(p); this.loading.set(false); },
+      error: () => { this.loadError.set(true); this.loading.set(false); },
+    });
+  }
+
+  glyph(k: DailyItem['kind']): string { return DAILY_KIND_GLYPH[k]; }
+  modeLabel(m: DailyPlanMode): string { return this.modes.find((x) => x.id === m)?.label ?? m; }
+  go(route: string): void { this.router.navigate([route]); }
+
+  setMode(mode: DailyPlanMode): void {
+    this.busy.set(true);
+    this.api.generate(mode).subscribe({
+      next: (p) => { this.plan.set(p); this.busy.set(false); },
+      error: () => { this.busy.set(false); this.toast.error('Could not build plan'); },
+    });
+  }
+
+  recalculate(): void {
+    this.busy.set(true);
+    this.api.recalculate().subscribe({
+      next: (p) => { this.plan.set(p); this.busy.set(false); this.toast.success('Plan recalculated'); },
+      error: () => { this.busy.set(false); this.toast.error('Could not recalculate'); },
+    });
+  }
+
+  toggle(it: DailyItem): void {
+    this.api.completeItem(it.id).subscribe({
+      next: (p) => this.plan.set(p),
+      error: () => this.toast.error('Could not update item'),
+    });
+  }
+}
