@@ -1,5 +1,26 @@
 # Asta — Fixed / Remaining
 
+## ✅ Shipped — Phase 10 · Scale, Monetization, AI Ops & Enterprise Reliability
+Full detail in [`PHASE_10_SCALE_MONETIZATION_AI_OPS.md`](PHASE_10_SCALE_MONETIZATION_AI_OPS.md). "From impressive
+AI product to a real SaaS platform." Shipped priority-by-priority (one commit each, complete flow), all builds
+green + seed + 10 unit tests passing + runtime-smoked:
+- **P1 — Monetization & control:** `entitlements` (per-feature limit maps over a 5-plan catalog, check/consume/
+  summary, `<asta-entitlement-gate>`), `feature-flags` (16 flags + admin kill-switches), AI metering wired into
+  `AiService`, billing upgrade (change-plan/cancel/invoices + admin overview) + `PaymentProvider` abstraction.
+- **P2 — Production ops:** `ai-ops` (cost/latency/error/fallback + provider health + budget policies), `ops`
+  (health, job ledger w/ retry, persisted error feed), `audit` (`/admin` + `/org` logs), request/error IDs in
+  the global filter, `product-analytics` (funnels/DAU-WAU/retention).
+- **P3 — PWA/offline:** IndexedDB cache + sync queue (replays on reconnect) + network banner, `<asta-offline-
+  toggle>`, SW stale-while-revalidate + push handlers, `push` module (VAPID-gated no-op).
+- **P4 — Enterprise:** `sessions` (device list/revoke/logout-all), `org-branding` (cert preview),
+  `data-governance` (export/deletion jobs + retention).
+- **P5 — Platform/growth:** `developer` (hashed API keys + HMAC webhooks + delivery log), `integrations`
+  (GitHub/Calendar `.ics`/Slack/Discord/LMS), Jest tests + CI test step.
+
+**Phase-10 follow-ups (foundation by design):** enforce entitlement org-inheritance + AI budget at the gateway;
+turn Stripe/Razorpay, VAPID web-push and real OAuth live behind their flags; back the job ledger with a real
+BullMQ worker; e2e/Playwright smoke suite.
+
 ## ✅ Shipped — Phase 9 · Outcome Network (ALL 15 modules)
 Priorities 1–4 complete end-to-end (backend + frontend + seed). In addition to the Priority-1 + Council
 work below, Phase 9 now also ships: **Portfolio Builder** (+ public `/p/:username`), **Project Review 2.0**
