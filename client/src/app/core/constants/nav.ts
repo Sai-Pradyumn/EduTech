@@ -145,6 +145,10 @@ export const ADMIN_NAV: NavGroup[] = [
     heading: 'Platform',
     items: [
       { label: 'Billing Admin', route: '/admin/billing', icon: I.billing },
+      { label: 'AI Ops', route: '/admin/ai-ops', icon: I.analytics },
+      { label: 'Ops', route: '/admin/ops', icon: I.progress },
+      { label: 'Product Analytics', route: '/admin/product-analytics', icon: I.analytics },
+      { label: 'Audit Logs', route: '/admin/audit-logs', icon: I.ledger },
       { label: 'Feature Flags', route: '/admin/feature-flags', icon: I.platform },
     ],
   },

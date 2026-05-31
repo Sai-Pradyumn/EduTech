@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component, OnInit, computed, inject, signal } 
 import { DatePipe } from '@angular/common';
 import { BillingService } from '../../core/services/billing.service';
 import { EntitlementService } from '../../core/services/entitlement.service';
+import { ProductAnalyticsService } from '../../core/services/product-analytics.service';
 import { ToastService } from '../../core/services/toast.service';
 import { EntitlementSummary, FEATURE_LABELS, FeatureKey, Plan, PlanId, SubscriptionView, TransactionView, UsageView } from '../../core/models';
 import { GaugeComponent } from '../../shared/charts';
@@ -201,6 +202,7 @@ import { GaugeComponent } from '../../shared/charts';
 export class BillingComponent implements OnInit {
   private readonly billing = inject(BillingService);
   private readonly entitlements = inject(EntitlementService);
+  private readonly analytics = inject(ProductAnalyticsService);
   private readonly toast = inject(ToastService);
 
   readonly plans = signal<Plan[]>([]);
@@ -256,10 +258,12 @@ export class BillingComponent implements OnInit {
 
   upgrade(id: PlanId): void {
     this.busy.set(true);
+    this.analytics.track('billing_upgrade_clicked', { plan: id });
     this.billing.changePlan(id).subscribe({
       next: (subscription) => {
         this.sub.set(subscription);
         this.busy.set(false);
+        if (id !== 'free') this.analytics.track('subscription_started', { plan: id });
         this.billing.transactions().subscribe({ next: (t) => this.txns.set(t) });
         this.entitlements.load().subscribe({ next: (e) => this.ent.set(e) });
         this.toast.success(`You're now on the ${subscription.plan.name} plan`);

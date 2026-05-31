@@ -99,9 +99,52 @@ entitlement meters for the student; flag overrides (image-gen off, web-push on).
 
 ---
 
-## Priority 2 — Production Operations *(planned)*
-AI Ops dashboard, Ops command center, audit logs, request/error IDs, job monitoring,
-product analytics.
+## Priority 2 — Production Operations ✅
+
+Observability over the metering data created in Priority 1: AI cost/health dashboards, an
+Ops command center, audit trail, request/error correlation and a product-analytics funnel
+engine.
+
+### Modules added
+- **`ops`** (`@Global`) — `ErrorLog` + `JobRun` schemas, `OpsService` (health/metrics, a
+  queue-agnostic job ledger with retry, persisted error feed), `/ops/*` controller.
+- **`audit`** (`@Global`) — `AuditLog` schema + `AuditService.record()` (never throws) +
+  `/admin/audit-logs` (admin) and `/org/audit-logs` (org-scoped). Feature-flag changes now
+  emit audit entries.
+- **`ai-ops`** — `AiBudgetPolicy` schema + `AiOpsService` (cost by day/feature, top
+  spenders, fallback/error rates, latency, live provider health via the gateway snapshot) +
+  `/admin/ai-ops/*` + budget CRUD.
+- **`product-analytics`** (`@Global`) — `ProductEvent` schema + `ProductAnalyticsService`
+  (18-event whitelist, prop sanitization, activation/monetization/outcome funnels, DAU/WAU,
+  retention) + `/analytics/track` + `/admin/product-analytics/*`.
+
+### Error IDs & structured logging (M7)
+- `request-id` middleware → stable `requestId` + `X-Request-Id` on every request.
+- `AllExceptionsFilter` rewritten: attaches `errorId` + `requestId` to every error envelope,
+  persists 5xx to the Ops error feed and logs them structurally — **never leaks stacks**.
+
+### Routes added
+`/ops/health|metrics|jobs|jobs/failed|jobs/:id/retry|errors|realtime|storage`,
+`/admin/ai-ops/overview|costs|usage|providers|budget/:ownerType/:ownerId`,
+`/admin/product-analytics/overview|funnels|retention`, `/analytics/track`,
+`/admin/audit-logs`, `/org/audit-logs`.
+
+### Client
+- `OpsService` (consolidated admin reads) + `ProductAnalyticsService` (fire-and-forget
+  `track()`). Billing emits `billing_upgrade_clicked`/`subscription_started`; shell emits
+  `user_returned`.
+- Admin pages: **AI Ops** (cost/latency/error tiles, cost-by-feature, provider health, top
+  spenders), **Ops Command Center** (health/uptime/memory, deps, job ledger with retry,
+  error feed with IDs), **Product Analytics** (DAU/WAU, funnels, event volume), **Audit
+  Logs**. All under the admin "Platform" nav group; lazy-loaded.
+
+### Seed
+28 days of product events (full funnel), a job ledger with a failed→retryable job, a sample
+error-log row, an audit entry.
+
+### Build status
+`build:server` ✅ · `build:client` ✅ · `seed` ✅ · runtime boot ✅ (all `/ops`, `/ai-ops`,
+`/product-analytics`, `/audit-logs` routes mapped, DI resolved) · Phase-10 files lint-clean.
 
 ## Priority 3 — PWA / Mobile *(planned)*
 Install, offline cache, sync queue, web-push foundation.

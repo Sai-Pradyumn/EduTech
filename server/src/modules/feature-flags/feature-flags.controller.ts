@@ -12,6 +12,7 @@ import { Roles } from '../../common/decorators/roles.decorator';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { Public } from '../../common/decorators/public.decorator';
 import { AuthUser } from '../../common/interfaces';
+import { AuditService } from '../audit/audit.service';
 import { FeatureFlagsService } from './feature-flags.service';
 
 class FlagPatchDto {
@@ -32,7 +33,10 @@ class FlagPatchDto {
 
 @Controller()
 export class FeatureFlagsController {
-  constructor(private readonly flags: FeatureFlagsService) {}
+  constructor(
+    private readonly flags: FeatureFlagsService,
+    private readonly audit: AuditService,
+  ) {}
 
   /** Public flag map for the client shell. */
   @Public()
@@ -49,11 +53,20 @@ export class FeatureFlagsController {
 
   @Roles(Role.Admin)
   @Patch('admin/feature-flags/:key')
-  setFlag(
+  async setFlag(
     @CurrentUser() user: AuthUser,
     @Param('key') key: string,
     @Body() dto: FlagPatchDto,
   ) {
-    return this.flags.set(key, dto, user.id);
+    const result = await this.flags.set(key, dto, user.id);
+    await this.audit.record({
+      actorId: user.id,
+      actorEmail: user.email,
+      action: 'feature_flag.update',
+      targetType: 'feature_flag',
+      targetId: key,
+      metadata: { ...dto },
+    });
+    return result;
   }
 }

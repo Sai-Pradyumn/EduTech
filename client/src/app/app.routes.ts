@@ -483,6 +483,30 @@ export const routes: Routes = [
         data: { title: 'Feature Flags' },
         loadComponent: () => import('./features/admin/feature-flags.component').then((m) => m.AdminFeatureFlagsComponent),
       },
+      {
+        path: 'ai-ops',
+        title: 'AI Ops',
+        data: { title: 'AI Ops' },
+        loadComponent: () => import('./features/admin/ai-ops.component').then((m) => m.AdminAiOpsComponent),
+      },
+      {
+        path: 'ops',
+        title: 'Ops',
+        data: { title: 'Ops Command Center' },
+        loadComponent: () => import('./features/admin/ops.component').then((m) => m.AdminOpsComponent),
+      },
+      {
+        path: 'product-analytics',
+        title: 'Product Analytics',
+        data: { title: 'Product Analytics' },
+        loadComponent: () => import('./features/admin/product-analytics.component').then((m) => m.AdminProductAnalyticsComponent),
+      },
+      {
+        path: 'audit-logs',
+        title: 'Audit Logs',
+        data: { title: 'Audit Logs' },
+        loadComponent: () => import('./features/admin/audit-logs.component').then((m) => m.AdminAuditLogsComponent),
+      },
     ],
   },
 

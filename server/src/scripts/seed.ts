@@ -114,6 +114,19 @@ import {
   AiUsageLogSchema,
 } from '../modules/ai/schemas/ai-usage-log.schema';
 import { planById } from '../modules/billing/plans';
+import {
+  ProductEvent,
+  ProductEventSchema,
+} from '../modules/product-analytics/schemas/product-event.schema';
+import {
+  AuditLog,
+  AuditLogSchema,
+} from '../modules/audit/schemas/audit-log.schema';
+import { JobRun, JobRunSchema } from '../modules/ops/schemas/job-run.schema';
+import {
+  ErrorLog,
+  ErrorLogSchema,
+} from '../modules/ops/schemas/error-log.schema';
 import { buildRoadmapBlueprint } from '../modules/agents/roadmap/roadmap-blueprint.generator';
 import { buildFlowBlueprint } from '../modules/flows/flow-architect/flow-blueprint.generator';
 import { buildVisual } from '../modules/visuals/visual-explainer/visual-generator';
@@ -1140,6 +1153,86 @@ async function run(): Promise<void> {
       { upsert: true },
     );
   }
+
+  // ── Phase 10 (M7/M8/M6): product events, jobs, an example failed job, audit log ──
+  const ProductEventModel = mongoose.model(
+    ProductEvent.name,
+    ProductEventSchema,
+  );
+  const JobRunModel = mongoose.model(JobRun.name, JobRunSchema);
+  const ErrorLogModel = mongoose.model(ErrorLog.name, ErrorLogSchema);
+  const AuditLogModel = mongoose.model(AuditLog.name, AuditLogSchema);
+
+  // Product funnel events for the student across the last month.
+  await ProductEventModel.deleteMany({ user: student._id });
+  const EVENT_SEQ = [
+    'signup_completed',
+    'onboarding_completed',
+    'roadmap_generated',
+    'flow_generated',
+    'tutor_used',
+    'quiz_completed',
+    'project_submitted',
+    'billing_upgrade_clicked',
+    'subscription_started',
+    'portfolio_published',
+    'user_returned',
+  ];
+  await ProductEventModel.insertMany(
+    EVENT_SEQ.map((event, i) => {
+      const at = new Date(now.getTime() - (EVENT_SEQ.length - i) * 2 * 86400000);
+      return {
+        user: student._id,
+        event,
+        properties: { plan: 'pro' },
+        sessionId: 'seed-session',
+        createdAt: at,
+        updatedAt: at,
+      };
+    }),
+  );
+
+  // Job ledger: a handful of completed jobs + one failed (retryable) example.
+  await JobRunModel.deleteMany({ queue: 'seed' });
+  await JobRunModel.insertMany([
+    { queue: 'seed', name: 'roadmap.reindex', status: 'completed', attempts: 1, maxAttempts: 3, startedAt: now, finishedAt: now },
+    { queue: 'seed', name: 'certificate.render', status: 'completed', attempts: 1, maxAttempts: 3, startedAt: now, finishedAt: now },
+    { queue: 'seed', name: 'digest.email', status: 'completed', attempts: 1, maxAttempts: 3, startedAt: now, finishedAt: now },
+    { queue: 'seed', name: 'rag.embed', status: 'failed', attempts: 2, maxAttempts: 3, error: 'Embedding provider timed out', startedAt: now, finishedAt: now },
+  ]);
+
+  // One sample error log so the Ops error feed isn't empty on a fresh demo.
+  await ErrorLogModel.updateOne(
+    { errorId: 'seed-error-1' },
+    {
+      $set: {
+        errorId: 'seed-error-1',
+        requestId: 'seed-req-1',
+        status: 500,
+        code: 'INTERNAL_ERROR',
+        message: 'Example: downstream provider unavailable',
+        route: '/api/rag/embed',
+        method: 'POST',
+      },
+    },
+    { upsert: true },
+  );
+
+  // Audit trail example.
+  await AuditLogModel.updateOne(
+    { action: 'feature_flag.update', targetId: 'ENABLE_IMAGE_GENERATION' },
+    {
+      $set: {
+        actorId: String(admin!._id),
+        actorEmail: DEMO.admin.email,
+        action: 'feature_flag.update',
+        targetType: 'feature_flag',
+        targetId: 'ENABLE_IMAGE_GENERATION',
+        metadata: { enabled: false },
+      },
+    },
+    { upsert: true },
+  );
 
   // Feature-flag overrides: keep image generation off (expensive), web push beta on.
   await FeatureFlagModel.updateOne(

@@ -62,6 +62,10 @@ import { PrivacyModule } from './modules/privacy/privacy.module';
 import { NudgesModule } from './modules/nudges/nudges.module';
 import { EntitlementsModule } from './modules/entitlements/entitlements.module';
 import { FeatureFlagsModule } from './modules/feature-flags/feature-flags.module';
+import { OpsModule } from './modules/ops/ops.module';
+import { AuditModule } from './modules/audit/audit.module';
+import { AiOpsModule } from './modules/ai-ops/ai-ops.module';
+import { ProductAnalyticsModule } from './modules/product-analytics/product-analytics.module';
 import { SocketsModule } from './sockets/sockets.module';
 
 @Module({
@@ -74,9 +78,13 @@ import { SocketsModule } from './sockets/sockets.module';
     }),
     EventEmitterModule.forRoot(),
     DatabaseModule,
+    OpsModule,
+    AuditModule,
     EntitlementsModule,
     FeatureFlagsModule,
     AiModule,
+    AiOpsModule,
+    ProductAnalyticsModule,
     AiEvalsModule,
     AgentsModule,
     RagModule,
