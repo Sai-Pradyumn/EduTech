@@ -44,6 +44,8 @@ import { SkillTwinModule } from './modules/skill-twin/skill-twin.module';
 import { SpacesModule } from './modules/spaces/spaces.module';
 import { SimulationsModule } from './modules/simulations/simulations.module';
 import { DailyPlanModule } from './modules/daily-plan/daily-plan.module';
+import { CourseBuilderModule } from './modules/course-builder/course-builder.module';
+import { PeerRoomsModule } from './modules/peer-rooms/peer-rooms.module';
 import { SocketsModule } from './sockets/sockets.module';
 
 @Module({
@@ -89,6 +91,8 @@ import { SocketsModule } from './sockets/sockets.module';
     SpacesModule,
     SimulationsModule,
     DailyPlanModule,
+    CourseBuilderModule,
+    PeerRoomsModule,
     SocketsModule,
   ],
   controllers: [HealthController],

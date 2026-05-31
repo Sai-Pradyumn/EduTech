@@ -45,6 +45,8 @@
 | P8·6 | **Study Spaces** — NotebookLM-style multimodal notebooks: add sources, ask grounded questions, generate summary/flashcards/audio-overview, and spawn a flow/quiz/concept-map; `/app/spaces` | ✅ Phase 8 |
 | P8·7 | **Simulation Labs** — rubric-scored practice across 10 round types (interview/viva/debugging/system-design/…); finishing scores you, writes an improvement plan, feeds Mistake OS + can patch your flow; `/app/simulations` | ✅ Phase 8 |
 | P8·8 | **Daily Autopilot** — turns your active flow + open mistakes + roadmap into a **today plan** with energy-aware modes (quick / exam / burnout-recovery); `/app/today` | ✅ Phase 8 |
+| P8·9 | **Course Builder** — mentors/admins turn a goal/outline/roadmap into a full course (modules + lessons + per-module quiz/visual/voice-script + capstone project + flow + certificate criteria), editable, **role-gated publish** to org/cohort; `/app/course-builder` | ✅ Phase 8 |
+| P8·10 | **Peer Rooms** — collaborative study rooms (join by code, shared board, **AI moderator**, auto-summary + action items, shared learning flow); `/app/peer-rooms` | ✅ Phase 8 |
 | 11 | Admin dashboard + AI analytics | ⏳ Phase 6 |
 | 12 | Notifications (in-app + BullMQ) | ⏳ Phase 6 |
 | 13 | WebSocket foundation (streaming + realtime) | ⏳ Phase 3 |
@@ -149,6 +151,8 @@ npm run build            # builds server then client
 | `ENABLE_REALTIME_VOICE` | Server-side STT/TTS provider (OpenAI Realtime / ElevenLabs / Azure). Off by default — the browser Web Speech API does mic + speech. |
 | `ENABLE_STUDY_SPACES` | Phase 8 Study Spaces (`/app/spaces`). **On by default.** |
 | `ENABLE_SIMULATIONS` | Phase 8 Simulation Labs (`/app/simulations`). **On by default.** |
+| `ENABLE_COURSE_BUILDER` | Phase 8 Course Builder (`/app/course-builder`). **On by default.** |
+| `ENABLE_PEER_ROOMS` | Phase 8 Peer Rooms (`/app/peer-rooms`). **On by default.** |
 | `STORAGE_PROVIDER` | `local` \| `s3` |
 | `AWS_*` / `S3_BUCKET` | S3 storage (optional) |
 

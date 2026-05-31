@@ -25,6 +25,9 @@ import { VoiceSession, VoiceSessionSchema } from '../modules/voice/schemas/voice
 import { StudySpace, StudySpaceSchema } from '../modules/spaces/schemas/study-space.schema';
 import { Simulation, SimulationSchema } from '../modules/simulations/schemas/simulation.schema';
 import { SIM_BLUEPRINTS } from '../modules/simulations/simulation-coach';
+import { Course, CourseSchema } from '../modules/course-builder/schemas/course.schema';
+import { buildCourseBlueprint } from '../modules/course-builder/course-blueprint.generator';
+import { PeerRoom, PeerRoomSchema } from '../modules/peer-rooms/schemas/peer-room.schema';
 import { buildRoadmapBlueprint } from '../modules/agents/roadmap/roadmap-blueprint.generator';
 import { buildFlowBlueprint } from '../modules/flows/flow-architect/flow-blueprint.generator';
 import { buildVisual } from '../modules/visuals/visual-explainer/visual-generator';
@@ -69,6 +72,8 @@ async function run(): Promise<void> {
   const VoiceSessionModel = mongoose.model(VoiceSession.name, VoiceSessionSchema);
   const StudySpaceModel = mongoose.model(StudySpace.name, StudySpaceSchema);
   const SimulationModel = mongoose.model(Simulation.name, SimulationSchema);
+  const CourseModel = mongoose.model(Course.name, CourseSchema);
+  const PeerRoomModel = mongoose.model(PeerRoom.name, PeerRoomSchema);
 
   await UserModel.updateOne(
     { email: DEMO.admin.email },
@@ -335,6 +340,45 @@ async function run(): Promise<void> {
       improvementPlan: ['Strengthen "Depth" on REST API design.'],
       linkedSkills: ['REST API design'],
       status: 'finished',
+    });
+  }
+
+  // ── Phase 8 · Course Builder: seed one draft course authored by the mentor.
+  if (mentor) {
+    const existingCourse = await CourseModel.findOne({ author: mentor._id }).exec();
+    if (!existingCourse) {
+      const bp = buildCourseBlueprint('MERN stack for beginners', Difficulty.Beginner);
+      await CourseModel.create({
+        author: mentor._id,
+        title: bp.title,
+        goal: 'MERN stack for beginners',
+        description: bp.description,
+        audience: 'First-year students',
+        level: Difficulty.Beginner,
+        source: 'goal',
+        status: 'draft',
+        visibility: 'private',
+        modules: bp.modules,
+        project: bp.project,
+        certificateCriteria: bp.certificateCriteria,
+      });
+    }
+  }
+
+  // ── Phase 8 · Peer Rooms: seed one open room hosted by the student.
+  const existingRoom = await PeerRoomModel.findOne({ host: student._id }).exec();
+  if (!existingRoom) {
+    await PeerRoomModel.create({
+      host: student._id,
+      title: 'DSA Study Circle',
+      topic: 'Dynamic programming',
+      code: 'DEMO01',
+      members: [{ user: student._id, name: 'Aarav Sharma', role: 'host', joinedAt: new Date() }],
+      messages: [
+        { id: 'msg_seed1', name: 'Asta', kind: 'system', text: 'Room created for "Dynamic programming". Share code DEMO01 to invite peers.', at: new Date() },
+        { id: 'msg_seed2', user: student._id, name: 'Aarav Sharma', kind: 'chat', text: 'Anyone want to practice DP problems together this week?', at: new Date() },
+      ],
+      status: 'open',
     });
   }
 

@@ -65,6 +65,8 @@ export class VoiceCommandRouterService {
     { keywords: ['today', 'my plan', 'daily plan', 'what should i do today', 'autopilot'], route: '/app/today', label: 'Open Today', say: 'Here is your plan for today.' },
     { keywords: ['space', 'spaces', 'study space', 'notebook'], route: '/app/spaces', label: 'Open Study Spaces', say: 'Opening Study Spaces.' },
     { keywords: ['simulation', 'simulations', 'mock interview', 'practice round', 'simulate'], route: '/app/simulations', label: 'Open Simulation Labs', say: 'Opening Simulation Labs.' },
+    { keywords: ['course', 'course builder', 'build a course', 'create a course'], route: '/app/course-builder', label: 'Open Course Builder', say: 'Opening Course Builder.' },
+    { keywords: ['peer room', 'peer rooms', 'study room', 'study together', 'group study'], route: '/app/peer-rooms', label: 'Open Peer Rooms', say: 'Opening Peer Rooms.' },
     { keywords: ['cohort'], route: '/app/cohorts', label: 'Open Cohorts', say: 'Opening cohorts.' },
     { keywords: ['live session', 'live'], route: '/app/live-sessions', label: 'Open Live Sessions', say: 'Opening live sessions.' },
     { keywords: ['community'], route: '/app/community', label: 'Open Community', say: 'Opening the community.' },

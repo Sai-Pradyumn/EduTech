@@ -1,5 +1,23 @@
 # Asta — Fixed / Remaining
 
+## ✅ Shipped — Phase 8 · PRIORITY 3 (Course Builder + Peer Rooms) — in one pass
+Both Priority-3 modules built end-to-end. Full detail in [`PHASE_8_MULTIMODAL_LEARNING_OS.md`](PHASE_8_MULTIMODAL_LEARNING_OS.md).
+- **Course Builder** `server/src/modules/course-builder/` + `client/.../features/course-builder/`: goal/
+  outline/roadmap → modules+lessons+project+certificate criteria (`course-blueprint.generator`),
+  editable; per-module generate quiz (→Assessment) / visual (→Visuals); generate project (→Projects) /
+  flow (→Flows); **role-gated publish** to org/cohort (mentor/admin). 11 routes; `ENABLE_COURSE_BUILDER`.
+  Seed 1 draft course (mentor).
+- **Peer Rooms** `server/src/modules/peer-rooms/` + `features/peer-rooms/`: create/join-by-code, shared
+  message board, **AI moderator** (Agent OS nudge), summary + action items, shared learning flow,
+  host-only close. 11 routes; `ENABLE_PEER_ROOMS`. Seed 1 open room (code DEMO01).
+- **Wiring**: 8 routes + nav (Course Builder, Peer Rooms) + voice rules.
+- **Verification**: builds green; client warning-free (522.79 kB < 540 kB); server boots clean; API
+  runtime-smoked — course generation + per-module quiz/visual/project/flow; **publish role gate
+  (student org-publish 403, mentor org-publish ok)**; peer-room create/message/moderate/summary/flow +
+  mentor join-by-code with role mapping.
+- **PRIORITY 3 COMPLETE.** Remaining: Priority 4 breakthroughs (AI Mentor Council, Proof-of-Learning
+  Ledger, Learning Replay).
+
 ## ✅ Shipped — Phase 8 · PRIORITY 2 (Study Spaces + Simulation Labs + Daily Autopilot) — in one pass
 All three Priority-2 modules built end-to-end. Full detail in [`PHASE_8_MULTIMODAL_LEARNING_OS.md`](PHASE_8_MULTIMODAL_LEARNING_OS.md).
 - **Study Spaces** `server/src/modules/spaces/` + `client/.../features/spaces/`: NotebookLM-style spaces

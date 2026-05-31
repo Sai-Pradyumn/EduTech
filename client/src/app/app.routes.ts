@@ -178,6 +178,30 @@ export const routes: Routes = [
         loadComponent: () => import('./features/visuals/visual-detail.component').then((m) => m.VisualDetailComponent),
       },
       {
+        path: 'course-builder',
+        title: 'Course Builder',
+        data: { title: 'Course Builder' },
+        loadComponent: () => import('./features/course-builder/course-list.component').then((m) => m.CourseListComponent),
+      },
+      {
+        path: 'course-builder/:id',
+        title: 'Course',
+        data: { title: 'Course' },
+        loadComponent: () => import('./features/course-builder/course-detail.component').then((m) => m.CourseDetailComponent),
+      },
+      {
+        path: 'peer-rooms',
+        title: 'Peer Rooms',
+        data: { title: 'Peer Rooms' },
+        loadComponent: () => import('./features/peer-rooms/peer-rooms-list.component').then((m) => m.PeerRoomsListComponent),
+      },
+      {
+        path: 'peer-rooms/:id',
+        title: 'Peer Room',
+        data: { title: 'Peer Room' },
+        loadComponent: () => import('./features/peer-rooms/peer-room-detail.component').then((m) => m.PeerRoomDetailComponent),
+      },
+      {
         path: 'knowledge',
         title: 'Knowledge Hub',
         data: { title: 'Knowledge Hub' },

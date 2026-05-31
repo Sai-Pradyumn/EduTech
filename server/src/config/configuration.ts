@@ -46,6 +46,10 @@ export interface AppConfig {
     studySpaces: boolean;
     /** Phase 8 · Simulation Labs. On by default. */
     simulations: boolean;
+    /** Phase 8 · Course Builder. On by default. */
+    courseBuilder: boolean;
+    /** Phase 8 · Peer Rooms. On by default. */
+    peerRooms: boolean;
   };
   vector: { backend: 'keyword' | 'atlas' };
   rag: { topK: number; minScore: number; hybrid: boolean };
@@ -124,6 +128,8 @@ export default (): AppConfig => ({
     voice: process.env.ENABLE_VOICE !== 'false',
     studySpaces: process.env.ENABLE_STUDY_SPACES !== 'false',
     simulations: process.env.ENABLE_SIMULATIONS !== 'false',
+    courseBuilder: process.env.ENABLE_COURSE_BUILDER !== 'false',
+    peerRooms: process.env.ENABLE_PEER_ROOMS !== 'false',
   },
   vector: {
     backend: (process.env.VECTOR_STORE_PROVIDER ??

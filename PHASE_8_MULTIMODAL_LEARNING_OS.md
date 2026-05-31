@@ -24,16 +24,21 @@
 | **2** | **Study Spaces** (multimodal notebooks) | ✅ **Shipped** |
 | **2** | **Simulation Labs** (rubric-scored practice) | ✅ **Shipped** |
 | **2** | **Daily Autopilot** (today plan) | ✅ **Shipped** |
+| **3** | **Course Builder** (teacher/mentor course generation) | ✅ **Shipped** |
+| **3** | **Peer Rooms** (collaborative study) | ✅ **Shipped** |
+
+**Priority 1, 2 & 3 COMPLETE** (10 modules). Only the Priority-4 breakthrough features remain.
 | 2 | Study Spaces · Simulation Labs · Daily Autopilot | ⏳ queued |
 | 3 | Course Builder · Peer Rooms | ⏳ queued |
 | 4 | AI Mentor Council · Proof-of-Learning · Learning Replay · Modality Router | ⏳ queued |
 
 Build status: **`npm run build:server` green**, **`npm run build:client` green & warning-free**
-(initial bundle **521.46 kB**, < 540 kB budget). Server **boots clean** (all 8 Phase-8 module route
+(initial bundle **522.79 kB**, < 540 kB budget). Server **boots clean** (all 10 Phase-8 module route
 groups mapped, no DI errors); every module **runtime-smoked** with the mock provider (incl. Mistake-OS
-quiz auto-capture, Skill-Twin compute + reset, the full voice session lifecycle → flow/quiz, Study-Space
-ask + generators, Simulation finish → Mistake-OS feed, and Daily-Plan modes). Seed inserts **2 flows**,
-**4 visuals**, **4 mistakes**, **1 voice session**, **1 study space**, and **1 simulation** (Skill Twin
+quiz auto-capture, Skill-Twin compute + reset, full voice session lifecycle → flow/quiz, Study-Space ask
++ generators, Simulation finish → Mistake-OS feed, Daily-Plan modes, Course-Builder role-gated publish,
+and Peer-Room AI moderator + join-by-code). Seed inserts **2 flows**, **4 visuals**, **4 mistakes**,
+**1 voice session**, **1 study space**, **1 simulation**, **1 course**, and **1 peer room** (Skill Twin
 + Daily Plan are computed live).
 
 ---
@@ -463,6 +468,44 @@ Turns the active flow + open mistakes + roadmap into a **today plan** with energ
 
 ---
 
+## Module — Course Builder ✅ (Priority 3)
+
+Mentors/admins turn a **goal / outline / roadmap** into a full course: modules + lessons + a per-module
+quiz/visual/voice-script + a capstone project + a flow + certificate criteria — editable, then publishable.
+
+- **Routes**: `/app/course-builder` (generate + grid), `/app/course-builder/:id` (module/lesson editor +
+  per-module Generate quiz/visual + Generate project/flow + Publish).
+- **Backend** `server/src/modules/course-builder/`: `Course` (modules[]→lessons[], project, certificate
+  criteria, visibility). `course-blueprint.generator.ts` (curated tracks + generic decomposition →
+  modules/lessons/project/criteria). `CourseBuilderService`: generate / fromRoadmap / update (edit
+  modules+lessons) / generateQuiz (→ Assessment) / generateVisual (→ Visuals) / generateProject (→
+  Projects) / generateFlow (→ Flows) / **publish** (org/cohort **role-gated** to mentor/admin — verified:
+  student org-publish 403, mentor org-publish ok).
+- **API**: `POST /courses` · `POST /courses/from-roadmap/:roadmapId` · `GET /courses` · `GET /courses/:id`
+  · `PATCH /courses/:id` · `POST /courses/:id/modules/:moduleId/{quiz,visual}` ·
+  `POST /courses/:id/{project,flow,publish}` · `DELETE /courses/:id`.
+- **Flag**: `ENABLE_COURSE_BUILDER` (default on). **Acceptance met**: create draft · edit modules ·
+  generate quiz/project/visuals · publish as org/cohort resource (role-gated).
+
+## Module — Peer Rooms ✅ (Priority 3)
+
+Collaborative study rooms: create/join by code, a shared message board, an **AI moderator**, an
+auto-summary with action items, and a **shared learning flow**.
+
+- **Routes**: `/app/peer-rooms` (create + join-by-code + grid), `/app/peer-rooms/:id` (member rail +
+  message board with chat/system/ai styling + compose + room tools).
+- **Backend** `server/src/modules/peer-rooms/`: `PeerRoom` (members[], messages[], code, summary,
+  actionItems, linkedFlowId). `PeerRoomsService`: create (join code) / list (member + open rooms) /
+  joinByCode / join / postMessage / **moderate** (AI nudge via the Agent OS) / summarize / linkFlow (→
+  Flows) / close / remove (host-only guards). Mentors join as the `mentor` member role.
+- **API**: `POST /peer-rooms` · `GET /peer-rooms` · `POST /peer-rooms/join` · `GET /peer-rooms/:id` ·
+  `POST /peer-rooms/:id/{join,messages,moderate,summary,link-flow,close}` · `DELETE /peer-rooms/:id`.
+- **Realtime**: uses the existing Socket.IO foundation conceptually; this pass ships a REST board with
+  refresh (live socket broadcast is a clean follow-up). **Flag**: `ENABLE_PEER_ROOMS` (default on).
+- **Acceptance met**: create · invite/join (by code) · basic shared session · AI room summary.
+
+---
+
 ## Data relationships wired this pass
 - **Roadmap → Flow**: `POST /flows/from-roadmap/:roadmapId` seeds the graph backbone from roadmap weeks.
 - **Flow node → Tutor / Quiz / Project / Voice / Mentor / Knowledge**: `execute-node` returns the route + prompt + agent.
@@ -483,11 +526,11 @@ Turns the active flow + open mistakes + roadmap into a **today plan** with energ
 
 ## Feature flags (Phase 8 roster)
 All default **on** unless noted: `ENABLE_FLOW_STUDIO`, `ENABLE_VISUAL_STUDIO`, `ENABLE_VOICE`
-(browser STT/TTS need no keys), `ENABLE_STUDY_SPACES`, `ENABLE_SIMULATIONS`. Off by default:
-`ENABLE_IMAGE_GENERATION` (→ mock SVG) and `ENABLE_REALTIME_VOICE` (future server-side STT/TTS).
+(browser STT/TTS need no keys), `ENABLE_STUDY_SPACES`, `ENABLE_SIMULATIONS`, `ENABLE_COURSE_BUILDER`,
+`ENABLE_PEER_ROOMS`. Off by default: `ENABLE_IMAGE_GENERATION` (→ mock SVG) and `ENABLE_REALTIME_VOICE`
+(future server-side STT/TTS).
 
-## Next-pass recommendations (Priority 1 & 2 complete → Priority 3 / 4)
-1. **Priority 3 — Course Builder** (teacher/mentor: goal/syllabus/space/flow → modules + lessons + quiz + project + visuals + certificate criteria) and **Peer Rooms** (Socket.IO study rooms + AI moderator/summary).
-2. **Priority 4 breakthroughs** still open: **AI Mentor Council** (multi-agent debate → orchestrator picks), **Proof-of-Learning Ledger**, **Learning Replay**. (Adaptive Modality Router + Explainability Drawer already shipped in the Skill Twin; Mode-Morphing largely covered by Flow execute + Visual + Voice.)
-3. Surface the Skill-Twin top action + Daily-Plan "today" on the **dashboard** widget.
-4. Wire Voice Room socket streaming; add a real STT/TTS + image provider behind their flags.
+## Next-pass recommendations (Priority 1–3 complete → Priority 4)
+1. **Priority 4 breakthroughs** still open: **AI Mentor Council** (multi-agent debate → orchestrator picks one), **Proof-of-Learning Ledger** (verified learning-event timeline), **Learning Replay** (post-session recap + Skill-Twin delta + voice playback). (Adaptive Modality Router + Explainability Drawer already shipped in the Skill Twin; Concept DNA Graph + Mode-Morphing largely covered by Flow + Visual + Voice + Mistake OS.)
+2. Surface the Skill-Twin top action + Daily-Plan "today" on the **dashboard** widget.
+3. Wire Voice Room + Peer Rooms socket streaming; add a real STT/TTS + image provider behind their flags.
