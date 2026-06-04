@@ -20,6 +20,16 @@
               "zone.js"
             ],
             "tsConfig": "tsconfig.app.json",
+            "allowedCommonJsDependencies": [
+              "dayjs",
+              "dayjs/plugin/advancedFormat.js",
+              "dayjs/plugin/duration.js",
+              "dayjs/plugin/isoWeek.js",
+              "dayjs/plugin/customParseFormat.js",
+              "cytoscape-cose-bilkent",
+              "cytoscape-fcose",
+              "@braintree/sanitize-url"
+            ],
             "assets": [
               {
                 "glob": "**/*",
@@ -36,7 +46,7 @@
               "budgets": [
                 {
                   "type": "initial",
-                  "maximumWarning": "540kB",
+                  "maximumWarning": "600kB",
                   "maximumError": "1MB"
                 },
                 {
