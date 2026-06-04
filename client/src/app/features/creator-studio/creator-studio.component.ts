@@ -45,7 +45,7 @@ import { MarketplaceService, Template } from '../../core/services/marketplace.se
             <div class="space-y-2">
               @for (t of mine(); track t.id) {
                 <div class="row">
-                  <span class="min-w-0 flex-1"><span class="r-title">{{ t.title }}</span><span class="r-meta">{{ t.type }} · {{ t.usageCount }} uses</span></span>
+                  <span class="min-w-0 flex-1"><span class="r-title">{{ t.title }}</span><span class="r-meta">{{ t.type }} · {{ t.usageCount }} uses@if (t.rating.count) { · <span class="r-rate">★ {{ t.rating.avg.toFixed(1) }} ({{ t.rating.count }})</span> }</span></span>
                   <span class="status" [attr.data-s]="t.status">{{ t.status }}</span>
                   @if (t.status === 'draft' || t.status === 'rejected') { <asta-btn size="sm" variant="ghost" (click)="submit(t)">Submit</asta-btn> }
                 </div>
@@ -87,6 +87,7 @@ import { MarketplaceService, Template } from '../../core/services/marketplace.se
     .row { display: flex; align-items: center; gap: 10px; }
     .r-title { display: block; font-size: 13px; font-weight: 600; }
     .r-meta { display: block; font-size: 11px; color: var(--text-mute); }
+    .r-rate { color: var(--coral, #ffb454); font-weight: 600; }
     .status { font-size: 10px; font-weight: 700; text-transform: uppercase; padding: 2px 7px; border-radius: 999px; background: var(--paper-3); color: var(--text-mute); }
     .status[data-s="published"] { background: color-mix(in oklab, var(--green) 20%, transparent); color: var(--green-deep); }
     .status[data-s="pending_review"] { background: color-mix(in oklab, var(--peri, #8aa6ff) 20%, transparent); color: var(--peri, #8aa6ff); }

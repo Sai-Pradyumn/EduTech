@@ -167,7 +167,10 @@ const STARTERS = [
           <div class="px-5 py-3" style="border-bottom:1px solid color-mix(in oklch, var(--paper-3) 60%, transparent);background:color-mix(in oklch, var(--paper-2) 50%, transparent)">
             <div class="flex items-center justify-between mb-2">
               <p class="kicker">{{ p.title }}</p>
-              <button class="text-xs text-txt-mute hover:text-txt" (click)="panel.set(null)">Close</button>
+              <div class="flex items-center gap-3">
+                <button class="text-xs text-txt-mute hover:text-txt" (click)="copyPanel(p)">Copy</button>
+                <button class="text-xs text-txt-mute hover:text-txt" (click)="panel.set(null)">Close</button>
+              </div>
             </div>
             @if (p.summary) {
               <p class="text-sm mb-2">{{ p.summary.tldr }}</p>
@@ -557,6 +560,20 @@ export class KnowledgeHubComponent implements OnInit, OnDestroy {
       next: (cards) => this.panel.set({ title: `Flashcards · ${d.title}`, cards }),
       error: () => this.toast.error?.('Could not build flashcards'),
     });
+  }
+  copyPanel(p: { title: string; summary?: DocumentSummary; cards?: Flashcard[] }): void {
+    const lines: string[] = [`# ${p.title}`, ''];
+    if (p.summary) {
+      lines.push(p.summary.tldr, '', '## Key points', ...p.summary.keyPoints.map((k) => `- ${k}`));
+    }
+    if (p.cards?.length) {
+      lines.push('## Flashcards', '');
+      for (const c of p.cards) lines.push(`**Q: ${c.question}**`, `A: ${c.answer}`, '');
+    }
+    navigator.clipboard?.writeText(lines.join('\n')).then(
+      () => this.toast.success?.('Copied as Markdown'),
+      () => this.toast.error?.('Copy failed'),
+    );
   }
 
   // ── grounded chat ─────────────────────────────────────────────────────────

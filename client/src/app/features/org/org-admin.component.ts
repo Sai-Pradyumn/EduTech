@@ -96,7 +96,7 @@ type Tab = 'overview' | 'members' | 'settings';
                           <select class="input" style="padding:4px 8px;font-size:12px" [ngModel]="m.orgRole" (ngModelChange)="changeRole(m, $event)">
                             @for (r of roles; track r) { <option [value]="r">{{ r }}</option> }
                           </select>
-                          <button class="rm" title="Remove" (click)="remove(m)">✕</button>
+                          <button class="rm" title="Remove" [attr.aria-label]="'Remove ' + m.name" (click)="remove(m)">✕</button>
                         } @else {
                           <span class="pill">{{ m.orgRole }}</span>
                         }

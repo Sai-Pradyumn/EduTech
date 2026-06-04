@@ -78,8 +78,19 @@ const DIFFS: Difficulty[] = ['beginner', 'intermediate', 'advanced'];
                 <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7h18M3 12h18M3 17h18"/></svg>
               </span>
             </div>
+            @if (projects().length > 3) {
+              <div class="ps-toolbar">
+                <input class="ps-search" [ngModel]="projQuery()" (ngModelChange)="projQuery.set($event)" placeholder="Search projects…" aria-label="Search projects" />
+                <div class="ps-chips">
+                  <button class="chip" [class.chip-on]="projStatus() === 'all'" (click)="projStatus.set('all')">all</button>
+                  @for (st of projStatuses(); track st) {
+                    <button class="chip" [class.chip-on]="projStatus() === st" (click)="projStatus.set(st)">{{ st }}</button>
+                  }
+                </div>
+              </div>
+            }
             @if (visibleProjects().length === 0) {
-              <p class="text-sm text-txt-mute py-6 text-center">{{ projects().length === 0 ? 'No projects yet — plan one above.' : 'No active projects — all archived.' }}</p>
+              <p class="text-sm text-txt-mute py-6 text-center">{{ projects().length === 0 ? 'No projects yet — plan one above.' : ((projQuery() || projStatus() !== 'all') ? 'No projects match your search or filter.' : 'No active projects — all archived.') }}</p>
             }
             <div class="grid gap-3 sm:grid-cols-2">
               @for (p of visibleProjects(); track p.id) {
@@ -92,7 +103,10 @@ const DIFFS: Difficulty[] = ['beginner', 'intermediate', 'advanced'];
                   <asta-progress [value]="p.progressPercentage" />
                   <div class="flex items-center justify-between mt-1.5">
                     <p class="text-[11px] text-txt-mute"><span [astaCount]="p.progressPercentage" suffix="%"></span> · {{ p.difficulty }} · {{ p.estimatedWeeks }}w</p>
-                    <button class="arch-btn" (click)="toggleArchive(p); $event.stopPropagation()">{{ p.archived ? 'Restore' : 'Archive' }}</button>
+                    <div class="flex items-center gap-2">
+                      @if (p.archived) { <button class="arch-btn del" (click)="deleteProject(p); $event.stopPropagation()">Delete</button> }
+                      <button class="arch-btn" (click)="toggleArchive(p); $event.stopPropagation()">{{ p.archived ? 'Restore' : 'Archive' }}</button>
+                    </div>
                   </div>
                 </div>
               }
@@ -319,6 +333,11 @@ const DIFFS: Difficulty[] = ['beginner', 'intermediate', 'advanced'];
       .arch-toggle:hover { color: var(--text); }
       .arch-btn { font-size: 10.5px; color: var(--text-mute); background: transparent; border: none; cursor: pointer; }
       .arch-btn:hover { color: var(--text); }
+      .arch-btn.del:hover { color: var(--danger, #ff5d5d); }
+      .ps-toolbar { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-bottom: 14px; }
+      .ps-search { flex: 1; min-width: 180px; padding: 8px 12px; font-size: 13px; color: var(--text); background: var(--paper-2); border: 1px solid var(--paper-3); border-radius: 11px; }
+      .ps-search:focus { outline: none; border-color: var(--green); }
+      .ps-chips { display: flex; flex-wrap: wrap; gap: 6px; }
       .status { font-family: var(--mono); font-size: 10px; text-transform: uppercase; padding: 1px 7px; border-radius: 100px; background: var(--paper-2); color: var(--text-soft); }
       .status[data-s='completed'] { background: oklch(0.80 0.16 150 / .18); color: var(--green-deep); }
       .status[data-s='in_progress'] { background: oklch(0.78 0.15 268 / .15); color: var(--peri-deep); }
@@ -361,10 +380,22 @@ export class ProjectStudioComponent implements OnInit {
   readonly view = signal<View>('home');
   readonly projects = signal<Project[]>([]);
   readonly showArchived = signal(false);
+  readonly projQuery = signal('');
+  readonly projStatus = signal<string>('all');
   readonly archivedCount = computed(() => this.projects().filter((p) => p.archived).length);
-  readonly visibleProjects = computed(() =>
-    this.showArchived() ? this.projects() : this.projects().filter((p) => !p.archived),
+  readonly projStatuses = computed(() =>
+    [...new Set(this.projects().map((p) => p.status))].sort((a, b) => a.localeCompare(b)),
   );
+  readonly visibleProjects = computed(() => {
+    const needle = this.projQuery().trim().toLowerCase();
+    const status = this.projStatus();
+    return this.projects().filter((p) => {
+      if (!this.showArchived() && p.archived) return false;
+      if (status !== 'all' && p.status !== status) return false;
+      if (needle && !`${p.title} ${p.techStack.join(' ')}`.toLowerCase().includes(needle)) return false;
+      return true;
+    });
+  });
   readonly stats = signal<ProjectStats | null>(null);
   readonly project = signal<Project | null>(null);
   readonly generating = signal(false);
@@ -476,6 +507,16 @@ export class ProjectStudioComponent implements OnInit {
         this.toast.success(updated.archived ? 'Project archived' : 'Project restored');
       },
       error: () => this.toast.error('Could not update project'),
+    });
+  }
+
+  deleteProject(p: Project): void {
+    this.api.remove(p.id).subscribe({
+      next: () => {
+        this.projects.set(this.projects().filter((x) => x.id !== p.id));
+        this.toast.success('Project deleted');
+      },
+      error: () => this.toast.error('Could not delete project'),
     });
   }
 

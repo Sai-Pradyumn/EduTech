@@ -55,7 +55,10 @@ import { Application, ApplicationService, JdMatch } from '../../core/services/re
 
       <!-- tracker -->
       <asta-card class="block motion-card-reveal motion-row-2">
-        <p class="kicker mb-3">Application tracker</p>
+        <div class="flex items-center justify-between mb-3">
+          <p class="kicker !mb-0">Application tracker</p>
+          @if (apps().length) { <button class="copy" (click)="exportCsv()">⬇ Export CSV</button> }
+        </div>
         @if (loading()) { <asta-skeleton h="120px" /> }
         @else if (apps().length) {
           <div class="ftabs mb-3">
@@ -79,7 +82,7 @@ import { Application, ApplicationService, JdMatch } from '../../core/services/re
                       @for (s of statuses; track s) { <option [value]="s">{{ s }}</option> }
                     </select>
                     <button class="exp" (click)="toggle(a.id)">{{ expandedId() === a.id ? 'Hide' : 'Details' }}</button>
-                    <button class="rm" (click)="remove(a.id)">✕</button>
+                    <button class="rm" (click)="remove(a.id)" [attr.aria-label]="'Remove application: ' + a.role + ' at ' + a.company">✕</button>
                   </div>
 
                   @if (expandedId() === a.id) {
@@ -204,5 +207,28 @@ export class ApplicationsComponent {
   }
   remove(id: string): void { this.api.remove(id).subscribe({ next: () => this.apps.set(this.apps().filter((a) => a.id !== id)), error: () => this.toast.error('Could not remove') }); }
   copy(text: string): void { navigator.clipboard?.writeText(text).then(() => this.toast.success('Copied'), () => this.toast.error('Copy failed')); }
+  exportCsv(): void {
+    const apps = this.apps();
+    if (!apps.length) return;
+    const esc = (v: unknown): string => {
+      const s = String(v ?? '').replace(/"/g, '""');
+      return /[",\n]/.test(s) ? `"${s}"` : s;
+    };
+    const header = ['Company', 'Role', 'Status', 'Match', 'Matched skills', 'Missing skills', 'Notes', 'Saved'];
+    const rows = apps.map((a) => [
+      a.company, a.role, a.status, a.matchScore,
+      (a.matchedSkills ?? []).join('; '), (a.missingSkills ?? []).join('; '),
+      a.notes ?? '', a.createdAt ? new Date(a.createdAt).toISOString().slice(0, 10) : '',
+    ]);
+    const csv = [header, ...rows].map((r) => r.map(esc).join(',')).join('\r\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `asta-applications-${new Date().toISOString().slice(0, 10)}.csv`;
+    link.click();
+    URL.revokeObjectURL(url);
+    this.toast.success(`Exported ${apps.length} application${apps.length === 1 ? '' : 's'}`);
+  }
   scoreColor(s: number): string { return s >= 70 ? 'var(--green-deep)' : s >= 45 ? 'var(--coral, #ffb454)' : 'var(--danger, #ff5d5d)'; }
 }

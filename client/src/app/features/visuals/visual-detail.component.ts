@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
+import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { ButtonComponent } from '../../shared/ui/button.component';
 import { CardComponent } from '../../shared/ui/card.component';
@@ -12,7 +13,7 @@ import { VisualRendererComponent } from './visual-renderer.component';
   selector: 'asta-visual-detail',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ButtonComponent, CardComponent, EmptyStateComponent, SkeletonComponent, VisualRendererComponent],
+  imports: [FormsModule, ButtonComponent, CardComponent, EmptyStateComponent, SkeletonComponent, VisualRendererComponent],
   template: `
     <header class="asta-page-command-header">
       <div class="min-w-0">
@@ -39,8 +40,20 @@ import { VisualRendererComponent } from './visual-renderer.component';
         </asta-card>
 
         <asta-card class="block motion-card-reveal motion-row-2">
-          <p class="kicker mb-1">Caption</p>
-          <p class="text-sm">{{ visual()!.caption }}</p>
+          <div class="flex items-center justify-between mb-1">
+            <p class="kicker !mb-0">Caption</p>
+            @if (!editing()) { <button class="edit-link" (click)="startEdit()">Edit</button> }
+          </div>
+          @if (editing()) {
+            <input class="vd-input mb-2" [(ngModel)]="editTitle" placeholder="Title" maxlength="160" aria-label="Title" />
+            <textarea class="vd-input" [(ngModel)]="editCaption" rows="3" placeholder="Caption" maxlength="500" aria-label="Caption"></textarea>
+            <div class="flex gap-2 mt-2">
+              <asta-btn variant="accent" size="sm" [loading]="saving()" (click)="saveEdit()">Save</asta-btn>
+              <asta-btn variant="ghost" size="sm" (click)="editing.set(false)">Cancel</asta-btn>
+            </div>
+          } @else {
+            <p class="text-sm">{{ visual()!.caption }}</p>
+          }
 
           @if (visual()!.howToRead) {
             <p class="kicker mt-3 mb-1">How to read this</p>
@@ -72,6 +85,10 @@ import { VisualRendererComponent } from './visual-renderer.component';
     `
       :host { display: block; }
       .meta-pill { padding: 2px 8px; border-radius: 999px; border: 1px solid var(--paper-3); background: color-mix(in oklab, var(--paper-2) 70%, transparent); }
+      .edit-link { font-size: 11px; color: var(--peri, #8aa6ff); background: transparent; border: none; cursor: pointer; }
+      .edit-link:hover { color: var(--green-deep); }
+      .vd-input { width: 100%; background: var(--paper-2); border: 1px solid var(--paper-3); border-radius: 10px; padding: 8px 11px; color: var(--text); font-size: 13.5px; font-family: inherit; }
+      .vd-input:focus { outline: none; border-color: var(--green); }
     `,
   ],
 })
@@ -85,9 +102,34 @@ export class VisualDetailComponent {
   readonly loading = signal(true);
   readonly loadError = signal(false);
   readonly regenerating = signal(false);
+  readonly editing = signal(false);
+  readonly saving = signal(false);
+  editTitle = '';
+  editCaption = '';
 
   constructor() {
     this.reload();
+  }
+
+  startEdit(): void {
+    const v = this.visual();
+    if (!v) return;
+    this.editTitle = v.title;
+    this.editCaption = v.caption;
+    this.editing.set(true);
+  }
+
+  saveEdit(): void {
+    const v = this.visual();
+    if (!v) return;
+    const title = this.editTitle.trim();
+    const caption = this.editCaption.trim();
+    if (!title) { this.toast.error('Title cannot be empty'); return; }
+    this.saving.set(true);
+    this.api.update(v.id, { title, caption }).subscribe({
+      next: (out) => { this.visual.set(out); this.saving.set(false); this.editing.set(false); this.toast.success('Visual updated'); },
+      error: () => { this.saving.set(false); this.toast.error('Could not save'); },
+    });
   }
 
   meta(t: VisualType) {

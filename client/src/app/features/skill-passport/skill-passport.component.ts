@@ -136,7 +136,7 @@ import { LEDGER_KIND_META, LedgerKind } from '../../core/services/ledger.service
             <p class="kicker mb-3">Learning timeline · toggle what's public</p>
             @if (pp.timeline.length) {
               <div class="timeline">
-                @for (e of pp.timeline.slice(0, 14); track e.id) {
+                @for (e of shownTimeline(pp); track e.id) {
                   <div class="row">
                     <span class="glyph" [title]="verLabel(e.verificationLevel)">{{ glyph(e.kind) }}</span>
                     <span class="line"></span>
@@ -144,10 +144,15 @@ import { LEDGER_KIND_META, LedgerKind } from '../../core/services/ledger.service
                       <span class="t-title">{{ e.title }}</span>
                       <span class="t-meta"><span class="ver" [style.color]="verTone(e.verificationLevel)">{{ verLabel(e.verificationLevel) }}</span> · {{ date(e.at) }}@if (e.score !== null) { · {{ e.score }}% }</span>
                     </span>
-                    <button class="eye" [class.off]="!e.visibleOnPassport" (click)="toggleVisible(e)" [title]="e.visibleOnPassport ? 'Public — click to hide' : 'Hidden — click to show'">{{ e.visibleOnPassport ? '👁' : '🚫' }}</button>
+                    <button class="eye" [class.off]="!e.visibleOnPassport" (click)="toggleVisible(e)" [attr.aria-label]="(e.visibleOnPassport ? 'Hide from public passport: ' : 'Show on public passport: ') + e.title" [title]="e.visibleOnPassport ? 'Public — click to hide' : 'Hidden — click to show'">{{ e.visibleOnPassport ? '👁' : '🚫' }}</button>
                   </div>
                 }
               </div>
+              @if (pp.timeline.length > 14) {
+                <button class="tl-more" (click)="showAllTimeline.set(!showAllTimeline())">
+                  {{ showAllTimeline() ? 'Show recent only' : 'Show all ' + pp.timeline.length + ' events' }}
+                </button>
+              }
             } @else {
               <p class="text-sm text-txt-mute">Your verified events will appear here as you learn.</p>
             }
@@ -189,7 +194,7 @@ import { LEDGER_KIND_META, LedgerKind } from '../../core/services/ledger.service
             @if (pp.manualEvidence.length) {
               <div class="mt-3 space-y-1.5">
                 @for (ev of pp.manualEvidence; track ev.id) {
-                  <div class="ev"><span class="min-w-0 flex-1"><b>{{ ev.skill }}</b> — {{ ev.summary }}</span><button class="rm" (click)="removeEvidence(ev.id)">✕</button></div>
+                  <div class="ev"><span class="min-w-0 flex-1"><b>{{ ev.skill }}</b> — {{ ev.summary }}</span><button class="rm" (click)="removeEvidence(ev.id)" [attr.aria-label]="'Remove evidence: ' + ev.skill">✕</button></div>
                 }
               </div>
             }
@@ -244,6 +249,8 @@ import { LEDGER_KIND_META, LedgerKind } from '../../core/services/ledger.service
     .ev { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--text-soft); }
     .rm { background: transparent; border: none; color: var(--text-mute); cursor: pointer; }
     .rm:hover { color: var(--danger, #ff5d5d); }
+    .tl-more { margin-top: 10px; font-size: 12px; color: var(--peri, #8aa6ff); background: transparent; border: none; cursor: pointer; padding: 4px 0; }
+    .tl-more:hover { color: var(--green-deep); }
   `],
 })
 export class SkillPassportComponent {
@@ -259,6 +266,11 @@ export class SkillPassportComponent {
   readonly evSkill = signal('');
   readonly evSummary = signal('');
   readonly evUrl = signal('');
+  readonly showAllTimeline = signal(false);
+
+  shownTimeline(pp: SkillPassport): SkillPassport['timeline'] {
+    return this.showAllTimeline() ? pp.timeline : pp.timeline.slice(0, 14);
+  }
 
   constructor() { this.refresh(); }
 

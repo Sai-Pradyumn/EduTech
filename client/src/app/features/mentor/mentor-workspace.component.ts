@@ -2,7 +2,7 @@ import { ChangeDetectionStrategy, Component, OnInit, inject, signal } from '@ang
 import { FormsModule } from '@angular/forms';
 import { MentorService } from '../../core/services/mentor.service';
 import { ToastService } from '../../core/services/toast.service';
-import { MentorDashboard, PendingReview, Risk, StudentDetail, StudentSummary } from '../../core/models';
+import { MentorDashboard, MentorProfile, PendingReview, Risk, StudentDetail, StudentSummary } from '../../core/models';
 import { ButtonComponent } from '../../shared/ui/button.component';
 import { CardComponent } from '../../shared/ui/card.component';
 import { RingComponent } from '../../shared/ui/ring.component';
@@ -38,12 +38,37 @@ interface ReviewDraft {
           <h1 class="text-[26px] leading-tight mb-2 grad-flow">Mentor Room</h1>
           <span class="goal-pill"><span class="dot"></span>{{ d.students.length }} assigned · {{ d.atRiskCount }} need attention</span>
         </div>
-        <div class="flex gap-2.5 shrink-0">
+        <div class="flex gap-2.5 shrink-0 items-center">
+          <asta-btn variant="ghost" size="sm" (click)="toggleProfile()">{{ showProfile() ? 'Close profile' : 'My profile' }}</asta-btn>
           <div class="hstat"><span class="hstat-n" [astaCount]="d.students.length"></span><span class="hstat-l">Students</span></div>
           <div class="hstat"><span class="hstat-n" style="color:var(--coral-deep)" [astaCount]="d.atRiskCount"></span><span class="hstat-l">At risk</span></div>
           <div class="hstat"><span class="hstat-n" [astaCount]="d.pendingReviews.length"></span><span class="hstat-l">Reviews</span></div>
         </div>
       </header>
+
+      @if (showProfile()) {
+        <asta-card class="block mb-5 motion-card-reveal">
+          <div class="panel-head mb-3">
+            <p class="kicker">Your mentor profile</p>
+            <span class="text-[11px] text-txt-mute">Shown to students in the mentor marketplace</span>
+          </div>
+          <div class="grid gap-3 md:grid-cols-2">
+            <label class="block md:col-span-2"><span class="t-label">Headline</span>
+              <input class="input mt-1" [ngModel]="pf.headline" (ngModelChange)="pf.headline = $event" placeholder="e.g. Senior Frontend Engineer · ex-Google" maxlength="120" /></label>
+            <label class="block md:col-span-2"><span class="t-label">Bio</span>
+              <textarea class="input mt-1" rows="3" [ngModel]="pf.bio" (ngModelChange)="pf.bio = $event" placeholder="A short bio students will see…" maxlength="600"></textarea></label>
+            <label class="block"><span class="t-label">Skills (comma-separated)</span>
+              <input class="input mt-1" [ngModel]="skillsStr()" (ngModelChange)="skillsStr.set($event)" placeholder="React, System Design, DSA" /></label>
+            <label class="block"><span class="t-label">Languages (comma-separated)</span>
+              <input class="input mt-1" [ngModel]="langsStr()" (ngModelChange)="langsStr.set($event)" placeholder="English, Hindi" /></label>
+            <label class="block"><span class="t-label">Experience (years)</span>
+              <input type="number" min="0" max="60" class="input mt-1" [ngModel]="pf.experienceYears" (ngModelChange)="pf.experienceYears = +$event" /></label>
+            <label class="block"><span class="t-label">Availability</span>
+              <input class="input mt-1" [ngModel]="pf.availability" (ngModelChange)="pf.availability = $event" placeholder="e.g. Weekends, 2 slots/week" maxlength="120" /></label>
+          </div>
+          <div class="mt-3"><asta-btn variant="accent" size="sm" astaMagnetic [loading]="profileBusy()" (click)="saveProfile()">Save profile <span class="arr">→</span></asta-btn></div>
+        </asta-card>
+      }
 
       @if (d.students.length === 0 && d.pendingReviews.length === 0) {
         <asta-card><asta-empty-state title="No students assigned yet" description="You'll see students from organizations where you're a mentor, instructor or admin. Ask an org admin to add you, or invite students to your org." /></asta-card>
@@ -207,8 +232,55 @@ export class MentorWorkspaceComponent implements OnInit {
   noteDraft = '';
   private drafts = new Map<string, ReviewDraft>();
 
+  // ── mentor profile (server-backed: GET/PUT /mentor/profile) ──
+  readonly showProfile = signal(false);
+  readonly profileBusy = signal(false);
+  readonly skillsStr = signal('');
+  readonly langsStr = signal('');
+  private profileLoaded = false;
+  pf: MentorProfile = { headline: '', bio: '', skills: [], languages: [], experienceYears: 0, availability: '' };
+
   ngOnInit(): void {
     this.load();
+  }
+
+  toggleProfile(): void {
+    const next = !this.showProfile();
+    this.showProfile.set(next);
+    if (next && !this.profileLoaded) {
+      this.api.getProfile().subscribe({
+        next: (p) => {
+          this.profileLoaded = true;
+          if (p) {
+            this.pf = { ...this.pf, ...p };
+            this.skillsStr.set((p.skills ?? []).join(', '));
+            this.langsStr.set((p.languages ?? []).join(', '));
+          }
+        },
+      });
+    }
+  }
+
+  saveProfile(): void {
+    const csv = (s: string) => s.split(',').map((x) => x.trim()).filter(Boolean);
+    const payload: MentorProfile = {
+      ...this.pf,
+      skills: csv(this.skillsStr()),
+      languages: csv(this.langsStr()),
+      experienceYears: Math.max(0, this.pf.experienceYears || 0),
+    };
+    this.profileBusy.set(true);
+    this.api.saveProfile(payload).subscribe({
+      next: (p) => {
+        this.pf = { ...this.pf, ...p };
+        this.skillsStr.set((p.skills ?? []).join(', '));
+        this.langsStr.set((p.languages ?? []).join(', '));
+        this.profileLoaded = true;
+        this.profileBusy.set(false);
+        this.toast.success('Mentor profile saved');
+      },
+      error: (e) => { this.profileBusy.set(false); this.toast.error(e?.message ?? 'Could not save profile'); },
+    });
   }
 
   load(): void {

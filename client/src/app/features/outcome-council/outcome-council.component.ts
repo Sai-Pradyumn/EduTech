@@ -20,6 +20,7 @@ import { CouncilAction, CouncilResult, OutcomeCouncilService } from '../../core/
         <span class="goal-pill"><span class="dot"></span>Six specialist mentors debate your single best next move</span>
       </div>
       <div class="flex gap-2.5 shrink-0">
+        @if (result()) { <asta-btn variant="ghost" size="sm" (click)="copyVerdict()">Copy verdict</asta-btn> }
         <asta-btn variant="accent" size="sm" (click)="convene()" [disabled]="busy()">{{ busy() ? 'Convening…' : 'Convene council' }}</asta-btn>
       </div>
     </header>
@@ -138,6 +139,32 @@ export class OutcomeCouncilComponent {
     const next = new Set(this.dismissed());
     next.add(id);
     this.dismissed.set(next);
+  }
+
+  copyVerdict(): void {
+    const r = this.result();
+    if (!r) return;
+    const lines: string[] = [];
+    lines.push(`# AI Outcome Council verdict`);
+    lines.push(`\n_${r.context.role} · ${r.context.readinessScore}% ready · convened ${this.when(r.generatedAt)}_\n`);
+    if (r.best) {
+      lines.push(`## ✓ Best next move: ${r.best.action}`);
+      lines.push(`- Expected impact: ${r.best.expectedImpact} · ⏱ ${r.best.timeRequired} · proposed by ${r.best.agent}`);
+    }
+    lines.push(`\n${r.verdict}\n`);
+    if (r.alternatives.length) {
+      lines.push('## Alternatives considered');
+      for (const a of r.alternatives) {
+        lines.push(`### ${a.action} (${a.agent} · impact ${a.expectedImpact})`);
+        lines.push(`- Why: ${a.why}`);
+        lines.push(`- Risk if ignored: ${a.riskIfIgnored}`);
+      }
+    }
+    const md = lines.join('\n');
+    navigator.clipboard?.writeText(md).then(
+      () => this.toast.success('Council verdict copied as Markdown'),
+      () => this.toast.error('Copy failed'),
+    );
   }
 
   when(iso: string): string {

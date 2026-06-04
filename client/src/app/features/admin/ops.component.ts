@@ -1,6 +1,13 @@
-import { ChangeDetectionStrategy, Component, OnInit, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnInit, computed, inject, signal } from '@angular/core';
 import { DatePipe } from '@angular/common';
-import { ErrorView, JobView, OpsHealth, OpsService } from '../../core/services/ops.service';
+import {
+  ErrorView,
+  JobView,
+  OpsHealth,
+  OpsService,
+  RealtimeStatus,
+  StorageStatus,
+} from '../../core/services/ops.service';
 import { ToastService } from '../../core/services/toast.service';
 
 /** Ops Command Center (Phase 10 · M7). Role.Admin. System health, job ledger (retry failed)
@@ -39,10 +46,35 @@ import { ToastService } from '../../core/services/toast.service';
       </div>
     }
 
+    <!-- Realtime + storage -->
+    <div class="grid gap-3 sm:grid-cols-2 mb-5">
+      <div class="card" style="padding:16px">
+        <div class="flex items-center justify-between">
+          <p class="kicker">Realtime</p>
+          @if (realtime(); as r) {
+            <span class="pill" [style.color]="r.websocketStatus === 'up' ? 'var(--green-deep)' : 'var(--danger)'"><span class="live-dot" [class.up]="r.websocketStatus === 'up'"></span>WebSocket {{ r.websocketStatus }}</span>
+          }
+        </div>
+        <p class="text-xs text-txt-mute mt-2">{{ realtime()?.note || 'Socket.IO gateway status.' }}</p>
+      </div>
+      <div class="card" style="padding:16px">
+        <div class="flex items-center justify-between">
+          <p class="kicker">Object storage</p>
+          @if (storage(); as s) {
+            <span class="pill" [style.color]="s.status === 'ok' ? 'var(--green-deep)' : 'var(--danger)'">{{ s.provider }}{{ s.bucket ? ' · ' + s.bucket : '' }}</span>
+          }
+        </div>
+        <p class="text-xs text-txt-mute mt-2">{{ storage()?.note || 'Object storage abstraction.' }}</p>
+      </div>
+    </div>
+
     <!-- Jobs -->
     <div class="card mb-5" style="padding:18px">
-      <div class="flex items-center justify-between mb-3">
-        <p class="kicker">Background jobs</p>
+      <div class="flex items-center justify-between gap-3 mb-3 flex-wrap">
+        <div class="flex items-center gap-3">
+          <p class="kicker">Background jobs</p>
+          <button class="toggle" [class.on]="failedOnly()" (click)="toggleFailedOnly()">Failed only</button>
+        </div>
         @if (jobCounts(); as c) {
           <div class="flex gap-2 text-xs font-mono">
             <span class="pill">waiting {{ c['waiting'] || 0 }}</span>
@@ -53,7 +85,7 @@ import { ToastService } from '../../core/services/toast.service';
         }
       </div>
       <div class="space-y-1">
-        @for (j of jobs(); track j.id) {
+        @for (j of shownJobs(); track j.id) {
           <div class="flex items-center gap-3 text-sm py-1.5" style="border-bottom:1px solid var(--paper-3)">
             <span class="min-w-0 flex-1 truncate">{{ j.name }} <span class="text-txt-mute font-mono text-xs">{{ j.queue }}</span></span>
             <span class="pill" [style.color]="j.status === 'failed' ? 'var(--danger)' : (j.status === 'completed' ? 'var(--green-deep)' : 'var(--text-mute)')">{{ j.status }}</span>
@@ -62,7 +94,7 @@ import { ToastService } from '../../core/services/toast.service';
               <button class="text-xs font-semibold" style="color:var(--green-deep)" [disabled]="busy() === j.id" (click)="retry(j)">Retry</button>
             }
           </div>
-        } @empty { <p class="text-sm text-txt-mute">No jobs recorded.</p> }
+        } @empty { <p class="text-sm text-txt-mute">{{ failedOnly() ? 'No failed jobs — clean queue.' : 'No jobs recorded.' }}</p> }
       </div>
     </div>
 
@@ -81,7 +113,14 @@ import { ToastService } from '../../core/services/toast.service';
       </div>
     </div>
   `,
-  styles: [],
+  styles: [`
+    .live-dot{display:inline-block;width:6px;height:6px;border-radius:999px;margin-right:5px;background:var(--text-mute)}
+    .live-dot.up{background:var(--green);box-shadow:0 0 7px var(--green);animation:livePulse 1.8s ease-in-out infinite}
+    @keyframes livePulse{0%,100%{opacity:1}50%{opacity:.45}}
+    @media (prefers-reduced-motion:reduce){.live-dot.up{animation:none}}
+    .toggle{font-size:11px;padding:3px 10px;border-radius:999px;color:var(--text-soft);background:color-mix(in oklch,var(--paper-2) 55%,transparent);border:1px solid var(--paper-3);cursor:pointer;transition:color .18s,border-color .18s,background .18s}
+    .toggle.on{color:var(--danger);border-color:color-mix(in oklch,var(--danger) 50%,transparent);background:color-mix(in oklch,var(--danger) 11%,transparent)}
+  `],
 })
 export class AdminOpsComponent implements OnInit {
   private readonly ops = inject(OpsService);
@@ -92,6 +131,12 @@ export class AdminOpsComponent implements OnInit {
   readonly jobCounts = signal<Record<string, number> | null>(null);
   readonly errors = signal<ErrorView[]>([]);
   readonly busy = signal<string | null>(null);
+  readonly realtime = signal<RealtimeStatus | null>(null);
+  readonly storage = signal<StorageStatus | null>(null);
+
+  readonly failedOnly = signal(false);
+  readonly failedJobs = signal<JobView[]>([]);
+  readonly shownJobs = computed(() => (this.failedOnly() ? this.failedJobs() : this.jobs()));
 
   ngOnInit(): void {
     this.load();
@@ -106,6 +151,16 @@ export class AdminOpsComponent implements OnInit {
       },
     });
     this.ops.errors().subscribe({ next: (e) => this.errors.set(e) });
+    this.ops.realtime().subscribe({ next: (r) => this.realtime.set(r) });
+    this.ops.storage().subscribe({ next: (s) => this.storage.set(s) });
+  }
+
+  toggleFailedOnly(): void {
+    const next = !this.failedOnly();
+    this.failedOnly.set(next);
+    if (next && !this.failedJobs().length) {
+      this.ops.failedJobs().subscribe({ next: (j) => this.failedJobs.set(j) });
+    }
   }
 
   retry(j: JobView): void {
@@ -115,6 +170,9 @@ export class AdminOpsComponent implements OnInit {
         this.busy.set(null);
         this.toast.success(`Retried ${j.name}`);
         this.load();
+        if (this.failedOnly()) {
+          this.ops.failedJobs().subscribe({ next: (jobs) => this.failedJobs.set(jobs) });
+        }
       },
       error: () => this.busy.set(null),
     });

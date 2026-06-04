@@ -22,6 +22,7 @@ import { PeerRoom, PeerRoomService } from '../../core/services/peer-room.service
       <div class="flex gap-2.5 shrink-0 flex-wrap">
         <asta-btn variant="ghost" size="sm" (click)="back()">All rooms</asta-btn>
         <asta-btn variant="ghost" size="sm" (click)="reload()">Refresh</asta-btn>
+        @if (room()) { <asta-btn variant="ghost" size="sm" (click)="copyInvite()">Copy invite</asta-btn> }
         @if (room()?.isHost && room()?.status === 'open') { <asta-btn variant="ghost" size="sm" (click)="close()">Close room</asta-btn> }
       </div>
     </header>
@@ -138,6 +139,17 @@ export class PeerRoomDetailComponent {
     this.api.linkFlow(this.id()).subscribe({ next: (r) => { this.room.set(r.room); this.busy.set(null); this.toast.success('Shared flow created'); this.router.navigate(['/app/flows', r.flowId]); }, error: (e: Error) => { this.busy.set(null); this.toast.error(e.message || 'Failed'); } });
   }
   close(): void { this.api.close(this.id()).subscribe({ next: (r) => { this.room.set(r); this.toast.success('Room closed'); }, error: (e: Error) => this.toast.error(e.message || 'Could not close') }); }
+
+  copyInvite(): void {
+    const r = this.room();
+    if (!r) return;
+    const link = `${location.origin}/app/peer-rooms/${r.id}`;
+    const text = `Join my peer room “${r.title}” on Asta — code ${r.code}\n${link}`;
+    navigator.clipboard?.writeText(text).then(
+      () => this.toast.success(`Invite copied — code ${r.code}`),
+      () => this.toast.error('Copy failed'),
+    );
+  }
 
   private run(key: string, obs: import('rxjs').Observable<PeerRoom>): void {
     this.busy.set(key);

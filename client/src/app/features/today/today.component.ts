@@ -5,7 +5,7 @@ import { CardComponent } from '../../shared/ui/card.component';
 import { EmptyStateComponent } from '../../shared/ui/empty-state.component';
 import { SkeletonComponent } from '../../shared/ui/skeleton.component';
 import { ToastService } from '../../core/services/toast.service';
-import { DAILY_KIND_GLYPH, DailyItem, DailyPlan, DailyPlanMode, DailyPlanService } from '../../core/services/daily-plan.service';
+import { DAILY_KIND_GLYPH, DailyDay, DailyItem, DailyPlan, DailyPlanMode, DailyPlanService, DailyStreak } from '../../core/services/daily-plan.service';
 
 @Component({
   selector: 'asta-today',
@@ -64,6 +64,28 @@ import { DAILY_KIND_GLYPH, DailyItem, DailyPlan, DailyPlanMode, DailyPlanService
         </asta-card>
 
         <div class="space-y-4">
+          @if (streak(); as st) {
+            <asta-card class="block motion-card-reveal motion-row-2 streak-card">
+              <div class="flex items-center gap-3">
+                <span class="flame" [class.cold]="!st.activeToday && st.current === 0">🔥</span>
+                <div class="min-w-0">
+                  <p class="streak-n">{{ st.current }}<span class="streak-u">day{{ st.current === 1 ? '' : 's' }}</span></p>
+                  <p class="text-[11px] text-txt-mute">{{ st.activeToday ? 'Active today — nice!' : (st.current > 0 ? 'Finish one item to keep it alive' : 'Complete an item to start a streak') }}</p>
+                </div>
+              </div>
+              @if (history().length) {
+                <div class="week-strip" role="img" aria-label="Activity over the last 7 days">
+                  @for (d of history(); track d.date) {
+                    <span class="wk-day" [class.on]="d.active" [title]="d.date + ' · ' + d.completed + '/' + d.total + ' done'">{{ dayLetter(d.date) }}</span>
+                  }
+                </div>
+              }
+              <div class="flex justify-between text-[11px] text-txt-mute mt-3 pt-2.5" style="border-top:1px solid var(--paper-3)">
+                <span>Best: <b>{{ st.best }}</b> day{{ st.best === 1 ? '' : 's' }}</span>
+                <span>{{ st.totalActiveDays }} active total</span>
+              </div>
+            </asta-card>
+          }
           <asta-card class="block motion-card-reveal motion-row-2 text-center">
             <p class="ring-num">{{ pct() }}%</p>
             <div class="prog-track"><span class="prog-fill" [style.width.%]="pct()"></span></div>
@@ -96,6 +118,14 @@ import { DAILY_KIND_GLYPH, DailyItem, DailyPlan, DailyPlanMode, DailyPlanService
       .i-title { display: block; font-size: 14px; font-weight: 600; }
       .i-reason { display: block; font-size: 11px; color: var(--text-mute); }
       .i-min { font-size: 11px; color: var(--text-mute); white-space: nowrap; }
+      .streak-card { border: 1px solid color-mix(in oklab, var(--coral, #ffb454) 28%, var(--paper-3)); }
+      .flame { font-size: 30px; line-height: 1; filter: drop-shadow(0 0 8px color-mix(in oklab, var(--coral, #ffb454) 50%, transparent)); }
+      .flame.cold { filter: grayscale(1); opacity: .5; }
+      .streak-n { font-size: 30px; font-weight: 700; font-variant-numeric: tabular-nums; line-height: 1; }
+      .streak-u { font-size: 12px; font-weight: 500; color: var(--text-mute); margin-left: 6px; }
+      .week-strip { display: flex; gap: 5px; margin-top: 12px; }
+      .wk-day { flex: 1; aspect-ratio: 1; display: grid; place-items: center; border-radius: 7px; font-size: 9px; font-family: var(--mono); color: var(--text-mute); background: var(--paper-3); }
+      .wk-day.on { color: var(--ink); background: linear-gradient(135deg, var(--green-deep), var(--green)); font-weight: 700; }
       .ring-num { font-size: 34px; font-weight: 700; font-variant-numeric: tabular-nums; }
       .prog-track { height: 6px; border-radius: 999px; background: var(--paper-3); overflow: hidden; }
       .prog-fill { display: block; height: 100%; background: linear-gradient(90deg, var(--green-deep), var(--green)); transition: width .4s var(--ease); }
@@ -108,6 +138,8 @@ export class TodayComponent {
   private readonly router = inject(Router);
 
   readonly plan = signal<DailyPlan | null>(null);
+  readonly streak = signal<DailyStreak | null>(null);
+  readonly history = signal<DailyDay[]>([]);
   readonly loading = signal(true);
   readonly loadError = signal(false);
   readonly busy = signal(false);
@@ -133,6 +165,17 @@ export class TodayComponent {
       next: (p) => { this.plan.set(p); this.loading.set(false); },
       error: () => { this.loadError.set(true); this.loading.set(false); },
     });
+    this.refreshStreak();
+  }
+
+  private refreshStreak(): void {
+    this.api.streak().subscribe({ next: (s) => this.streak.set(s), error: () => undefined });
+    this.api.history(7).subscribe({ next: (h) => this.history.set(h), error: () => undefined });
+  }
+
+  /** Single-letter weekday for the activity strip (M T W T F S S). */
+  dayLetter(iso: string): string {
+    return ['S', 'M', 'T', 'W', 'T', 'F', 'S'][new Date(`${iso}T00:00:00`).getDay()];
   }
 
   glyph(k: DailyItem['kind']): string { return DAILY_KIND_GLYPH[k]; }
@@ -157,7 +200,7 @@ export class TodayComponent {
 
   toggle(it: DailyItem): void {
     this.api.completeItem(it.id).subscribe({
-      next: (p) => this.plan.set(p),
+      next: (p) => { this.plan.set(p); this.refreshStreak(); },
       error: () => this.toast.error('Could not update item'),
     });
   }

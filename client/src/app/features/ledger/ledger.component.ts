@@ -1,9 +1,17 @@
-import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { ButtonComponent } from '../../shared/ui/button.component';
 import { CardComponent } from '../../shared/ui/card.component';
 import { EmptyStateComponent } from '../../shared/ui/empty-state.component';
 import { SkeletonComponent } from '../../shared/ui/skeleton.component';
-import { LEDGER_KIND_META, LedgerEntry, LedgerKind, LedgerService, LedgerStats } from '../../core/services/ledger.service';
+import { LEDGER_KIND_META, LedgerEntry, LedgerKind, LedgerService, LedgerStats, VerificationLevel } from '../../core/services/ledger.service';
+
+const VER_META: Record<VerificationLevel, { label: string; tone: string }> = {
+  certificate: { label: 'Certificate', tone: 'var(--green-deep)' },
+  mentor: { label: 'Mentor verified', tone: 'var(--green-deep)' },
+  system: { label: 'System verified', tone: 'var(--peri, #8aa6ff)' },
+  ai: { label: 'AI checked', tone: 'var(--peri, #8aa6ff)' },
+  self: { label: 'Self-reported', tone: 'var(--text-mute)' },
+};
 
 @Component({
   selector: 'asta-ledger',
@@ -38,13 +46,21 @@ import { LEDGER_KIND_META, LedgerEntry, LedgerKind, LedgerService, LedgerStats }
       } @else {
         <asta-card class="block motion-card-reveal motion-row-2">
           <p class="kicker mb-3">Timeline</p>
+          @if (kindsPresent().length > 1) {
+            <div class="lg-chips">
+              <button class="lg-chip" [class.on]="kindFilter() === 'all'" (click)="kindFilter.set('all')">All <span class="ct">{{ entries().length }}</span></button>
+              @for (k of kindsPresent(); track k.kind) {
+                <button class="lg-chip" [class.on]="kindFilter() === k.kind" (click)="kindFilter.set(k.kind)">{{ glyph(k.kind) }} {{ kindLabel(k.kind) }} <span class="ct">{{ k.count }}</span></button>
+              }
+            </div>
+          }
           <div class="timeline">
-            @for (e of entries(); track e.id) {
+            @for (e of filteredEntries(); track e.id) {
               <div class="row">
                 <span class="glyph">{{ glyph(e.kind) }}</span>
                 <span class="line"></span>
                 <span class="min-w-0 flex-1">
-                  <span class="t-title">{{ e.title }}</span>
+                  <span class="t-title">{{ e.title }} <span class="ver" [style.color]="verTone(e.verificationLevel)" [style.borderColor]="verTone(e.verificationLevel)">{{ verLabel(e.verificationLevel) }}</span></span>
                   @if (e.detail) { <span class="t-detail">{{ e.detail }}</span> }
                   <span class="t-meta">{{ kindLabel(e.kind) }} · {{ date(e.at) }}@if (e.score !== null) { · {{ e.score }}% }</span>
                 </span>
@@ -69,6 +85,12 @@ import { LEDGER_KIND_META, LedgerEntry, LedgerKind, LedgerService, LedgerStats }
       .t-title { display: block; font-size: 14px; font-weight: 600; }
       .t-detail { display: block; font-size: 13px; color: var(--text-soft); }
       .t-meta { display: block; font-size: 11px; color: var(--text-mute); margin-top: 2px; }
+      .ver { font-size: 9.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; padding: 1px 6px; border-radius: 999px; border: 1px solid; margin-left: 6px; vertical-align: middle; opacity: .85; }
+      .lg-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 14px; }
+      .lg-chip { font-size: 11.5px; padding: 4px 10px; border-radius: 999px; border: 1px solid var(--paper-3); background: var(--paper-2); color: var(--text-soft); cursor: pointer; transition: color .15s, border-color .15s, background .15s; }
+      .lg-chip:hover { border-color: var(--green); }
+      .lg-chip.on { color: var(--green-deep); border-color: color-mix(in oklab, var(--green) 50%, var(--paper-3)); background: color-mix(in oklab, var(--green) 12%, transparent); }
+      .lg-chip .ct { font-weight: 700; opacity: .7; }
     `,
   ],
 })
@@ -78,10 +100,26 @@ export class LedgerComponent {
   readonly stats = signal<LedgerStats | null>(null);
   readonly loading = signal(true);
   readonly loadError = signal(false);
+  readonly kindFilter = signal<'all' | LedgerKind>('all');
+
+  readonly kindsPresent = computed(() => {
+    const counts = new Map<LedgerKind, number>();
+    for (const e of this.entries()) counts.set(e.kind, (counts.get(e.kind) ?? 0) + 1);
+    return [...counts.entries()]
+      .map(([kind, count]) => ({ kind, count }))
+      .sort((a, b) => b.count - a.count);
+  });
+
+  readonly filteredEntries = computed(() => {
+    const k = this.kindFilter();
+    return k === 'all' ? this.entries() : this.entries().filter((e) => e.kind === k);
+  });
 
   constructor() { this.refresh(); }
   glyph(k: LedgerKind): string { return LEDGER_KIND_META[k].glyph; }
   kindLabel(k: LedgerKind): string { return LEDGER_KIND_META[k].label; }
+  verLabel(v: VerificationLevel): string { return VER_META[v].label; }
+  verTone(v: VerificationLevel): string { return VER_META[v].tone; }
   date(iso: string): string { return new Date(iso).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }); }
 
   refresh(): void {

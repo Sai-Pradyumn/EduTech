@@ -36,6 +36,7 @@ import { ModalComponent } from '../../shared/ui/modal.component';
               <button class="rounded-full px-3.5 py-1.5 text-xs font-semibold" style="background:var(--paper-2)" [disabled]="busy()" (click)="disconnect(i)">Disconnect</button>
               @if (i.mode === 'webhook') {
                 <button class="text-xs font-semibold" style="color:var(--green-deep)" [disabled]="busy()" (click)="sync(i)">Send test</button>
+                @if (webhookUrlOf(i)) { <button class="text-xs font-semibold text-txt-mute" (click)="copyWebhook(i)">Copy URL</button> }
               } @else if (i.mode === 'csv') {
                 <button class="text-xs font-semibold" style="color:var(--green-deep)" [disabled]="busy()" (click)="pickCsv(i)">Re-import CSV</button>
               } @else {
@@ -51,6 +52,9 @@ import { ModalComponent } from '../../shared/ui/modal.component';
               <button class="rounded-full px-3.5 py-1.5 text-xs font-semibold" style="background:var(--green);color:var(--ink)" [disabled]="busy()" (click)="connect(i)">Connect</button>
             }
           </div>
+          @if (i.connected && i.lastSyncAt) {
+            <p class="text-[11px] text-txt-mute mt-2.5">Last activity {{ ago(i.lastSyncAt) }}</p>
+          }
         </div>
       } @empty {
         @for (n of [0,1,2,3]; track n) { <div class="card" style="padding:18px"><span class="skel" style="display:block;height:60px;border-radius:8px"></span></div> }
@@ -190,6 +194,31 @@ export class IntegrationsComponent implements OnInit {
       },
       error: () => this.busy.set(false),
     });
+  }
+
+  webhookUrlOf(i: IntegrationView): string | null {
+    const url = i.metadata?.['webhookUrl'];
+    return typeof url === 'string' && url ? url : null;
+  }
+
+  copyWebhook(i: IntegrationView): void {
+    const url = this.webhookUrlOf(i);
+    if (!url) return;
+    navigator.clipboard?.writeText(url).then(
+      () => this.toast.success('Webhook URL copied'),
+      () => this.toast.error('Copy failed'),
+    );
+  }
+
+  ago(iso: string): string {
+    const ms = Date.now() - new Date(iso).getTime();
+    const m = Math.floor(ms / 60000);
+    if (m < 1) return 'just now';
+    if (m < 60) return `${m}m ago`;
+    const h = Math.floor(m / 60);
+    if (h < 24) return `${h}h ago`;
+    const d = Math.floor(h / 24);
+    return d === 1 ? 'yesterday' : `${d}d ago`;
   }
 
   sync(i: IntegrationView): void {

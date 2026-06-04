@@ -66,6 +66,25 @@ import { Portfolio, PortfolioService } from '../../core/services/portfolio.servi
                 </div>
               } @else { <p class="text-sm text-txt-mute">No projects yet — generate from evidence, or add reviewed projects from your Skill Passport.</p> }
             </asta-card>
+
+            <asta-card class="block motion-card-reveal motion-row-2">
+              <p class="kicker mb-2">Contact &amp; links</p>
+              @if (pp.links.length) {
+                <div class="space-y-1.5 mb-3">
+                  @for (l of pp.links; track $index) {
+                    <div class="link-row">
+                      <span class="min-w-0 flex-1"><span class="link-label">{{ l.label }}</span><a [href]="l.url" target="_blank" rel="noopener" class="link-url">{{ l.url }}</a></span>
+                      <button class="x" (click)="removeLink($index)" aria-label="Remove link">✕</button>
+                    </div>
+                  }
+                </div>
+              } @else { <p class="text-sm text-txt-mute mb-3">No links yet — add GitHub, LinkedIn, a personal site, etc.</p> }
+              <div class="grid grid-cols-[110px_1fr_auto] gap-2 items-center">
+                <input class="inp" placeholder="Label" [ngModel]="linkLabel()" (ngModelChange)="linkLabel.set($event)" maxlength="40" aria-label="Link label" />
+                <input class="inp" placeholder="https://…" [ngModel]="linkUrl()" (ngModelChange)="linkUrl.set($event)" aria-label="Link URL" />
+                <asta-btn variant="ghost" size="sm" [disabled]="busy() || !linkLabel().trim() || !linkUrl().trim()" (click)="addLink()">Add</asta-btn>
+              </div>
+            </asta-card>
           </div>
 
           <div class="space-y-4">
@@ -102,6 +121,11 @@ import { Portfolio, PortfolioService } from '../../core/services/portfolio.servi
     .vis-badge { font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; padding: 3px 9px; border-radius: 999px; background: var(--paper-3); color: var(--text-mute); }
     .vis-badge.pub { background: color-mix(in oklab, var(--green) 20%, transparent); color: var(--green-deep); }
     .tog { display: flex; align-items: center; gap: 8px; font-size: 13px; cursor: pointer; }
+    .link-row { display: flex; align-items: center; gap: 8px; padding: 6px 0; border-bottom: 1px solid var(--paper-3); }
+    .link-label { display: block; font-size: 12.5px; font-weight: 600; }
+    .link-url { display: block; font-size: 11px; color: var(--peri, #8aa6ff); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .x { border: none; background: transparent; color: var(--text-mute); cursor: pointer; }
+    .x:hover { color: var(--danger, #ff5d5d); }
   `],
 })
 export class PortfolioComponent {
@@ -111,9 +135,34 @@ export class PortfolioComponent {
   readonly loading = signal(true);
   readonly loadError = signal(false);
   readonly busy = signal(false);
+  readonly linkLabel = signal('');
+  readonly linkUrl = signal('');
   private patchBuf: Partial<Portfolio> = {};
 
   constructor() { this.refresh(); }
+
+  addLink(): void {
+    const cur = this.p();
+    const label = this.linkLabel().trim();
+    let url = this.linkUrl().trim();
+    if (!cur || !label || !url) return;
+    if (!/^https?:\/\//i.test(url)) url = `https://${url}`;
+    const links = [...cur.links, { label, url }];
+    this.busy.set(true);
+    this.api.patch({ links }).subscribe({
+      next: (p) => { this.p.set(p); this.linkLabel.set(''); this.linkUrl.set(''); this.busy.set(false); this.toast.success('Link added'); },
+      error: () => { this.busy.set(false); this.toast.error('Could not add link'); },
+    });
+  }
+  removeLink(idx: number): void {
+    const cur = this.p();
+    if (!cur) return;
+    const links = cur.links.filter((_, i) => i !== idx);
+    this.api.patch({ links }).subscribe({
+      next: (p) => this.p.set(p),
+      error: () => this.toast.error('Could not remove link'),
+    });
+  }
 
   refresh(): void {
     this.loading.set(true); this.loadError.set(false);

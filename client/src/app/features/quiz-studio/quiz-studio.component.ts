@@ -94,6 +94,12 @@ const DIFFS: Difficulty[] = ['beginner', 'intermediate', 'advanced'];
                 <p class="font-display text-2xl"><span [astaCount]="s.weakTopics.length"></span></p><p class="lbl">Weak topics</p>
               </asta-card>
             </div>
+            @if (s.masteredTopics.length) {
+              <asta-card class="motion-card-reveal mb-3.75" style="--motion-card-index:4">
+                <p class="kicker mb-2">Mastered topics</p>
+                <div class="mt-chips">@for (t of s.masteredTopics; track t) { <span class="mt-chip">✓ {{ t }}</span> }</div>
+              </asta-card>
+            }
           }
 
           <!-- generate -->
@@ -169,15 +175,39 @@ const DIFFS: Difficulty[] = ['beginner', 'intermediate', 'advanced'];
                 <asta-btn variant="accent" size="sm" astaMagnetic (click)="scrollToGenerate()">Generate a quiz <span class="arr">→</span></asta-btn>
               </asta-empty-state>
             } @else {
+              @if (quizzes().length > 4) {
+                <div class="qz-toolbar">
+                  <input class="qz-search" [ngModel]="quizQuery()" (ngModelChange)="quizQuery.set($event)" placeholder="Search quizzes…" aria-label="Search quizzes" />
+                  <div class="qz-chips">
+                    <button class="chip" [class.chip-on]="quizSource() === 'all'" (click)="quizSource.set('all')">all</button>
+                    @for (sc of quizSources(); track sc) {
+                      <button class="chip" [class.chip-on]="quizSource() === sc" (click)="quizSource.set(sc)">{{ sc }}</button>
+                    }
+                  </div>
+                </div>
+              }
               <div class="space-y-2">
-                @for (q of quizzes(); track q.id) {
+                @for (q of filteredQuizzes(); track q.id) {
                   <div class="row">
                     <div class="min-w-0">
                       <p class="text-sm font-medium truncate">{{ q.title }}</p>
                       <p class="text-[11px] text-txt-mute">{{ q.difficulty }} · {{ q.questionCount }} Q · {{ q.source }}@if (q.attemptCount) { · best {{ q.bestScore }}% }</p>
                     </div>
+                    @if (q.attemptCount) { <button class="hist-btn" (click)="toggleHistory(q.id)">{{ historyFor() === q.id ? 'Hide' : 'History' }}</button> }
                     <asta-btn variant="ghost" size="sm" (click)="startQuiz(q.id)">{{ q.attemptCount ? 'Retake' : 'Take' }} <span class="arr">→</span></asta-btn>
                   </div>
+                  @if (historyFor() === q.id) {
+                    <div class="hist">
+                      @if (historyLoading()) { <p class="hist-empty">Loading…</p> }
+                      @else {
+                        @for (a of historyAttempts(); track a.id) {
+                          <div class="hist-row"><span>{{ relTime(a.createdAt) }}</span><span class="hist-score" [style.color]="a.score >= 70 ? 'var(--green-deep)' : 'var(--coral, #ffb454)'">{{ a.correctCount }}/{{ a.total }} · {{ a.score }}%</span></div>
+                        } @empty { <p class="hist-empty">No attempts recorded.</p> }
+                      }
+                    </div>
+                  }
+                } @empty {
+                  <p class="text-sm text-txt-mute py-4 text-center">No quizzes match your search or filter.</p>
                 }
               </div>
             }
@@ -321,6 +351,18 @@ const DIFFS: Difficulty[] = ['beginner', 'intermediate', 'advanced'];
     `
       .stat { padding: 14px 16px; }
       .lbl { font-size: 11px; color: var(--text-mute); text-transform: uppercase; letter-spacing: .04em; }
+      .mt-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+      .mt-chip { font-size: 12px; padding: 3px 10px; border-radius: 999px; color: var(--green-deep); background: color-mix(in oklch, var(--green) 12%, transparent); border: 1px solid color-mix(in oklch, var(--green) 30%, transparent); }
+      .qz-toolbar { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-bottom: 12px; }
+      .qz-search { flex: 1; min-width: 170px; padding: 8px 12px; font-size: 13px; color: var(--text); background: color-mix(in oklch, var(--paper-2) 60%, transparent); border: 1px solid var(--paper-3); border-radius: 11px; }
+      .qz-search:focus { outline: none; border-color: var(--green); }
+      .qz-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+      .hist-btn { font-size: 11px; color: var(--peri, #8aa6ff); background: transparent; border: none; cursor: pointer; padding: 0 4px; }
+      .hist-btn:hover { color: var(--green-deep); }
+      .hist { margin: 2px 0 8px; padding: 8px 12px; border-radius: 10px; background: color-mix(in oklch, var(--paper-2) 55%, transparent); border: 1px solid var(--paper-3); }
+      .hist-row { display: flex; justify-content: space-between; font-size: 12px; color: var(--text-soft); padding: 2px 0; }
+      .hist-score { font-variant-numeric: tabular-nums; font-weight: 600; }
+      .hist-empty { font-size: 12px; color: var(--text-mute); }
       .src { text-align: left; border: 1px solid var(--paper-3); border-radius: 12px; padding: 8px 12px; background: var(--paper); font-size: 13px; min-width: 150px; }
       .src-on { border-color: var(--green); background: oklch(0.80 0.16 150 / .06); }
       .chip { font-family: var(--mono); font-size: 11px; text-transform: uppercase; padding: 5px 11px; border-radius: 100px; border: 1px solid color-mix(in oklch, var(--paper-3) 70%, transparent); background: color-mix(in oklch, var(--paper-2) 55%, transparent); color: var(--text-soft); cursor: pointer; transition: transform .15s var(--ease-spring), border-color .15s var(--ease), color .15s var(--ease); }
@@ -352,9 +394,26 @@ export class QuizStudioComponent implements OnInit, OnDestroy {
   readonly diffs = DIFFS;
   readonly view = signal<View>('home');
   readonly quizzes = signal<QuizSummary[]>([]);
+  readonly quizQuery = signal('');
+  readonly quizSource = signal<string>('all');
+  readonly quizSources = computed(() =>
+    [...new Set(this.quizzes().map((q) => q.source))].sort((a, b) => a.localeCompare(b)),
+  );
+  readonly filteredQuizzes = computed(() => {
+    const needle = this.quizQuery().trim().toLowerCase();
+    const src = this.quizSource();
+    return this.quizzes().filter((q) => {
+      if (src !== 'all' && q.source !== src) return false;
+      if (needle && !q.title.toLowerCase().includes(needle)) return false;
+      return true;
+    });
+  });
   readonly docs = signal<KnowledgeDoc[]>([]);
   readonly stats = signal<QuizStats | null>(null);
   readonly attempts = signal<AttemptView[]>([]);
+  readonly historyFor = signal<string | null>(null);
+  readonly historyAttempts = signal<AttemptView[]>([]);
+  readonly historyLoading = signal(false);
   readonly quiz = signal<TakeQuiz | null>(null);
   readonly result = signal<SubmitResult | null>(null);
   readonly generating = signal(false);
@@ -459,6 +518,17 @@ export class QuizStudioComponent implements OnInit, OnDestroy {
     if (day === 1) return 'yesterday';
     if (day < 7) return `${day}d ago`;
     return new Date(iso).toLocaleDateString();
+  }
+
+  toggleHistory(quizId: string): void {
+    if (this.historyFor() === quizId) { this.historyFor.set(null); return; }
+    this.historyFor.set(quizId);
+    this.historyLoading.set(true);
+    this.historyAttempts.set([]);
+    this.quizApi.attemptsForQuiz(quizId).subscribe({
+      next: (a) => { this.historyAttempts.set(a); this.historyLoading.set(false); },
+      error: () => { this.historyLoading.set(false); },
+    });
   }
 
   private fmt(s: number): string {

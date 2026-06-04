@@ -143,7 +143,21 @@ type Filter = 'all' | 'due' | MistakeStatus;
                     </div>
                   }
 
+                  @if (m.wrongReasoning) { <p class="text-sm mb-2"><span class="text-txt-mute">Why it happened:</span> {{ m.wrongReasoning }}</p> }
                   @if (m.correction) { <p class="text-sm mb-3"><span class="text-txt-mute">Fix:</span> {{ m.correction }}</p> }
+
+                  @if (m.linkedQuizId || m.linkedFlowId || m.linkedVisualId) {
+                    <div class="jump-row mb-3">
+                      <span class="text-[11px] text-txt-mute mr-1">Where it came from:</span>
+                      @if (m.linkedQuizId) { <button class="jump" (click)="jumpQuiz(m.linkedQuizId)">✓ Quiz</button> }
+                      @if (m.linkedFlowId) { <button class="jump" (click)="jump(['/app/flows', m.linkedFlowId])">🧭 Flow</button> }
+                      @if (m.linkedVisualId) { <button class="jump" (click)="jump(['/app/visuals', m.linkedVisualId])">◈ Visual</button> }
+                    </div>
+                  }
+
+                  @if (m.lastSeenAt || m.resolvedAt) {
+                    <p class="text-[11px] text-txt-mute mb-3">@if (m.lastSeenAt) { <span>Last seen {{ date(m.lastSeenAt) }}</span> }@if (m.lastSeenAt && m.resolvedAt) { <span> · </span> }@if (m.resolvedAt) { <span>Resolved {{ date(m.resolvedAt) }}</span> }</p>
+                  }
 
                   @if (m.repairActions.length) {
                     <p class="kicker mb-2">Repair plan</p>
@@ -205,6 +219,9 @@ type Filter = 'all' | 'due' | MistakeStatus;
       .chev.open { transform: rotate(180deg); }
       .action-row { display: flex; align-items: center; gap: 10px; width: 100%; text-align: left; padding: 8px 11px; border-radius: 10px; border: 1px solid var(--paper-3); background: var(--paper-2); cursor: pointer; transition: border-color .2s; }
       .action-row:hover { border-color: var(--green); }
+      .jump-row { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+      .jump { font-size: 11.5px; padding: 4px 10px; border-radius: 999px; border: 1px solid var(--paper-3); background: var(--paper-2); color: var(--text-soft); cursor: pointer; transition: border-color .15s, color .15s; }
+      .jump:hover { border-color: var(--green); color: var(--green-deep); }
       .action-row.done { opacity: .6; }
       .ar-check { color: var(--green); }
       .ar-label { flex: 1; font-size: 13px; }
@@ -302,6 +319,9 @@ export class MistakesComponent {
 
   setFilter(f: Filter): void { this.filter.set(f); }
   toggle(id: string): void { this.expanded.set(this.expanded() === id ? null : id); }
+  jump(commands: string[]): void { this.router.navigate(commands); }
+  jumpQuiz(quizId: string): void { this.router.navigate(['/app/quizzes'], { queryParams: { quizId } }); }
+  date(iso: string): string { return new Date(iso).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }); }
 
   private replace(m: Mistake): void {
     this.mistakes.update((l) => l.map((x) => (x.id === m.id ? m : x)));

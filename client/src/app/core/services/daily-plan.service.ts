@@ -25,6 +25,20 @@ export interface DailyPlan {
   completed: number;
 }
 
+export interface DailyStreak {
+  current: number;
+  best: number;
+  activeToday: boolean;
+  totalActiveDays: number;
+}
+
+export interface DailyDay {
+  date: string;
+  completed: number;
+  total: number;
+  active: boolean;
+}
+
 @Injectable({ providedIn: 'root' })
 export class DailyPlanService {
   private readonly api = inject(ApiService);
@@ -34,6 +48,8 @@ export class DailyPlanService {
   completeItem(itemId: string): Observable<DailyPlan> { return this.api.post<DailyPlan>('/daily-plan/complete-item', { itemId }); }
   recalculate(): Observable<DailyPlan> { return this.api.post<DailyPlan>('/daily-plan/recalculate', {}); }
   quickMode(): Observable<DailyPlan> { return this.api.post<DailyPlan>('/daily-plan/quick-mode', {}); }
+  streak(): Observable<DailyStreak> { return this.api.get<DailyStreak>('/daily-plan/streak'); }
+  history(days = 7): Observable<DailyDay[]> { return this.api.get<DailyDay[]>('/daily-plan/history', { days }); }
 }
 
 export const DAILY_KIND_GLYPH: Record<DailyItemKind, string> = {

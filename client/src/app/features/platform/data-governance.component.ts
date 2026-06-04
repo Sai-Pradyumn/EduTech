@@ -44,7 +44,11 @@ import { ToastService } from '../../core/services/toast.service';
               <div class="flex items-center gap-3 text-sm py-2" style="border-bottom:1px solid var(--paper-3)">
                 <span class="pill capitalize">{{ j.kind === 'delete_request' ? 'deletion' : 'export' }}</span>
                 <span class="pill" [style.color]="j.status === 'ready' || j.status === 'completed' ? 'var(--green-deep)' : 'var(--text-mute)'">{{ j.status }}</span>
-                <span class="min-w-0 flex-1"></span>
+                @if (j.note) { <span class="min-w-0 flex-1 truncate text-xs text-txt-mute" [title]="j.note">{{ j.note }}</span> }
+                @else { <span class="min-w-0 flex-1"></span> }
+                @if (expiresHint(j); as hint) {
+                  <span class="text-[11px] font-mono" [style.color]="hint.soon ? 'var(--danger)' : 'var(--text-mute)'">{{ hint.label }}</span>
+                }
                 @if (j.kind === 'export' && j.fileUrl && j.status === 'ready') {
                   <a class="text-xs font-semibold" style="color:var(--green-deep)" [href]="apiUrl(j.fileUrl)" target="_blank" rel="noopener">Download</a>
                 }
@@ -76,6 +80,17 @@ export class DataGovernanceComponent implements OnInit {
 
   apiUrl(path: string): string {
     return path.replace(/^\/api/, '/api');
+  }
+
+  /** Relative expiry for export/deletion jobs that carry an expiresAt. */
+  expiresHint(j: DataJobView): { label: string; soon: boolean } | null {
+    if (!j.expiresAt) return null;
+    const ms = new Date(j.expiresAt).getTime() - Date.now();
+    if (ms <= 0) return { label: 'expired', soon: true };
+    const days = Math.floor(ms / 86400000);
+    if (days >= 1) return { label: `expires in ${days}d`, soon: days <= 2 };
+    const hours = Math.max(1, Math.floor(ms / 3600000));
+    return { label: `expires in ${hours}h`, soon: true };
   }
 
   exportMe(): void {

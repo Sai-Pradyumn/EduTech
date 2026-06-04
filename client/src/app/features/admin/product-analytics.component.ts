@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, OnInit, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnInit, computed, inject, signal } from '@angular/core';
 import { OpsService } from '../../core/services/ops.service';
 
 interface Funnel {
@@ -57,6 +57,29 @@ interface Overview {
       }
     </div>
 
+    <!-- Retention (active users over time) — previously-unused /retention endpoint -->
+    <div class="card mb-5" style="padding:18px">
+      <div class="flex items-center justify-between mb-3">
+        <p class="kicker">Active users · last {{ retention().length }} days</p>
+        @if (retentionPeak() > 0) { <span class="font-mono text-xs text-txt-mute">peak {{ retentionPeak() }}</span> }
+      </div>
+      @if (retention().length) {
+        <div class="ret-chart" role="img" aria-label="Daily active users trend">
+          @for (d of retention(); track d.day) {
+            <div class="ret-col" [title]="d.day + ' · ' + d.activeUsers + ' active'">
+              <span class="ret-bar" [style.height.%]="barPct(d.activeUsers)"></span>
+            </div>
+          }
+        </div>
+        <div class="flex justify-between text-[10px] text-txt-mute font-mono mt-1.5">
+          <span>{{ retention()[0].day }}</span>
+          <span>{{ retention()[retention().length - 1].day }}</span>
+        </div>
+      } @else {
+        <p class="text-sm text-txt-mute">No retention data yet.</p>
+      }
+    </div>
+
     <div class="card" style="padding:18px">
       <p class="kicker mb-3">Event volume (30d)</p>
       @if (overview(); as o) {
@@ -71,16 +94,33 @@ interface Overview {
       }
     </div>
   `,
-  styles: [`.skel{background:linear-gradient(90deg,var(--paper-2) 25%,var(--paper-3) 50%,var(--paper-2) 75%);background-size:200% 100%;animation:s 1.4s ease infinite}@keyframes s{0%{background-position:200% 0}100%{background-position:-200% 0}}@media (prefers-reduced-motion:reduce){.skel{animation:none}}`],
+  styles: [`
+    .skel{background:linear-gradient(90deg,var(--paper-2) 25%,var(--paper-3) 50%,var(--paper-2) 75%);background-size:200% 100%;animation:s 1.4s ease infinite}@keyframes s{0%{background-position:200% 0}100%{background-position:-200% 0}}@media (prefers-reduced-motion:reduce){.skel{animation:none}}
+    .ret-chart{display:flex;align-items:flex-end;gap:2px;height:84px}
+    .ret-col{flex:1;height:100%;display:flex;align-items:flex-end;min-width:2px}
+    .ret-bar{display:block;width:100%;border-radius:3px 3px 0 0;background:linear-gradient(180deg,var(--green),var(--green-deep));min-height:2px;transition:height .4s var(--ease)}
+    .ret-col:hover .ret-bar{background:var(--peri,#8aa6ff)}
+  `],
 })
 export class AdminProductAnalyticsComponent implements OnInit {
   private readonly ops = inject(OpsService);
   readonly overview = signal<Overview | null>(null);
   readonly funnels = signal<Funnel[]>([]);
+  readonly retention = signal<{ day: string; activeUsers: number }[]>([]);
+
+  readonly retentionPeak = computed(() =>
+    this.retention().reduce((m, d) => Math.max(m, d.activeUsers), 0),
+  );
 
   ngOnInit(): void {
     this.ops.productOverview().subscribe({ next: (o) => this.overview.set(o) });
     this.ops.funnels().subscribe({ next: (f) => this.funnels.set(f) });
+    this.ops.retention().subscribe({ next: (r) => this.retention.set(r) });
+  }
+
+  barPct(value: number): number {
+    const peak = this.retentionPeak();
+    return peak > 0 ? Math.max(4, Math.round((value / peak) * 100)) : 0;
   }
 
   pretty(event: string): string {

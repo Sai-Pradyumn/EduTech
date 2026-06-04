@@ -76,6 +76,23 @@ import { SpaceService, StudySpace } from '../../core/services/space.service';
             </div>
           </asta-card>
 
+          @if (hasLinks()) {
+            <asta-card class="block motion-card-reveal motion-row-3">
+              <p class="kicker mb-2">Generated from this space</p>
+              <div class="link-chips">
+                @for (id of space()!.linkedFlowIds; track id; let i = $index) {
+                  <button class="link-chip" (click)="jump(['/app/flows', id])">🧭 Flow {{ i + 1 }}</button>
+                }
+                @for (id of space()!.linkedQuizIds; track id; let i = $index) {
+                  <button class="link-chip" (click)="jumpQuiz(id)">✓ Quiz {{ i + 1 }}</button>
+                }
+                @for (id of space()!.linkedVisualIds; track id; let i = $index) {
+                  <button class="link-chip" (click)="jump(['/app/visuals', id])">◈ Map {{ i + 1 }}</button>
+                }
+              </div>
+            </asta-card>
+          }
+
           <asta-card class="block motion-card-reveal motion-row-3">
             <p class="kicker mb-2">Generate</p>
             <div class="grid gap-2">
@@ -102,6 +119,9 @@ import { SpaceService, StudySpace } from '../../core/services/space.service';
       .src-type { display: block; font-size: 10px; color: var(--text-mute); text-transform: uppercase; }
       .x { border: none; background: transparent; color: var(--text-mute); cursor: pointer; }
       .x:hover { color: var(--danger, #ff5d5d); }
+      .link-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+      .link-chip { font-size: 12px; padding: 5px 11px; border-radius: 999px; border: 1px solid var(--paper-3); background: var(--paper-2); color: var(--text-soft); cursor: pointer; transition: border-color .15s, color .15s; }
+      .link-chip:hover { border-color: var(--green); color: var(--green-deep); }
     `,
   ],
 })
@@ -185,6 +205,13 @@ export class SpaceDetailComponent {
     if (this.tts.speaking()) { this.tts.cancel(); return; }
     this.tts.speak(script);
   }
+
+  hasLinks(): boolean {
+    const s = this.space();
+    return !!s && (s.linkedFlowIds.length + s.linkedQuizIds.length + s.linkedVisualIds.length) > 0;
+  }
+  jump(commands: string[]): void { this.router.navigate(commands); }
+  jumpQuiz(quizId: string): void { this.router.navigate(['/app/quizzes'], { queryParams: { quizId } }); }
 
   remove(): void {
     this.api.remove(this.id()).subscribe({ next: () => { this.toast.success('Space deleted'); this.router.navigate(['/app/spaces']); }, error: () => this.toast.error('Could not delete') });
