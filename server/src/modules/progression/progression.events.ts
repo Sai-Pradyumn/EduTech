@@ -4,6 +4,7 @@ export const PROGRESSION_EVENTS = {
   quizGraded: 'progression.quiz.graded',
   weekCompleted: 'progression.roadmap.week_completed',
   projectSubmitted: 'progression.project.submitted',
+  flowRepairCompleted: 'progression.flow.repair_completed',
 } as const;
 
 export interface QuizGradedEvent {
@@ -28,4 +29,11 @@ export interface ProjectSubmittedEvent {
   userId: string;
   projectId: string;
   projectTitle: string;
+}
+
+/** A flow's weak-area-repair node was mastered — Mistake OS closes the matching gap. */
+export interface FlowRepairCompletedEvent {
+  userId: string;
+  concept: string;
+  flowTitle: string;
 }

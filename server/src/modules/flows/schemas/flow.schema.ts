@@ -96,6 +96,8 @@ export class FlowNode {
   resources!: { label: string; url?: string; kind?: string }[];
   /** Hints the executing agent should use when this node is started. */
   @Prop({ type: [String], default: [] }) agentHints!: string[];
+  /** Learner's private journal note for this node ("struggled here", "revisit"). */
+  @Prop({ default: '' }) notes!: string;
 
   // Cross-module links (Phase 8 data relationships).
   @Prop() linkedRoadmapId?: string;
@@ -104,6 +106,9 @@ export class FlowNode {
   @Prop({ type: [String], default: [] }) linkedKnowledgeDocumentIds!: string[];
   @Prop({ type: [String], default: [] }) linkedVisualAssetIds!: string[];
   @Prop({ type: [String], default: [] }) linkedVoiceSessionIds!: string[];
+
+  /** For weak_area_repair nodes: the originating concept, so mastering it closes the Mistake OS gap. */
+  @Prop() repairConcept?: string;
 }
 const FlowNodeSchema = SchemaFactory.createForClass(FlowNode);
 
@@ -162,6 +167,9 @@ export class Flow {
   timeline!: FlowTimelineBucket[];
 
   @Prop({ default: 0, min: 0, max: 100 }) progressPercentage!: number;
+
+  /** When the flow first reached 'completed' (time-to-mastery). */
+  @Prop() completedAt?: Date;
 
   /** Free-form metadata (target role, stack, daily minutes, weak areas snapshot). */
   @Prop({ type: Object, default: {} }) metadata!: Record<string, unknown>;

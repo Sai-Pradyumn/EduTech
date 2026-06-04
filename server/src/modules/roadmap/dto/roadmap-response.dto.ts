@@ -7,6 +7,12 @@ import {
 } from '../types/generated-roadmap.types';
 import { RoadmapDocument } from '../schemas/roadmap.schema';
 
+export interface RoadmapActivityEntry {
+  at: string;
+  kind: string;
+  label: string;
+}
+
 export interface RoadmapResponse {
   id: string;
   userId: string;
@@ -25,6 +31,7 @@ export interface RoadmapResponse {
   progressPercentage: number;
   completedWeeks: number[];
   completedTasks: string[];
+  activity: RoadmapActivityEntry[];
   createdAt: string;
   updatedAt: string;
 }
@@ -63,6 +70,14 @@ export function toRoadmapResponse(doc: RoadmapDocument): RoadmapResponse {
     progressPercentage: doc.progressPercentage,
     completedWeeks: doc.completedWeeks,
     completedTasks: doc.completedTasks,
+    activity: (doc.activity ?? []).map((a) => ({
+      at:
+        a.at instanceof Date
+          ? a.at.toISOString()
+          : new Date(a.at).toISOString(),
+      kind: a.kind,
+      label: a.label,
+    })),
     createdAt: d.createdAt?.toISOString(),
     updatedAt: d.updatedAt?.toISOString(),
   };

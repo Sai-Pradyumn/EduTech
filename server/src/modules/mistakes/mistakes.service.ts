@@ -5,6 +5,7 @@ import { Model, Types } from 'mongoose';
 import {
   PROGRESSION_EVENTS,
   QuizGradedEvent,
+  FlowRepairCompletedEvent,
 } from '../progression/progression.events';
 import { FlowsService } from '../flows/flows.service';
 import { LedgerService } from '../ledger/ledger.service';
@@ -48,6 +49,39 @@ export class MistakesService {
     }
   }
 
+  /** Close the loop: a mastered flow repair node resolves the matching open/repairing gap(s). */
+  @OnEvent(PROGRESSION_EVENTS.flowRepairCompleted)
+  async onFlowRepairCompleted(ev: FlowRepairCompletedEvent): Promise<void> {
+    try {
+      const target = ev.concept.trim().toLowerCase();
+      if (!target) return;
+      const open = await this.model
+        .find({
+          user: new Types.ObjectId(ev.userId),
+          status: { $in: ['open', 'repairing'] },
+        })
+        .exec();
+      const matches = open.filter((m) => {
+        const c = m.concept.toLowerCase();
+        return c === target || c.includes(target) || target.includes(c);
+      });
+      for (const m of matches) {
+        m.status = 'resolved';
+        m.resolvedAt = new Date();
+        m.nextReviewAt = undefined;
+        m.severity = Math.max(0, m.severity - 20);
+        await m.save();
+        await this.ledger.record(ev.userId, {
+          kind: 'mistake_resolved',
+          title: `Resolved: ${m.concept}`,
+          detail: `Mastered the repair node in flow "${ev.flowTitle}".`,
+        });
+      }
+    } catch (err) {
+      this.logger.warn(`Flow-repair closure failed: ${(err as Error).message}`);
+    }
+  }
+
   /** Create or strengthen a mistake entry for a concept (dedupes by concept, increments frequency). */
   private async upsert(
     userId: string,
@@ -71,6 +105,9 @@ export class MistakesService {
       existing.severity = Math.round((existing.severity + severity) / 2);
       existing.mistakeType = severityToType(existing.severity);
       existing.lastSeenAt = new Date();
+      // It resurfaced — bring the spaced review forward and shorten the interval.
+      existing.reviewInterval = 1;
+      existing.nextReviewAt = new Date();
       if (existing.status === 'resolved') {
         existing.status = 'open'; // it came back — reopen
         existing.resolvedAt = undefined;
@@ -88,8 +125,17 @@ export class MistakesService {
       sourceId,
       status: 'open',
       lastSeenAt: new Date(),
+      // First review is due ~a day out, then it spaces out with each recall.
+      reviewInterval: 1,
+      reviewEase: 2.3,
+      reviewCount: 0,
+      nextReviewAt: this.addDays(new Date(), 1),
       linkedQuizId: source === 'quiz' ? sourceId : undefined,
     });
+  }
+
+  private addDays(from: Date, days: number): Date {
+    return new Date(from.getTime() + days * 24 * 60 * 60 * 1000);
   }
 
   captureManual(
@@ -127,10 +173,30 @@ export class MistakesService {
     return m;
   }
 
+  /**
+   * Concepts due for a spaced review now: unresolved entries whose nextReviewAt
+   * has passed (legacy rows with no date count as due). Hardest first.
+   */
+  due(userId: string): Promise<MistakeDocument[]> {
+    return this.model
+      .find({
+        user: new Types.ObjectId(userId),
+        status: { $ne: 'resolved' },
+        $or: [
+          { nextReviewAt: { $lte: new Date() } },
+          { nextReviewAt: { $exists: false } },
+          { nextReviewAt: null },
+        ],
+      })
+      .sort({ severity: -1, nextReviewAt: 1 })
+      .exec();
+  }
+
   async stats(userId: string): Promise<{
     open: number;
     repairing: number;
     resolved: number;
+    due: number;
     avgSeverity: number;
     topFocus: { id: string; concept: string; severity: number } | null;
     heatmap: {
@@ -146,6 +212,12 @@ export class MistakesService {
     const open = all.filter((m) => m.status === 'open');
     const repairing = all.filter((m) => m.status === 'repairing');
     const resolved = all.filter((m) => m.status === 'resolved');
+    const now = Date.now();
+    const due = all.filter(
+      (m) =>
+        m.status !== 'resolved' &&
+        (!m.nextReviewAt || m.nextReviewAt.getTime() <= now),
+    );
     const unresolved = [...open, ...repairing].sort(
       (a, b) => b.severity - a.severity,
     );
@@ -159,6 +231,7 @@ export class MistakesService {
       open: open.length,
       repairing: repairing.length,
       resolved: resolved.length,
+      due: due.length,
       avgSeverity,
       topFocus: top
         ? { id: String(top._id), concept: top.concept, severity: top.severity }
@@ -202,6 +275,66 @@ export class MistakesService {
         kind: 'mistake_resolved',
         title: `Resolved: ${m.concept}`,
         detail: `Closed a ${m.mistakeType.replace('_', ' ')} gap.`,
+      });
+    }
+    return saved;
+  }
+
+  /**
+   * Record a spaced-review attempt and reschedule (SM-2-lite). A recall lengthens
+   * the interval and eases the severity; a lapse resets the interval, lowers ease,
+   * and bumps severity. A concept reviewed well enough auto-resolves.
+   */
+  async review(
+    userId: string,
+    id: string,
+    recalled: boolean,
+  ): Promise<MistakeDocument> {
+    const m = await this.get(userId, id);
+    const now = new Date();
+    m.lastReviewedAt = now;
+    m.reviewCount = (m.reviewCount ?? 0) + 1;
+
+    if (recalled) {
+      m.reviewEase = Math.min(3, (m.reviewEase ?? 2.3) + 0.1);
+      m.reviewInterval = Math.max(
+        1,
+        Math.round((m.reviewInterval ?? 1) * m.reviewEase),
+      );
+      m.severity = Math.max(0, m.severity - 8);
+      // Recalled comfortably a few times and no longer severe → consider it closed.
+      if (m.reviewCount >= 3 && m.severity <= 15) {
+        return this.resolveViaReview(userId, m);
+      }
+    } else {
+      m.reviewEase = Math.max(1.3, (m.reviewEase ?? 2.3) - 0.2);
+      m.reviewInterval = 1;
+      m.severity = Math.min(100, m.severity + 6);
+      m.mistakeType = severityToType(m.severity);
+      if (m.status === 'resolved') {
+        m.status = 'open';
+        m.resolvedAt = undefined;
+      }
+    }
+    m.nextReviewAt = this.addDays(now, m.reviewInterval);
+    return m.save();
+  }
+
+  /** Resolve a mistake reached through a successful review streak (records to the Ledger). */
+  private async resolveViaReview(
+    userId: string,
+    m: MistakeDocument,
+  ): Promise<MistakeDocument> {
+    const wasResolved = m.status === 'resolved';
+    m.status = 'resolved';
+    m.resolvedAt = new Date();
+    m.nextReviewAt = undefined;
+    const saved = await m.save();
+    if (!wasResolved) {
+      await this.ledger.record(userId, {
+        kind: 'mistake_resolved',
+        title: `Resolved: ${m.concept}`,
+        detail: `Recalled reliably across spaced reviews.`,
       });
     }
     return saved;

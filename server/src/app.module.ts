@@ -12,6 +12,7 @@ import { RolesGuard } from './common/guards/roles.guard';
 import { PermissionsGuard } from './common/guards/permissions.guard';
 import { HealthController } from './health.controller';
 import { AuthModule } from './modules/auth/auth.module';
+import { MailerModule } from './modules/mailer/mailer.module';
 import { UsersModule } from './modules/users/users.module';
 import { TenancyModule } from './modules/tenancy/tenancy.module';
 import { StudentProfileModule } from './modules/student-profile/student-profile.module';
@@ -60,6 +61,9 @@ import { MarketplaceModule } from './modules/marketplace/marketplace.module';
 import { InstitutionModule } from './modules/institution/institution.module';
 import { PrivacyModule } from './modules/privacy/privacy.module';
 import { NudgesModule } from './modules/nudges/nudges.module';
+import { PracticeModule } from './modules/practice/practice.module';
+import { MemoryModule } from './modules/memory/memory.module';
+import { CognitiveGuardianModule } from './modules/cognitive-guardian/cognitive-guardian.module';
 import { EntitlementsModule } from './modules/entitlements/entitlements.module';
 import { FeatureFlagsModule } from './modules/feature-flags/feature-flags.module';
 import { OpsModule } from './modules/ops/ops.module';
@@ -85,6 +89,7 @@ import { SocketsModule } from './sockets/sockets.module';
     }),
     EventEmitterModule.forRoot(),
     DatabaseModule,
+    MailerModule,
     OpsModule,
     AuditModule,
     EntitlementsModule,
@@ -147,6 +152,9 @@ import { SocketsModule } from './sockets/sockets.module';
     InstitutionModule,
     PrivacyModule,
     NudgesModule,
+    PracticeModule,
+    MemoryModule,
+    CognitiveGuardianModule,
     SocketsModule,
   ],
   controllers: [HealthController],

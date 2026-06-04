@@ -1,10 +1,15 @@
 import { Module } from '@nestjs/common';
+import { MongooseModule } from '@nestjs/mongoose';
 import { LearningIntelligenceModule } from '../learning-intelligence/learning-intelligence.module';
 import { MistakesModule } from '../mistakes/mistakes.module';
 import { FlowsModule } from '../flows/flows.module';
 import { StudentProfileModule } from '../student-profile/student-profile.module';
 import { SkillTwinController } from './skill-twin.controller';
 import { SkillTwinService } from './skill-twin.service';
+import {
+  SkillTwinSnapshot,
+  SkillTwinSnapshotSchema,
+} from './schemas/skill-twin-snapshot.schema';
 
 /**
  * Phase 8 · Skill Twin — a live, explainable learner model. Read-only: blends the
@@ -15,6 +20,9 @@ import { SkillTwinService } from './skill-twin.service';
  */
 @Module({
   imports: [
+    MongooseModule.forFeature([
+      { name: SkillTwinSnapshot.name, schema: SkillTwinSnapshotSchema },
+    ]),
     LearningIntelligenceModule,
     MistakesModule,
     FlowsModule,

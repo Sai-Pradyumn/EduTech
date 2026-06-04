@@ -230,11 +230,13 @@ export function buildVisual(input: VisualGenInput): GeneratedVisual {
     }
 
     const graph: VisualGraph = { layout, nodes, edges };
+    const mermaid = graphToMermaid(type, graph, subject);
     return {
       type,
-      contentFormat: 'jsonGraph',
-      content: JSON.stringify(graph),
-      mermaid: graphToMermaid(type, graph, subject),
+      // Mermaid renders as a real diagram client-side; jsonGraph is kept in metadata as a fallback.
+      contentFormat: 'mermaid',
+      content: mermaid,
+      mermaid,
       caption: `${capitalize(typeLabel(type))} of ${subject}.`,
       howToRead:
         layout === 'radial'
@@ -243,25 +245,31 @@ export function buildVisual(input: VisualGenInput): GeneratedVisual {
             ? 'Read top to bottom: each layer depends on the one above it. Requests flow down, data flows back up.'
             : 'Follow the arrows in order — each step builds on the previous one.',
       thumbnail,
-      metadata: { ...baseMeta, layout },
+      metadata: { ...baseMeta, layout, jsonGraph: JSON.stringify(graph) },
     };
   }
 
-  // ── illustration / analogy (mock image) ──
+  // ── illustration / analogy: a real mind-map diagram (no crude mock SVG) ──
   if (type === 'illustration' || type === 'analogy') {
+    const parts = conceptParts(subject);
+    const mermaid = [
+      'mindmap',
+      `  root((${esc(subject)}))`,
+      ...parts.map((p) => `    ${esc(p)}`),
+    ].join('\n');
     return {
       type,
-      contentFormat: 'imageUrl',
-      content: illustrationDataUri(subject, accent),
-      mermaid: '',
+      contentFormat: 'mermaid',
+      content: mermaid,
+      mermaid,
       caption:
         type === 'analogy'
-          ? `An analogy to picture ${subject}.`
-          : `A generated illustration of ${subject}.`,
+          ? `An analogy map for ${subject}.`
+          : `A concept map of ${subject}.`,
       howToRead:
-        'A pictorial aid — use it as a memory hook, not a precise diagram.',
+        'Start at the centre and read each branch outward — a memory hook for the whole idea.',
       thumbnail,
-      metadata: { ...baseMeta, note: 'mock image provider' },
+      metadata: baseMeta,
     };
   }
 

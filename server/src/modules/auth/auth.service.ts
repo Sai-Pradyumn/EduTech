@@ -1,4 +1,5 @@
 import {
+  ForbiddenException,
   Injectable,
   UnauthorizedException,
   ConflictException,
@@ -9,9 +10,14 @@ import * as bcrypt from 'bcryptjs';
 import { AppConfig } from '../../config/configuration';
 import { JwtPayload } from '../../common/interfaces';
 import { OrgRole, Role } from '../../common/enums';
+import {
+  getAllowedEmailDomains,
+  isAllowedEmailDomain,
+} from '../../common/util/email-domains';
 import { UsersService } from '../users/users.service';
 import { UserDocument } from '../users/schemas/user.schema';
 import { LoginDto, RegisterDto } from './dto/auth.dto';
+import { OtpService } from './otp.service';
 
 export interface AuthTokens {
   accessToken: string;
@@ -33,6 +39,11 @@ export interface AuthResult extends AuthTokens {
   user: PublicUser;
 }
 
+export interface PendingVerification {
+  pendingVerification: true;
+  email: string;
+}
+
 const SALT_ROUNDS = 10;
 
 @Injectable()
@@ -41,23 +52,73 @@ export class AuthService {
     private readonly users: UsersService,
     private readonly jwt: JwtService,
     private readonly config: ConfigService<AppConfig, true>,
+    private readonly otp: OtpService,
   ) {}
 
-  async register(dto: RegisterDto): Promise<AuthResult> {
-    const existing = await this.users.findByEmail(dto.email);
-    if (existing)
-      throw new ConflictException('An account with this email already exists');
+  /** The configured email-domain allowlist (env EMAIL_ALLOWED_DOMAINS, or defaults). */
+  allowedDomains(): string[] {
+    return getAllowedEmailDomains(process.env.EMAIL_ALLOWED_DOMAINS);
+  }
 
+  private assertAllowedDomain(email: string): void {
+    if (!isAllowedEmailDomain(email, this.allowedDomains())) {
+      throw new ForbiddenException(
+        `Sign-ups are limited to: ${this.allowedDomains().join(', ')}`,
+      );
+    }
+  }
+
+  /** Step 1 of signup: validate the domain, create an UNVERIFIED account, and email an OTP.
+   *  Returns no tokens — the client must verify the code via verifyOtp(). */
+  async register(dto: RegisterDto): Promise<PendingVerification> {
+    this.assertAllowedDomain(dto.email);
+    const existing = await this.users.findByEmail(dto.email);
     const passwordHash = await bcrypt.hash(dto.password, SALT_ROUNDS);
-    const user = await this.users.create({
-      name: dto.name,
-      email: dto.email,
-      passwordHash,
-    });
+
+    if (existing) {
+      if (existing.emailVerified) {
+        throw new ConflictException(
+          'An account with this email already exists',
+        );
+      }
+      // Unverified re-registration — refresh the password and re-send the code.
+      await this.users.setPasswordHash(existing.id, passwordHash);
+    } else {
+      await this.users.create({
+        name: dto.name,
+        email: dto.email,
+        passwordHash,
+        emailVerified: false,
+      });
+    }
+
+    await this.otp.issue(dto.email);
+    return { pendingVerification: true, email: dto.email.toLowerCase() };
+  }
+
+  /** Step 2 of signup: verify the OTP, mark the account verified, and issue a session. */
+  async verifyOtp(email: string, code: string): Promise<AuthResult> {
+    const user = await this.users.findByEmail(email);
+    if (!user) throw new UnauthorizedException('No account for this email.');
+    await this.otp.verify(email, code);
+    await this.users.setEmailVerified(user.id);
+    await this.users.touchLastActive(user.id);
     return this.issueSession(user);
   }
 
-  async login(dto: LoginDto): Promise<AuthResult> {
+  /** Re-send a signup OTP (cooldown enforced in OtpService). */
+  async resendOtp(email: string): Promise<{ sent: true }> {
+    const user = await this.users.findByEmail(email);
+    if (user && user.emailVerified) {
+      throw new ConflictException(
+        'This email is already verified — just log in.',
+      );
+    }
+    await this.otp.issue(email);
+    return { sent: true };
+  }
+
+  async login(dto: LoginDto): Promise<AuthResult | PendingVerification> {
     const user = await this.users.findByEmailWithSecret(dto.email);
     if (!user) throw new UnauthorizedException('Invalid email or password');
 
@@ -67,6 +128,13 @@ export class AuthService {
       );
     const ok = await bcrypt.compare(dto.password, user.passwordHash);
     if (!ok) throw new UnauthorizedException('Invalid email or password');
+
+    // TEMP (see TODO-REVOKE-OTP-SKIP.md): OTP-after-password step disabled.
+    // Unverified email signup → re-send a code and tell the client to show the OTP step.
+    // if (user.emailVerified === false) {
+    //   await this.otp.issue(user.email).catch(() => undefined);
+    //   return { pendingVerification: true, email: user.email };
+    // }
 
     await this.users.touchLastActive(user.id);
     return this.issueSession(user);
@@ -79,6 +147,7 @@ export class AuthService {
     name: string;
     avatarUrl?: string;
   }): Promise<AuthResult> {
+    this.assertAllowedDomain(profile.email);
     const user = await this.users.findOrCreateGoogle(profile);
     await this.users.touchLastActive(user.id);
     return this.issueSession(user);

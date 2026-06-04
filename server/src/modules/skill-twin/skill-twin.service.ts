@@ -1,4 +1,6 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
+import { InjectModel } from '@nestjs/mongoose';
+import { Model, Types } from 'mongoose';
 import { LearningIntelligenceService } from '../learning-intelligence/learning-intelligence.service';
 import { MistakesService } from '../mistakes/mistakes.service';
 import { FlowsService } from '../flows/flows.service';
@@ -7,6 +9,10 @@ import {
   MistakeDocument,
   MistakeType,
 } from '../mistakes/schemas/mistake.schema';
+import {
+  SkillTwinSnapshot,
+  SkillTwinSnapshotDocument,
+} from './schemas/skill-twin-snapshot.schema';
 
 export type Modality =
   | 'read'
@@ -25,6 +31,32 @@ export interface TwinAction {
   route: string;
   modality: Modality;
   kind: 'repair' | 'flow' | 'quiz' | 'project' | 'visual' | 'voice' | 'explore';
+}
+
+/** One day's scalar snapshot, for the readiness/health/risk trend. */
+export interface SkillTwinTrendPoint {
+  at: string;
+  readiness: number;
+  health: number;
+  retentionRisk: number;
+  burnoutRisk: number;
+}
+
+/** A cross-signal advisory (e.g. "ahead, but retention risk is high"). */
+export interface SkillTwinAdvisory {
+  tone: 'positive' | 'warning' | 'info';
+  text: string;
+}
+
+/** Plain (lean) shape of a persisted snapshot row. */
+interface SnapshotLean {
+  _id: Types.ObjectId;
+  at: Date;
+  readiness: number;
+  health: number;
+  retentionRisk: number;
+  burnoutRisk: number;
+  pace: string;
 }
 
 export interface SkillTwin {
@@ -54,6 +86,12 @@ export interface SkillTwin {
   }[];
   nextBestActions: TwinAction[];
   signals: { label: string; detail: string }[];
+  /** Recent daily snapshots (oldest → newest) for sparkline trends. */
+  trend: SkillTwinTrendPoint[];
+  /** Readiness change across the trend window (null until ≥2 snapshots). */
+  readinessDelta: number | null;
+  /** Cross-signal advisories surfacing conflicts/insights. */
+  advisories: SkillTwinAdvisory[];
 }
 
 const LEARNING_STYLE_MODALITY: Record<string, Modality> = {
@@ -72,11 +110,15 @@ const LEARNING_STYLE_MODALITY: Record<string, Modality> = {
  */
 @Injectable()
 export class SkillTwinService {
+  private readonly logger = new Logger(SkillTwinService.name);
+
   constructor(
     private readonly li: LearningIntelligenceService,
     private readonly mistakes: MistakesService,
     private readonly flows: FlowsService,
     private readonly profiles: StudentProfileService,
+    @InjectModel(SkillTwinSnapshot.name)
+    private readonly snapshots: Model<SkillTwinSnapshotDocument>,
   ) {}
 
   async compute(userId: string): Promise<SkillTwin> {
@@ -160,6 +202,23 @@ export class SkillTwinService {
       modality,
     );
 
+    // Persist a daily snapshot (best-effort) and load the trend window.
+    const { trend, readinessDelta } = await this.recordAndTrend(userId, {
+      hasData: overview.hasData,
+      readiness,
+      health: overview.healthScore,
+      retentionRisk,
+      burnoutRisk,
+      pace,
+    });
+    const advisories = this.buildAdvisories({
+      pace,
+      retentionRisk,
+      burnoutRisk,
+      readinessDelta,
+      openCount: openMistakes.length,
+    });
+
     const signals: SkillTwin['signals'] = [
       {
         label: 'Quizzes',
@@ -202,7 +261,140 @@ export class SkillTwinService {
       misconceptionMemory,
       nextBestActions,
       signals,
+      trend,
+      readinessDelta,
+      advisories,
     };
+  }
+
+  private dayKey(d: Date): string {
+    return `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
+  }
+
+  private toTrendPoint(s: {
+    at: Date | string;
+    readiness: number;
+    health: number;
+    retentionRisk: number;
+    burnoutRisk: number;
+  }): SkillTwinTrendPoint {
+    const at =
+      s.at instanceof Date ? s.at.toISOString() : new Date(s.at).toISOString();
+    return {
+      at,
+      readiness: s.readiness,
+      health: s.health,
+      retentionRisk: s.retentionRisk,
+      burnoutRisk: s.burnoutRisk,
+    };
+  }
+
+  /**
+   * Upsert today's snapshot (one per day; updated to the latest values if the day
+   * already has one) and return the most recent window as a trend. Best-effort:
+   * any failure just yields an empty trend so the twin still renders.
+   */
+  private async recordAndTrend(
+    userId: string,
+    scalars: {
+      hasData: boolean;
+      readiness: number;
+      health: number;
+      retentionRisk: number;
+      burnoutRisk: number;
+      pace: string;
+    },
+  ): Promise<{ trend: SkillTwinTrendPoint[]; readinessDelta: number | null }> {
+    try {
+      const uid = new Types.ObjectId(userId);
+      const recent = await this.snapshots
+        .find({ user: uid })
+        .sort({ at: -1 })
+        .limit(30)
+        .lean<SnapshotLean[]>()
+        .exec();
+
+      // Only record once the twin actually has data to model.
+      if (scalars.hasData) {
+        const now = new Date();
+        const latest = recent[0];
+        const fields = {
+          readiness: scalars.readiness,
+          health: scalars.health,
+          retentionRisk: scalars.retentionRisk,
+          burnoutRisk: scalars.burnoutRisk,
+          pace: scalars.pace,
+        };
+        if (!latest || this.dayKey(new Date(latest.at)) !== this.dayKey(now)) {
+          const created = await this.snapshots.create({
+            user: uid,
+            at: now,
+            ...fields,
+          });
+          recent.unshift(created.toObject());
+        } else {
+          await this.snapshots
+            .updateOne({ _id: latest._id }, { $set: { ...fields, at: now } })
+            .exec();
+          recent[0] = { ...latest, ...fields, at: now };
+        }
+      }
+
+      const trend = recent
+        .slice(0, 14)
+        .reverse()
+        .map((s) => this.toTrendPoint(s));
+      const readinessDelta =
+        trend.length >= 2
+          ? trend[trend.length - 1].readiness - trend[0].readiness
+          : null;
+      return { trend, readinessDelta };
+    } catch (err) {
+      this.logger.warn(`Skill Twin trend failed: ${(err as Error).message}`);
+      return { trend: [], readinessDelta: null };
+    }
+  }
+
+  /** Surface cross-signal conflicts/insights the single scores can hide. */
+  private buildAdvisories(v: {
+    pace: SkillTwin['pace'];
+    retentionRisk: number;
+    burnoutRisk: number;
+    readinessDelta: number | null;
+    openCount: number;
+  }): SkillTwinAdvisory[] {
+    const out: SkillTwinAdvisory[] = [];
+    if (v.burnoutRisk >= 70)
+      out.push({
+        tone: 'warning',
+        text: 'High burnout risk — a lighter day or a short break will protect your momentum.',
+      });
+    if (v.pace === 'ahead' && v.retentionRisk >= 60)
+      out.push({
+        tone: 'warning',
+        text: "You're ahead of pace, but retention risk is high — a quick revision pass keeps your lead from fading.",
+      });
+    else if (v.retentionRisk >= 70)
+      out.push({
+        tone: 'warning',
+        text: "You've been away a while — concepts may be fading. A light revision re-warms them.",
+      });
+    if (v.readinessDelta !== null && v.readinessDelta >= 5)
+      out.push({
+        tone: 'positive',
+        text: `Readiness is up ${v.readinessDelta} points lately — your routine is working.`,
+      });
+    else if (v.readinessDelta !== null && v.readinessDelta <= -5)
+      out.push({
+        tone: 'warning',
+        text: `Readiness slipped ${Math.abs(v.readinessDelta)} points recently — worth a focused session.`,
+      });
+    if (v.pace === 'behind' && v.burnoutRisk <= 30 && v.openCount > 0)
+      out.push({
+        tone: 'info',
+        text: 'Behind pace but plenty of capacity — a focused push on your top gap closes ground fast.',
+      });
+    return out.slice(0, 3);
   }
 
   /** Adaptive Modality Router: choose how the learner should study next, with a reason. */

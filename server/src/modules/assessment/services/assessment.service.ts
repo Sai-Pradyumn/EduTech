@@ -341,6 +341,24 @@ export class AssessmentService {
     return attempts.map((a) => this.toAttemptView(a));
   }
 
+  /** All attempts for a single quiz, newest first — powers the per-quiz trend. */
+  async attemptsForQuiz(
+    userId: string,
+    quizId: string,
+  ): Promise<AttemptView[]> {
+    if (!Types.ObjectId.isValid(quizId)) return [];
+    const attempts = await this.attempts
+      .find({
+        user: new Types.ObjectId(userId),
+        quiz: new Types.ObjectId(quizId),
+      })
+      .sort({ createdAt: -1 })
+      .limit(50)
+      .lean<QuizAttemptDocument[]>()
+      .exec();
+    return attempts.map((a) => this.toAttemptView(a));
+  }
+
   async stats(userId: string): Promise<{
     quizzes: number;
     attempts: number;

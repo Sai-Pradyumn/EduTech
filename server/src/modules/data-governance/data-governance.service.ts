@@ -1,8 +1,10 @@
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable, Logger } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
+import { Model, Types } from 'mongoose';
 import { AuditService } from '../audit/audit.service';
 import { JobQueueService } from '../queue/job-queue.service';
+import { PrivacyService } from '../privacy/privacy.service';
+import { FILE_STORAGE_TOKEN, IFileStorage } from '../rag/storage/file-storage';
 import { DataJob, DataJobDocument } from './schemas/data-job.schema';
 
 /** Default retention windows (days). Surfaced to admins; enforcement is a future job. */
@@ -17,12 +19,51 @@ export const RETENTION_POLICY = {
 
 @Injectable()
 export class DataGovernanceService {
+  private readonly log = new Logger(DataGovernanceService.name);
+
   constructor(
     @InjectModel(DataJob.name)
     private readonly jobs: Model<DataJobDocument>,
     private readonly audit: AuditService,
     private readonly queue: JobQueueService,
+    private readonly privacy: PrivacyService,
+    @Inject(FILE_STORAGE_TOKEN) private readonly storage: IFileStorage,
   ) {}
+
+  /**
+   * Build the owner's export, persist it via file storage, and mark the DataJob ready. Invoked
+   * by the queue worker for the `data.export` job (ENABLE_BULLMQ=true). Idempotent and safe to
+   * re-run; the on-demand `/privacy/export` endpoint serves the same data when the queue is off.
+   */
+  async processExport(jobId: string): Promise<{ ok: boolean }> {
+    if (!Types.ObjectId.isValid(jobId)) return { ok: false };
+    const job = await this.jobs.findById(jobId).exec();
+    if (!job || job.kind !== 'export') return { ok: false };
+    try {
+      const payload =
+        job.ownerType === 'user'
+          ? await this.privacy.exportData(job.ownerId)
+          : {
+              exportedAt: new Date().toISOString(),
+              ownerType: 'org',
+              ownerId: job.ownerId,
+            };
+      const key = `exports/${jobId}.json`;
+      await this.storage.save(
+        key,
+        Buffer.from(JSON.stringify(payload, null, 2)),
+      );
+      job.status = 'ready';
+      await job.save();
+      this.log.debug(`export ${jobId} written to ${this.storage.name}:${key}`);
+      return { ok: true };
+    } catch (err) {
+      job.status = 'failed';
+      await job.save();
+      this.log.warn(`export ${jobId} failed: ${(err as Error).message}`);
+      throw err;
+    }
+  }
 
   /** Create an export job. Marked ready immediately in dev (no queue); a heavy export
    *  would be processed by a worker and `fileUrl` filled in asynchronously. */

@@ -123,4 +123,5 @@ export class UpdateNodeDto {
   @IsOptional() @IsArray() @IsString({ each: true }) prerequisites?: string[];
   @IsOptional() @IsString() linkedQuizId?: string;
   @IsOptional() @IsString() linkedProjectId?: string;
+  @IsOptional() @IsString() @MaxLength(2000) notes?: string;
 }

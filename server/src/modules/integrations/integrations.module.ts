@@ -8,8 +8,10 @@ import {
 } from './schemas/integration.schema';
 import { IntegrationsController } from './integrations.controller';
 import { IntegrationsService } from './integrations.service';
+import { GoogleCalendarService } from './google-calendar.service';
 
-/** Integrations foundation (Phase 10 · M12). Mock/manual/export connectors are local-safe. */
+/** Integrations foundation (Phase 10 · M12). Webhook/manual/csv/export connectors are
+ *  fully functional; Google Calendar OAuth activates when Google credentials are configured. */
 @Module({
   imports: [
     MongooseModule.forFeature([
@@ -18,7 +20,7 @@ import { IntegrationsService } from './integrations.service';
     ]),
   ],
   controllers: [IntegrationsController],
-  providers: [IntegrationsService],
+  providers: [IntegrationsService, GoogleCalendarService],
   exports: [IntegrationsService],
 })
 export class IntegrationsModule {}

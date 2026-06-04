@@ -252,9 +252,15 @@ export class LiveSessionService {
   }
 
   private meetingLink(): string {
-    // Placeholder room link (Meet/Zoom integration is 🧱). Unique-ish without Math.random.
+    // Real, joinable video room on Jitsi Meet — no API key required. Override the base with
+    // JITSI_BASE_URL (e.g. a self-hosted Jitsi) the same way PISTON_URL overrides code-exec.
+    // The `asta-` prefix namespaces the room so it isn't trivially guessable/squatted.
+    const base = (process.env.JITSI_BASE_URL ?? 'https://meet.jit.si').replace(
+      /\/+$/,
+      '',
+    );
     const slug = new Types.ObjectId().toHexString();
-    return `https://meet.asta.dev/room/${slug}`;
+    return `${base}/asta-${slug}`;
   }
 
   private view(s: LiveSessionDocument): SessionView {

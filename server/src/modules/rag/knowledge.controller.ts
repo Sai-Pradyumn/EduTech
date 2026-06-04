@@ -5,6 +5,7 @@ import {
   Delete,
   Get,
   Param,
+  Patch,
   Post,
   UploadedFile,
   UseInterceptors,
@@ -14,8 +15,14 @@ import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { AuthUser } from '../../common/interfaces';
 import { IngestionService } from './services/ingestion.service';
 import { KnowledgeService } from './services/knowledge.service';
+import { KnowledgeQaService } from './services/knowledge-qa.service';
 import { RagAnswerService } from './services/rag-answer.service';
-import { AskDto, UploadTextDto } from './dto/knowledge.dto';
+import {
+  AskDto,
+  SaveQaDto,
+  UpdateDocumentDto,
+  UploadTextDto,
+} from './dto/knowledge.dto';
 
 /** Minimal shape of a Multer file (avoids a hard @types/multer dependency). */
 interface UploadedFileLike {
@@ -36,6 +43,7 @@ export class KnowledgeController {
     private readonly ingestion: IngestionService,
     private readonly knowledge: KnowledgeService,
     private readonly ragAnswer: RagAnswerService,
+    private readonly qa: KnowledgeQaService,
   ) {}
 
   @Post('upload')
@@ -91,6 +99,15 @@ export class KnowledgeController {
     return this.knowledge.get(user.id, id);
   }
 
+  @Patch('documents/:id')
+  update(
+    @CurrentUser() user: AuthUser,
+    @Param('id') id: string,
+    @Body() dto: UpdateDocumentDto,
+  ) {
+    return this.knowledge.update(user.id, id, dto);
+  }
+
   @Delete('documents/:id')
   async remove(@CurrentUser() user: AuthUser, @Param('id') id: string) {
     await this.knowledge.remove(user.id, id);
@@ -113,5 +130,21 @@ export class KnowledgeController {
       userId: user.id,
       documentIds: dto.documentIds,
     });
+  }
+
+  // ── grounded Q&A history (syncs the Hub transcript across devices) ──
+  @Get('qa')
+  listQa(@CurrentUser() user: AuthUser) {
+    return this.qa.list(user.id);
+  }
+
+  @Post('qa')
+  saveQa(@CurrentUser() user: AuthUser, @Body() dto: SaveQaDto) {
+    return this.qa.save(user.id, dto);
+  }
+
+  @Delete('qa')
+  clearQa(@CurrentUser() user: AuthUser) {
+    return this.qa.clear(user.id);
   }
 }

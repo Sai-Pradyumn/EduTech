@@ -13,6 +13,7 @@ import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { AuthUser } from '../../common/interfaces';
 import { RoadmapService } from './roadmap.service';
 import { GenerateRoadmapDto } from './dto/generate-roadmap.dto';
+import { RegenerateWeekDto } from './dto/regenerate-week.dto';
 import { UpdateRoadmapProgressDto } from './dto/update-roadmap-progress.dto';
 import { UpdateRoadmapStatusDto } from './dto/update-roadmap-status.dto';
 import {
@@ -64,6 +65,17 @@ export class RoadmapController {
   ): Promise<RoadmapResponse> {
     return toRoadmapResponse(
       await this.roadmaps.updateProgress(user.id, id, dto),
+    );
+  }
+
+  @Post(':id/regenerate-week')
+  async regenerateWeek(
+    @CurrentUser() user: AuthUser,
+    @Param('id') id: string,
+    @Body() dto: RegenerateWeekDto,
+  ): Promise<RoadmapResponse> {
+    return toRoadmapResponse(
+      await this.roadmaps.regenerateWeek(user.id, id, dto.weekNumber, dto.note),
     );
   }
 

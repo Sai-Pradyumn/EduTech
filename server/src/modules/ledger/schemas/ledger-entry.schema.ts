@@ -26,6 +26,8 @@ export const LEDGER_KINDS = [
   'interview_completed',
   'interview_passed',
   'evidence_added',
+  // ── Practice Studio ──
+  'practice_solved',
 ] as const;
 export type LedgerKind = (typeof LEDGER_KINDS)[number];
 

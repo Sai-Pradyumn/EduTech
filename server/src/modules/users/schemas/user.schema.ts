@@ -41,6 +41,12 @@ export class User {
   @Prop({ type: Types.ObjectId, ref: 'Organization' })
   primaryOrganization?: Types.ObjectId;
 
+  /** Email-OTP verification. New email signups start false until they verify; Google logins
+   *  are true (Google verified the address). Login treats `!== false` as OK so pre-existing
+   *  accounts (no field) are never locked out. */
+  @Prop({ default: false })
+  emailVerified!: boolean;
+
   @Prop({ default: false })
   isOnboarded!: boolean;
 

@@ -110,6 +110,8 @@ export class BillingService {
       currency: string;
       planId: PlanId;
     };
+    /** Redirect-style providers (e.g. Stripe Checkout) return a hosted URL to send the user to. */
+    checkoutUrl?: string;
   }> {
     const plan = planById(planId);
     const session = await this.payment.createCheckout({
@@ -152,6 +154,10 @@ export class BillingService {
               currency: session.currency,
               planId,
             }
+          : undefined,
+      checkoutUrl:
+        session.status === 'pending' && session.checkoutUrl
+          ? session.checkoutUrl
           : undefined,
     };
   }

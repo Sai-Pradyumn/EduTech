@@ -28,3 +28,18 @@ export class RefreshDto {
   @IsString()
   refreshToken!: string;
 }
+
+export class VerifyOtpDto {
+  @IsEmail()
+  email!: string;
+
+  @IsString()
+  @MinLength(6)
+  @MaxLength(6)
+  code!: string;
+}
+
+export class ResendOtpDto {
+  @IsEmail()
+  email!: string;
+}

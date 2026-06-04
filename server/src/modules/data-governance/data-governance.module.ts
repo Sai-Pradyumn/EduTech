@@ -1,5 +1,7 @@
 import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
+import { PrivacyModule } from '../privacy/privacy.module';
+import { fileStorageFactory } from '../rag/storage/file-storage';
 import { DataJob, DataJobSchema } from './schemas/data-job.schema';
 import { DataGovernanceController } from './data-governance.controller';
 import { DataGovernanceService } from './data-governance.service';
@@ -8,9 +10,10 @@ import { DataGovernanceService } from './data-governance.service';
 @Module({
   imports: [
     MongooseModule.forFeature([{ name: DataJob.name, schema: DataJobSchema }]),
+    PrivacyModule,
   ],
   controllers: [DataGovernanceController],
-  providers: [DataGovernanceService],
+  providers: [DataGovernanceService, fileStorageFactory],
   exports: [DataGovernanceService],
 })
 export class DataGovernanceModule {}

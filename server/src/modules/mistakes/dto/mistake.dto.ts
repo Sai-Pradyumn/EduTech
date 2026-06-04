@@ -40,3 +40,8 @@ export class ToggleActionDto {
   @IsString() actionId!: string;
   @IsBoolean() done!: boolean;
 }
+
+/** Outcome of a spaced review prompt: did the learner recall the concept? */
+export class ReviewMistakeDto {
+  @IsBoolean() recalled!: boolean;
+}

@@ -117,6 +117,31 @@ export class ProjectsService {
     return project;
   }
 
+  /** Reorder a task up/down within its own status column by swapping `order` with its neighbour. */
+  async reorderTask(
+    userId: string,
+    id: string,
+    taskId: string,
+    direction: 'up' | 'down',
+  ): Promise<ProjectDocument> {
+    const project = await this.owned(userId, id);
+    const task = project.tasks.find((t) => t.id === taskId);
+    if (!task) throw new NotFoundException('Task not found');
+    const column = project.tasks
+      .filter((t) => t.status === task.status)
+      .sort((a, b) => a.order - b.order);
+    const idx = column.findIndex((t) => t.id === taskId);
+    const neighbour = column[direction === 'up' ? idx - 1 : idx + 1];
+    if (neighbour) {
+      const tmp = task.order;
+      task.order = neighbour.order;
+      neighbour.order = tmp;
+      project.markModified('tasks');
+      await project.save();
+    }
+    return project;
+  }
+
   async addTask(
     userId: string,
     id: string,
@@ -159,6 +184,18 @@ export class ProjectsService {
   ): Promise<ProjectDocument> {
     const project = await this.owned(userId, id);
     project.status = status;
+    await project.save();
+    return project;
+  }
+
+  /** Archive (or restore) a project — keeps history without cluttering the active board. */
+  async setArchived(
+    userId: string,
+    id: string,
+    archived: boolean,
+  ): Promise<ProjectDocument> {
+    const project = await this.owned(userId, id);
+    project.archived = archived;
     await project.save();
     return project;
   }

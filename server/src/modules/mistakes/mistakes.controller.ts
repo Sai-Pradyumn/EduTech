@@ -14,6 +14,7 @@ import { MistakesService } from './mistakes.service';
 import { MistakeDocument, MistakeStatus } from './schemas/mistake.schema';
 import {
   CaptureMistakeDto,
+  ReviewMistakeDto,
   ToggleActionDto,
   UpdateMistakeStatusDto,
 } from './dto/mistake.dto';
@@ -44,6 +45,10 @@ function toView(m: MistakeDocument) {
     linkedVisualId: m.linkedVisualId ?? null,
     lastSeenAt: m.lastSeenAt?.toISOString() ?? null,
     resolvedAt: m.resolvedAt?.toISOString() ?? null,
+    nextReviewAt: m.nextReviewAt?.toISOString() ?? null,
+    reviewInterval: m.reviewInterval ?? 1,
+    reviewCount: m.reviewCount ?? 0,
+    lastReviewedAt: m.lastReviewedAt?.toISOString() ?? null,
     createdAt:
       (m as MistakeDocument & { createdAt?: Date }).createdAt?.toISOString() ??
       '',
@@ -65,6 +70,11 @@ export class MistakesController {
   @Get('stats')
   stats(@CurrentUser() user: AuthUser) {
     return this.mistakes.stats(user.id);
+  }
+
+  @Get('due')
+  async due(@CurrentUser() user: AuthUser) {
+    return (await this.mistakes.due(user.id)).map(toView);
   }
 
   @Get(':id')
@@ -89,6 +99,15 @@ export class MistakesController {
     @Body() dto: UpdateMistakeStatusDto,
   ) {
     return toView(await this.mistakes.updateStatus(user.id, id, dto.status));
+  }
+
+  @Post(':id/review')
+  async review(
+    @CurrentUser() user: AuthUser,
+    @Param('id') id: string,
+    @Body() dto: ReviewMistakeDto,
+  ) {
+    return toView(await this.mistakes.review(user.id, id, dto.recalled));
   }
 
   @Patch(':id/actions')

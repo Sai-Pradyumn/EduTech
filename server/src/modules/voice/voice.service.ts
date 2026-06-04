@@ -99,9 +99,6 @@ export class VoiceService {
   get enabled(): boolean {
     return this.config.get<{ voice?: boolean }>('flags')?.voice !== false;
   }
-  private get realtime(): boolean {
-    return this.config.get<boolean>('flags.realtimeVoice') ?? false;
-  }
 
   status(): {
     enabled: boolean;
@@ -109,11 +106,13 @@ export class VoiceService {
     serverStt: boolean;
     serverTts: boolean;
   } {
+    // A live provider does real server-side TTS; mic STT stays in-browser either way.
+    const live = this.provider.name !== 'mock';
     return {
       enabled: this.enabled,
       provider: this.provider.name,
-      serverStt: this.realtime,
-      serverTts: this.realtime,
+      serverStt: false,
+      serverTts: live,
     };
   }
 

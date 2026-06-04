@@ -153,6 +153,10 @@ export class Project {
 
   @Prop({ default: 0, min: 0, max: 100 })
   progressPercentage!: number;
+
+  /** Archived projects stay in history but are hidden from the active board by default. */
+  @Prop({ default: false })
+  archived!: boolean;
 }
 
 export const ProjectSchema = SchemaFactory.createForClass(Project);

@@ -6,11 +6,28 @@ import {
 import { AgentType } from '../../../common/enums';
 import { AiService } from '../../ai/ai.service';
 import { AIMessage } from '../../ai/interfaces/ai-provider.interface';
-import { GeneratedRoadmap } from '../../roadmap/types/generated-roadmap.types';
+import {
+  GeneratedRoadmap,
+  RoadmapWeek,
+} from '../../roadmap/types/generated-roadmap.types';
 import {
   buildRoadmapBlueprint,
   RoadmapBlueprintInput,
 } from './roadmap-blueprint.generator';
+
+/** Schema for regenerating a single week in place. */
+const WEEK_SCHEMA: Record<string, unknown> = {
+  type: 'object',
+  required: ['title', 'focus', 'topics', 'tasks'],
+  properties: {
+    title: { type: 'string' },
+    focus: { type: 'string' },
+    topics: { type: 'array' },
+    tasks: { type: 'array' },
+    practiceItems: { type: 'array' },
+    expectedOutcome: { type: 'string' },
+  },
+};
 
 /** JSON schema handed to real providers; the mock uses the local blueprint factory. */
 const ROADMAP_SCHEMA: Record<string, unknown> = {
@@ -90,6 +107,89 @@ export class RoadmapAgentService {
     });
 
     return roadmap;
+  }
+
+  /** Regenerate a single week in place — honours an optional adjustment note from the learner. */
+  async regenerateWeek(
+    userId: string,
+    input: RoadmapBlueprintInput,
+    current: RoadmapWeek,
+    note?: string,
+  ): Promise<RoadmapWeek> {
+    const startedAt = Date.now();
+    const messages: AIMessage[] = [
+      {
+        role: 'system',
+        content:
+          "You are Asta's Roadmap Agent. Regenerate ONE week of an existing roadmap. " +
+          'Keep it the same scope/duration but improve or re-angle it. ' +
+          'If an adjustment note is given, honour it. Return strictly the RoadmapWeek JSON shape (no weekNumber).',
+      },
+      {
+        role: 'user',
+        content: JSON.stringify({
+          goal: input.mainGoal,
+          skillLevel: input.currentSkillLevel,
+          weakAreas: input.weakAreas,
+          timePerDay: input.availableTimePerDay,
+          careerTarget: input.careerTarget,
+          currentWeek: current,
+          adjustment: note ?? null,
+        }),
+      },
+    ];
+
+    let week: RoadmapWeek;
+    try {
+      week = await this.ai.generateStructuredOutput<RoadmapWeek>(
+        messages,
+        WEEK_SCHEMA,
+        { mockFactory: () => this.mockWeek(current, note) },
+      );
+    } catch (err) {
+      this.logger.warn(`Week regeneration failed: ${(err as Error).message}`);
+      week = this.mockWeek(current, note);
+    }
+
+    const safe: RoadmapWeek = {
+      weekNumber: current.weekNumber,
+      title: week?.title?.trim() || current.title,
+      focus: week?.focus?.trim() || note || current.focus,
+      topics:
+        Array.isArray(week?.topics) && week.topics.length
+          ? week.topics
+          : current.topics,
+      tasks:
+        Array.isArray(week?.tasks) && week.tasks.length
+          ? week.tasks
+          : current.tasks,
+      practiceItems: Array.isArray(week?.practiceItems)
+        ? week.practiceItems
+        : (current.practiceItems ?? []),
+      expectedOutcome:
+        week?.expectedOutcome?.trim() || current.expectedOutcome || '',
+    };
+
+    await this.ai.logUsage({
+      userId,
+      agentType: this.type,
+      operation: 'structured',
+      tokensIn: messages.reduce((s, m) => s + m.content.length, 0),
+      tokensOut: JSON.stringify(safe).length,
+      latencyMs: Date.now() - startedAt,
+    });
+    return safe;
+  }
+
+  /** Offline/dev fallback — folds the learner's adjustment note into the existing week. */
+  private mockWeek(current: RoadmapWeek, note?: string): RoadmapWeek {
+    const base = current.title.replace(/\s*\((?:revised|focus:[^)]*)\)$/i, '');
+    return {
+      ...current,
+      title: `${base} (${note ? `focus: ${note}` : 'revised'})`,
+      focus: note || current.focus,
+      tasks: note ? [`Apply: ${note}`, ...current.tasks] : current.tasks,
+    };
   }
 
   private isValid(r: GeneratedRoadmap | undefined): boolean {

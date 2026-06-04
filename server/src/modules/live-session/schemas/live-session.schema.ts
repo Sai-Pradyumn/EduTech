@@ -35,7 +35,7 @@ const SessionRecapSchema = SchemaFactory.createForClass(SessionRecap);
  * Live session (Phase 4 · B4): an org/cohort-scoped scheduled session a mentor hosts and
  * students join. Records attendance and, once ended, generates an AI recap (summary, key
  * points, assignment, suggested quiz topic) from the host's notes. The meeting URL is a
- * placeholder link (Meet/Zoom integration is 🧱).
+ * real joinable Jitsi Meet room (override the base with JITSI_BASE_URL).
  */
 @Schema({ timestamps: true, collection: 'live_sessions' })
 export class LiveSession {
@@ -75,7 +75,7 @@ export class LiveSession {
   })
   status!: LiveSessionStatus;
 
-  /** Placeholder meeting link (real Meet/Zoom integration is 🧱). */
+  /** Joinable Jitsi Meet room URL (generated on create; override base via JITSI_BASE_URL). */
   @Prop({ default: '' })
   meetingUrl!: string;
 

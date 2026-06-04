@@ -1,6 +1,7 @@
 import {
   IsBoolean,
   IsEnum,
+  IsIn,
   IsOptional,
   IsString,
   IsUrl,
@@ -40,6 +41,16 @@ export class AddTaskDto {
 export class MoveTaskDto {
   @IsEnum(ItemStatus)
   status!: ItemStatus;
+}
+
+export class ReorderTaskDto {
+  @IsIn(['up', 'down'])
+  direction!: 'up' | 'down';
+}
+
+export class ArchiveProjectDto {
+  @IsBoolean()
+  archived!: boolean;
 }
 
 export class SubmitProjectDto {

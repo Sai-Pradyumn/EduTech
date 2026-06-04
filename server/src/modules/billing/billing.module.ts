@@ -59,7 +59,11 @@ import {
           return new RazorpayPaymentProvider(rzpId, rzpSecret, rzpWebhook);
         const stripeKey = config.get<string>('STRIPE_SECRET_KEY');
         if (choice === 'stripe' && stripeKey)
-          return new StripePaymentProvider(stripeKey);
+          return new StripePaymentProvider(
+            stripeKey,
+            config.get<string>('STRIPE_WEBHOOK_SECRET') ?? '',
+            config.get<string>('clientOrigin') ?? '',
+          );
         return mock;
       },
     },
