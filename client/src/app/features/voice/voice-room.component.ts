@@ -81,7 +81,7 @@ type VState = 'idle' | 'listening' | 'thinking' | 'speaking';
                       <input class="rename-inp" [ngModel]="renameDraft()" (ngModelChange)="renameDraft.set($event)" (keydown.enter)="saveRename(s)" (keydown.escape)="editingId.set(null)" (click)="$event.stopPropagation()" aria-label="Session title" />
                     } @else {
                       <span class="block font-medium truncate">{{ s.title }}</span>
-                      <span class="block text-xs text-txt-mute">{{ modeMeta(s.mode).label }} · {{ s.transcript.length }} turns · {{ ago(s.createdAt) }}</span>
+                      <span class="block text-xs text-txt-mute">{{ modeMeta(s.mode).label }} · {{ s.transcript.length }} turns@if (s.durationMs > 0) { · {{ fmtDur(s.durationMs) }} } · {{ ago(s.createdAt) }}</span>
                     }
                   </span>
                   @if (s.linkedFlowId) { <span class="link-pill">→ flow</span> }
@@ -349,6 +349,12 @@ export class VoiceRoomComponent implements OnDestroy {
     if (!iso) return '';
     const d = Math.floor((Date.now() - new Date(iso).getTime()) / 86400000);
     return d <= 0 ? 'today' : d === 1 ? 'yesterday' : d < 30 ? `${d}d ago` : `${Math.floor(d / 30)}mo ago`;
+  }
+  fmtDur(ms: number): string {
+    const totalSec = Math.round(ms / 1000);
+    if (totalSec < 60) return `${totalSec}s`;
+    const min = Math.floor(totalSec / 60);
+    return min < 60 ? `${min} min` : `${Math.floor(min / 60)}h ${min % 60}m`;
   }
   beginRename(s: VoiceSession): void { this.editingId.set(s.id); this.renameDraft.set(s.title); }
   saveRename(s: VoiceSession): void {

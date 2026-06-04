@@ -7,6 +7,8 @@ import { EmptyStateComponent } from '../../shared/ui/empty-state.component';
 import { SkeletonComponent } from '../../shared/ui/skeleton.component';
 import { ToastService } from '../../core/services/toast.service';
 import { Resume, ResumeService } from '../../core/services/resume.service';
+import { printDocument, PrintSection } from '../../shared/util/print';
+import { downloadPdf } from '../../shared/util/pdf';
 
 @Component({
   selector: 'asta-resume',
@@ -21,7 +23,12 @@ import { Resume, ResumeService } from '../../core/services/resume.service';
       </div>
       <div class="flex gap-2.5 shrink-0">
         <asta-btn variant="accent" size="sm" (click)="generate()" [disabled]="busy()">{{ busy() ? 'Generating…' : 'Generate from evidence' }}</asta-btn>
-        @if (r()) { <asta-btn variant="ghost" size="sm" (click)="copyMd()">Copy Markdown</asta-btn> }
+        @if (r()) {
+          <asta-btn variant="ghost" size="sm" (click)="copyMd()">Copy Markdown</asta-btn>
+          <asta-btn variant="ghost" size="sm" (click)="downloadMd()">Download .md</asta-btn>
+          <asta-btn variant="ghost" size="sm" (click)="printPdf()">Print</asta-btn>
+          <asta-btn variant="accent" size="sm" (click)="downloadResumePdf()">Download PDF</asta-btn>
+        }
       </div>
     </header>
 
@@ -109,15 +116,52 @@ export class ResumeComponent {
     this.busy.set(true);
     this.api.patch({ summary: this.summaryBuf }).subscribe({ next: (r) => { this.r.set(r); this.busy.set(false); this.toast.success('Saved'); }, error: () => { this.busy.set(false); this.toast.error('Save failed'); } });
   }
-  copyMd(): void {
-    const rr = this.r(); if (!rr) return;
-    const md = [
+  private buildMd(): string {
+    const rr = this.r();
+    if (!rr) return '';
+    return [
       `# ${rr.headline}`, '', rr.summary, '',
       '## Skills', rr.skills.join(' · '), '',
       '## Highlights', ...rr.highlights.map((h) => `- ${h}`), '',
       '## Projects', ...rr.projects.flatMap((p) => [`### ${p.title}`, ...p.bullets.map((b) => `- ${b}`)]),
     ].join('\n');
-    navigator.clipboard?.writeText(md).then(() => this.toast.success('Markdown copied'), () => this.toast.error('Copy failed'));
+  }
+  copyMd(): void {
+    if (!this.r()) return;
+    navigator.clipboard?.writeText(this.buildMd()).then(() => this.toast.success('Markdown copied'), () => this.toast.error('Copy failed'));
+  }
+  downloadMd(): void {
+    const rr = this.r();
+    if (!rr) return;
+    const blob = new Blob([this.buildMd()], { type: 'text/markdown;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${(rr.headline || 'resume').replace(/[^a-z0-9]+/gi, '-').toLowerCase()}.md`;
+    a.click();
+    URL.revokeObjectURL(url);
+    this.toast.success('Resume downloaded');
+  }
+  private resumeSections(): PrintSection[] {
+    const rr = this.r()!;
+    return [
+      { paragraphs: rr.summary ? [rr.summary] : [] },
+      { heading: 'Skills', paragraphs: rr.skills.length ? [rr.skills.join(' · ')] : [] },
+      { heading: 'Highlights', bullets: rr.highlights },
+      ...rr.projects.map((p) => ({ heading: p.title, bullets: p.bullets })),
+    ];
+  }
+  printPdf(): void {
+    const rr = this.r();
+    if (!rr) return;
+    printDocument(rr.headline || 'Resume', rr.skills.join(' · '), this.resumeSections());
+  }
+  downloadResumePdf(): void {
+    const rr = this.r();
+    if (!rr) return;
+    const name = (rr.headline || 'resume').replace(/[^a-z0-9]+/gi, '-').toLowerCase();
+    downloadPdf(`${name}.pdf`, rr.headline || 'Resume', rr.skills.join(' · '), this.resumeSections());
+    this.toast.success('Resume PDF downloaded');
   }
   go(route: string): void { this.router.navigate([route]); }
 }

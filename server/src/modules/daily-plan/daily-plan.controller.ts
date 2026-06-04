@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Post } from '@nestjs/common';
+import { Body, Controller, Get, Post, Query } from '@nestjs/common';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { AuthUser } from '../../common/interfaces';
 import { DailyPlanService } from './daily-plan.service';
@@ -52,5 +52,16 @@ export class DailyPlanController {
   @Post('quick-mode')
   async quick(@CurrentUser() user: AuthUser) {
     return toView(await this.plan.quickMode(user.id));
+  }
+
+  @Get('streak')
+  async streak(@CurrentUser() user: AuthUser) {
+    return this.plan.streak(user.id);
+  }
+
+  @Get('history')
+  async history(@CurrentUser() user: AuthUser, @Query('days') days?: string) {
+    const n = Number(days);
+    return this.plan.history(user.id, Number.isFinite(n) && n > 0 ? n : 7);
   }
 }

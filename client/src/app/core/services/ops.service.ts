@@ -38,6 +38,19 @@ export interface ErrorView {
   createdAt: string;
 }
 
+export interface RealtimeStatus {
+  websocketStatus: string;
+  time: string;
+  note: string;
+}
+
+export interface StorageStatus {
+  provider: string;
+  bucket: string | null;
+  status: string;
+  note: string;
+}
+
 export interface AiOpsOverview {
   windowDays: number;
   calls: number;
@@ -73,8 +86,17 @@ export class OpsService {
   retryJob(id: string): Observable<{ retried: boolean }> {
     return this.api.post(`/ops/jobs/${id}/retry`, {});
   }
+  failedJobs(): Observable<JobView[]> {
+    return this.api.get<JobView[]>('/ops/jobs/failed');
+  }
   errors(): Observable<ErrorView[]> {
     return this.api.get<ErrorView[]>('/ops/errors');
+  }
+  realtime(): Observable<RealtimeStatus> {
+    return this.api.get<RealtimeStatus>('/ops/realtime');
+  }
+  storage(): Observable<StorageStatus> {
+    return this.api.get<StorageStatus>('/ops/storage');
   }
 
   // ── AI Ops ──

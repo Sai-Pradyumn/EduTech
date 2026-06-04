@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { ButtonComponent } from '../../shared/ui/button.component';
@@ -48,6 +48,11 @@ import { Course, CourseService, Difficulty } from '../../core/services/course.se
     } @else if (courses().length === 0) {
       <asta-card class="block motion-card-reveal"><asta-empty-state title="No courses yet" description="Type a goal above — Asta drafts modules, lessons, a project and certificate criteria you can edit, then generate quizzes/visuals per module and publish."><asta-btn variant="accent" (click)="focusGoal()">Build your first course</asta-btn></asta-empty-state></asta-card>
     } @else {
+      <div class="grid gap-3 grid-cols-3 mb-5">
+        <asta-card class="cb-stat"><p class="num">{{ publishedCount() }}</p><p class="lbl">Published</p></asta-card>
+        <asta-card class="cb-stat"><p class="num">{{ draftCount() }}</p><p class="lbl">Drafts</p></asta-card>
+        <asta-card class="cb-stat"><p class="num">{{ moduleCount() }}</p><p class="lbl">Total modules</p></asta-card>
+      </div>
       <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 motion-row-2">
         @for (c of courses(); track c.id; let i = $index) {
           <asta-card class="motion-card-reveal hover-lift cursor-pointer block" [interactive]="true" [style.--motion-card-index]="i % 3" (click)="open(c)">
@@ -76,6 +81,9 @@ import { Course, CourseService, Difficulty } from '../../core/services/course.se
       .st-published { color: var(--green-deep); border-color: color-mix(in oklab, var(--green) 45%, var(--paper-3)); }
       .st-draft { color: var(--text-mute); }
       .line-clamp-2 { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+      .cb-stat { text-align: center; }
+      .cb-stat .num { font-size: 26px; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--green-deep); }
+      .cb-stat .lbl { font-size: 10.5px; color: var(--text-mute); text-transform: uppercase; letter-spacing: .04em; margin-top: 2px; }
     `,
   ],
 })
@@ -90,6 +98,10 @@ export class CourseListComponent {
   readonly creating = signal(false);
   goal = '';
   level: Difficulty = 'beginner';
+
+  readonly publishedCount = computed(() => this.courses().filter((c) => c.status === 'published').length);
+  readonly draftCount = computed(() => this.courses().filter((c) => c.status !== 'published').length);
+  readonly moduleCount = computed(() => this.courses().reduce((n, c) => n + (c.modules?.length ?? 0), 0));
 
   constructor() { this.refresh(); }
   refresh(): void {

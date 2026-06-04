@@ -25,6 +25,9 @@ import { CohortView, LiveSessionStatus, SessionDetail, SessionView } from '../..
         <h1 class="text-[26px] leading-tight mb-2 grad-flow">Live Sessions</h1>
         <span class="goal-pill"><span class="dot"></span>Join live · mark attendance · read the AI recap</span>
       </div>
+      <div class="shrink-0">
+        <input class="ls-search" [ngModel]="query()" (ngModelChange)="query.set($event)" placeholder="Search sessions…" aria-label="Search sessions" />
+      </div>
     </header>
 
     <div class="grid gap-5 lg:grid-cols-[minmax(280px,360px)_1fr]">
@@ -51,9 +54,9 @@ import { CohortView, LiveSessionStatus, SessionDetail, SessionView } from '../..
 
           <div>
             <p class="kicker mb-3">Organization sessions</p>
-            @if (orgSessions().length === 0) { <p class="text-sm text-txt-mute">No sessions scheduled.</p> }
+            @if (orgFiltered().length === 0) { <p class="text-sm text-txt-mute">{{ orgSessions().length ? 'No sessions match.' : 'No sessions scheduled.' }}</p> }
             <div class="space-y-2 motion-row-primary">
-              @for (s of orgSessions(); track s.id; let i = $index) {
+              @for (s of orgFiltered(); track s.id; let i = $index) {
                 <button class="w-full text-left card hover-lift motion-card-reveal" style="padding:12px 14px"
                   [style.--motion-card-index]="i"
                   [style.borderColor]="selected()?.id === s.id ? 'var(--green)' : null" (click)="select(s.id)">
@@ -70,9 +73,9 @@ import { CohortView, LiveSessionStatus, SessionDetail, SessionView } from '../..
 
         <div>
           <p class="kicker mb-3">My sessions</p>
-          @if (mine().length === 0) { <p class="text-sm text-txt-mute">No sessions for your cohorts yet.</p> }
+          @if (mineFiltered().length === 0) { <p class="text-sm text-txt-mute">{{ mine().length ? 'No sessions match.' : 'No sessions for your cohorts yet.' }}</p> }
           <div class="space-y-2 motion-row-2">
-            @for (s of mine(); track s.id; let i = $index) {
+            @for (s of mineFiltered(); track s.id; let i = $index) {
               <button class="w-full text-left card hover-lift motion-card-reveal" style="padding:12px 14px"
                 [style.--motion-card-index]="i"
                 [style.borderColor]="selected()?.id === s.id ? 'var(--green)' : null" (click)="select(s.id)">
@@ -120,9 +123,11 @@ import { CohortView, LiveSessionStatus, SessionDetail, SessionView } from '../..
                 @if (s.status !== 'ended' && s.status !== 'cancelled') {
                   <button class="btn-go" (click)="join(s)">{{ joinedSet().has(s.id) ? 'Rejoin room ↗' : 'Join room ↗' }}</button>
                 }
+                @if (s.meetingUrl) { <button class="btn-soft" (click)="copyLink(s.meetingUrl)">Copy meeting link</button> }
                 @if (canManage()) {
                   @if (s.status === 'scheduled') { <button class="btn-soft" (click)="start(s.id)">Start session</button> }
                   @if (s.status === 'live') { <button class="btn-soft" (click)="showEnd.set(!showEnd())">End & recap</button> }
+                  <button class="btn-soft danger" (click)="removeSession(s.id)">Delete</button>
                 }
               </div>
 
@@ -176,6 +181,9 @@ import { CohortView, LiveSessionStatus, SessionDetail, SessionView } from '../..
       .btn-go:disabled { opacity: .6; }
       .btn-soft { border-radius: 100px; padding: 8px 16px; font-size: 13px; font-weight: 600; color: var(--text-soft); background: var(--paper-2); border: 1px solid var(--paper-3); }
       .btn-soft:hover { border-color: var(--green); color: var(--green-deep); }
+      .btn-soft.danger:hover { border-color: var(--coral-deep); color: var(--coral-deep); }
+      .ls-search { width: 220px; max-width: 100%; padding: 8px 12px; font-size: 13px; color: var(--text); background: var(--paper-2); border: 1px solid var(--paper-3); border-radius: 11px; }
+      .ls-search:focus { outline: none; border-color: var(--green); }
     `,
   ],
 })
@@ -188,6 +196,15 @@ export class LiveSessionsComponent implements OnInit {
   readonly mine = signal<SessionView[]>([]);
   readonly orgSessions = signal<SessionView[]>([]);
   readonly orgCohorts = signal<CohortView[]>([]);
+  readonly query = signal('');
+
+  private match(list: SessionView[]): SessionView[] {
+    const n = this.query().trim().toLowerCase();
+    if (!n) return list;
+    return list.filter((s) => `${s.title} ${s.hostName} ${s.status}`.toLowerCase().includes(n));
+  }
+  readonly orgFiltered = computed(() => this.match(this.orgSessions()));
+  readonly mineFiltered = computed(() => this.match(this.mine()));
   readonly selected = signal<SessionDetail | null>(null);
   readonly joinedSet = signal<Set<string>>(new Set());
   readonly creating = signal(false);
@@ -273,6 +290,25 @@ export class LiveSessionsComponent implements OnInit {
         if (s.meetingUrl) window.open(s.meetingUrl, '_blank', 'noopener');
       },
       error: (e) => this.toast.error(e?.message ?? 'Could not join'),
+    });
+  }
+
+  copyLink(url: string): void {
+    navigator.clipboard?.writeText(url).then(
+      () => this.toast.success('Meeting link copied'),
+      () => this.toast.error('Copy failed'),
+    );
+  }
+
+  removeSession(id: string): void {
+    this.api.remove(id).subscribe({
+      next: () => {
+        this.toast.success('Session deleted');
+        if (this.selected()?.id === id) this.selected.set(null);
+        this.orgSessions.update((list) => list.filter((x) => x.id !== id));
+        this.mine.update((list) => list.filter((x) => x.id !== id));
+      },
+      error: (e) => this.toast.error(e?.message ?? 'Could not delete'),
     });
   }
 

@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, OnInit, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnInit, computed, inject, signal } from '@angular/core';
 import { AiOpsOverview, OpsService } from '../../core/services/ops.service';
 
 interface Costs {
@@ -35,6 +35,27 @@ interface Providers {
       </div>
     } @else {
       <span class="skel" style="display:block;height:90px;border-radius:12px;margin-bottom:20px"></span>
+    }
+
+    <!-- Spend over time — byDay was fetched but never rendered before -->
+    @if (costs()?.byDay?.length) {
+      <div class="card mb-5" style="padding:18px">
+        <div class="flex items-center justify-between mb-3">
+          <p class="kicker">Spend over time · last {{ costs()!.byDay.length }} days</p>
+          <span class="font-mono text-xs text-txt-mute">peak ~\${{ dayPeak() }}/day</span>
+        </div>
+        <div class="cost-chart" role="img" aria-label="Daily AI spend trend">
+          @for (d of costs()!.byDay; track d.day) {
+            <div class="cost-col" [title]="d.day + ' · $' + d.costUsd + ' · ' + d.calls + ' calls'">
+              <span class="cost-bar" [style.height.%]="dayPct(d.costUsd)"></span>
+            </div>
+          }
+        </div>
+        <div class="flex justify-between text-[10px] text-txt-mute font-mono mt-1.5">
+          <span>{{ costs()!.byDay[0].day }}</span>
+          <span>{{ costs()!.byDay[costs()!.byDay.length - 1].day }}</span>
+        </div>
+      </div>
     }
 
     <div class="grid gap-5 md:grid-cols-2 mb-5">
@@ -85,7 +106,13 @@ interface Providers {
       }
     </div>
   `,
-  styles: [`.skel{background:linear-gradient(90deg,var(--paper-2) 25%,var(--paper-3) 50%,var(--paper-2) 75%);background-size:200% 100%;animation:s 1.4s ease infinite}@keyframes s{0%{background-position:200% 0}100%{background-position:-200% 0}}@media (prefers-reduced-motion:reduce){.skel{animation:none}}`],
+  styles: [`
+    .skel{background:linear-gradient(90deg,var(--paper-2) 25%,var(--paper-3) 50%,var(--paper-2) 75%);background-size:200% 100%;animation:s 1.4s ease infinite}@keyframes s{0%{background-position:200% 0}100%{background-position:-200% 0}}@media (prefers-reduced-motion:reduce){.skel{animation:none}}
+    .cost-chart{display:flex;align-items:flex-end;gap:2px;height:84px}
+    .cost-col{flex:1;height:100%;display:flex;align-items:flex-end;min-width:2px}
+    .cost-bar{display:block;width:100%;border-radius:3px 3px 0 0;background:linear-gradient(180deg,var(--peri,#8aa6ff),color-mix(in oklab,var(--peri,#8aa6ff) 60%,var(--ink)));min-height:2px;transition:height .4s var(--ease)}
+    .cost-col:hover .cost-bar{background:var(--green)}
+  `],
 })
 export class AdminAiOpsComponent implements OnInit {
   private readonly ops = inject(OpsService);
@@ -93,9 +120,18 @@ export class AdminAiOpsComponent implements OnInit {
   readonly costs = signal<Costs | null>(null);
   readonly providers = signal<Providers | null>(null);
 
+  readonly dayPeak = computed(() =>
+    (this.costs()?.byDay ?? []).reduce((m, d) => Math.max(m, d.costUsd), 0),
+  );
+
   ngOnInit(): void {
     this.ops.aiOverview().subscribe({ next: (o) => this.overview.set(o) });
     this.ops.aiCosts().subscribe({ next: (c) => this.costs.set(c) });
     this.ops.aiProviders().subscribe({ next: (p) => this.providers.set(p) });
+  }
+
+  dayPct(cost: number): number {
+    const peak = this.dayPeak();
+    return peak > 0 ? Math.max(4, Math.round((cost / peak) * 100)) : 0;
   }
 }

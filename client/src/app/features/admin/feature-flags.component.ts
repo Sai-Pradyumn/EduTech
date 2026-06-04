@@ -29,6 +29,8 @@ import { FeatureFlagView } from '../../core/models';
               @if (f.beta) { <span class="pill" style="color:var(--peri-deep)">beta</span> }
               @if (f.killable) { <span class="pill" style="color:var(--danger)">killable</span> }
               @if (f.overridden) { <span class="pill text-txt-mute">overridden</span> }
+              @if (f.rolloutPercent < 100) { <span class="pill" style="color:var(--peri-deep)">rollout {{ f.rolloutPercent }}%</span> }
+              @if (f.allowedPlans.length) { <span class="pill text-txt-mute">plans: {{ f.allowedPlans.join(', ') }}</span> }
             </div>
             <p class="text-xs text-txt-soft mt-1">{{ f.description }}</p>
           </div>

@@ -80,6 +80,10 @@ import { SIM_TYPE_META, Simulation, SimulationService, SimulationType } from '..
               </div>
             }
           </div>
+          @if (sim()!.linkedSkills.length) {
+            <p class="kicker mt-3 mb-1.5">Skills tested</p>
+            <div class="skill-tags">@for (s of sim()!.linkedSkills; track s) { <span class="skill-tag">{{ s }}</span> }</div>
+          }
           @if (sim()!.scenario) { <p class="kicker mt-3 mb-1">Scenario</p><p class="text-sm text-txt-soft">{{ sim()!.scenario }}</p> }
         </asta-card>
       </div>
@@ -100,6 +104,8 @@ import { SIM_TYPE_META, Simulation, SimulationService, SimulationType } from '..
       .rub-c { font-size: 12px; }
       .rub-track { height: 7px; border-radius: 999px; background: var(--paper-3); overflow: hidden; }
       .rub-fill { display: block; height: 100%; }
+      .skill-tags { display: flex; flex-wrap: wrap; gap: 6px; }
+      .skill-tag { font-size: 11.5px; padding: 2px 9px; border-radius: 999px; border: 1px solid color-mix(in oklab, var(--peri, #8aa6ff) 35%, var(--paper-3)); color: var(--peri, #8aa6ff); }
     `,
   ],
 })

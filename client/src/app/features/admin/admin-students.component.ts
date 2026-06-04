@@ -28,8 +28,26 @@ import { CountDirective } from '../../shared/directives/count.directive';
           <svg class="search-ico" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
           <input class="search-input" placeholder="Search name, email or goal…" [(ngModel)]="query" (ngModelChange)="q.set($event)" aria-label="Search students" />
         </div>
+        <select class="sort-select" [ngModel]="sortBy()" (ngModelChange)="sortBy.set($event)" aria-label="Sort students">
+          <option value="recent">Recently active</option>
+          <option value="name">Name (A–Z)</option>
+          <option value="health">Lowest health</option>
+          <option value="readiness">Highest readiness</option>
+          <option value="quizzes">Most quizzes</option>
+        </select>
       </div>
     </header>
+
+    <!-- Cohort filter chips -->
+    <div class="filter-row motion-card-reveal" style="--motion-card-index:0">
+      @for (f of healthChips; track f.key) {
+        <button class="chip" [class.on]="healthFilter() === f.key" (click)="healthFilter.set(f.key)">
+          <span class="chip-dot" [attr.data-tone]="f.key"></span>{{ f.label }}
+        </button>
+      }
+      <span class="chip-sep"></span>
+      <button class="chip" [class.on]="onboardedOnly()" (click)="onboardedOnly.set(!onboardedOnly())">Unonboarded only</button>
+    </div>
 
     <asta-card class="motion-card-reveal motion-row-primary" style="--motion-card-index:0" [padded]="false">
       <div class="panel-head" style="padding:16px 18px 12px">
@@ -63,7 +81,7 @@ import { CountDirective } from '../../shared/directives/count.directive';
               @if (loaded()) {
                 <tr><td colspan="7" class="empty">
                   <p class="empty-title">No students match</p>
-                  <p class="empty-sub">{{ q() ? 'Try a broader search — name, email or goal.' : 'Learners will appear here as they join Asta.' }}</p>
+                  <p class="empty-sub">{{ (q() || healthFilter() !== 'all' || onboardedOnly()) ? 'Try a broader search or clear the cohort filters above.' : 'Learners will appear here as they join Asta.' }}</p>
                 </td></tr>
               } @else {
                 @for (row of [0,1,2,3,4]; track row) {
@@ -112,6 +130,37 @@ import { CountDirective } from '../../shared/directives/count.directive';
         box-shadow: 0 0 0 3px color-mix(in oklch, var(--green) 14%, transparent), 0 0 18px var(--asta-accent-glow);
       }
       .search-wrap:focus-within .search-ico { color: var(--green-deep); }
+
+      /* Sort dropdown */
+      .sort-select {
+        padding: 9px 12px; font-size: 13px; color: var(--text-soft);
+        background: color-mix(in oklch, var(--paper-2) 60%, transparent);
+        border: 1px solid var(--paper-3); border-radius: 11px; cursor: pointer;
+        transition: border-color 0.2s var(--ease);
+      }
+      .sort-select:focus { outline: none; border-color: color-mix(in oklch, var(--green) 55%, transparent); }
+
+      /* Cohort filter chips */
+      .filter-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 0 0 14px; }
+      .chip {
+        display: inline-flex; align-items: center; gap: 6px;
+        font-size: 12px; color: var(--text-soft);
+        padding: 5px 12px; border-radius: 999px;
+        background: color-mix(in oklch, var(--paper-2) 55%, transparent);
+        border: 1px solid var(--paper-3); cursor: pointer;
+        transition: color 0.18s var(--ease), border-color 0.18s var(--ease), background 0.18s var(--ease);
+      }
+      .chip:hover { border-color: color-mix(in oklch, var(--green) 40%, transparent); }
+      .chip.on {
+        color: var(--green-deep); border-color: color-mix(in oklch, var(--green) 55%, transparent);
+        background: color-mix(in oklch, var(--green) 12%, transparent);
+      }
+      .chip-dot { width: 7px; height: 7px; border-radius: 999px; background: var(--green); }
+      .chip-dot[data-tone='all'] { background: var(--text-mute); }
+      .chip-dot[data-tone='good'] { background: var(--green); }
+      .chip-dot[data-tone='warn'] { background: var(--peri); }
+      .chip-dot[data-tone='risk'] { background: var(--coral); }
+      .chip-sep { width: 1px; height: 18px; background: var(--paper-3); margin: 0 2px; }
 
       .roster-scroll { overflow-x: auto; }
       table { width: 100%; border-collapse: collapse; font-size: 13px; }
@@ -189,10 +238,48 @@ export class AdminStudentsComponent implements OnInit {
   readonly q = signal('');
   query = '';
 
+  readonly healthFilter = signal<'all' | 'good' | 'warn' | 'risk'>('all');
+  readonly onboardedOnly = signal(false);
+  readonly sortBy = signal<'recent' | 'name' | 'health' | 'readiness' | 'quizzes'>('recent');
+
+  readonly healthChips: { key: 'all' | 'good' | 'warn' | 'risk'; label: string }[] = [
+    { key: 'all', label: 'All health' },
+    { key: 'good', label: 'Healthy' },
+    { key: 'warn', label: 'At watch' },
+    { key: 'risk', label: 'At risk' },
+  ];
+
   readonly filtered = computed(() => {
     const needle = this.q().trim().toLowerCase();
-    if (!needle) return this.all();
-    return this.all().filter((s) => `${s.name} ${s.email} ${s.goal}`.toLowerCase().includes(needle));
+    const tone = this.healthFilter();
+    const unonboarded = this.onboardedOnly();
+    let rows = this.all().filter((s) => {
+      if (needle && !`${s.name} ${s.email} ${s.goal}`.toLowerCase().includes(needle)) return false;
+      if (tone !== 'all' && this.healthTone(s.health) !== tone) return false;
+      if (unonboarded && s.onboarded) return false;
+      return true;
+    });
+    rows = [...rows];
+    switch (this.sortBy()) {
+      case 'name':
+        rows.sort((a, b) => a.name.localeCompare(b.name));
+        break;
+      case 'health':
+        rows.sort((a, b) => a.health - b.health);
+        break;
+      case 'readiness':
+        rows.sort((a, b) => b.readiness - a.readiness);
+        break;
+      case 'quizzes':
+        rows.sort((a, b) => b.quizzes - a.quizzes);
+        break;
+      default: // recent
+        rows.sort(
+          (a, b) =>
+            new Date(b.lastActiveAt ?? 0).getTime() - new Date(a.lastActiveAt ?? 0).getTime(),
+        );
+    }
+    return rows;
   });
 
   ngOnInit(): void {

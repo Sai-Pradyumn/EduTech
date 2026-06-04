@@ -165,7 +165,7 @@ import { ProgressComponent } from '../../shared/ui/progress.component';
                   @for (m of c.mentors; track m.userId) {
                     <div class="flex items-center justify-between text-sm py-1">
                       <span class="truncate">{{ m.name }}</span>
-                      @if (canManage()) { <button class="text-txt-mute hover:text-[color:var(--danger)]" (click)="removeMember(m.userId)">×</button> }
+                      @if (canManage()) { <button class="text-txt-mute hover:text-[color:var(--danger)]" (click)="removeMember(m.userId)" [attr.aria-label]="'Remove ' + m.name">×</button> }
                     </div>
                   } @empty { <p class="text-sm text-txt-mute">None.</p> }
                 </div>
@@ -174,7 +174,7 @@ import { ProgressComponent } from '../../shared/ui/progress.component';
                   @for (m of c.students; track m.userId) {
                     <div class="flex items-center justify-between text-sm py-1">
                       <span class="truncate">{{ m.name }}</span>
-                      @if (canManage()) { <button class="text-txt-mute hover:text-[color:var(--danger)]" (click)="removeMember(m.userId)">×</button> }
+                      @if (canManage()) { <button class="text-txt-mute hover:text-[color:var(--danger)]" (click)="removeMember(m.userId)" [attr.aria-label]="'Remove ' + m.name">×</button> }
                     </div>
                   } @empty { <p class="text-sm text-txt-mute">None.</p> }
                 </div>
