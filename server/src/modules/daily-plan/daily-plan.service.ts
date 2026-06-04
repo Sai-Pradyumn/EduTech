@@ -181,6 +181,108 @@ export class DailyPlanService {
     return this.generate(userId, 'normal');
   }
 
+  /**
+   * Learning streak from completed daily plans. A day "counts" when the learner
+   * finished at least one plan item. The current streak is still alive if today
+   * isn't done yet but yesterday was (you have until end of day to keep it).
+   */
+  async streak(userId: string): Promise<{
+    current: number;
+    best: number;
+    activeToday: boolean;
+    totalActiveDays: number;
+  }> {
+    const plans = await this.model
+      .find({ user: new Types.ObjectId(userId) }, { date: 1, items: 1 })
+      .sort({ date: -1 })
+      .limit(400)
+      .exec();
+
+    // Set of yyyy-mm-dd dates with ≥1 completed item.
+    const active = new Set<string>(
+      plans.filter((p) => p.items.some((i) => i.done)).map((p) => p.date),
+    );
+    const totalActiveDays = active.size;
+
+    const dayMs = 86_400_000;
+    const key = (d: Date) => d.toISOString().slice(0, 10);
+    const todayStr = this.today();
+    const activeToday = active.has(todayStr);
+
+    // Current streak: walk back from today (or yesterday if today not yet done).
+    let current = 0;
+    const cursor = new Date(`${todayStr}T00:00:00.000Z`);
+    if (!activeToday) cursor.setTime(cursor.getTime() - dayMs); // grace: count from yesterday
+    while (active.has(key(cursor))) {
+      current++;
+      cursor.setTime(cursor.getTime() - dayMs);
+    }
+
+    // Best streak: longest run of consecutive active dates.
+    const sorted = [...active].sort();
+    let best = 0;
+    let run = 0;
+    let prevTime: number | null = null;
+    for (const ds of sorted) {
+      const t = new Date(`${ds}T00:00:00.000Z`).getTime();
+      run = prevTime !== null && t - prevTime === dayMs ? run + 1 : 1;
+      if (run > best) best = run;
+      prevTime = t;
+    }
+
+    return {
+      current,
+      best: Math.max(best, current),
+      activeToday,
+      totalActiveDays,
+    };
+  }
+
+  /**
+   * Per-day activity for the last `days` days (oldest→newest, gaps filled with
+   * zeros) — drives the Today screen's week strip. `active` = ≥1 item done.
+   */
+  async history(
+    userId: string,
+    days = 7,
+  ): Promise<
+    { date: string; completed: number; total: number; active: boolean }[]
+  > {
+    const span = Math.min(Math.max(days, 1), 31);
+    const dayMs = 86_400_000;
+    const todayStart = new Date(`${this.today()}T00:00:00.000Z`).getTime();
+    const fromStr = new Date(todayStart - (span - 1) * dayMs)
+      .toISOString()
+      .slice(0, 10);
+
+    const plans = await this.model
+      .find(
+        { user: new Types.ObjectId(userId), date: { $gte: fromStr } },
+        { date: 1, items: 1 },
+      )
+      .exec();
+
+    const byDate = new Map(plans.map((p) => [p.date, p]));
+    const out: {
+      date: string;
+      completed: number;
+      total: number;
+      active: boolean;
+    }[] = [];
+    for (let i = span - 1; i >= 0; i--) {
+      const date = new Date(todayStart - i * dayMs).toISOString().slice(0, 10);
+      const p = byDate.get(date);
+      const completed = p ? p.items.filter((it) => it.done).length : 0;
+      out.push({
+        date,
+        completed,
+        total: p ? p.items.length : 0,
+        active: completed > 0,
+      });
+    }
+    return out;
+  }
+
   quickMode(userId: string): Promise<DailyPlanDocument> {
     return this.generate(userId, 'quick');
   }
