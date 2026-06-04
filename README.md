@@ -6,6 +6,41 @@
 
 ---
 
+## Asta OS — the AI-first experience (Phase A)
+
+The app ships in **two modes**, switchable any time from the topbar (`Classic | Asta OS`, persisted in
+localStorage):
+
+- **Classic Mode** — the full existing app: every screen, route, sidebar and dashboard, unchanged.
+- **Asta OS** (`/app/os`) — the *Living Learning Cockpit*, a **completely standalone full-screen
+  experience** (no classic sidebar/topbar/floating dock — its own chrome). One central workspace where
+  the learner talks to **Asta** (one companion, many agents behind the scenes) by **Chat / Voice / Face**.
+  A central living **orb** reflects Asta's state, a universal **composer** drives the session, friendly
+  **agent-activity** shows Asta working (never raw logs), a **context panel** surfaces the learner's real
+  goal/weak-area/streak, and a **Today strip** offers the next best move. Tools (Roadmap, Quizzes,
+  Mistakes, Skill Twin, Proof) open as **native panels inside the cockpit** — fresh views built on the
+  data services, never a jump back to a legacy screen.
+
+Asta OS is a **front-end experience layered on the existing Agent OS** — it reuses the same
+`AgentService.stream()` → Socket.IO pipeline, `ResponseValidatorService`, `VoiceActivationService`, and
+visual-block renderer. Choosing Asta OS makes `/app/os` the landing surface after login. The cockpit uses
+a scoped **noir** token set (`.asta-os-root`, `--asta-*`), always dark, so Classic Mode's design system is
+untouched. Code lives in [`client/src/app/features/asta-os/`](client/src/app/features/asta-os/).
+
+**Inside Asta OS:** contextual tools (Flow, Visual, Quiz, Mistake OS, Roadmap, Career, Interview…) open
+as **panels inside the cockpit** (no navigating away); a **Practice Studio** (`/app/os/practice`) with a
+custom code editor, timer and learning modes (Hint / Debug / Full / Interview) that runs **JavaScript in
+a browser sandbox** and **Python/Java/C++/Go/Rust/Bash on a real server runner** (Piston — free, no key;
+set `PISTON_URL` to self-host, `PRACTICE_DISABLE_PISTON=1` to force the mock), feeding passes to the
+**Proof Ledger** and struggles to **Mistake OS**; an **ML Notebook** (`/app/os/notebook`) with a dataset
+preview, runnable Python cells and per-cell Asta review; and real fullscreen **Voice** and **Face/Video**
+rooms (wake word, captions, optional camera) layered on the existing voice services.
+
+*Roadmap (later passes):* deeper LLM Cognitive-Guardian verification, self-hosted runner, LLM-based
+memory detection, and a first-run onboarding choice screen.
+
+---
+
 ## Features (MVP)
 
 | # | Feature | Status |
