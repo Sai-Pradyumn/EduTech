@@ -41,6 +41,17 @@ import { MODALITY_META, SkillTwin, SkillTwinService, TwinAction } from '../../co
       } @else {
         <p class="headline motion-card-reveal motion-row-primary">{{ t.headline }}</p>
 
+        @if (t.advisories.length) {
+          <div class="advisories motion-row-primary mb-4">
+            @for (a of t.advisories; track a.text) {
+              <div class="adv" [attr.data-tone]="a.tone">
+                <span class="adv-ico">{{ a.tone === 'positive' ? '✦' : a.tone === 'warning' ? '⚠' : '›' }}</span>
+                <span>{{ a.text }}</span>
+              </div>
+            }
+          </div>
+        }
+
         <!-- gauges -->
         <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4 motion-row-2 mb-4">
           <asta-card class="gauge motion-card-reveal" [style.--motion-card-index]="0">
@@ -63,6 +74,27 @@ import { MODALITY_META, SkillTwin, SkillTwinService, TwinAction } from '../../co
 
         <div class="grid gap-4 lg:grid-cols-[1fr_320px] items-start">
           <div class="min-w-0 space-y-4">
+            @if (t.trend.length >= 2) {
+              <asta-card class="block motion-card-reveal motion-row-2">
+                <div class="flex items-center justify-between mb-2">
+                  <p class="kicker !mb-0">Readiness over time</p>
+                  @if (t.readinessDelta !== null) {
+                    <span class="delta" [style.color]="deltaColor(t.readinessDelta)">
+                      {{ t.readinessDelta > 0 ? '▲ +' : t.readinessDelta < 0 ? '▼ ' : '' }}{{ t.readinessDelta }} pts
+                    </span>
+                  }
+                </div>
+                <svg class="spark" [attr.viewBox]="'0 0 ' + trendW + ' ' + trendH" preserveAspectRatio="none" aria-hidden="true">
+                  <polyline [attr.points]="sparkPoints('health')" class="sp-health" />
+                  <polyline [attr.points]="sparkPoints('readiness')" class="sp-read" />
+                </svg>
+                <div class="flex justify-between text-[10px] text-txt-mute mt-1.5">
+                  <span>{{ t.trend.length }} day{{ t.trend.length === 1 ? '' : 's' }} tracked</span>
+                  <span><span class="lg-read">readiness</span> · <span class="lg-health">health</span></span>
+                </div>
+              </asta-card>
+            }
+
             <!-- next best actions w/ explainability -->
             <asta-card class="block motion-card-reveal motion-row-3">
               <p class="kicker mb-3">Next best actions · why Asta recommends them</p>
@@ -91,13 +123,22 @@ import { MODALITY_META, SkillTwin, SkillTwinService, TwinAction } from '../../co
               <p class="kicker mb-3">Mastery graph</p>
               <div class="space-y-2">
                 @for (s of t.skills; track s.skill) {
-                  <div class="skill-row">
-                    <span class="s-label" [title]="s.skill">{{ s.skill }}</span>
-                    <span class="s-track">
-                      <span class="s-fill" [style.width.%]="s.mastery"></span>
-                      <span class="s-target" [style.left.%]="s.target" [title]="'target ' + s.target"></span>
-                    </span>
-                    <span class="s-val">{{ s.mastery }}</span>
+                  <div class="skill-wrap" [class.open]="openSkill() === s.skill">
+                    <div class="skill-row cursor-pointer" (click)="toggleSkill(s.skill)">
+                      <span class="s-label" [title]="s.skill">{{ s.skill }}</span>
+                      <span class="s-track">
+                        <span class="s-fill" [style.width.%]="s.mastery"></span>
+                        <span class="s-target" [style.left.%]="s.target" [title]="'target ' + s.target"></span>
+                      </span>
+                      <span class="s-val">{{ s.mastery }}</span>
+                    </div>
+                    @if (openSkill() === s.skill) {
+                      <div class="skill-detail">
+                        <span class="sd-stat"><span class="sd-v">{{ s.target }}</span><span class="sd-l">Target</span></span>
+                        <span class="sd-stat"><span class="sd-v" [style.color]="s.mastery >= s.target ? 'var(--green-deep)' : 'var(--coral, #ffb454)'">{{ s.mastery >= s.target ? 'On track' : (s.target - s.mastery) + ' to go' }}</span><span class="sd-l">Gap</span></span>
+                        <button class="sd-act" (click)="go('/app/quizzes'); $event.stopPropagation()">Practice →</button>
+                      </div>
+                    }
                   </div>
                 }
               </div>
@@ -190,6 +231,13 @@ import { MODALITY_META, SkillTwin, SkillTwinService, TwinAction } from '../../co
       .s-fill { display: block; height: 100%; border-radius: 999px; background: linear-gradient(90deg, var(--green-deep), var(--green)); }
       .s-target { position: absolute; top: -2px; width: 2px; height: 12px; background: var(--peri, #8aa6ff); }
       .s-val { font-size: 11px; color: var(--text-mute); font-variant-numeric: tabular-nums; }
+      .skill-wrap { border-radius: 10px; padding: 4px 6px; transition: background .12s; }
+      .skill-wrap.open { background: var(--paper-2); }
+      .skill-detail { display: flex; align-items: center; gap: 16px; padding: 8px 6px 4px; }
+      .sd-stat { display: flex; flex-direction: column; }
+      .sd-v { font-size: 13px; font-weight: 700; }
+      .sd-l { font-size: 9.5px; text-transform: uppercase; letter-spacing: .04em; color: var(--text-mute); }
+      .sd-act { margin-left: auto; font-size: 11.5px; color: var(--green-deep); background: transparent; border: none; cursor: pointer; }
       .wr-row { display: flex; align-items: center; gap: 9px; font-size: 13px; }
       .wr-dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
       .wr-concept { font-weight: 500; }
@@ -199,6 +247,21 @@ import { MODALITY_META, SkillTwin, SkillTwinService, TwinAction } from '../../co
       .mem-chip { font-size: 12px; padding: 3px 9px; border-radius: 999px; border: 1px solid color-mix(in oklab, var(--coral, #ffb454) 35%, var(--paper-3)); }
       .mem-chip em { color: var(--text-mute); font-style: normal; }
       .str-chip { font-size: 12px; padding: 3px 9px; border-radius: 999px; border: 1px solid color-mix(in oklab, var(--green) 40%, var(--paper-3)); color: var(--green-deep); }
+      .advisories { display: flex; flex-direction: column; gap: 8px; }
+      .adv { display: flex; align-items: flex-start; gap: 9px; font-size: 13px; padding: 9px 12px; border-radius: 10px; border: 1px solid var(--paper-3); background: var(--paper-2); }
+      .adv-ico { flex-shrink: 0; font-weight: 700; }
+      .adv[data-tone='warning'] { border-color: color-mix(in oklab, var(--coral, #ffb454) 40%, var(--paper-3)); background: oklch(0.72 0.17 25 / .07); }
+      .adv[data-tone='warning'] .adv-ico { color: var(--coral-deep); }
+      .adv[data-tone='positive'] { border-color: color-mix(in oklab, var(--green) 40%, var(--paper-3)); background: oklch(0.80 0.16 150 / .07); }
+      .adv[data-tone='positive'] .adv-ico { color: var(--green-deep); }
+      .adv[data-tone='info'] .adv-ico { color: var(--peri, #8aa6ff); }
+      .delta { font-size: 12px; font-weight: 700; font-variant-numeric: tabular-nums; }
+      .spark { width: 100%; height: 46px; display: block; }
+      .spark polyline { fill: none; vector-effect: non-scaling-stroke; }
+      .sp-read { stroke: var(--green-deep); stroke-width: 2; }
+      .sp-health { stroke: color-mix(in oklab, var(--peri, #8aa6ff) 70%, transparent); stroke-width: 1.5; stroke-dasharray: 3 3; }
+      .lg-read { color: var(--green-deep); }
+      .lg-health { color: var(--peri-deep, #8aa6ff); }
     `,
   ],
 })
@@ -212,6 +275,8 @@ export class SkillTwinComponent {
   readonly loadError = signal(false);
   readonly openWhy = signal<string | null>(null);
   readonly armed = signal(false);
+  readonly openSkill = signal<string | null>(null);
+  toggleSkill(skill: string): void { this.openSkill.set(this.openSkill() === skill ? null : skill); }
 
   constructor() {
     this.refresh();
@@ -233,6 +298,26 @@ export class SkillTwinComponent {
   modalityLabel(m: TwinAction['modality']): string { return MODALITY_META[m].label; }
   riskColor(v: number): string {
     return v >= 66 ? 'var(--danger, #ff5d5d)' : v >= 40 ? 'var(--coral, #ffb454)' : 'var(--green)';
+  }
+
+  // ── readiness/health trend sparkline (dependency-free SVG) ──
+  readonly trendW = 280;
+  readonly trendH = 46;
+  sparkPoints(key: 'readiness' | 'health'): string {
+    const t = this.twin()?.trend ?? [];
+    if (t.length < 2) return '';
+    const w = this.trendW, h = this.trendH, pad = 3;
+    return t
+      .map((p, i) => {
+        const x = (i / (t.length - 1)) * (w - 2 * pad) + pad;
+        const v = Math.max(0, Math.min(100, p[key]));
+        const y = h - pad - (v / 100) * (h - 2 * pad);
+        return `${x.toFixed(1)},${y.toFixed(1)}`;
+      })
+      .join(' ');
+  }
+  deltaColor(d: number): string {
+    return d > 0 ? 'var(--green-deep)' : d < 0 ? 'var(--coral-deep)' : 'var(--text-mute)';
   }
 
   resetMemory(): void {

@@ -3,7 +3,7 @@ import { FormsModule } from '@angular/forms';
 import { AgentService } from '../../core/services/agent.service';
 import { ToastService } from '../../core/services/toast.service';
 import { AgentAction, AgentStreamEvent, VisualBlock, WorkflowStepView } from '../../core/models';
-import { MarkdownPipe } from '../../shared/pipes/markdown.pipe';
+import { RichContentComponent } from '../../shared/components/ai/rich-content.component';
 import { ButtonComponent } from '../../shared/ui/button.component';
 import { CardComponent } from '../../shared/ui/card.component';
 import { ComposerComponent, ComposerSubmit } from '../../shared/ui/composer.component';
@@ -37,7 +37,7 @@ const STARTERS = [
   selector: 'asta-tutor-workspace',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormsModule, MarkdownPipe, ButtonComponent, CardComponent, ComposerComponent, AiAgentActivityFeedComponent, VisualBlockRendererComponent],
+  imports: [FormsModule, RichContentComponent, ButtonComponent, CardComponent, ComposerComponent, AiAgentActivityFeedComponent, VisualBlockRendererComponent],
   template: `
     <!-- Command header -->
     <header class="asta-page-command-header">
@@ -97,7 +97,7 @@ const STARTERS = [
                       <span class="sk-line" style="width:60%"></span>
                     </div>
                   } @else {
-                    <div class="prose-asta text-[15px]" [innerHTML]="msg.content | markdown"></div>
+                    <asta-rich-content class="text-[15px]" [text]="msg.content" [streaming]="!!msg.streaming" />
                   }
                   @if (msg.streaming && msg.content) { <span class="stream-cursor"></span> }
                   @if (msg.failed) {

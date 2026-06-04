@@ -1,4 +1,5 @@
-import { ChangeDetectionStrategy, Component, EventEmitter, Input, Output } from '@angular/core';
+import { ChangeDetectionStrategy, Component, EventEmitter, Input, Output, signal } from '@angular/core';
+import { FormsModule } from '@angular/forms';
 import { KnowledgeDoc } from '../../../core/models';
 
 /**
@@ -15,9 +16,21 @@ import { KnowledgeDoc } from '../../../core/models';
   selector: 'asta-knowledge-shard',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [FormsModule],
   template: `
     @if (doc; as d) {
       <div class="shard" [class.shard-on]="selected" [attr.data-s]="d.status">
+        @if (editing()) {
+          <div class="edit" (click)="$event.stopPropagation()">
+            <p class="kicker mb-1.5">Edit document</p>
+            <input class="ed-in" [(ngModel)]="draftTitle" placeholder="Title" aria-label="Document title" />
+            <input class="ed-in mt-2" [(ngModel)]="draftTags" placeholder="tags, comma, separated" aria-label="Tags" />
+            <div class="flex gap-2 mt-2.5">
+              <button type="button" class="mini save" (click)="commit()">Save</button>
+              <button type="button" class="mini" (click)="cancelEdit()">Cancel</button>
+            </div>
+          </div>
+        } @else {
         <div class="flex items-start gap-2.5">
           <input
             type="checkbox"
@@ -75,10 +88,12 @@ import { KnowledgeDoc } from '../../../core/models';
               @if (d.status === 'failed') {
                 <button type="button" class="mini retry" (click)="retry.emit(d)">Retry <span class="arr">→</span></button>
               }
+              <button type="button" class="mini" (click)="startEdit()">Edit</button>
               <button type="button" class="mini" style="color:var(--coral-deep)" (click)="delete.emit(d)">Delete</button>
             </div>
           </div>
         </div>
+        }
       </div>
     }
   `,
@@ -106,6 +121,10 @@ import { KnowledgeDoc } from '../../../core/models';
       .mini { font-size: 11px; font-weight: 600; color: var(--text-soft); }
       .mini:hover { color: var(--text); }
       .mini.retry { color: var(--coral-deep); }
+      .mini.save { color: var(--green-deep); }
+      .edit { padding: 2px; }
+      .ed-in { width: 100%; font-size: 13px; padding: 6px 9px; border-radius: 8px; border: 1px solid var(--paper-3); background: var(--paper); color: var(--text); outline: none; }
+      .ed-in:focus { border-color: var(--green); }
       .arr { display: inline-block; transition: transform .15s; }
       .mini.retry:hover .arr { transform: translateX(3px); }
     `,
@@ -122,6 +141,30 @@ export class KnowledgeShardComponent {
   @Output() delete = new EventEmitter<KnowledgeDoc>();
   /** Failed ingestion — parent decides how to retry; the shard never calls services. */
   @Output() retry = new EventEmitter<KnowledgeDoc>();
+  /** Save edited metadata; the parent owns the service call. */
+  @Output() save = new EventEmitter<{ doc: KnowledgeDoc; title: string; tags: string[] }>();
+
+  readonly editing = signal(false);
+  draftTitle = '';
+  draftTags = '';
+
+  startEdit(): void {
+    this.draftTitle = this.doc.title;
+    this.draftTags = this.doc.tags.join(', ');
+    this.editing.set(true);
+  }
+  cancelEdit(): void {
+    this.editing.set(false);
+  }
+  commit(): void {
+    const title = this.draftTitle.trim();
+    const tags = this.draftTags
+      .split(',')
+      .map((t) => t.trim())
+      .filter(Boolean);
+    this.save.emit({ doc: this.doc, title: title || this.doc.title, tags });
+    this.editing.set(false);
+  }
 
   processing(): boolean {
     const s = this.doc?.status;

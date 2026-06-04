@@ -351,8 +351,8 @@ export class LandingComponent implements AfterViewInit, OnDestroy {
     { id: 'a4', g: 'rag', accent: 'peri', title: 'Knowledge (RAG)', d: null, soon: false, desc: 'Answers strictly from your uploaded notes & PDFs — with cited sources.' },
     { id: 'a5', g: 'assess', accent: 'green', title: 'Assessment Agent', d: '1', soon: false, desc: 'Generates quizzes, grades answers & pinpoints your weak areas.' },
     { id: 'a6', g: 'project', accent: 'coral', title: 'Project Builder', d: '2', soon: false, desc: 'Designs full project plans — schema, routes, tasks, resume bullets.' },
-    { id: 'a7', g: 'career', accent: 'green', title: 'Career Agent', d: null, soon: true, desc: 'Maps skills to roles, preps interviews & connects you to mentors.' },
-    { id: 'a8', g: 'insight', accent: 'peri', title: 'Admin Insight', d: '1', soon: true, desc: 'Surfaces cohort trends, usage & content gaps for educators.' },
+    { id: 'a7', g: 'career', accent: 'green', title: 'Career Agent', d: null, soon: false, desc: 'Maps skills to roles, preps interviews & connects you to mentors.' },
+    { id: 'a8', g: 'insight', accent: 'peri', title: 'Admin Insight', d: '1', soon: false, desc: 'Surfaces cohort trends, usage & content gaps for educators.' },
   ];
 
   private cleanups: Array<() => void> = [];

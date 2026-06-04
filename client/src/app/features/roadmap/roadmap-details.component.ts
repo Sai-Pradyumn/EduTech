@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component, Input, computed, inject, signal } from '@angular/core';
+import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { RoadmapService } from '../../core/services/roadmap.service';
 import { ToastService } from '../../core/services/toast.service';
@@ -42,6 +43,7 @@ import { OfflineToggleComponent } from '../../shared/ui/offline-toggle.component
     MagneticDirective,
     CountDirective,
     OfflineToggleComponent,
+    FormsModule,
   ],
   template: `
     @if (loading()) {
@@ -115,6 +117,87 @@ import { OfflineToggleComponent } from '../../shared/ui/offline-toggle.component
           <div class="mt-4">
             <asta-progress [value]="r.progressPercentage" />
           </div>
+        </asta-card>
+      </div>
+
+      <!-- Momentum + next up -->
+      <div class="grid gap-5 lg:grid-cols-3 mb-6 motion-card-reveal">
+        <asta-card class="block" pad="16px 18px">
+          <div class="panel-head">
+            <p class="kicker">Momentum</p>
+            <span class="panel-ico" aria-hidden="true">
+              <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2s4 3 4 8a4 4 0 0 1-8 0c0-1 .5-2 1-2.5C8 10 7 12 7 14a5 5 0 0 0 10 0c0-5-5-12-5-12z"/></svg>
+            </span>
+          </div>
+          <div class="flex items-center gap-5 mt-3">
+            <div class="text-center shrink-0">
+              <p class="text-[30px] font-bold leading-none text-txt" [astaCount]="streak()"></p>
+              <p class="text-[11px] text-txt-mute mt-1">day streak</p>
+            </div>
+            <div class="text-sm text-txt-soft space-y-1 min-w-0">
+              <p><span class="font-semibold text-txt">{{ thisWeekCount() }}</span> completion{{ thisWeekCount() === 1 ? '' : 's' }} this week</p>
+              <p class="text-txt-mute">{{ lastActiveLabel() }}</p>
+            </div>
+          </div>
+          @if (hasActivity()) {
+            <ul class="mt-3 pt-3 border-t border-[color:var(--paper-3)] space-y-1.5">
+              @for (a of recentActivity(); track $index) {
+                <li class="flex items-center gap-2 text-[13px] text-txt-soft">
+                  <span class="act-dot" [class.task]="a.kind === 'task'"></span>
+                  <span class="truncate" [title]="a.label">{{ a.label }}</span>
+                </li>
+              }
+            </ul>
+          } @else {
+            <p class="text-[13px] text-txt-mute mt-3">Check off a task or week and your streak starts here.</p>
+          }
+        </asta-card>
+
+        <asta-card class="lg:col-span-2 block" pad="16px 18px">
+          <div class="panel-head">
+            <p class="kicker">Next up</p>
+            <span class="panel-ico" aria-hidden="true">
+              <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+            </span>
+          </div>
+          @if (nextWeek(); as w) {
+            <p class="text-[15px] font-semibold mt-2">Week {{ w.weekNumber }} · {{ w.focus }}</p>
+            <p class="text-[13px] text-txt-mute">{{ w.title }}</p>
+            @if (nextTasks().length) {
+              <ul class="mt-3 space-y-2">
+                @for (t of nextTasks(); track t.id) {
+                  <li class="flex items-start gap-2.5">
+                    <button class="nt-check" (click)="toggleTask({ taskId: t.id, completed: true })" [attr.aria-label]="'Mark done: ' + t.text"></button>
+                    <span class="text-[14px]">{{ t.text }}</span>
+                  </li>
+                }
+              </ul>
+            } @else {
+              <p class="text-[13px] text-txt-soft mt-3">All tasks in this week are checked off — mark the week complete in the tracker below.</p>
+            }
+            @if (dailyPlan().length > 1) {
+              <button class="daily-toggle" (click)="showDaily.set(!showDaily())">{{ showDaily() ? 'Hide' : 'Show' }} day-by-day plan</button>
+              @if (showDaily()) {
+                <ol class="daily-plan">
+                  @for (day of dailyPlan(); track day.n) {
+                    <li class="dp-day">
+                      <span class="dp-num">Day {{ day.n }}</span>
+                      <span class="dp-tasks">@for (t of day.tasks; track t) { <span class="dp-task">{{ t }}</span> }</span>
+                    </li>
+                  }
+                </ol>
+              }
+            }
+            <div class="regen">
+              <input class="regen-note" [ngModel]="regenNote()" (ngModelChange)="regenNote.set($event)" [disabled]="regenerating()"
+                placeholder="Adjust this week (optional) — e.g. ‘go deeper on testing’" />
+              <button class="regen-btn" [disabled]="regenerating()" (click)="regenerateWeek(w.weekNumber)">
+                {{ regenerating() ? 'Regenerating…' : '↻ Regenerate week' }}
+              </button>
+            </div>
+          } @else {
+            <p class="text-[15px] mt-2">🎉 Every week is complete. Recalculate for what’s next, or take on a project.</p>
+          }
         </asta-card>
       </div>
 
@@ -260,6 +343,22 @@ import { OfflineToggleComponent } from '../../shared/ui/offline-toggle.component
       }
       .panel-ico.peri { color: var(--peri-deep); background: color-mix(in oklch, var(--peri) 15%, transparent); }
       asta-card:hover .panel-ico { transform: scale(1.14) rotate(-8deg); }
+      .act-dot { width: 7px; height: 7px; flex-shrink: 0; border-radius: 50%; background: var(--green); }
+      .act-dot.task { background: var(--peri); }
+      .regen { display: flex; gap: 8px; margin-top: 14px; flex-wrap: wrap; }
+      .regen-note { flex: 1 1 200px; min-width: 0; padding: 7px 11px; border-radius: 10px; border: 1px solid var(--paper-3); background: var(--paper-2); color: var(--text); font-size: 12.5px; }
+      .regen-note:focus { outline: none; border-color: var(--green); }
+      .regen-btn { flex: 0 0 auto; padding: 7px 14px; border-radius: 10px; border: 1px solid color-mix(in oklch, var(--peri,#8aa6ff) 35%, var(--paper-3)); background: color-mix(in oklch, var(--peri,#8aa6ff) 10%, transparent); color: var(--peri-deep, #6f86e0); font-size: 12.5px; font-weight: 600; cursor: pointer; transition: background .12s; }
+      .regen-btn:hover:not(:disabled) { background: color-mix(in oklch, var(--peri,#8aa6ff) 20%, transparent); }
+      .regen-btn:disabled { opacity: .6; cursor: default; }
+      .daily-toggle { margin-top: 12px; font-size: 12px; color: var(--green-deep); background: transparent; border: none; cursor: pointer; }
+      .daily-plan { margin-top: 8px; display: flex; flex-direction: column; gap: 6px; list-style: none; padding: 0; }
+      .dp-day { display: grid; grid-template-columns: 52px 1fr; gap: 10px; align-items: start; padding: 6px 8px; border-radius: 9px; background: var(--paper-2); }
+      .dp-num { font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; color: var(--text-mute); padding-top: 2px; }
+      .dp-tasks { display: flex; flex-direction: column; gap: 3px; }
+      .dp-task { font-size: 12.5px; color: var(--text-soft); }
+      .nt-check { width: 18px; height: 18px; flex-shrink: 0; margin-top: 1px; border-radius: 6px; border: 1.5px solid var(--paper-3); background: var(--paper-2); transition: border-color .15s, background .15s; }
+      .nt-check:hover { border-color: var(--green); background: color-mix(in oklch, var(--green) 16%, transparent); }
     `,
   ],
 })
@@ -291,6 +390,95 @@ export class RoadmapDetailsComponent {
     const r = this.roadmap();
     if (!r) return 0;
     return r.milestones.filter((m) => m.targetWeek <= r.completedWeeks.length).length;
+  });
+
+  // ── Momentum (from the activity log) ──
+  private dayKey(d: Date): string {
+    return `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
+  }
+
+  /** Consecutive days (ending today or yesterday) with at least one completion. */
+  readonly streak = computed(() => {
+    const acts = this.roadmap()?.activity ?? [];
+    if (!acts.length) return 0;
+    const days = new Set(acts.map((a) => this.dayKey(new Date(a.at))));
+    const cur = new Date();
+    if (!days.has(this.dayKey(cur))) {
+      cur.setDate(cur.getDate() - 1);
+      if (!days.has(this.dayKey(cur))) return 0;
+    }
+    let streak = 0;
+    while (days.has(this.dayKey(cur))) {
+      streak++;
+      cur.setDate(cur.getDate() - 1);
+    }
+    return streak;
+  });
+
+  /** Completions in the last 7 days. */
+  readonly thisWeekCount = computed(() => {
+    const acts = this.roadmap()?.activity ?? [];
+    const cutoff = Date.now() - 7 * 24 * 60 * 60 * 1000;
+    return acts.filter((a) => new Date(a.at).getTime() >= cutoff).length;
+  });
+
+  readonly lastActiveLabel = computed(() => {
+    const acts = this.roadmap()?.activity ?? [];
+    if (!acts.length) return 'no activity yet';
+    const last = acts.reduce((m, a) => (new Date(a.at) > new Date(m.at) ? a : m));
+    const ms = Date.now() - new Date(last.at).getTime();
+    const days = Math.floor(ms / (24 * 60 * 60 * 1000));
+    if (days <= 0) return 'active today';
+    if (days === 1) return 'active yesterday';
+    if (days < 7) return `active ${days} days ago`;
+    return `active ${Math.floor(days / 7)}w ago`;
+  });
+
+  /** Most recent completions first (for the activity feed). */
+  readonly recentActivity = computed(() =>
+    [...(this.roadmap()?.activity ?? [])].reverse().slice(0, 5),
+  );
+
+  readonly hasActivity = computed(() => (this.roadmap()?.activity?.length ?? 0) > 0);
+
+  /** The next not-yet-finished week — the learner's current focus. */
+  readonly nextWeek = computed(() => {
+    const r = this.roadmap();
+    if (!r) return null;
+    return r.weeklyPlan.find((w) => !r.completedWeeks.includes(w.weekNumber)) ?? null;
+  });
+
+  /** Up to three still-open tasks in the focus week. */
+  readonly nextTasks = computed(() => {
+    const r = this.roadmap();
+    const w = this.nextWeek();
+    if (!r || !w) return [];
+    return w.tasks
+      .map((text, i) => ({ text, id: `w${w.weekNumber}:t${i}` }))
+      .filter((t) => !r.completedTasks.includes(t.id))
+      .slice(0, 3);
+  });
+
+  readonly showDaily = signal(false);
+  readonly regenNote = signal('');
+  readonly regenerating = signal(false);
+
+  /** Spread the focus week's tasks across study days (even chunks, max ~6 days). */
+  readonly dailyPlan = computed<{ n: number; tasks: string[] }[]>(() => {
+    const w = this.nextWeek();
+    if (!w || !w.tasks.length) return [];
+    const tasks = w.tasks;
+    const days = Math.min(6, tasks.length);
+    const base = Math.floor(tasks.length / days);
+    const extra = tasks.length % days;
+    const out: { n: number; tasks: string[] }[] = [];
+    let idx = 0;
+    for (let d = 0; d < days; d++) {
+      const take = base + (d < extra ? 1 : 0);
+      out.push({ n: d + 1, tasks: tasks.slice(idx, idx + take) });
+      idx += take;
+    }
+    return out;
   });
 
   /** Roadmap weeks as tracker steps (active week reveals its tasks). */
@@ -378,6 +566,25 @@ export class RoadmapDetailsComponent {
   toggleTask(t: TaskToggle): void {
     this.service.updateProgress(this._id, { taskId: t.taskId, taskCompleted: t.completed }).subscribe({
       next: (r) => this.roadmap.set(r),
+    });
+  }
+
+  regenerateWeek(weekNumber: number): void {
+    if (this.regenerating()) return;
+    this.regenerating.set(true);
+    const note = this.regenNote().trim() || undefined;
+    this.service.regenerateWeek(this._id, weekNumber, note).subscribe({
+      next: (r) => {
+        this.roadmap.set(r);
+        this.regenNote.set('');
+        this.regenerating.set(false);
+        this.showDaily.set(false);
+        this.toast.success(`Week ${weekNumber} regenerated`);
+      },
+      error: (e: Error) => {
+        this.regenerating.set(false);
+        this.toast.error(e.message || 'Could not regenerate the week');
+      },
     });
   }
 }

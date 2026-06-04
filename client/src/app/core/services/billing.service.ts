@@ -30,6 +30,10 @@ export class BillingService {
   invoices(): Observable<TransactionView[]> {
     return this.api.get<TransactionView[]>('/billing/invoices');
   }
+  /** Active payment provider + whether it's live (drives honest checkout copy). */
+  providerStatus(): Observable<{ provider: string; live: boolean }> {
+    return this.api.get('/billing/provider');
+  }
   checkout(planId: PlanId): Observable<{
     subscription: SubscriptionView;
     transaction: TransactionView;
@@ -40,6 +44,7 @@ export class BillingService {
       currency: string;
       planId: PlanId;
     };
+    checkoutUrl?: string;
   }> {
     return this.api.post('/billing/checkout', { planId });
   }

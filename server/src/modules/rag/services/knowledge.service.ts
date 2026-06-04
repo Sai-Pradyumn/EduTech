@@ -65,6 +65,37 @@ export class KnowledgeService {
     return this.toView(doc);
   }
 
+  /** Edit a document's user-facing metadata. A title change propagates to chunk
+   *  citation labels so grounded answers stay consistent. */
+  async update(
+    userId: string,
+    id: string,
+    input: { title?: string; tags?: string[] },
+  ): Promise<DocumentView> {
+    const doc = await this.owned(userId, id);
+    if (input.title !== undefined) {
+      const t = input.title.trim();
+      if (t) {
+        doc.title = t.slice(0, 200);
+        await this.chunks
+          .updateMany(
+            { document: doc._id },
+            { $set: { documentTitle: doc.title } },
+          )
+          .exec();
+      }
+    }
+    if (input.tags !== undefined) {
+      const seen = new Set<string>();
+      doc.tags = input.tags
+        .map((t) => t.trim().toLowerCase())
+        .filter((t) => t && !seen.has(t) && seen.add(t))
+        .slice(0, 20);
+    }
+    await doc.save();
+    return this.toView(doc);
+  }
+
   async remove(userId: string, id: string): Promise<void> {
     const doc = await this.owned(userId, id);
     await this.chunks.deleteMany({ document: doc._id }).exec();

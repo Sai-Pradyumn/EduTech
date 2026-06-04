@@ -1,5 +1,6 @@
 import { DynamicModule, Global, Module } from '@nestjs/common';
 import { BullModule } from '@nestjs/bullmq';
+import { DataGovernanceModule } from '../data-governance/data-governance.module';
 import { ASTA_QUEUE, JobQueueService } from './job-queue.service';
 import { JobsProcessor } from './jobs.processor';
 
@@ -31,6 +32,7 @@ export class QueueModule {
           },
         }),
         BullModule.registerQueue({ name: ASTA_QUEUE }),
+        DataGovernanceModule,
       ],
       providers: [JobQueueService, JobsProcessor],
       exports: [JobQueueService],

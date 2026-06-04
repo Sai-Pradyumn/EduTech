@@ -55,6 +55,12 @@ export class BillingController {
     return this.billing.listTransactions(user.id);
   }
 
+  /** Active payment provider + whether it's a live provider (drives honest UI copy). */
+  @Get('provider')
+  provider() {
+    return this.billing.paymentProviderInfo();
+  }
+
   @Post('checkout')
   checkout(@CurrentUser() user: AuthUser, @Body() dto: CheckoutDto) {
     return this.billing.checkout(user.id, dto.planId);
@@ -89,6 +95,18 @@ export class BillingController {
   webhook(
     @Req() req: RawBodyRequest<Request>,
     @Headers('x-razorpay-signature') signature?: string,
+  ) {
+    const raw = req.rawBody?.toString('utf8') ?? JSON.stringify(req.body ?? {});
+    return this.billing.handleWebhook(raw, signature);
+  }
+
+  /** Provider webhook (Stripe). Public + raw-body signature-verified; idempotent activation. */
+  @Public()
+  @HttpCode(HttpStatus.OK)
+  @Post('webhook/stripe')
+  stripeWebhook(
+    @Req() req: RawBodyRequest<Request>,
+    @Headers('stripe-signature') signature?: string,
   ) {
     const raw = req.rawBody?.toString('utf8') ?? JSON.stringify(req.body ?? {});
     return this.billing.handleWebhook(raw, signature);

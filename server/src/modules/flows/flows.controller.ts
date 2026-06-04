@@ -49,6 +49,7 @@ function toView(f: FlowDocument) {
       prerequisites: n.prerequisites,
       resources: n.resources,
       agentHints: n.agentHints,
+      notes: n.notes ?? '',
       linkedRoadmapId: n.linkedRoadmapId ?? null,
       linkedQuizId: n.linkedQuizId ?? null,
       linkedProjectId: n.linkedProjectId ?? null,
@@ -71,6 +72,7 @@ function toView(f: FlowDocument) {
       nodeIds: b.nodeIds,
     })),
     metadata: f.metadata ?? {},
+    completedAt: f.completedAt?.toISOString() ?? null,
     createdAt:
       (f as FlowDocument & { createdAt?: Date }).createdAt?.toISOString() ?? '',
     updatedAt:

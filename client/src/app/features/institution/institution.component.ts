@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ButtonComponent } from '../../shared/ui/button.component';
 import { CardComponent } from '../../shared/ui/card.component';
@@ -6,7 +6,7 @@ import { EmptyStateComponent } from '../../shared/ui/empty-state.component';
 import { RingComponent } from '../../shared/ui/ring.component';
 import { SkeletonComponent } from '../../shared/ui/skeleton.component';
 import { ToastService } from '../../core/services/toast.service';
-import { InstitutionOverview, InstitutionService } from '../../core/services/institution.service';
+import { CohortOutcomes, InstitutionOverview, InstitutionService } from '../../core/services/institution.service';
 
 @Component({
   selector: 'asta-institution',
@@ -43,13 +43,42 @@ import { InstitutionOverview, InstitutionService } from '../../core/services/ins
             @if (ov.cohorts.length) {
               <div class="space-y-2">
                 @for (c of ov.cohorts; track c.id) {
-                  <div class="cohort">
-                    <div class="flex items-center gap-3">
+                  <div class="cohort" [class.sel]="selectedId() === c.id">
+                    <div class="flex items-center gap-3 cursor-pointer" (click)="selectCohort(c.id)">
                       <asta-ring [value]="c.avgReadiness" [size]="48" />
                       <span class="min-w-0 flex-1"><span class="c-name">{{ c.name }}</span><span class="c-meta">{{ c.students }} students · {{ c.atRisk }} at risk</span></span>
+                      <span class="drill">{{ selectedId() === c.id ? '▾' : 'View students ›' }}</span>
                     </div>
+
+                    @if (selectedId() === c.id) {
+                      <div class="detail">
+                        @if (detailLoading()) { <asta-skeleton h="80px" /> }
+                        @else if (detail()) {
+                          <div class="flex items-center gap-2 mb-2">
+                            <input class="inp" placeholder="Search students…" [ngModel]="detailQuery()" (ngModelChange)="detailQuery.set($event)" (click)="$event.stopPropagation()" />
+                            <select class="inp" style="flex:0 0 auto" [ngModel]="detailSort()" (ngModelChange)="detailSort.set($event)" (click)="$event.stopPropagation()">
+                              <option value="readiness">Readiness</option>
+                              <option value="name">Name</option>
+                              <option value="risk">At-risk first</option>
+                            </select>
+                          </div>
+                          @if (detailStudents().length) {
+                            <div class="srows">
+                              @for (s of detailStudents(); track s.id) {
+                                <div class="srow" [class.risk]="s.atRisk">
+                                  <span class="min-w-0"><span class="s-name">{{ s.name }}</span>@if (s.topGap) { <span class="s-gap">gap: {{ s.topGap }}</span> }</span>
+                                  <span class="s-band">{{ s.band }}</span>
+                                  <span class="s-read" [style.color]="s.atRisk ? 'var(--coral, #ffb454)' : 'var(--green-deep)'">{{ s.readiness }}</span>
+                                </div>
+                              }
+                            </div>
+                          } @else { <p class="text-sm text-txt-mute">No students match.</p> }
+                        } @else { <p class="text-sm text-txt-mute">Could not load students.</p> }
+                      </div>
+                    }
+
                     <div class="flex items-center gap-2 mt-2">
-                      <input class="inp" placeholder="Assign flow/template title…" [(ngModel)]="assignTitle[c.id]" />
+                      <input class="inp" placeholder="Assign flow/template title…" [(ngModel)]="assignTitle[c.id]" (click)="$event.stopPropagation()" />
                       <asta-btn size="sm" variant="ghost" (click)="assign(c.id)" [disabled]="!assignTitle[c.id]">Assign</asta-btn>
                     </div>
                   </div>
@@ -87,9 +116,19 @@ import { InstitutionOverview, InstitutionService } from '../../core/services/ins
     .stat { text-align: center; }
     .stat .num { font-size: 26px; font-weight: 700; font-variant-numeric: tabular-nums; }
     .stat .lbl { font-size: 10.5px; color: var(--text-mute); text-transform: uppercase; letter-spacing: .04em; }
-    .cohort { padding: 10px 12px; border: 1px solid var(--paper-3); border-radius: 12px; background: var(--paper-2); }
+    .cohort { padding: 10px 12px; border: 1px solid var(--paper-3); border-radius: 12px; background: var(--paper-2); transition: border-color .15s; }
+    .cohort.sel { border-color: color-mix(in oklab, var(--green) 40%, var(--paper-3)); }
     .c-name { display: block; font-size: 13.5px; font-weight: 600; }
     .c-meta { display: block; font-size: 11.5px; color: var(--text-mute); }
+    .drill { font-size: 11px; color: var(--green-deep); white-space: nowrap; }
+    .detail { margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--paper-3); }
+    .srows { display: flex; flex-direction: column; gap: 4px; max-height: 280px; overflow: auto; }
+    .srow { display: grid; grid-template-columns: 1fr auto auto; align-items: center; gap: 10px; padding: 6px 9px; border-radius: 9px; background: var(--paper); }
+    .srow.risk { background: color-mix(in oklab, var(--coral, #ffb454) 8%, var(--paper)); }
+    .s-name { font-size: 12.5px; font-weight: 600; }
+    .s-gap { font-size: 10.5px; color: var(--text-mute); margin-left: 6px; }
+    .s-band { font-size: 10.5px; text-transform: uppercase; letter-spacing: .04em; color: var(--text-mute); }
+    .s-read { font-size: 14px; font-weight: 700; font-variant-numeric: tabular-nums; }
     .inp { flex: 1; padding: 6px 10px; border-radius: 8px; border: 1px solid var(--paper-3); background: var(--paper); color: var(--text); font-size: 12.5px; }
     .weak { font-size: 12px; padding: 3px 9px; border-radius: 999px; border: 1px solid color-mix(in oklab, var(--coral, #ffb454) 35%, var(--paper-3)); }
     .weak em { color: var(--text-mute); font-style: normal; }
@@ -106,7 +145,40 @@ export class InstitutionComponent {
   readonly loadError = signal(false);
   assignTitle: Record<string, string> = {};
 
+  // cohort drilldown (reuses the existing /cohorts/:id/outcomes endpoint)
+  readonly selectedId = signal<string | null>(null);
+  readonly detail = signal<CohortOutcomes | null>(null);
+  readonly detailLoading = signal(false);
+  readonly detailQuery = signal('');
+  readonly detailSort = signal<'readiness' | 'name' | 'risk'>('readiness');
+
+  readonly detailStudents = computed(() => {
+    const d = this.detail();
+    if (!d) return [];
+    const q = this.detailQuery().trim().toLowerCase();
+    const sort = this.detailSort();
+    let out = q ? d.students.filter((s) => s.name.toLowerCase().includes(q) || (s.topGap ?? '').toLowerCase().includes(q)) : d.students.slice();
+    out = out.sort((a, b) => {
+      if (sort === 'name') return a.name.localeCompare(b.name);
+      if (sort === 'risk') return Number(b.atRisk) - Number(a.atRisk) || b.readiness - a.readiness;
+      return b.readiness - a.readiness;
+    });
+    return out;
+  });
+
   constructor() { this.refresh(); }
+
+  selectCohort(id: string): void {
+    if (this.selectedId() === id) { this.selectedId.set(null); return; }
+    this.selectedId.set(id);
+    this.detail.set(null);
+    this.detailQuery.set('');
+    this.detailLoading.set(true);
+    this.api.cohortOutcomes(id).subscribe({
+      next: (d) => { this.detail.set(d); this.detailLoading.set(false); },
+      error: () => { this.detailLoading.set(false); this.toast.error('Could not load cohort students'); },
+    });
+  }
   refresh(): void {
     this.loading.set(true); this.loadError.set(false);
     this.api.overview().subscribe({ next: (o) => { this.o.set(o); this.loading.set(false); }, error: () => { this.loadError.set(true); this.loading.set(false); } });

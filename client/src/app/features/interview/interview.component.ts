@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { ButtonComponent } from '../../shared/ui/button.component';
@@ -99,7 +99,43 @@ import { InterviewService, InterviewSession, InterviewTypeMeta } from '../../cor
         </div>
       </asta-card>
 
-      <asta-card class="block motion-card-reveal motion-row-2">
+      @if (insights(); as ins) {
+        <asta-card class="block motion-card-reveal motion-row-2 mb-4 insights">
+          <div class="flex items-center justify-between mb-3">
+            <p class="kicker !mb-0">Your interview progress</p>
+            @if (ins.delta !== null) {
+              <span class="delta" [style.color]="ins.delta >= 0 ? 'var(--green-deep)' : 'var(--danger, #ff5d5d)'">
+                {{ ins.delta >= 0 ? '▲' : '▼' }} {{ Math.abs(ins.delta) }} vs previous
+              </span>
+            }
+          </div>
+          <div class="ins-grid">
+            <div class="stat"><span class="sv" [style.color]="scoreColor(ins.best)">{{ ins.best }}</span><span class="sl">Best</span></div>
+            <div class="stat"><span class="sv">{{ ins.avg }}</span><span class="sl">Average</span></div>
+            <div class="stat"><span class="sv">{{ ins.count }}</span><span class="sl">Completed</span></div>
+            <div class="stat"><span class="sv" [style.color]="scoreColor(ins.latest)">{{ ins.latest }}</span><span class="sl">Latest</span></div>
+          </div>
+          @if (ins.count >= 2) {
+            <svg class="spark" viewBox="0 0 100 32" preserveAspectRatio="none">
+              <polyline [attr.points]="sparkPoints()" fill="none" stroke="var(--peri, #8aa6ff)" stroke-width="2" vector-effect="non-scaling-stroke" />
+            </svg>
+            <p class="spark-cap">Overall score across your last {{ ins.count }} interviews</p>
+          }
+          @if (byType().length) {
+            <div class="by-type">
+              @for (t of byType(); track t.type) {
+                <div class="bt-row">
+                  <span class="bt-label">{{ t.label }}</span>
+                  <span class="bt-bar"><span class="bt-fill" [style.width.%]="t.best" [style.background]="scoreColor(t.best)"></span></span>
+                  <span class="bt-val">{{ t.best }} <span class="bt-n">×{{ t.count }}</span></span>
+                </div>
+              }
+            </div>
+          }
+        </asta-card>
+      }
+
+      <asta-card class="block motion-card-reveal motion-row-3">
         <p class="kicker mb-3">Past interviews</p>
         @if (sessions().length) {
           <div class="space-y-2">
@@ -143,6 +179,21 @@ import { InterviewService, InterviewSession, InterviewTypeMeta } from '../../cor
     .a { font-size: 12.5px; color: var(--text-soft); margin-top: 5px; }
     .fb { font-size: 12px; color: var(--text-mute); margin-top: 5px; }
     .skip { font-size: 12px; color: var(--text-mute); font-style: italic; margin-top: 4px; }
+    .insights { border: 1px solid color-mix(in oklab, var(--peri, #8aa6ff) 18%, var(--paper-3)); }
+    .delta { font-size: 11.5px; font-weight: 600; }
+    .ins-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+    .stat { text-align: center; padding: 9px 6px; border-radius: 10px; background: var(--paper-2); }
+    .stat .sv { display: block; font-size: 20px; font-weight: 700; font-variant-numeric: tabular-nums; }
+    .stat .sl { display: block; font-size: 10px; color: var(--text-mute); text-transform: uppercase; letter-spacing: .04em; margin-top: 1px; }
+    .spark { width: 100%; height: 36px; margin-top: 14px; display: block; }
+    .spark-cap { font-size: 10.5px; color: var(--text-mute); text-align: center; margin-top: 2px; }
+    .by-type { margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--paper-3); display: flex; flex-direction: column; gap: 7px; }
+    .bt-row { display: grid; grid-template-columns: 130px 1fr auto; align-items: center; gap: 10px; }
+    .bt-label { font-size: 12px; color: var(--text-soft); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .bt-bar { height: 7px; border-radius: 999px; background: var(--paper-2); overflow: hidden; }
+    .bt-fill { display: block; height: 100%; border-radius: 999px; transition: width .3s; }
+    .bt-val { font-size: 12px; font-weight: 700; font-variant-numeric: tabular-nums; }
+    .bt-n { font-size: 10.5px; font-weight: 500; color: var(--text-mute); }
   `],
 })
 export class InterviewComponent {
@@ -160,6 +211,44 @@ export class InterviewComponent {
   readonly draft = signal('');
   readonly lastFeedback = signal('');
   readonly lastScore = signal<number | null>(null);
+
+  /** Finished sessions in chronological (oldest→newest) order — server returns newest-first. */
+  private readonly finished = computed(() =>
+    this.sessions().filter((s) => s.status === 'finished').slice().reverse(),
+  );
+
+  readonly insights = computed(() => {
+    const f = this.finished();
+    if (!f.length) return null;
+    const scores = f.map((s) => s.overallScore);
+    const latest = scores[scores.length - 1];
+    const prev = scores.length >= 2 ? scores[scores.length - 2] : null;
+    return {
+      count: f.length,
+      best: Math.max(...scores),
+      avg: Math.round(scores.reduce((a, b) => a + b, 0) / scores.length),
+      latest,
+      delta: prev === null ? null : latest - prev,
+    };
+  });
+
+  readonly byType = computed(() => {
+    const map = new Map<string, { type: string; label: string; best: number; count: number }>();
+    for (const s of this.finished()) {
+      const e = map.get(s.type) ?? { type: s.type, label: s.typeLabel, best: 0, count: 0 };
+      e.best = Math.max(e.best, s.overallScore);
+      e.count += 1;
+      map.set(s.type, e);
+    }
+    return [...map.values()].sort((a, b) => b.best - a.best);
+  });
+
+  readonly sparkPoints = computed(() => {
+    const scores = this.finished().map((s) => s.overallScore);
+    if (scores.length < 2) return '';
+    const step = 100 / (scores.length - 1);
+    return scores.map((v, i) => `${(i * step).toFixed(1)},${(30 - (v / 100) * 28).toFixed(1)}`).join(' ');
+  });
 
   constructor() {
     const id = this.route.snapshot.paramMap.get('id');

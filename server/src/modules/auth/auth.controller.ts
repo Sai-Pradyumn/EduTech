@@ -16,7 +16,13 @@ import { AuthUser } from '../../common/interfaces';
 import { AuthService } from './auth.service';
 import { GoogleAuthService } from './google-auth.service';
 import { SessionsService } from '../sessions/sessions.service';
-import { LoginDto, RefreshDto, RegisterDto } from './dto/auth.dto';
+import {
+  LoginDto,
+  RefreshDto,
+  RegisterDto,
+  ResendOtpDto,
+  VerifyOtpDto,
+} from './dto/auth.dto';
 
 class GoogleLoginDto {
   @IsString()
@@ -33,10 +39,20 @@ export class AuthController {
     private readonly config: ConfigService,
   ) {}
 
+  /** Step 1 of signup: validates domain, creates an unverified account, emails an OTP. */
   @Public()
+  @HttpCode(HttpStatus.OK)
   @Post('register')
-  async register(@Body() dto: RegisterDto, @Req() req: Request) {
-    const result = await this.auth.register(dto);
+  register(@Body() dto: RegisterDto) {
+    return this.auth.register(dto);
+  }
+
+  /** Step 2 of signup: verify the OTP and start a session. */
+  @Public()
+  @HttpCode(HttpStatus.OK)
+  @Post('verify-otp')
+  async verifyOtp(@Body() dto: VerifyOtpDto, @Req() req: Request) {
+    const result = await this.auth.verifyOtp(dto.email, dto.code);
     await this.sessions.record(
       result.user.id,
       req.ip,
@@ -47,14 +63,30 @@ export class AuthController {
 
   @Public()
   @HttpCode(HttpStatus.OK)
+  @Post('resend-otp')
+  resendOtp(@Body() dto: ResendOtpDto) {
+    return this.auth.resendOtp(dto.email);
+  }
+
+  /** Allowed email domains, surfaced to the signup form. */
+  @Public()
+  @Get('signup-config')
+  signupConfig() {
+    return { allowedDomains: this.auth.allowedDomains() };
+  }
+
+  @Public()
+  @HttpCode(HttpStatus.OK)
   @Post('login')
   async login(@Body() dto: LoginDto, @Req() req: Request) {
     const result = await this.auth.login(dto);
-    await this.sessions.record(
-      result.user.id,
-      req.ip,
-      req.header('user-agent'),
-    );
+    if ('user' in result) {
+      await this.sessions.record(
+        result.user.id,
+        req.ip,
+        req.header('user-agent'),
+      );
+    }
     return result;
   }
 

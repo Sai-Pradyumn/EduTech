@@ -37,6 +37,11 @@ export class RoadmapService {
     return this.api.patch<Roadmap>(`/roadmaps/${id}/status`, { status });
   }
 
+  /** Regenerate a single week in place (optionally with an adjustment note). */
+  regenerateWeek(id: string, weekNumber: number, note?: string): Observable<Roadmap> {
+    return this.api.post<Roadmap>(`/roadmaps/${id}/regenerate-week`, { weekNumber, note });
+  }
+
   remove(id: string): Observable<{ ok: true }> {
     return this.api.delete<{ ok: true }>(`/roadmaps/${id}`);
   }

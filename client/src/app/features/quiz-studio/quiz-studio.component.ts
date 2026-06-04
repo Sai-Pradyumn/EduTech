@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, OnInit, computed, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnDestroy, OnInit, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
 import { KnowledgeService } from '../../core/services/knowledge.service';
@@ -6,6 +6,7 @@ import { QuizService } from '../../core/services/quiz.service';
 import { ToastService } from '../../core/services/toast.service';
 import { ConfettiService } from '../../core/services/confetti.service';
 import {
+  AttemptView,
   Difficulty,
   KnowledgeDoc,
   QuizAnswer,
@@ -139,6 +140,18 @@ const DIFFS: Difficulty[] = ['beginner', 'intermediate', 'advanced'];
                 <span class="text-txt-mute">Questions</span>
                 <input type="number" class="input" style="width:70px" min="3" max="15" [(ngModel)]="count" />
               </div>
+              <label class="flex items-center gap-2 text-sm cursor-pointer select-none">
+                <input type="checkbox" [ngModel]="timed()" (ngModelChange)="timed.set($event)" /> Timed
+              </label>
+              @if (timed()) {
+                <div class="flex items-center gap-2 text-sm">
+                  <input type="number" class="input" style="width:64px" min="1" max="90" [(ngModel)]="limitMin" />
+                  <span class="text-txt-mute">min</span>
+                </div>
+              }
+              <label class="flex items-center gap-2 text-sm cursor-pointer select-none" title="Randomize question and answer-option order each attempt">
+                <input type="checkbox" [ngModel]="shuffle()" (ngModelChange)="shuffle.set($event)" /> Shuffle
+              </label>
               <asta-btn variant="accent" size="sm" astaMagnetic [loading]="generating()" [disabled]="!canGenerate()" (click)="generate()">Generate quiz <span class="arr">→</span></asta-btn>
             </div>
           </asta-card>
@@ -169,6 +182,29 @@ const DIFFS: Difficulty[] = ['beginner', 'intermediate', 'advanced'];
               </div>
             }
           </asta-card>
+
+          <!-- attempt history -->
+          @if (attempts().length) {
+            <asta-card class="motion-card-reveal motion-lower" style="--motion-card-index:1">
+              <div class="panel-head mb-3">
+                <p class="kicker">Recent attempts</p>
+                <span class="panel-ico" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v5h5"/><path d="M3.05 13A9 9 0 1 0 6 5.3L3 8"/><path d="M12 7v5l3 2"/></svg>
+                </span>
+              </div>
+              <div class="space-y-2">
+                @for (a of attempts().slice(0, 8); track a.id) {
+                  <div class="row">
+                    <div class="min-w-0">
+                      <p class="text-sm font-medium truncate">{{ quizTitle(a.quizId) }}</p>
+                      <p class="text-[11px] text-txt-mute">{{ relTime(a.createdAt) }} · {{ a.correctCount }}/{{ a.total }} correct@if (a.weakTopics.length) { · weak: {{ a.weakTopics.slice(0, 2).join(', ') }} }</p>
+                    </div>
+                    <span class="score-pill" [style.color]="scoreColor(a.score)">{{ a.score }}%</span>
+                  </div>
+                }
+              </div>
+            </asta-card>
+          }
         </div>
         }
       }
@@ -176,9 +212,14 @@ const DIFFS: Difficulty[] = ['beginner', 'intermediate', 'advanced'];
       @case ('take') {
         @if (quiz(); as qz) {
           <asta-card class="block motion-card-reveal motion-row-primary" style="--motion-card-index:0;max-width:760px;margin:0 auto">
-            <div class="flex items-center justify-between mb-1">
-              <h2 class="text-[18px] font-display font-semibold">{{ qz.title }}</h2>
-              <button class="text-xs text-txt-mute hover:text-txt" (click)="view.set('home')">Cancel</button>
+            <div class="flex items-center justify-between gap-3 mb-1">
+              <h2 class="text-[18px] font-display font-semibold min-w-0 truncate">{{ qz.title }}</h2>
+              <div class="flex items-center gap-3 shrink-0">
+                <span class="timer-chip" [class.danger]="attemptTimed() && remaining() <= 30">
+                  {{ attemptTimed() ? '⏳ ' + countdown() : '⏱ ' + clock() }}
+                </span>
+                <button class="text-xs text-txt-mute hover:text-txt" (click)="cancelTake()">Cancel</button>
+              </div>
             </div>
             <p class="text-xs text-txt-mute mb-3">{{ qz.difficulty }} · {{ qz.questions.length }} questions · answer all, then submit</p>
 
@@ -188,23 +229,23 @@ const DIFFS: Difficulty[] = ['beginner', 'intermediate', 'advanced'];
             </div>
 
             <div class="space-y-6 q-flow motion-row-2">
-              @for (q of qz.questions; track qi; let qi = $index) {
-                <div class="motion-card-reveal" [style.--motion-card-index]="qi">
-                  <p class="text-sm font-medium mb-2"><span class="qnum">{{ qi + 1 }}</span> {{ q.prompt }}</p>
-                  @if (q.type === 'mcq') {
+              @for (item of orderedQuestions(); track item.oi; let pos = $index) {
+                <div class="motion-card-reveal" [style.--motion-card-index]="pos">
+                  <p class="text-sm font-medium mb-2"><span class="qnum">{{ pos + 1 }}</span> {{ item.q.prompt }}</p>
+                  @if (item.q.type === 'mcq') {
                     <div class="space-y-1.5">
-                      @for (opt of q.options; track oi; let oi = $index) {
-                        <label class="opt" [class.opt-on]="selectedIndex(qi) === oi">
-                          <input type="radio" [name]="'q' + qi" [value]="oi" [checked]="selectedIndex(qi) === oi" (change)="setChoice(qi, oi)" />
+                      @for (origOi of optionOrder(item.oi, item.q.options.length); track origOi) {
+                        <label class="opt" [class.opt-on]="selectedIndex(item.oi) === origOi">
+                          <input type="radio" [name]="'q' + item.oi" [checked]="selectedIndex(item.oi) === origOi" (change)="setChoice(item.oi, origOi)" />
                           <span class="opt-mark" aria-hidden="true"></span>
-                          <span>{{ opt }}</span>
+                          <span>{{ item.q.options[origOi] }}</span>
                         </label>
                       }
                     </div>
                   } @else {
-                    <textarea class="input" rows="3" placeholder="Your answer…" (input)="setText(qi, $any($event.target).value)"></textarea>
+                    <textarea class="input" rows="3" placeholder="Your answer…" (input)="setText(item.oi, $any($event.target).value)"></textarea>
                   }
-                  @if (q.source) { <p class="text-[11px] text-txt-mute mt-1 font-mono">source: {{ q.source }}</p> }
+                  @if (item.q.source) { <p class="text-[11px] text-txt-mute mt-1 font-mono">source: {{ item.q.source }}</p> }
                 </div>
               }
             </div>
@@ -294,10 +335,13 @@ const DIFFS: Difficulty[] = ['beginner', 'intermediate', 'advanced'];
       .rev-wrong { border-color: var(--coral); background: oklch(0.72 0.17 25 / .10); }
       .tagok { font-size: 10px; color: var(--green-deep); margin-left: 6px; }
       .tagno { font-size: 10px; color: var(--coral-deep); margin-left: 6px; }
+      .timer-chip { font-family: var(--mono); font-size: 12px; font-variant-numeric: tabular-nums; padding: 4px 10px; border-radius: 100px; border: 1px solid var(--paper-3); background: var(--paper-2); color: var(--text-soft); }
+      .timer-chip.danger { color: var(--coral-deep); border-color: color-mix(in oklch, var(--coral) 45%, var(--paper-3)); background: oklch(0.72 0.17 25 / .10); }
+      .score-pill { font-family: var(--mono); font-size: 13px; font-weight: 700; font-variant-numeric: tabular-nums; padding: 3px 10px; border-radius: 100px; border: 1px solid var(--paper-3); background: var(--paper-2); flex-shrink: 0; }
     `,
   ],
 })
-export class QuizStudioComponent implements OnInit {
+export class QuizStudioComponent implements OnInit, OnDestroy {
   private readonly quizApi = inject(QuizService);
   private readonly knowledge = inject(KnowledgeService);
   private readonly toast = inject(ToastService);
@@ -310,6 +354,7 @@ export class QuizStudioComponent implements OnInit {
   readonly quizzes = signal<QuizSummary[]>([]);
   readonly docs = signal<KnowledgeDoc[]>([]);
   readonly stats = signal<QuizStats | null>(null);
+  readonly attempts = signal<AttemptView[]>([]);
   readonly quiz = signal<TakeQuiz | null>(null);
   readonly result = signal<SubmitResult | null>(null);
   readonly generating = signal(false);
@@ -320,9 +365,37 @@ export class QuizStudioComponent implements OnInit {
   // generate form
   readonly source = signal<QuizSource>('topic');
   readonly difficulty = signal<Difficulty | null>(null);
+  readonly timed = signal(false);
+  /** When on, question order is randomized per attempt (display-only — grading uses original indices). */
+  readonly shuffle = signal(false);
+  /** Display order of original question indices for the current attempt. */
+  private readonly order = signal<number[]>([]);
+  /** Per-question display order of ORIGINAL option indices (keyed by original question index). */
+  private readonly optionOrders = signal<Map<number, number[]>>(new Map());
+  /** The display order of original option indices for a question — stable per attempt. */
+  optionOrder(qIdx: number, len: number): number[] {
+    return this.optionOrders().get(qIdx) ?? Array.from({ length: len }, (_, i) => i);
+  }
+  /** Questions paired with their ORIGINAL index, in display order. */
+  readonly orderedQuestions = computed(() => {
+    const q = this.quiz();
+    if (!q) return [] as { q: TakeQuiz['questions'][number]; oi: number }[];
+    const ord = this.order();
+    const seq = ord.length === q.questions.length ? ord : q.questions.map((_, i) => i);
+    return seq.map((oi) => ({ q: q.questions[oi], oi }));
+  });
   topic = '';
   documentId = '';
   count = 5;
+  limitMin = 10;
+
+  // timer (count-up always; countdown when the attempt is timed)
+  readonly elapsed = signal(0);
+  readonly remaining = signal(0);
+  readonly attemptTimed = signal(false);
+  private timer?: ReturnType<typeof setInterval>;
+  readonly clock = computed(() => this.fmt(this.elapsed()));
+  readonly countdown = computed(() => this.fmt(this.remaining()));
 
   private answers = signal<Map<number, QuizAnswer>>(new Map());
   private startedAt = 0;
@@ -342,6 +415,10 @@ export class QuizStudioComponent implements OnInit {
     if (deepLink) this.startQuiz(deepLink);
   }
 
+  ngOnDestroy(): void {
+    this.stopTimer();
+  }
+
   refresh(): void {
     this.loading.set(true);
     this.loadError.set(false);
@@ -357,6 +434,68 @@ export class QuizStudioComponent implements OnInit {
       error: () => { this.loadError.set(true); done(); },
       complete: done,
     });
+    // Attempt history — best-effort, never blocks the home view.
+    this.quizApi.attempts().subscribe({ next: (a) => this.attempts.set(a), error: () => undefined });
+  }
+
+  /** Quiz title for an attempt row (the attempt only carries a quizId). */
+  quizTitle(quizId: string): string {
+    return this.quizzes().find((q) => q.id === quizId)?.title ?? 'Quiz';
+  }
+
+  scoreColor(s: number): string {
+    return s >= 70 ? 'var(--green-deep)' : s >= 40 ? 'var(--peri-deep)' : 'var(--coral-deep)';
+  }
+
+  relTime(iso: string): string {
+    const ms = Date.now() - new Date(iso).getTime();
+    const day = Math.floor(ms / 86_400_000);
+    if (day <= 0) {
+      const h = Math.floor(ms / 3_600_000);
+      if (h >= 1) return `${h}h ago`;
+      const mi = Math.floor(ms / 60_000);
+      return mi >= 1 ? `${mi}m ago` : 'just now';
+    }
+    if (day === 1) return 'yesterday';
+    if (day < 7) return `${day}d ago`;
+    return new Date(iso).toLocaleDateString();
+  }
+
+  private fmt(s: number): string {
+    const safe = Math.max(0, s);
+    return `${Math.floor(safe / 60)}:${String(safe % 60).padStart(2, '0')}`;
+  }
+
+  private startTimer(): void {
+    this.stopTimer();
+    this.elapsed.set(0);
+    const isTimed = this.timed();
+    this.attemptTimed.set(isTimed);
+    this.remaining.set(isTimed ? Math.max(1, Math.round(this.limitMin)) * 60 : 0);
+    this.timer = setInterval(() => {
+      this.elapsed.update((s) => s + 1);
+      if (this.attemptTimed()) {
+        const r = this.remaining() - 1;
+        this.remaining.set(r);
+        if (r <= 0) {
+          this.stopTimer();
+          this.autoSubmit();
+        }
+      }
+    }, 1000);
+  }
+
+  private stopTimer(): void {
+    if (this.timer) {
+      clearInterval(this.timer);
+      this.timer = undefined;
+    }
+  }
+
+  private autoSubmit(): void {
+    if (this.submitting() || this.view() !== 'take') return;
+    this.toast.info('Time’s up — submitting your answers');
+    this.submit();
   }
 
   /** Smoothly scroll the generator panel into view from the empty-library CTA. */
@@ -396,10 +535,32 @@ export class QuizStudioComponent implements OnInit {
 
   private openTake(quiz: TakeQuiz): void {
     this.quiz.set(quiz);
+    this.order.set(this.buildOrder(quiz.questions.length));
+    // Per-question option order — shuffled with the same toggle, identity otherwise. Built once per attempt.
+    const opts = new Map<number, number[]>();
+    quiz.questions.forEach((q, i) => opts.set(i, this.buildOrder(q.options?.length ?? 0)));
+    this.optionOrders.set(opts);
     this.answers.set(new Map());
     this.result.set(null);
     this.startedAt = Date.now();
     this.view.set('take');
+    this.startTimer();
+  }
+
+  /** Sequential by default; Fisher–Yates shuffle when the Shuffle toggle is on. */
+  private buildOrder(n: number): number[] {
+    const arr = Array.from({ length: n }, (_, i) => i);
+    if (!this.shuffle()) return arr;
+    for (let i = n - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [arr[i], arr[j]] = [arr[j], arr[i]];
+    }
+    return arr;
+  }
+
+  cancelTake(): void {
+    this.stopTimer();
+    this.view.set('home');
   }
 
   setChoice(questionIndex: number, answerIndex: number): void {
@@ -433,6 +594,7 @@ export class QuizStudioComponent implements OnInit {
   submit(): void {
     const quiz = this.quiz();
     if (!quiz) return;
+    this.stopTimer();
     this.submitting.set(true);
     const answers = quiz.questions.map((_, i) => this.answers().get(i) ?? { questionIndex: i });
     this.quizApi.submit(quiz.id, answers, Date.now() - this.startedAt).subscribe({
@@ -472,6 +634,7 @@ export class QuizStudioComponent implements OnInit {
     if (quiz) this.openTake(quiz);
   }
   backHome(): void {
+    this.stopTimer();
     this.view.set('home');
     this.quiz.set(null);
     this.result.set(null);

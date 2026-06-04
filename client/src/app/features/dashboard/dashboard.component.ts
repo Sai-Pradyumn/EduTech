@@ -135,6 +135,14 @@ import { SkillPassportService, SkillPassport } from '../../core/services/skill-p
               @if (intel(); as li) { <p><span class="font-semibold text-txt" [astaCount]="li.momentum.streak"></span>-day streak</p> }
             </div>
           </div>
+          @if (intel(); as li) {
+            <div class="momentum-grid">
+              <div class="mom"><span class="mv" [astaCount]="li.momentum.activeDays"></span><span class="ml">Active days</span></div>
+              <div class="mom"><span class="mv" [astaCount]="li.momentum.sessions"></span><span class="ml">Sessions</span></div>
+              <div class="mom"><span class="mv" [astaCount]="li.momentum.quizzes"></span><span class="ml">Quizzes</span></div>
+              <div class="mom"><span class="mv" [astaCount]="li.momentum.projects"></span><span class="ml">Projects</span></div>
+            </div>
+          }
         </asta-card>
       </div>
 
@@ -255,6 +263,15 @@ import { SkillPassportService, SkillPassport } from '../../core/services/skill-p
       .panel-ico.coral { color: var(--coral-deep); background: color-mix(in oklch, var(--coral) 15%, transparent); }
       /* host hover (the asta-card element is in this view's scope) animates the glyph */
       asta-card:hover .panel-ico { transform: scale(1.14) rotate(-8deg); }
+
+      .momentum-grid {
+        display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px;
+        margin-top: 14px; padding-top: 14px;
+        border-top: 1px solid color-mix(in oklch, var(--paper-3) 70%, transparent);
+      }
+      .mom { text-align: center; }
+      .mom .mv { display: block; font-size: 19px; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--text); }
+      .mom .ml { display: block; font-size: 10px; text-transform: uppercase; letter-spacing: .04em; color: var(--text-mute); margin-top: 1px; }
 
       .weak-chip {
         font-family: var(--mono); font-size: 12px;

@@ -57,7 +57,7 @@ import { ToastService } from '../../core/services/toast.service';
           <li>✓ Passwords hashed with bcrypt</li>
           <li>✓ Short-lived access tokens + rotating refresh tokens</li>
           <li>✓ Every request carries a traceable request ID</li>
-          <li class="text-txt-mute">SSO / SCIM — available on Enterprise (placeholder)</li>
+          <li class="text-txt-mute">SSO &amp; SCIM provisioning — available on the Enterprise plan</li>
         </ul>
       </div>
     </div>

@@ -8,9 +8,11 @@ import {
   DocumentChunk,
   DocumentChunkSchema,
 } from './schemas/document-chunk.schema';
+import { KnowledgeQa, KnowledgeQaSchema } from './schemas/knowledge-qa.schema';
 import { KnowledgeController } from './knowledge.controller';
 import { IngestionService } from './services/ingestion.service';
 import { KnowledgeService } from './services/knowledge.service';
+import { KnowledgeQaService } from './services/knowledge-qa.service';
 import { DocumentParserService } from './services/document-parser.service';
 import { ChunkingService } from './services/chunking.service';
 import { MetadataTaggingService } from './services/metadata-tagging.service';
@@ -33,12 +35,14 @@ import { fileStorageFactory } from './storage/file-storage';
     MongooseModule.forFeature([
       { name: KnowledgeDocument.name, schema: KnowledgeDocumentSchema },
       { name: DocumentChunk.name, schema: DocumentChunkSchema },
+      { name: KnowledgeQa.name, schema: KnowledgeQaSchema },
     ]),
   ],
   controllers: [KnowledgeController],
   providers: [
     IngestionService,
     KnowledgeService,
+    KnowledgeQaService,
     DocumentParserService,
     ChunkingService,
     MetadataTaggingService,

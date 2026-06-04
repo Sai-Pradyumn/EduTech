@@ -31,7 +31,10 @@ import { ToastService } from '../../core/services/toast.service';
         <p class="kicker mb-3">API keys</p>
         @if (newKey(); as k) {
           <div class="rounded-[12px] p-3 mb-3" style="background:color-mix(in oklch, var(--green) 12%, var(--paper));border:1px solid var(--green)">
-            <p class="text-xs text-txt-soft mb-1">Copy your key now — it won’t be shown again.</p>
+            <div class="flex items-center justify-between gap-2 mb-1">
+              <p class="text-xs text-txt-soft">Copy your key now — it won’t be shown again.</p>
+              <button class="rounded-full px-3 py-1 text-xs font-semibold shrink-0" style="background:var(--green);color:var(--ink)" (click)="copyKey(k.key)">Copy key</button>
+            </div>
             <code class="text-sm font-mono break-all">{{ k.key }}</code>
           </div>
         }
@@ -128,6 +131,13 @@ export class DeveloperComponent implements OnInit {
       },
       error: () => this.busy.set(false),
     });
+  }
+
+  copyKey(key: string): void {
+    navigator.clipboard?.writeText(key).then(
+      () => this.toast.success('API key copied — store it safely'),
+      () => this.toast.error('Clipboard unavailable — select and copy manually'),
+    );
   }
 
   revokeKey(k: ApiKeyView): void {

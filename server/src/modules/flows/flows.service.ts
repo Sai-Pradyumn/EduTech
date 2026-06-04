@@ -23,6 +23,11 @@ import {
   UpdateFlowDto,
   UpdateNodeDto,
 } from './dto/flow.dto';
+import { EventEmitter2 } from '@nestjs/event-emitter';
+import {
+  PROGRESSION_EVENTS,
+  FlowRepairCompletedEvent,
+} from '../progression/progression.events';
 
 /** What the client should do when a node is "executed" (start a tutor/quiz/project/voice action). */
 export interface NodeExecution {
@@ -49,6 +54,7 @@ export class FlowsService {
     private readonly profiles: StudentProfileService,
     private readonly architect: FlowArchitectService,
     private readonly ledger: LedgerService,
+    private readonly events: EventEmitter2,
   ) {}
 
   // ───────────────────────── generation ─────────────────────────
@@ -188,6 +194,7 @@ export class FlowsService {
       prerequisites: dto.prerequisites ?? [],
       resources: [],
       agentHints: [],
+      notes: '',
       linkedKnowledgeDocumentIds: [],
       linkedVisualAssetIds: [],
       linkedVoiceSessionIds: [],
@@ -220,6 +227,7 @@ export class FlowsService {
     if (dto.linkedQuizId !== undefined) node.linkedQuizId = dto.linkedQuizId;
     if (dto.linkedProjectId !== undefined)
       node.linkedProjectId = dto.linkedProjectId;
+    if (dto.notes !== undefined) node.notes = dto.notes;
     flow.markModified('nodes');
     this.recomputeStatuses(flow);
     const saved = await flow.save();
@@ -230,6 +238,18 @@ export class FlowsService {
         detail: `In flow "${flow.title}".`,
         evidenceRef: String(flow._id),
       });
+      // Close the loop: mastering a repair node resolves the originating Mistake OS gap.
+      if (node.type === 'weak_area_repair') {
+        const concept =
+          node.repairConcept ?? node.title.replace(/^Repair:\s*/i, '').trim();
+        if (concept) {
+          this.events.emit(PROGRESSION_EVENTS.flowRepairCompleted, {
+            userId,
+            concept,
+            flowTitle: flow.title,
+          } satisfies FlowRepairCompletedEvent);
+        }
+      }
     }
     return saved;
   }
@@ -374,6 +394,8 @@ export class FlowsService {
         prerequisites: anchor ? [anchor.id] : [],
         resources: [{ label: 'Start repair loop', kind: 'tutor' }],
         agentHints: [`Diagnose and repair misconceptions about ${weak}.`],
+        notes: '',
+        repairConcept: weak,
         linkedKnowledgeDocumentIds: [],
         linkedVisualAssetIds: [],
         linkedVoiceSessionIds: [],
@@ -433,6 +455,8 @@ export class FlowsService {
       prerequisites: anchor ? [anchor.id] : [],
       resources: [{ label: 'Start repair loop', kind: 'tutor' }],
       agentHints: [`Diagnose and repair misconceptions about ${concept}.`],
+      notes: '',
+      repairConcept: concept,
       linkedKnowledgeDocumentIds: [],
       linkedVisualAssetIds: [],
       linkedVoiceSessionIds: [],
@@ -514,8 +538,13 @@ export class FlowsService {
     const total = flow.nodes.length || 1;
     flow.progressPercentage = Math.round((completed.size / total) * 100);
     const gate = flow.nodes.find((n) => n.type === 'mastery_gate');
-    if (gate && gate.status === 'completed' && flow.status === 'active')
+    const allDone =
+      flow.nodes.length > 0 && completed.size === flow.nodes.length;
+    // Complete the flow when its mastery gate is cleared, or every node is done.
+    if (flow.status === 'active' && (gate?.status === 'completed' || allDone))
       flow.status = 'completed';
+    if (flow.status === 'completed' && !flow.completedAt)
+      flow.completedAt = new Date();
     flow.markModified('nodes');
   }
 

@@ -1,11 +1,17 @@
 import { Module } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { MongooseModule } from '@nestjs/mongoose';
 import { AgentsModule } from '../agents/agents.module';
 import { FlowsModule } from '../flows/flows.module';
 import { AssessmentModule } from '../assessment/assessment.module';
 import { VoiceController } from './voice.controller';
 import { VoiceService } from './voice.service';
-import { MockVoiceProvider, VOICE_PROVIDER_TOKEN } from './voice.provider';
+import {
+  MockVoiceProvider,
+  OpenAIVoiceProvider,
+  VOICE_PROVIDER_TOKEN,
+  IVoiceProvider,
+} from './voice.provider';
 import {
   VoiceSession,
   VoiceSessionSchema,
@@ -29,7 +35,21 @@ import {
   controllers: [VoiceController],
   providers: [
     VoiceService,
-    { provide: VOICE_PROVIDER_TOKEN, useClass: MockVoiceProvider },
+    MockVoiceProvider,
+    {
+      provide: VOICE_PROVIDER_TOKEN,
+      inject: [ConfigService, MockVoiceProvider],
+      useFactory: (
+        config: ConfigService,
+        mock: MockVoiceProvider,
+      ): IVoiceProvider => {
+        // Real server-side TTS activates only with realtime voice enabled + an OpenAI key.
+        const realtime = config.get<boolean>('flags.realtimeVoice') ?? false;
+        const key = config.get<string>('ai.providers.openai.apiKey');
+        if (realtime && key) return new OpenAIVoiceProvider(key);
+        return mock;
+      },
+    },
   ],
   exports: [VoiceService],
 })

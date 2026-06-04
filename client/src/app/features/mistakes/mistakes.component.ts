@@ -14,7 +14,7 @@ import {
   RepairAction,
 } from '../../core/services/mistake.service';
 
-type Filter = 'all' | MistakeStatus;
+type Filter = 'all' | 'due' | MistakeStatus;
 
 @Component({
   selector: 'asta-mistakes',
@@ -46,6 +46,19 @@ type Filter = 'all' | MistakeStatus;
           <asta-card class="stat motion-card-reveal" [style.--motion-card-index]="2"><p class="num green">{{ s.resolved }}</p><p class="lbl">Resolved</p></asta-card>
           <asta-card class="stat motion-card-reveal" [style.--motion-card-index]="3"><p class="num">{{ s.avgSeverity }}</p><p class="lbl">Avg severity</p></asta-card>
         </div>
+
+        @if (s.due > 0) {
+          <asta-card class="block motion-card-reveal motion-row-2 mb-4 due-banner">
+            <div class="flex items-center justify-between gap-3 flex-wrap">
+              <div class="min-w-0">
+                <p class="kicker mb-1">Spaced review</p>
+                <p class="font-display text-lg">{{ s.due }} concept{{ s.due === 1 ? '' : 's' }} due for review</p>
+                <p class="text-xs text-txt-mute mt-0.5">A quick recall check keeps weak spots from fading — Asta reschedules each one for you.</p>
+              </div>
+              <asta-btn variant="accent" size="sm" (click)="setFilter('due')">Start review <span class="arr">→</span></asta-btn>
+            </div>
+          </asta-card>
+        }
 
         @if (s.topFocus; as top) {
           <asta-card class="block motion-card-reveal motion-row-2 mb-4 top-focus">
@@ -102,13 +115,34 @@ type Filter = 'all' | MistakeStatus;
                     <span class="type-badge">{{ typeLabel(m.mistakeType) }}</span>
                     <span class="status-badge st-{{ m.status }}">{{ m.status }}</span>
                   </div>
-                  <p class="text-xs text-txt-mute mt-0.5">seen ×{{ m.frequency }} · severity {{ m.severity }}/100 · from {{ m.source }}</p>
+                  <p class="text-xs text-txt-mute mt-0.5">seen ×{{ m.frequency }} · severity {{ m.severity }}/100 · from {{ m.source }}@if (m.status !== 'resolved') { · {{ reviewHint(m) }} }</p>
                 </div>
                 <span class="chev" [class.open]="expanded() === m.id">▾</span>
               </div>
 
+              @if (filter() === 'due' && m.status !== 'resolved') {
+                <div class="review-mini mt-2.5" (click)="$event.stopPropagation()">
+                  <span class="rm-q">Did you recall this?</span>
+                  <button class="rm-btn yes" [disabled]="busyId() === m.id" (click)="review(m, true)">Recalled</button>
+                  <button class="rm-btn no" [disabled]="busyId() === m.id" (click)="review(m, false)">Forgot</button>
+                </div>
+              }
+
               @if (expanded() === m.id) {
                 <div class="mt-3 pl-6">
+                  @if (m.status !== 'resolved') {
+                    <div class="review-block mb-3">
+                      <div class="min-w-0">
+                        <p class="kicker mb-0.5">Spaced review</p>
+                        <p class="text-xs text-txt-mute">{{ reviewHint(m) }} · reviewed ×{{ m.reviewCount }} · interval {{ m.reviewInterval }}d</p>
+                      </div>
+                      <div class="flex gap-2 shrink-0">
+                        <button class="rm-btn yes" [disabled]="busyId() === m.id" (click)="review(m, true)">Recalled</button>
+                        <button class="rm-btn no" [disabled]="busyId() === m.id" (click)="review(m, false)">Forgot</button>
+                      </div>
+                    </div>
+                  }
+
                   @if (m.correction) { <p class="text-sm mb-3"><span class="text-txt-mute">Fix:</span> {{ m.correction }}</p> }
 
                   @if (m.repairActions.length) {
@@ -175,6 +209,16 @@ type Filter = 'all' | MistakeStatus;
       .ar-check { color: var(--green); }
       .ar-label { flex: 1; font-size: 13px; }
       .ar-go { color: var(--text-mute); font-size: 12px; }
+      .due-banner { border: 1px solid color-mix(in oklab, var(--peri, #8aa6ff) 35%, var(--paper-3)); }
+      .review-mini { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding-left: 24px; }
+      .rm-q { font-size: 12px; color: var(--text-mute); }
+      .review-block { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--paper-3); background: var(--paper-2); }
+      .rm-btn { font-size: 12px; font-weight: 600; padding: 5px 12px; border-radius: 999px; border: 1px solid var(--paper-3); background: var(--paper-2); cursor: pointer; transition: border-color .2s, color .2s; }
+      .rm-btn:disabled { opacity: .5; cursor: default; }
+      .rm-btn.yes { color: var(--green-deep); }
+      .rm-btn.yes:not(:disabled):hover { border-color: var(--green); }
+      .rm-btn.no { color: var(--coral, #ffb454); }
+      .rm-btn.no:not(:disabled):hover { border-color: var(--coral, #ffb454); }
     `,
   ],
 })
@@ -184,6 +228,7 @@ export class MistakesComponent {
   private readonly router = inject(Router);
 
   readonly mistakes = signal<Mistake[]>([]);
+  readonly dueList = signal<Mistake[]>([]);
   readonly stats = signal<MistakeStats | null>(null);
   readonly loading = signal(true);
   readonly loadError = signal(false);
@@ -193,6 +238,7 @@ export class MistakesComponent {
 
   readonly filters: { id: Filter; label: string }[] = [
     { id: 'all', label: 'All' },
+    { id: 'due', label: 'Review due' },
     { id: 'open', label: 'Open' },
     { id: 'repairing', label: 'Repairing' },
     { id: 'resolved', label: 'Resolved' },
@@ -200,6 +246,7 @@ export class MistakesComponent {
 
   readonly filtered = computed(() => {
     const f = this.filter();
+    if (f === 'due') return this.dueList();
     const list = this.mistakes();
     return f === 'all' ? list : list.filter((m) => m.status === f);
   });
@@ -218,10 +265,39 @@ export class MistakesComponent {
   refresh(): void {
     this.loading.set(true);
     this.loadError.set(false);
-    let pending = 2;
+    let pending = 3;
     const done = () => { if (--pending === 0) this.loading.set(false); };
     this.api.list().subscribe({ next: (l) => this.mistakes.set(l), error: () => { this.loadError.set(true); done(); }, complete: done });
     this.api.stats().subscribe({ next: (s) => this.stats.set(s), error: () => { this.loadError.set(true); done(); }, complete: done });
+    this.api.due().subscribe({ next: (d) => this.dueList.set(d), error: done, complete: done });
+  }
+
+  /** Format a next-review date as a friendly relative hint. */
+  reviewHint(m: Mistake): string {
+    if (m.status === 'resolved') return 'resolved';
+    if (!m.nextReviewAt) return 'due now';
+    const ms = new Date(m.nextReviewAt).getTime() - Date.now();
+    if (ms <= 0) return 'due now';
+    const days = Math.round(ms / (24 * 60 * 60 * 1000));
+    if (days <= 0) return 'due today';
+    if (days === 1) return 'review in 1 day';
+    return `review in ${days} days`;
+  }
+
+  /** Record a spaced-review outcome and reschedule. */
+  review(m: Mistake, recalled: boolean): void {
+    this.busyId.set(m.id);
+    this.api.review(m.id, recalled).subscribe({
+      next: (upd) => {
+        this.busyId.set(null);
+        this.replace(upd);
+        // It's no longer due (or resolved) → drop from the due queue.
+        this.dueList.update((l) => l.filter((x) => x.id !== m.id));
+        this.refreshStats();
+        this.toast.success(recalled ? 'Nice — spaced out further' : 'Resurfacing sooner');
+      },
+      error: () => { this.busyId.set(null); this.toast.error('Could not save review'); },
+    });
   }
 
   setFilter(f: Filter): void { this.filter.set(f); }

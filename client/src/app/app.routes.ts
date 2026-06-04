@@ -2,14 +2,7 @@ import { Routes } from '@angular/router';
 import { authGuard } from './core/guards/auth.guard';
 import { roleGuard } from './core/guards/role.guard';
 import { onboardingGuard } from './core/guards/onboarding.guard';
-
-/** Phase-1 placeholder factory — keeps nav coherent until each feature ships. */
-const placeholder = (title: string, heading: string, description: string, phase: number) => ({
-  title,
-  loadComponent: () =>
-    import('./shared/components/placeholder-page.component').then((m) => m.PlaceholderPageComponent),
-  data: { title, heading, description, phase },
-});
+import { astaModeRedirectGuard } from './core/guards/asta-mode-redirect.guard';
 
 export const routes: Routes = [
   {
@@ -46,13 +39,41 @@ export const routes: Routes = [
     loadComponent: () => import('./features/onboarding/onboarding.component').then((m) => m.OnboardingComponent),
   },
 
-  // Student app shell
+  // Asta OS — its own full-screen experience, deliberately NOT wrapped by the
+  // classic ShellComponent (no legacy sidebar/topbar). Listed before `app` so it
+  // matches first. Tools are native panels inside the cockpit — no jumps back out.
+  {
+    path: 'app/os',
+    canActivate: [authGuard, onboardingGuard],
+    children: [
+      {
+        path: '',
+        title: 'Asta OS',
+        loadComponent: () => import('./features/asta-os/asta-os.component').then((m) => m.AstaOsComponent),
+      },
+      {
+        path: 'practice',
+        title: 'Practice Studio',
+        loadComponent: () =>
+          import('./features/asta-os/practice/asta-os-practice-panel.component').then((m) => m.AstaOsPracticePanelComponent),
+      },
+      {
+        path: 'notebook',
+        title: 'ML Notebook',
+        loadComponent: () =>
+          import('./features/asta-os/notebook/asta-os-notebook.component').then((m) => m.AstaOsNotebookComponent),
+      },
+    ],
+  },
+
+  // Student app shell (Classic Mode)
   {
     path: 'app',
     canActivate: [authGuard, onboardingGuard],
     loadComponent: () => import('./layout/shell.component').then((m) => m.ShellComponent),
     children: [
-      { path: '', pathMatch: 'full', redirectTo: 'dashboard' },
+      // Land on the surface matching the chosen experience (Asta OS vs Classic).
+      { path: '', pathMatch: 'full', canActivate: [astaModeRedirectGuard], children: [] },
       {
         path: 'dashboard',
         title: 'Dashboard',

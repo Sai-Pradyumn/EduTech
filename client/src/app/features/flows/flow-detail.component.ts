@@ -12,6 +12,7 @@ import { CardComponent } from '../../shared/ui/card.component';
 import { EmptyStateComponent } from '../../shared/ui/empty-state.component';
 import { SkeletonComponent } from '../../shared/ui/skeleton.component';
 import { ToastService } from '../../core/services/toast.service';
+import { ConfettiService } from '../../core/services/confetti.service';
 import { Flow, FlowNode, FlowService } from '../../core/services/flow.service';
 import { VisualService } from '../../core/services/visual.service';
 import { EDGE_META, FLOW_NODE_META, toneColor } from './flow-node-meta';
@@ -70,6 +71,13 @@ const NODE_H = 70;
           <span>{{ flow()!.progressPercentage }}% · {{ completedCount() }}/{{ flow()!.nodes.length }}</span>
         </div>
       </div>
+
+      @if (flow()!.status === 'completed') {
+        <div class="done-banner motion-row-2">
+          <span class="db-ico">★</span>
+          <span>Flow mastered — every node complete.@if (flow()!.completedAt) {<span> Finished {{ ago(flow()!.completedAt!) }}.</span>}</span>
+        </div>
+      }
 
       <div class="grid gap-4 lg:grid-cols-[1fr_320px] items-start">
         <!-- ───────── Canvas / list area ───────── -->
@@ -226,6 +234,20 @@ const NODE_H = 70;
               </ul>
             }
 
+            @if (linkedJumps(n).length) {
+              <p class="kicker mt-3 mb-1">Linked content</p>
+              <div class="flex flex-wrap gap-1.5">
+                @for (j of linkedJumps(n); track j.label) {
+                  <button class="jump-pill" (click)="jumpTo(j.route)">{{ j.icon }} {{ j.label }}</button>
+                }
+              </div>
+            }
+
+            <p class="kicker mt-3 mb-1">My notes</p>
+            <textarea class="note-area" rows="3" spellcheck="false"
+              placeholder="Jot a note — what was hard, what to revisit…"
+              [value]="n.notes" (blur)="saveNote(n, $any($event.target).value)"></textarea>
+
             <div class="grid gap-2 mt-4">
               <asta-btn variant="accent" size="sm" [loading]="executing()" (click)="start(n)">
                 {{ startLabel(n) }} <span class="arr">→</span>
@@ -311,6 +333,12 @@ const NODE_H = 70;
       .focus-glyph { font-size: 22px; flex-shrink: 0; }
       .chip-mini { font-size: 10px; padding: 1px 7px; border-radius: 999px; border: 1px solid var(--paper-3); color: var(--text-mute); text-transform: uppercase; }
       .insp-icon { font-size: 18px; }
+      .note-area { width: 100%; font-size: 13px; line-height: 1.5; color: var(--text); background: var(--paper-2); border: 1px solid var(--paper-3); border-radius: 10px; padding: 8px 10px; outline: none; resize: vertical; }
+      .jump-pill { font-size: 11.5px; padding: 3px 10px; border-radius: 999px; border: 1px solid color-mix(in oklab, var(--green) 30%, var(--paper-3)); background: color-mix(in oklab, var(--green) 8%, transparent); color: var(--green-deep); cursor: pointer; transition: background .12s; }
+      .jump-pill:hover { background: color-mix(in oklab, var(--green) 16%, transparent); }
+      .note-area:focus { border-color: var(--green); }
+      .done-banner { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; padding: 11px 16px; border-radius: 12px; font-size: 14px; color: var(--green-deep); border: 1px solid color-mix(in oklch, var(--green) 40%, var(--paper-3)); background: oklch(0.80 0.16 150 / .08); }
+      .done-banner .db-ico { font-size: 16px; }
       .inspector { max-height: calc(100dvh - 120px); overflow: auto; }
       .brief-stat { background: var(--paper-2); border: 1px solid var(--paper-3); border-radius: 12px; padding: 8px 10px; text-align: center; }
       .brief-stat span { display: block; font-size: 20px; font-weight: 700; font-variant-numeric: tabular-nums; }
@@ -324,6 +352,7 @@ export class FlowDetailComponent {
   private readonly flowApi = inject(FlowService);
   private readonly visualApi = inject(VisualService);
   private readonly toast = inject(ToastService);
+  private readonly confetti = inject(ConfettiService);
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
 
@@ -620,13 +649,57 @@ export class FlowDetailComponent {
   setStatus(n: FlowNode, status: 'completed' | 'available'): void {
     const f = this.flow();
     if (!f) return;
+    const wasComplete = f.status === 'completed';
     this.flowApi.updateNode(f.id, n.id, { status }).subscribe({
       next: (updated) => {
         this.flow.set(updated);
-        this.toast.success(status === 'completed' ? 'Node mastered — next nodes unlocked' : 'Node reopened');
+        // Celebrate the moment the whole flow is mastered.
+        if (!wasComplete && updated.status === 'completed') {
+          this.confetti.burst({ y: 0.35, count: 160 });
+          this.toast.success('🎉 Flow complete — every node mastered!');
+        } else if (status === 'completed' && n.type === 'weak_area_repair') {
+          this.toast.success('Repair mastered — Mistake OS gap closed ✓');
+        } else {
+          this.toast.success(status === 'completed' ? 'Node mastered — next nodes unlocked' : 'Node reopened');
+        }
       },
       error: (err: Error) => this.toast.error(err.message || 'Could not update node'),
     });
+  }
+
+  /** Save the learner's private note for a node (on blur; skips no-op writes). */
+  saveNote(n: FlowNode, value: string): void {
+    const f = this.flow();
+    if (!f || value === n.notes) return;
+    this.flowApi.updateNode(f.id, n.id, { notes: value }).subscribe({
+      next: (updated) => this.flow.set(updated),
+      error: () => this.toast.error('Could not save note'),
+    });
+  }
+
+  /** Deep-link targets for whatever a node is linked to (only present links are returned). */
+  linkedJumps(n: FlowNode): { icon: string; label: string; route: string }[] {
+    const out: { icon: string; label: string; route: string }[] = [];
+    if (n.linkedRoadmapId) out.push({ icon: '🗺', label: 'Roadmap', route: `/app/roadmap/${n.linkedRoadmapId}` });
+    if (n.linkedQuizId) out.push({ icon: '✓', label: 'Quiz', route: `/app/quizzes?quizId=${n.linkedQuizId}` });
+    if (n.linkedProjectId) out.push({ icon: '🛠', label: 'Project', route: '/app/projects' });
+    if (n.linkedKnowledgeDocumentIds?.length) out.push({ icon: '▤', label: 'Knowledge', route: '/app/knowledge' });
+    if (n.linkedVisualAssetIds?.length) out.push({ icon: '✦', label: 'Visual', route: `/app/visuals/${n.linkedVisualAssetIds[0]}` });
+    if (n.linkedVoiceSessionIds?.length) out.push({ icon: '🎙', label: 'Voice', route: `/app/voice-room/session/${n.linkedVoiceSessionIds[0]}` });
+    return out;
+  }
+  jumpTo(route: string): void { void this.router.navigateByUrl(route); }
+
+  /** Friendly relative time, used for "mastered N days ago". */
+  ago(iso: string): string {
+    const ms = Date.now() - new Date(iso).getTime();
+    const d = Math.floor(ms / 86_400_000);
+    if (d <= 0) {
+      const h = Math.floor(ms / 3_600_000);
+      return h >= 1 ? `${h}h ago` : 'just now';
+    }
+    if (d === 1) return 'yesterday';
+    return `${d}d ago`;
   }
 
   explainVisually(n: FlowNode): void {

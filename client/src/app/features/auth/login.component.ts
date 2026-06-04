@@ -7,33 +7,41 @@ import { ButtonComponent } from '../../shared/ui/button.component';
 import { FieldComponent } from '../../shared/ui/field.component';
 import { MagneticDirective } from '../../shared/directives/magnetic.directive';
 import { GoogleSigninComponent } from './google-signin.component';
+import { OtpVerifyComponent } from './otp-verify.component';
 
 @Component({
   selector: 'asta-login',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ReactiveFormsModule, RouterLink, ButtonComponent, FieldComponent, MagneticDirective, GoogleSigninComponent],
+  imports: [ReactiveFormsModule, RouterLink, ButtonComponent, FieldComponent, MagneticDirective, GoogleSigninComponent, OtpVerifyComponent],
   template: `
-    <h1 class="text-[30px] mb-1">Welcome back</h1>
-    <p class="text-txt-soft mb-7">Log in to continue your path.</p>
+    @if (otpEmail(); as email) {
+      <asta-otp-verify [email]="email" />
+      <p class="text-sm text-txt-soft mt-6 text-center">
+        <button type="button" class="font-semibold" style="color:var(--green-deep)" (click)="otpEmail.set(null)">Back to log in</button>
+      </p>
+    } @else {
+      <h1 class="text-[30px] mb-1">Welcome back</h1>
+      <p class="text-txt-soft mb-7">Log in to continue your path.</p>
 
-    <form [formGroup]="form" (ngSubmit)="submit()">
-      <asta-field label="Email" [error]="errorFor('email')">
-        <input class="input" type="email" formControlName="email" autocomplete="email" placeholder="you@example.com" />
-      </asta-field>
-      <asta-field label="Password" [error]="errorFor('password')">
-        <input class="input" type="password" formControlName="password" autocomplete="current-password" placeholder="••••••••" />
-      </asta-field>
+      <form [formGroup]="form" (ngSubmit)="submit()">
+        <asta-field label="Email" [error]="errorFor('email')">
+          <input class="input" type="email" formControlName="email" autocomplete="email" placeholder="you@example.com" />
+        </asta-field>
+        <asta-field label="Password" [error]="errorFor('password')">
+          <input class="input" type="password" formControlName="password" autocomplete="current-password" placeholder="••••••••" />
+        </asta-field>
 
-      <asta-btn type="submit" astaMagnetic [full]="true" [loading]="loading()" variant="accent">Log in</asta-btn>
-    </form>
+        <asta-btn type="submit" astaMagnetic [full]="true" [loading]="loading()" variant="accent">Log in</asta-btn>
+      </form>
 
-    <asta-google-signin />
+      <asta-google-signin />
 
-    <p class="text-sm text-txt-soft mt-6 text-center">
-      New here?
-      <a routerLink="/register" class="font-semibold" style="color:var(--green-deep)">Create an account</a>
-    </p>
+      <p class="text-sm text-txt-soft mt-6 text-center">
+        New here?
+        <a routerLink="/register" class="font-semibold" style="color:var(--green-deep)">Create an account</a>
+      </p>
+    }
   `,
 })
 export class LoginComponent {
@@ -43,6 +51,7 @@ export class LoginComponent {
   private readonly toast = inject(ToastService);
 
   readonly loading = signal(false);
+  readonly otpEmail = signal<string | null>(null);
   readonly form = this.fb.nonNullable.group({
     email: ['', [Validators.required, Validators.email]],
     password: ['', [Validators.required]],
@@ -65,6 +74,13 @@ export class LoginComponent {
     const { email, password } = this.form.getRawValue();
     this.auth.login(email, password).subscribe({
       next: (res) => {
+        this.loading.set(false);
+        if ('pendingVerification' in res) {
+          // Account exists but email isn't verified — a fresh code was just sent.
+          this.toast.info('Verify your email — we sent you a code');
+          this.otpEmail.set(res.email);
+          return;
+        }
         this.toast.success(`Welcome back, ${res.user.name.split(' ')[0]}`);
         void this.router.navigateByUrl(this.auth.postAuthRoute(res.user));
       },

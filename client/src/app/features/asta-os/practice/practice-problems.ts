@@ -1,0 +1,170 @@
+import { PracticeProblem } from '../../../core/models';
+
+/**
+ * Seed problem set. JavaScript problems grade in-browser via a `solution`
+ * function; other languages grade by stdin → stdout on the server runner
+ * (Piston). A larger, AI-generated bank is a later increment.
+ */
+export const PRACTICE_PROBLEMS: readonly PracticeProblem[] = [
+  {
+    id: 'sum-array',
+    title: 'Sum an array',
+    difficulty: 'easy',
+    language: 'javascript',
+    skill: 'Arrays · reduce',
+    statement: 'Write `solution(nums)` that returns the sum of all numbers. An empty array sums to 0.',
+    harness: 'function',
+    starterCode: `function solution(nums) {\n  // return the sum of nums\n}\n`,
+    functionTests: [
+      { name: 'sums positive numbers', input: [[1, 2, 3, 4]], expected: 10 },
+      { name: 'handles an empty array', input: [[]], expected: 0 },
+      { name: 'handles negatives', input: [[-5, 5, 10]], expected: 10 },
+    ],
+  },
+  {
+    id: 'two-sum',
+    title: 'Two Sum',
+    difficulty: 'medium',
+    language: 'javascript',
+    skill: 'Hash maps',
+    statement:
+      'Write `solution(nums, target)` returning indices `[i, j]` of the two numbers adding to `target`. Exactly one solution; no reuse.',
+    harness: 'function',
+    starterCode: `function solution(nums, target) {\n  // return [i, j] where nums[i] + nums[j] === target\n}\n`,
+    functionTests: [
+      { name: 'pair at the start', input: [[2, 7, 11, 15], 9], expected: [0, 1] },
+      { name: 'a later pair', input: [[3, 2, 4], 6], expected: [1, 2] },
+      { name: 'duplicates', input: [[3, 3], 6], expected: [0, 1] },
+    ],
+  },
+  {
+    id: 'is-palindrome',
+    title: 'Palindrome check',
+    difficulty: 'easy',
+    language: 'javascript',
+    skill: 'Strings · two pointers',
+    statement:
+      'Write `solution(s)` that returns `true` if the string reads the same forwards and backwards (case-sensitive, exact characters), else `false`.',
+    harness: 'function',
+    starterCode: `function solution(s) {\n  // return true if s is a palindrome\n}\n`,
+    functionTests: [
+      { name: 'a palindrome', input: ['racecar'], expected: true },
+      { name: 'not a palindrome', input: ['hello'], expected: false },
+      { name: 'single char', input: ['a'], expected: true },
+      { name: 'empty string', input: [''], expected: true },
+    ],
+  },
+  {
+    id: 'count-vowels',
+    title: 'Count the vowels',
+    difficulty: 'easy',
+    language: 'javascript',
+    skill: 'Strings · iteration',
+    statement: 'Write `solution(s)` returning how many vowels (a, e, i, o, u — lowercase only) appear in the string.',
+    harness: 'function',
+    starterCode: `function solution(s) {\n  // count a, e, i, o, u in s\n}\n`,
+    functionTests: [
+      { name: 'mixed letters', input: ['education'], expected: 5 },
+      { name: 'no vowels', input: ['rhythm'], expected: 0 },
+      { name: 'all vowels', input: ['aeiou'], expected: 5 },
+    ],
+  },
+  {
+    id: 'py-reverse-words',
+    title: 'Reverse the words',
+    difficulty: 'easy',
+    language: 'python',
+    skill: 'Strings · split/join',
+    statement: 'Read one line and print the words in reverse order, separated by single spaces. (e.g. "the quick fox" → "fox quick the")',
+    harness: 'stdio',
+    starterCode: `line = input()\n# print the words in reverse order\n`,
+    stdioTests: [
+      { name: 'three words', stdin: 'the quick fox', expectedStdout: 'fox quick the' },
+      { name: 'two words', stdin: 'hello world', expectedStdout: 'world hello' },
+      { name: 'single word', stdin: 'asta', expectedStdout: 'asta' },
+    ],
+  },
+  {
+    id: 'cpp-sum-to-n',
+    title: 'Sum 1..N (C++)',
+    difficulty: 'easy',
+    language: 'cpp',
+    skill: 'Loops · I/O',
+    statement: 'Read an integer N and print the sum of all integers from 1 to N inclusive.',
+    harness: 'stdio',
+    starterCode: `#include <iostream>\nint main() {\n  int n;\n  std::cin >> n;\n  // print the sum 1..n\n}\n`,
+    stdioTests: [
+      { name: 'sum to 5', stdin: '5', expectedStdout: '15' },
+      { name: 'sum to 1', stdin: '1', expectedStdout: '1' },
+      { name: 'sum to 100', stdin: '100', expectedStdout: '5050' },
+    ],
+  },
+  {
+    id: 'go-factorial',
+    title: 'Factorial (Go)',
+    difficulty: 'easy',
+    language: 'go',
+    skill: 'Recursion · loops',
+    statement: 'Read an integer N (0 ≤ N ≤ 12) and print N! (N factorial). 0! is 1.',
+    harness: 'stdio',
+    starterCode: `package main\nimport "fmt"\nfunc main() {\n  var n int\n  fmt.Scan(&n)\n  // print n!\n}\n`,
+    stdioTests: [
+      { name: '5!', stdin: '5', expectedStdout: '120' },
+      { name: '0!', stdin: '0', expectedStdout: '1' },
+      { name: '7!', stdin: '7', expectedStdout: '5040' },
+    ],
+  },
+  {
+    id: 'py-sum-stdin',
+    title: 'Sum two integers',
+    difficulty: 'easy',
+    language: 'python',
+    skill: 'I/O · parsing',
+    statement: 'Read two integers from one line of input and print their sum.',
+    harness: 'stdio',
+    starterCode: `a, b = map(int, input().split())\n# print their sum\n`,
+    stdioTests: [
+      { name: 'adds positives', stdin: '3 4', expectedStdout: '7' },
+      { name: 'handles negatives', stdin: '10 -2', expectedStdout: '8' },
+      { name: 'handles zero', stdin: '0 0', expectedStdout: '0' },
+    ],
+  },
+  {
+    id: 'py-fizzbuzz',
+    title: 'FizzBuzz to N',
+    difficulty: 'easy',
+    language: 'python',
+    skill: 'Control flow',
+    statement:
+      'Read an integer N, then print 1..N one per line — but "Fizz" for multiples of 3, "Buzz" for 5, "FizzBuzz" for both.',
+    harness: 'stdio',
+    starterCode: `n = int(input())\n# print the FizzBuzz sequence\n`,
+    stdioTests: [{ name: 'first five', stdin: '5', expectedStdout: '1\n2\nFizz\n4\nBuzz' }],
+  },
+  {
+    id: 'java-reverse',
+    title: 'Reverse a string',
+    difficulty: 'easy',
+    language: 'java',
+    skill: 'Strings',
+    statement: 'Read a line of input and print it reversed.',
+    harness: 'stdio',
+    starterCode: `import java.util.*;\npublic class Main {\n  public static void main(String[] args) {\n    Scanner sc = new Scanner(System.in);\n    String s = sc.nextLine();\n    // print s reversed\n  }\n}\n`,
+    stdioTests: [
+      { name: 'reverses a word', stdin: 'hello', expectedStdout: 'olleh' },
+      { name: 'reverses a phrase', stdin: 'asta os', expectedStdout: 'so atsa' },
+    ],
+  },
+  {
+    id: 'sql-top-earners',
+    title: 'Top earners (SQL)',
+    difficulty: 'medium',
+    language: 'sql',
+    skill: 'SELECT · ORDER BY',
+    statement:
+      'From an `employees(name, salary)` table, write a query returning the names of the 3 highest-paid employees, highest first. (SQL is reviewed by Asta here — no live database.)',
+    harness: 'stdio',
+    starterCode: `-- SELECT ... FROM employees ...\n`,
+    stdioTests: [{ name: 'returns top 3', stdin: '', expectedStdout: '' }],
+  },
+];

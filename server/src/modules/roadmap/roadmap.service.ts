@@ -123,13 +123,26 @@ export class RoadmapService {
       if (dto.weekCompleted) set.add(dto.weekNumber);
       else set.delete(dto.weekNumber);
       roadmap.completedWeeks = [...set].sort((a, b) => a - b);
+      if (newlyCompletedWeek !== null) {
+        const wk = roadmap.weeklyPlan.find(
+          (w) => w.weekNumber === newlyCompletedWeek,
+        );
+        this.logActivity(
+          roadmap,
+          'week',
+          `Week ${newlyCompletedWeek}${wk ? ` — ${wk.focus || wk.title}` : ''}`,
+        );
+      }
     }
 
     if (dto.taskId && typeof dto.taskCompleted === 'boolean') {
       const set = new Set(roadmap.completedTasks);
+      const taskJustDone = dto.taskCompleted && !set.has(dto.taskId);
       if (dto.taskCompleted) set.add(dto.taskId);
       else set.delete(dto.taskId);
       roadmap.completedTasks = [...set];
+      if (taskJustDone)
+        this.logActivity(roadmap, 'task', this.taskLabel(roadmap, dto.taskId));
     }
 
     roadmap.progressPercentage = this.computeProgress(roadmap);
@@ -154,6 +167,59 @@ export class RoadmapService {
       } satisfies WeekCompletedEvent);
     }
     return saved;
+  }
+
+  /** Regenerate a single week in place (LLM, with a mock fallback). Resets that week's progress. */
+  async regenerateWeek(
+    userId: string,
+    id: string,
+    weekNumber: number,
+    note?: string,
+  ): Promise<RoadmapDocument> {
+    const roadmap = await this.findByIdForUser(userId, id);
+    const idx = roadmap.weeklyPlan.findIndex(
+      (w) => w.weekNumber === weekNumber,
+    );
+    if (idx < 0) throw new NotFoundException('Week not found');
+
+    const profile = await this.profiles.findByUserOrThrow(userId);
+    const input: RoadmapBlueprintInput = {
+      fullName: profile.fullName,
+      mainGoal: roadmap.goal || profile.mainGoal,
+      currentSkillLevel: profile.currentSkillLevel,
+      currentSkills: profile.currentSkills,
+      weakAreas: profile.weakAreas,
+      availableTimePerDay: profile.availableTimePerDay,
+      targetTimeline: profile.targetTimeline,
+      preferredLearningStyle: profile.preferredLearningStyle,
+      careerTarget: profile.careerTarget,
+    };
+
+    const newWeek = await this.roadmapAgent.regenerateWeek(
+      userId,
+      input,
+      roadmap.weeklyPlan[idx],
+      note?.trim() || undefined,
+    );
+    roadmap.weeklyPlan[idx] = { ...newWeek, weekNumber };
+    roadmap.markModified('weeklyPlan');
+
+    // Content changed → un-complete this week and its tasks, then recompute progress.
+    roadmap.completedWeeks = roadmap.completedWeeks.filter(
+      (w) => w !== weekNumber,
+    );
+    roadmap.completedTasks = roadmap.completedTasks.filter(
+      (t) => !t.startsWith(`w${weekNumber}:`),
+    );
+    roadmap.progressPercentage = this.computeProgress(roadmap);
+    if (
+      roadmap.status === RoadmapStatus.Completed &&
+      roadmap.progressPercentage < 100
+    ) {
+      roadmap.status = RoadmapStatus.Active;
+    }
+    this.logActivity(roadmap, 'week', `Regenerated Week ${weekNumber}`);
+    return roadmap.save();
   }
 
   async updateStatus(
@@ -185,6 +251,26 @@ export class RoadmapService {
     roadmap.status = RoadmapStatus.Archived;
     await roadmap.save();
     return { ok: true };
+  }
+
+  /** Append a completion event, keeping only the most recent 80. */
+  private logActivity(
+    roadmap: RoadmapDocument,
+    kind: 'week' | 'task',
+    label: string,
+  ): void {
+    roadmap.activity = [
+      ...(roadmap.activity ?? []),
+      { at: new Date(), kind, label },
+    ].slice(-80);
+  }
+
+  /** Resolve a "w{week}:t{index}" task id to the actual task text when possible. */
+  private taskLabel(roadmap: RoadmapDocument, taskId: string): string {
+    const m = /^w(\d+):t(\d+)$/.exec(taskId);
+    if (!m) return taskId;
+    const wk = roadmap.weeklyPlan.find((w) => w.weekNumber === Number(m[1]));
+    return wk?.tasks[Number(m[2])] ?? taskId;
   }
 
   private computeProgress(roadmap: RoadmapDocument): number {

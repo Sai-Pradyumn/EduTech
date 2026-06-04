@@ -4,6 +4,7 @@ import { ButtonComponent } from '../../shared/ui/button.component';
 import { CardComponent } from '../../shared/ui/card.component';
 import { EmptyStateComponent } from '../../shared/ui/empty-state.component';
 import { SkeletonComponent } from '../../shared/ui/skeleton.component';
+import { ToastService } from '../../core/services/toast.service';
 import { CouncilVerdict, MentorCouncilService } from '../../core/services/mentor-council.service';
 
 @Component({
@@ -17,7 +18,10 @@ import { CouncilVerdict, MentorCouncilService } from '../../core/services/mentor
         <h1 class="text-[26px] leading-tight mb-2 grad-flow">AI Mentor Council</h1>
         <span class="goal-pill"><span class="dot"></span>Five agents debate your next move — the chair picks one</span>
       </div>
-      <div class="flex gap-2.5 shrink-0"><asta-btn variant="ghost" size="sm" [loading]="loading()" (click)="reconvene()">Reconvene</asta-btn></div>
+      <div class="flex gap-2.5 shrink-0">
+        @if (verdict()) { <asta-btn variant="ghost" size="sm" (click)="copyVerdict()">Copy</asta-btn> }
+        <asta-btn variant="ghost" size="sm" [loading]="loading()" (click)="reconvene()">Reconvene</asta-btn>
+      </div>
     </header>
 
     @if (loading()) {
@@ -79,6 +83,7 @@ import { CouncilVerdict, MentorCouncilService } from '../../core/services/mentor
 export class MentorCouncilComponent {
   private readonly api = inject(MentorCouncilService);
   private readonly router = inject(Router);
+  private readonly toast = inject(ToastService);
   readonly verdict = signal<CouncilVerdict | null>(null);
   readonly loading = signal(true);
   readonly loadError = signal(false);
@@ -93,4 +98,26 @@ export class MentorCouncilComponent {
     this.api.reconvene().subscribe({ next: (v) => { this.verdict.set(v); this.loading.set(false); }, error: () => { this.loadError.set(true); this.loading.set(false); } });
   }
   go(route: string): void { this.router.navigate([route]); }
+
+  /** Export the council's verdict + the full debate as a shareable markdown digest. */
+  copyVerdict(): void {
+    const v = this.verdict();
+    if (!v) return;
+    const lines = [
+      '# AI Mentor Council — Verdict',
+      '',
+      `**Recommendation:** ${v.chosen.recommendation}`,
+      '',
+      v.synthesis,
+      '',
+      '## The debate',
+      ...v.members.map((m) =>
+        `- **${m.agent}**${m.agent === v.chosen.agent ? ' (chosen)' : ''} — “${m.stance}” → ${m.recommendation} (${m.rationale})`,
+      ),
+    ];
+    navigator.clipboard?.writeText(lines.join('\n')).then(
+      () => this.toast.success('Verdict copied'),
+      () => this.toast.error('Clipboard unavailable'),
+    );
+  }
 }

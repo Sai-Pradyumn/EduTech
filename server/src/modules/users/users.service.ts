@@ -9,6 +9,7 @@ export interface CreateUserInput {
   email: string;
   passwordHash: string;
   role?: Role;
+  emailVerified?: boolean;
 }
 
 export interface GoogleProfile {
@@ -31,18 +32,25 @@ export class UsersService {
     });
   }
 
-  /** Find a Google-linked account by email and link/create as needed (Phase 10 · OAuth). */
+  /** Find a Google-linked account by email and link/create as needed (Phase 10 · OAuth).
+   *  Google has verified the email, so the account is always emailVerified. */
   async findOrCreateGoogle(profile: GoogleProfile): Promise<UserDocument> {
     const existing = await this.userModel
       .findOne({ email: profile.email.toLowerCase() })
       .exec();
     if (existing) {
+      let dirty = false;
       if (!existing.googleId) {
         existing.googleId = profile.googleId;
         if (profile.avatarUrl && !existing.avatarUrl)
           existing.avatarUrl = profile.avatarUrl;
-        await existing.save();
+        dirty = true;
       }
+      if (!existing.emailVerified) {
+        existing.emailVerified = true;
+        dirty = true;
+      }
+      if (dirty) await existing.save();
       return existing;
     }
     return this.userModel.create({
@@ -51,7 +59,18 @@ export class UsersService {
       googleId: profile.googleId,
       avatarUrl: profile.avatarUrl,
       role: Role.Student,
+      emailVerified: true,
     });
+  }
+
+  /** Mark an account's email as verified (after a successful OTP). */
+  async setEmailVerified(id: string): Promise<void> {
+    await this.userModel.updateOne({ _id: id }, { emailVerified: true }).exec();
+  }
+
+  /** Update the password hash for an unverified account re-registering. */
+  async setPasswordHash(id: string, passwordHash: string): Promise<void> {
+    await this.userModel.updateOne({ _id: id }, { passwordHash }).exec();
   }
 
   /** Includes passwordHash (normally select:false) for credential verification. */

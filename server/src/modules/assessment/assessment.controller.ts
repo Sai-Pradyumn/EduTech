@@ -48,6 +48,11 @@ export class AssessmentController {
     return this.assessment.listAttempts(user.id);
   }
 
+  @Get('quizzes/:id/attempts')
+  quizAttempts(@CurrentUser() user: AuthUser, @Param('id') id: string) {
+    return this.assessment.attemptsForQuiz(user.id, id);
+  }
+
   @Get('stats')
   stats(@CurrentUser() user: AuthUser) {
     return this.assessment.stats(user.id);

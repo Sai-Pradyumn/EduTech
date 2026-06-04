@@ -4,7 +4,7 @@ import { ActivatedRoute } from '@angular/router';
 import { ProjectService } from '../../core/services/project.service';
 import { ToastService } from '../../core/services/toast.service';
 import { ConfettiService } from '../../core/services/confetti.service';
-import { AiProjectReview, Difficulty, Project, ProjectTask, TaskStatus } from '../../core/models';
+import { AiProjectReview, Difficulty, Project, ProjectStats, ProjectTask, TaskStatus } from '../../core/models';
 import { ButtonComponent } from '../../shared/ui/button.component';
 import { CardComponent } from '../../shared/ui/card.component';
 import { RingComponent } from '../../shared/ui/ring.component';
@@ -40,6 +40,16 @@ const DIFFS: Difficulty[] = ['beginner', 'intermediate', 'advanced'];
         </header>
 
         <div class="space-y-5">
+          @if (stats(); as s) {
+            @if (s.total > 0) {
+              <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 motion-row-primary">
+                <asta-card class="pstat motion-card-reveal" style="--motion-card-index:0"><p class="num"><span [astaCount]="s.total"></span></p><p class="lbl">Projects</p></asta-card>
+                <asta-card class="pstat motion-card-reveal" style="--motion-card-index:1"><p class="num peri"><span [astaCount]="s.inProgress"></span></p><p class="lbl">In progress</p></asta-card>
+                <asta-card class="pstat motion-card-reveal" style="--motion-card-index:2"><p class="num green"><span [astaCount]="s.submitted"></span></p><p class="lbl">Submitted</p></asta-card>
+                <asta-card class="pstat motion-card-reveal" style="--motion-card-index:3"><p class="num"><span [astaCount]="s.avgProgress" suffix="%"></span></p><p class="lbl">Avg progress</p></asta-card>
+              </div>
+            }
+          }
           <asta-card accentVar="var(--green)" class="motion-card-reveal motion-row-primary" style="--motion-card-index:0">
             <div class="panel-head mb-3">
               <p class="kicker">Plan a new project</p>
@@ -61,24 +71,30 @@ const DIFFS: Difficulty[] = ['beginner', 'intermediate', 'advanced'];
           <asta-card class="motion-card-reveal motion-strip" style="--motion-card-index:0">
             <div class="panel-head mb-3">
               <p class="kicker">Your projects</p>
+              @if (archivedCount() > 0) {
+                <button class="arch-toggle" (click)="showArchived.set(!showArchived())">{{ showArchived() ? 'Hide archived' : 'Show archived (' + archivedCount() + ')' }}</button>
+              }
               <span class="panel-ico" aria-hidden="true">
                 <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7h18M3 12h18M3 17h18"/></svg>
               </span>
             </div>
-            @if (projects().length === 0) {
-              <p class="text-sm text-txt-mute py-6 text-center">No projects yet — plan one above.</p>
+            @if (visibleProjects().length === 0) {
+              <p class="text-sm text-txt-mute py-6 text-center">{{ projects().length === 0 ? 'No projects yet — plan one above.' : 'No active projects — all archived.' }}</p>
             }
             <div class="grid gap-3 sm:grid-cols-2">
-              @for (p of projects(); track p.id) {
-                <button class="proj" (click)="openBoard(p.id)">
+              @for (p of visibleProjects(); track p.id) {
+                <div class="proj" [class.archived]="p.archived" (click)="openBoard(p.id)" role="button" tabindex="0">
                   <div class="flex items-start justify-between gap-2">
                     <p class="text-sm font-semibold">{{ p.title }}</p>
                     <span class="status" [attr.data-s]="p.status">{{ p.status }}</span>
                   </div>
                   <div class="flex flex-wrap gap-1 my-2">@for (t of p.techStack; track t) { <span class="tag">{{ t }}</span> }</div>
                   <asta-progress [value]="p.progressPercentage" />
-                  <p class="text-[11px] text-txt-mute mt-1.5"><span [astaCount]="p.progressPercentage" suffix="%"></span> · {{ p.difficulty }} · {{ p.estimatedWeeks }}w</p>
-                </button>
+                  <div class="flex items-center justify-between mt-1.5">
+                    <p class="text-[11px] text-txt-mute"><span [astaCount]="p.progressPercentage" suffix="%"></span> · {{ p.difficulty }} · {{ p.estimatedWeeks }}w</p>
+                    <button class="arch-btn" (click)="toggleArchive(p); $event.stopPropagation()">{{ p.archived ? 'Restore' : 'Archive' }}</button>
+                  </div>
+                </div>
               }
             </div>
           </asta-card>
@@ -142,15 +158,18 @@ const DIFFS: Difficulty[] = ['beginner', 'intermediate', 'advanced'];
                   <span class="count">{{ tasksIn(col.key).length }}</span>
                 </div>
                 <div class="space-y-2">
-                  @for (t of tasksIn(col.key); track t.id) {
+                  @for (t of tasksIn(col.key); track t.id; let ti = $index, last = $last) {
                     <div class="kcard">
                       <p class="text-[13px] font-medium mb-1">{{ t.title }}</p>
                       @if (t.description) { <p class="text-[11px] text-txt-mute mb-1.5">{{ t.description }}</p> }
                       <div class="flex items-center justify-between">
                         <span class="phase">{{ t.phase }}</span>
                         <div class="flex gap-1">
+                          <button class="mv" title="Move up" [disabled]="ti === 0" (click)="reorder(t, 'up')">▲</button>
+                          <button class="mv" title="Move down" [disabled]="last" (click)="reorder(t, 'down')">▼</button>
                           @if (col.key !== 'todo') { <button class="mv" title="Move left" (click)="move(t, -1)">◀</button> }
                           @if (col.key !== 'done') { <button class="mv" title="Move right" (click)="move(t, 1)">▶</button> }
+                          <button class="mv del" title="Delete task" (click)="removeTask(t)">✕</button>
                         </div>
                       </div>
                     </div>
@@ -244,6 +263,28 @@ const DIFFS: Difficulty[] = ['beginner', 'intermediate', 'advanced'];
             </asta-card>
           }
 
+          <!-- Case study (Phase 9 · portfolio writeup) -->
+          @if (p.submission?.submittedAt) {
+            <asta-card class="mt-5 motion-card-reveal motion-lower" style="--motion-card-index:3">
+              <div class="panel-head mb-3">
+                <p class="kicker">Portfolio case study</p>
+                <span class="panel-ico" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+                </span>
+              </div>
+              @if (p.caseStudy) {
+                <pre class="case-text">{{ p.caseStudy }}</pre>
+                <div class="flex gap-2 mt-3">
+                  <asta-btn variant="ghost" size="sm" (click)="copyCaseStudy()">Copy</asta-btn>
+                  <asta-btn variant="ghost" size="sm" [loading]="buildingCase()" (click)="generateCaseStudy()">Regenerate</asta-btn>
+                </div>
+              } @else {
+                <p class="text-sm text-txt-soft mb-3">Turn this project into a polished, portfolio-ready writeup — problem, approach, stack and outcome — that you can drop straight into your portfolio or résumé.</p>
+                <asta-btn variant="accent" size="sm" astaMagnetic [loading]="buildingCase()" (click)="generateCaseStudy()">Generate case study <span class="arr">→</span></asta-btn>
+              }
+            </asta-card>
+          }
+
           <!-- Mentor review (B2) -->
           @if (p.mentorReview; as mr) {
             <asta-card accentVar="var(--green)" class="mt-5 motion-card-reveal motion-lower" style="--motion-card-index:2">
@@ -271,8 +312,13 @@ const DIFFS: Difficulty[] = ['beginner', 'intermediate', 'advanced'];
       .chip:hover { color: var(--text); border-color: color-mix(in oklch, var(--green) 38%, transparent); transform: translateY(-1px); }
       .chip-on { background: linear-gradient(135deg, var(--green), var(--green-deep)); color: #06100a; border-color: transparent; box-shadow: 0 4px 12px var(--asta-accent-glow); }
       .chip-on:hover { color: #06100a; transform: translateY(-1px); }
-      .proj { text-align: left; border: 1px solid var(--paper-3); border-radius: 14px; padding: 14px; background: var(--paper); transition: border-color .15s; }
+      .proj { text-align: left; border: 1px solid var(--paper-3); border-radius: 14px; padding: 14px; background: var(--paper); transition: border-color .15s; cursor: pointer; }
       .proj:hover { border-color: var(--green); }
+      .proj.archived { opacity: .6; }
+      .arch-toggle { margin-left: auto; margin-right: 10px; font-size: 11px; color: var(--text-mute); background: transparent; border: none; cursor: pointer; }
+      .arch-toggle:hover { color: var(--text); }
+      .arch-btn { font-size: 10.5px; color: var(--text-mute); background: transparent; border: none; cursor: pointer; }
+      .arch-btn:hover { color: var(--text); }
       .status { font-family: var(--mono); font-size: 10px; text-transform: uppercase; padding: 1px 7px; border-radius: 100px; background: var(--paper-2); color: var(--text-soft); }
       .status[data-s='completed'] { background: oklch(0.80 0.16 150 / .18); color: var(--green-deep); }
       .status[data-s='in_progress'] { background: oklch(0.78 0.15 268 / .15); color: var(--peri-deep); }
@@ -285,6 +331,13 @@ const DIFFS: Difficulty[] = ['beginner', 'intermediate', 'advanced'];
       .phase { font-size: 10px; color: var(--text-mute); font-family: var(--mono); }
       .mv { width: 24px; height: 22px; border-radius: 6px; border: 1px solid var(--paper-3); background: var(--paper); font-size: 11px; color: var(--text-soft); }
       .mv:hover { border-color: var(--green); color: var(--green-deep); }
+      .mv.del:hover { border-color: var(--coral, #ffb454); color: var(--coral-deep); }
+      .pstat { text-align: center; padding: 14px 10px; }
+      .pstat .num { font-size: 26px; font-weight: 700; line-height: 1.1; font-variant-numeric: tabular-nums; }
+      .pstat .num.green { color: var(--green-deep); }
+      .pstat .num.peri { color: var(--peri-deep); }
+      .pstat .lbl { font-size: 11px; color: var(--text-mute); text-transform: uppercase; letter-spacing: .05em; margin-top: 2px; }
+      .case-text { font-family: var(--mono); font-size: 12.5px; line-height: 1.6; white-space: pre-wrap; word-break: break-word; background: var(--paper-2); border: 1px solid var(--paper-3); border-radius: 10px; padding: 12px 14px; max-height: 360px; overflow: auto; color: var(--text-soft); }
       .ms-dot { width: 11px; height: 11px; border-radius: 50%; border: 2px solid var(--paper-3); margin-top: 3px; flex-shrink: 0; }
       .ms-on { background: var(--green); border-color: var(--green); }
       .lnk { color: var(--green-deep); font-weight: 600; }
@@ -307,10 +360,17 @@ export class ProjectStudioComponent implements OnInit {
   readonly diffs = DIFFS;
   readonly view = signal<View>('home');
   readonly projects = signal<Project[]>([]);
+  readonly showArchived = signal(false);
+  readonly archivedCount = computed(() => this.projects().filter((p) => p.archived).length);
+  readonly visibleProjects = computed(() =>
+    this.showArchived() ? this.projects() : this.projects().filter((p) => !p.archived),
+  );
+  readonly stats = signal<ProjectStats | null>(null);
   readonly project = signal<Project | null>(null);
   readonly generating = signal(false);
   readonly submitting = signal(false);
   readonly reviewing = signal(false);
+  readonly buildingCase = signal(false);
 
   readonly difficulty = signal<Difficulty | null>(null);
   goal = '';
@@ -332,6 +392,39 @@ export class ProjectStudioComponent implements OnInit {
 
   refresh(): void {
     this.api.list().subscribe({ next: (p) => this.projects.set(p) });
+    this.api.stats().subscribe({ next: (s) => this.stats.set(s), error: () => undefined });
+  }
+
+  removeTask(task: ProjectTask): void {
+    const p = this.project();
+    if (!p) return;
+    this.api.removeTask(p.id, task.id).subscribe({ next: (updated) => this.project.set(updated) });
+  }
+
+  generateCaseStudy(): void {
+    const p = this.project();
+    if (!p || this.buildingCase()) return;
+    this.buildingCase.set(true);
+    this.api.generateCaseStudy(p.id).subscribe({
+      next: (updated) => {
+        this.buildingCase.set(false);
+        this.project.set(updated);
+        this.toast.success('Case study ready — portfolio-ready writeup');
+      },
+      error: (e) => {
+        this.buildingCase.set(false);
+        this.toast.error(e?.message ?? 'Could not generate case study');
+      },
+    });
+  }
+
+  copyCaseStudy(): void {
+    const text = this.project()?.caseStudy;
+    if (!text) return;
+    void navigator.clipboard?.writeText(text).then(
+      () => this.toast.success('Copied to clipboard'),
+      () => this.toast.error('Could not copy'),
+    );
   }
 
   generate(): void {
@@ -374,6 +467,25 @@ export class ProjectStudioComponent implements OnInit {
     const p = this.project();
     if (!p || next === task.status) return;
     this.api.moveTask(p.id, task.id, next).subscribe({ next: (updated) => this.project.set(updated) });
+  }
+
+  toggleArchive(p: Project): void {
+    this.api.setArchived(p.id, !p.archived).subscribe({
+      next: (updated) => {
+        this.projects.set(this.projects().map((x) => (x.id === updated.id ? updated : x)));
+        this.toast.success(updated.archived ? 'Project archived' : 'Project restored');
+      },
+      error: () => this.toast.error('Could not update project'),
+    });
+  }
+
+  reorder(task: ProjectTask, direction: 'up' | 'down'): void {
+    const p = this.project();
+    if (!p) return;
+    this.api.reorderTask(p.id, task.id, direction).subscribe({
+      next: (updated) => this.project.set(updated),
+      error: () => this.toast.error('Could not reorder task'),
+    });
   }
 
   addTask(): void {

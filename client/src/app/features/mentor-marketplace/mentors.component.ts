@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ButtonComponent } from '../../shared/ui/button.component';
 import { CardComponent } from '../../shared/ui/card.component';
@@ -28,8 +28,20 @@ import { Mentor, MentorMarketplaceService, MentorProfileInput, MentorSession } f
     @if (tab() === 'browse') {
       @if (loading()) { <div class="grid gap-3 sm:grid-cols-2">@for (i of [1,2,3,4]; track i) { <asta-card><asta-skeleton h="140px" /></asta-card> }</div> }
       @else if (mentors().length) {
+        <div class="toolbar mb-4">
+          <input class="inp" style="flex:1 1 220px;margin:0" [ngModel]="mentorQuery()" (ngModelChange)="mentorQuery.set($event)" placeholder="Search mentors — name, skill, headline…" aria-label="Search mentors" />
+          <div class="seg">
+            <button class="seg-b" [class.on]="pricing() === 'all'" (click)="pricing.set('all')">All</button>
+            <button class="seg-b" [class.on]="pricing() === 'free'" (click)="pricing.set('free')">Free</button>
+            <button class="seg-b" [class.on]="pricing() === 'paid'" (click)="pricing.set('paid')">Paid</button>
+          </div>
+          <span class="tb-count">{{ filteredMentors().length }} of {{ mentors().length }}</span>
+        </div>
+        @if (filteredMentors().length === 0) {
+          <asta-card><asta-empty-state title="No matches" description="No mentors match your search or filter."><asta-btn variant="ghost" (click)="clearMentorFilters()">Clear filters</asta-btn></asta-empty-state></asta-card>
+        } @else {
         <div class="grid gap-3 sm:grid-cols-2 motion-row-2">
-          @for (m of mentors(); track m.id) {
+          @for (m of filteredMentors(); track m.id) {
             <asta-card class="block motion-card-reveal">
               <div class="flex items-start gap-3">
                 <span class="avatar">{{ m.name[0] }}</span>
@@ -54,6 +66,7 @@ import { Mentor, MentorMarketplaceService, MentorProfileInput, MentorSession } f
             </asta-card>
           }
         </div>
+        }
       } @else { <asta-card><asta-empty-state title="No mentors yet" description="Mentors will appear here as they publish profiles. Want to help others? Become a mentor."></asta-empty-state></asta-card> }
     }
 
@@ -106,6 +119,12 @@ import { Mentor, MentorMarketplaceService, MentorProfileInput, MentorSession } f
     .price { font-size: 10.5px; font-weight: 700; text-transform: uppercase; padding: 2px 8px; border-radius: 999px; background: var(--paper-3); color: var(--text-mute); }
     .price.free { background: color-mix(in oklab, var(--green) 18%, transparent); color: var(--green-deep); }
     .chip { font-size: 11px; padding: 2px 8px; border-radius: 999px; background: var(--paper-3); color: var(--text-soft); }
+    .toolbar { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+    .seg { display: inline-flex; border: 1px solid var(--paper-3); border-radius: 9px; overflow: hidden; }
+    .seg-b { font-size: 12px; padding: 7px 13px; background: var(--paper-2); color: var(--text-mute); border: none; cursor: pointer; transition: all .12s; }
+    .seg-b:not(:last-child) { border-right: 1px solid var(--paper-3); }
+    .seg-b.on { background: color-mix(in oklab, var(--green) 16%, transparent); color: var(--green-deep); }
+    .tb-count { font-size: 12px; color: var(--text-mute); margin-left: auto; white-space: nowrap; }
     .sel, .inp { background: var(--paper-2); border: 1px solid var(--paper-3); color: var(--text); border-radius: 9px; padding: 7px 10px; font-size: 13px; font-family: inherit; }
     .sel { flex: 1; }
     .inp { width: 100%; margin-bottom: 2px; }
@@ -127,6 +146,22 @@ export class MentorsComponent {
   readonly loading = signal(true);
   readonly busy = signal(false);
   readonly expertiseStr = signal('');
+  readonly mentorQuery = signal('');
+  readonly pricing = signal<'all' | 'free' | 'paid'>('all');
+  readonly filteredMentors = computed(() => {
+    const q = this.mentorQuery().trim().toLowerCase();
+    const p = this.pricing();
+    let out = this.mentors();
+    if (p !== 'all') out = out.filter((m) => m.pricingMode === p);
+    if (q) out = out.filter((m) =>
+      m.name.toLowerCase().includes(q) ||
+      m.headline.toLowerCase().includes(q) ||
+      m.bio.toLowerCase().includes(q) ||
+      m.expertise.some((e) => e.toLowerCase().includes(q)),
+    );
+    return out;
+  });
+  clearMentorFilters(): void { this.mentorQuery.set(''); this.pricing.set('all'); }
   reqType = 'project_review';
   prof: MentorProfileInput = { headline: '', bio: '', availability: '' };
 

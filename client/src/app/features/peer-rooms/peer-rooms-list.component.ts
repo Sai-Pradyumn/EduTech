@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { ButtonComponent } from '../../shared/ui/button.component';
@@ -43,8 +43,26 @@ import { PeerRoom, PeerRoomService } from '../../core/services/peer-room.service
     } @else if (rooms().length === 0) {
       <asta-card class="block motion-card-reveal"><asta-empty-state title="No peer rooms yet" description="Create a room and share its code, or join one with a code. Rooms have a shared board, an AI moderator and an auto-summary."><asta-btn variant="accent" (click)="focusTitle()">Create a room</asta-btn></asta-empty-state></asta-card>
     } @else {
+      <div class="toolbar motion-row-2 mb-4">
+        <input class="pr-input" [ngModel]="query()" (ngModelChange)="query.set($event)" placeholder="Search rooms…" aria-label="Search rooms" />
+        <div class="seg">
+          <button class="seg-b" [class.on]="filter() === 'all'" (click)="filter.set('all')">All</button>
+          <button class="seg-b" [class.on]="filter() === 'open'" (click)="filter.set('open')">Open</button>
+          <button class="seg-b" [class.on]="filter() === 'closed'" (click)="filter.set('closed')">Closed</button>
+        </div>
+        <select class="pr-input pr-sel" [ngModel]="sort()" (ngModelChange)="sort.set($event)" aria-label="Sort rooms">
+          <option value="newest">Newest</option>
+          <option value="members">Most members</option>
+          <option value="title">Title A–Z</option>
+        </select>
+        <span class="tb-count">{{ filteredRooms().length }} of {{ rooms().length }}</span>
+      </div>
+
+      @if (filteredRooms().length === 0) {
+        <asta-card class="block"><asta-empty-state title="No matches" description="No rooms match your search or filter."><asta-btn variant="ghost" (click)="clearFilters()">Clear filters</asta-btn></asta-empty-state></asta-card>
+      } @else {
       <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 motion-row-2">
-        @for (r of rooms(); track r.id; let i = $index) {
+        @for (r of filteredRooms(); track r.id; let i = $index) {
           <asta-card class="motion-card-reveal hover-lift cursor-pointer block" [interactive]="true" [style.--motion-card-index]="i % 3" (click)="open(r)">
             <div class="flex items-start justify-between gap-2">
               <p class="font-display text-lg leading-snug truncate">{{ r.title }}</p>
@@ -54,10 +72,13 @@ import { PeerRoom, PeerRoomService } from '../../core/services/peer-room.service
             <div class="flex flex-wrap gap-1.5 mt-3 text-[11px] text-txt-mute">
               <span class="pill">{{ r.members.length }} members</span>
               @if (r.isHost) { <span class="pill">code {{ r.code }}</span> } @else if (r.isMember) { <span class="pill">joined</span> }
+              @if (r.summary) { <span class="pill chip-ok">✦ Summarized</span> }
+              @if (r.actionItems.length) { <span class="pill chip-act">{{ r.actionItems.length }} action{{ r.actionItems.length > 1 ? 's' : '' }}</span> }
             </div>
           </asta-card>
         }
       </div>
+      }
     }
   `,
   styles: [
@@ -69,6 +90,16 @@ import { PeerRoom, PeerRoomService } from '../../core/services/peer-room.service
       .status { font-size: 10px; text-transform: uppercase; letter-spacing: .05em; padding: 3px 9px; border-radius: 999px; border: 1px solid var(--paper-3); }
       .st-open { color: var(--green-deep); border-color: color-mix(in oklab, var(--green) 45%, var(--paper-3)); }
       .st-closed { color: var(--text-mute); }
+      .toolbar { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+      .toolbar .pr-input:first-child { flex: 1 1 200px; }
+      .pr-sel { flex: 0 0 auto; width: auto; }
+      .seg { display: inline-flex; border: 1px solid var(--paper-3); border-radius: 10px; overflow: hidden; }
+      .seg-b { font-size: 12px; padding: 7px 13px; background: var(--paper-2); color: var(--text-mute); border: none; cursor: pointer; transition: all .12s; }
+      .seg-b:not(:last-child) { border-right: 1px solid var(--paper-3); }
+      .seg-b.on { background: color-mix(in oklab, var(--green) 16%, transparent); color: var(--green-deep); }
+      .tb-count { font-size: 12px; color: var(--text-mute); margin-left: auto; white-space: nowrap; }
+      .chip-ok { color: var(--green-deep); border-color: color-mix(in oklab, var(--green) 40%, var(--paper-3)); }
+      .chip-act { color: var(--peri-deep, #6f86e0); border-color: color-mix(in oklab, var(--peri, #8aa6ff) 40%, var(--paper-3)); }
     `,
   ],
 })
@@ -85,6 +116,26 @@ export class PeerRoomsListComponent {
   title = '';
   topic = '';
   code = '';
+
+  readonly query = signal('');
+  readonly filter = signal<'all' | 'open' | 'closed'>('all');
+  readonly sort = signal<'newest' | 'members' | 'title'>('newest');
+
+  readonly filteredRooms = computed(() => {
+    const q = this.query().trim().toLowerCase();
+    const f = this.filter();
+    const s = this.sort();
+    let out = this.rooms();
+    if (f !== 'all') out = out.filter((r) => r.status === f);
+    if (q) out = out.filter((r) => r.title.toLowerCase().includes(q) || r.topic.toLowerCase().includes(q));
+    return [...out].sort((a, b) => {
+      if (s === 'members') return b.members.length - a.members.length;
+      if (s === 'title') return a.title.localeCompare(b.title);
+      return (b.createdAt || '').localeCompare(a.createdAt || '');
+    });
+  });
+
+  clearFilters(): void { this.query.set(''); this.filter.set('all'); this.sort.set('newest'); }
 
   constructor() { this.refresh(); }
   refresh(): void {

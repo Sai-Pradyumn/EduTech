@@ -283,7 +283,7 @@ export const PLAN_CATALOG: Plan[] = [
     features: [
       'Everything in Institution',
       'Unlimited members & usage',
-      'SSO / SCIM (placeholder)',
+      'SSO & SCIM provisioning',
       'Custom AI budgets & SLAs',
       'Dedicated support',
     ],

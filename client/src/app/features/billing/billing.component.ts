@@ -87,20 +87,29 @@ import { GaugeComponent } from '../../shared/charts';
       <!-- Plan limits & AI cost breakdown -->
       <div class="grid gap-5 md:grid-cols-2">
         <div class="card" style="padding:20px">
-          <p class="kicker mb-3">Plan limits this period</p>
+          <div class="flex items-center justify-between mb-3">
+            <p class="kicker !mb-0">Plan limits this period</p>
+            @if (hiddenLimitCount() > 0) {
+              <button class="text-xs font-mono text-txt-mute hover:text-txt" (click)="showAllLimits.set(!showAllLimits())">
+                {{ showAllLimits() ? 'Show essentials' : 'Show all (' + hiddenLimitCount() + ' more)' }}
+              </button>
+            }
+          </div>
           @if (meters().length) {
             <div class="space-y-3">
               @for (m of meters(); track m.key) {
-                <div>
+                <div [style.opacity]="m.blocked ? 0.55 : 1">
                   <div class="flex items-center justify-between text-sm mb-1">
                     <span>{{ m.label }}</span>
-                    <span class="font-mono text-txt-mute">
-                      {{ m.used }}<span> / {{ m.unlimited ? '∞' : m.limit }}</span>
-                    </span>
+                    @if (m.blocked) {
+                      <span class="font-mono text-txt-mute">Not in plan</span>
+                    } @else {
+                      <span class="font-mono text-txt-mute">{{ m.used }}<span> / {{ m.unlimited ? '∞' : m.limit }}</span></span>
+                    }
                   </div>
                   <div class="h-1.5 rounded-full overflow-hidden" style="background:var(--paper-3)">
                     <div class="h-full rounded-full" style="transition:width .4s var(--ease-spring)"
-                      [style.width.%]="m.unlimited ? 8 : m.pct"
+                      [style.width.%]="m.blocked ? 0 : (m.unlimited ? 8 : m.pct)"
                       [style.background]="m.over ? 'var(--danger)' : 'var(--green)'"></div>
                   </div>
                 </div>
@@ -170,7 +179,11 @@ import { GaugeComponent } from '../../shared/charts';
             }
           }
         </div>
-        <p class="text-xs text-txt-mute mt-3 font-mono">Mock payment mode — no real charge. Razorpay/Stripe slot behind the same checkout.</p>
+        @if (providerLive()) {
+          <p class="text-xs text-txt-mute mt-3 font-mono">Payments are processed securely by {{ providerName() }}.</p>
+        } @else {
+          <p class="text-xs text-txt-mute mt-3 font-mono">Test mode — no real charge. A live provider (Razorpay/Stripe) activates behind the same checkout.</p>
+        }
       </div>
 
       <!-- Invoices -->
@@ -211,8 +224,10 @@ export class BillingComponent implements OnInit {
   readonly txns = signal<TransactionView[]>([]);
   readonly ent = signal<EntitlementSummary | null>(null);
   readonly busy = signal(false);
+  readonly providerLive = signal(false);
+  readonly providerName = signal('the payment provider');
 
-  /** Meter rows worth surfacing on the billing page (monthly + key flags). */
+  /** Meter rows worth surfacing on the billing page by default (monthly + key flags). */
   private readonly meterKeys: FeatureKey[] = [
     'ai.messages',
     'flow.generations',
@@ -222,22 +237,44 @@ export class BillingComponent implements OnInit {
     'rag.documents',
   ];
 
+  /** When true, show every entitlement the plan defines — not just the curated essentials. */
+  readonly showAllLimits = signal(false);
+
+  private toMeter(f: EntitlementSummary['features'][number]) {
+    return {
+      key: f.featureKey,
+      label: FEATURE_LABELS[f.featureKey] ?? f.featureKey,
+      used: f.used,
+      limit: f.limit,
+      pct: f.limit > 0 ? Math.min(100, Math.round((f.used / f.limit) * 100)) : 0,
+      unlimited: f.limit < 0,
+      blocked: f.limit === 0,
+      over: f.limit > 0 && f.used >= f.limit,
+    };
+  }
+
   readonly meters = computed(() => {
     const s = this.ent();
     if (!s) return [];
+    if (this.showAllLimits()) {
+      // Curated essentials first, then the rest in declared order.
+      const order = new Map(this.meterKeys.map((k, i) => [k, i]));
+      return s.features
+        .slice()
+        .sort((a, b) => (order.get(a.featureKey) ?? 99) - (order.get(b.featureKey) ?? 99))
+        .map((f) => this.toMeter(f));
+    }
     return this.meterKeys
       .map((k) => s.features.find((f) => f.featureKey === k))
       .filter((f): f is NonNullable<typeof f> => !!f)
-      .map((f) => ({
-        key: f.featureKey,
-        label: FEATURE_LABELS[f.featureKey] ?? f.featureKey,
-        used: f.used,
-        limit: f.limit,
-        pct:
-          f.limit > 0 ? Math.min(100, Math.round((f.used / f.limit) * 100)) : 0,
-        unlimited: f.limit < 0,
-        over: f.limit >= 0 && f.used >= f.limit,
-      }));
+      .map((f) => this.toMeter(f));
+  });
+
+  /** Count of entitlements not shown in the default (essentials) view. */
+  readonly hiddenLimitCount = computed(() => {
+    const s = this.ent();
+    if (!s) return 0;
+    return Math.max(0, s.features.length - this.meterKeys.filter((k) => s.features.some((f) => f.featureKey === k)).length);
   });
 
   ngOnInit(): void {
@@ -250,6 +287,14 @@ export class BillingComponent implements OnInit {
     this.billing.usage().subscribe({ next: (u) => this.usage.set(u) });
     this.billing.transactions().subscribe({ next: (t) => this.txns.set(t) });
     this.entitlements.load().subscribe({ next: (e) => this.ent.set(e) });
+    this.billing.providerStatus().subscribe({
+      next: (p) => {
+        this.providerLive.set(p.live);
+        if (p.provider && p.provider !== 'mock') {
+          this.providerName.set(p.provider.charAt(0).toUpperCase() + p.provider.slice(1));
+        }
+      },
+    });
   }
 
   isCurrent(id: PlanId): boolean {
@@ -272,6 +317,9 @@ export class BillingComponent implements OnInit {
         if (res.razorpay) {
           // Live provider — open the Razorpay widget, then verify server-side.
           void this.openRazorpay(res.razorpay, id);
+        } else if (res.checkoutUrl) {
+          // Redirect-style provider (Stripe Checkout) — webhook activates on completion.
+          window.location.href = res.checkoutUrl;
         } else {
           // Mock provider — already activated.
           this.onPlanChanged(res.subscription, id);

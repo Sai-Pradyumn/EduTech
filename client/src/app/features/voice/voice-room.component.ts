@@ -29,6 +29,7 @@ type VState = 'idle' | 'listening' | 'thinking' | 'speaking';
       <div class="min-w-0">
         <h1 class="text-[24px] leading-tight mb-2 grad-flow truncate">{{ session() ? session()!.title : 'Voice Room' }}</h1>
         <span class="goal-pill"><span class="dot"></span>{{ session() ? modeMeta(session()!.mode).label + ' · speak to learn' : 'Voice-native learning · 8 modes' }}</span>
+        @if (demoVoice()) { <span class="pill ml-2 text-[10px]" style="color:var(--text-mute)">demo · browser speech</span> }
       </div>
       <div class="flex gap-2.5 shrink-0">
         @if (session()) {
@@ -59,22 +60,44 @@ type VState = 'idle' | 'listening' | 'thinking' | 'speaking';
       @if (loading()) {
         <asta-card><asta-skeleton h="80px" /></asta-card>
       } @else if (sessions().length) {
-        <p class="kicker mb-2">Recent sessions</p>
-        <div class="space-y-2 motion-row-2">
-          @for (s of sessions(); track s.id; let i = $index) {
-            <asta-card class="motion-card-reveal hover-lift cursor-pointer block" [interactive]="true" [style.--motion-card-index]="i % 4" (click)="open(s.id)">
-              <div class="flex items-center gap-3">
-                <span class="mode-glyph sm">{{ modeMeta(s.mode).glyph }}</span>
-                <span class="min-w-0 flex-1">
-                  <span class="block font-medium truncate">{{ s.title }}</span>
-                  <span class="block text-xs text-txt-mute">{{ modeMeta(s.mode).label }} · {{ s.transcript.length }} turns · {{ s.status }}</span>
-                </span>
-                @if (s.linkedFlowId) { <span class="link-pill">→ flow</span> }
-                @if (s.linkedQuizId) { <span class="link-pill">→ quiz</span> }
-              </div>
-            </asta-card>
+        <div class="flex items-center justify-between gap-3 mb-2 flex-wrap">
+          <p class="kicker !mb-0">Recent sessions</p>
+          <input class="search" [ngModel]="query()" (ngModelChange)="query.set($event)" placeholder="Search sessions…" aria-label="Search sessions" />
+        </div>
+        <div class="flex flex-wrap gap-1.5 mb-3">
+          <button class="fchip" [class.on]="modeFilter() === ''" (click)="modeFilter.set('')">All <span class="ct">{{ sessions().length }}</span></button>
+          @for (m of modesPresent(); track m) {
+            <button class="fchip" [class.on]="modeFilter() === m" (click)="modeFilter.set(m)">{{ modeMeta(m).label }} <span class="ct">{{ modeCount(m) }}</span></button>
           }
         </div>
+        @if (filteredSessions().length) {
+          <div class="space-y-2 motion-row-2">
+            @for (s of filteredSessions(); track s.id; let i = $index) {
+              <asta-card class="motion-card-reveal hover-lift block" [interactive]="true" [style.--motion-card-index]="i % 4">
+                <div class="flex items-center gap-3">
+                  <span class="mode-glyph sm">{{ modeMeta(s.mode).glyph }}</span>
+                  <span class="min-w-0 flex-1 cursor-pointer" (click)="editingId() === s.id ? null : open(s.id)">
+                    @if (editingId() === s.id) {
+                      <input class="rename-inp" [ngModel]="renameDraft()" (ngModelChange)="renameDraft.set($event)" (keydown.enter)="saveRename(s)" (keydown.escape)="editingId.set(null)" (click)="$event.stopPropagation()" aria-label="Session title" />
+                    } @else {
+                      <span class="block font-medium truncate">{{ s.title }}</span>
+                      <span class="block text-xs text-txt-mute">{{ modeMeta(s.mode).label }} · {{ s.transcript.length }} turns · {{ ago(s.createdAt) }}</span>
+                    }
+                  </span>
+                  @if (s.linkedFlowId) { <span class="link-pill">→ flow</span> }
+                  @if (s.linkedQuizId) { <span class="link-pill">→ quiz</span> }
+                  @if (editingId() === s.id) {
+                    <button class="icon-btn ok" (click)="saveRename(s); $event.stopPropagation()" title="Save">✓</button>
+                    <button class="icon-btn" (click)="editingId.set(null); $event.stopPropagation()" title="Cancel">✕</button>
+                  } @else {
+                    <button class="icon-btn" (click)="beginRename(s); $event.stopPropagation()" title="Rename">✎</button>
+                    <button class="icon-btn del" (click)="remove(s); $event.stopPropagation()" title="Delete">🗑</button>
+                  }
+                </div>
+              </asta-card>
+            }
+          </div>
+        } @else { <p class="text-sm text-txt-mute">No sessions match.</p> }
       }
     } @else {
       <!-- ───────── live session ───────── -->
@@ -112,7 +135,10 @@ type VState = 'idle' | 'listening' | 'thinking' | 'speaking';
 
             <!-- transcript -->
             <asta-card class="block motion-card-reveal motion-row-2 mt-4">
-              <p class="kicker mb-3">Transcript</p>
+              <div class="flex items-center justify-between mb-3">
+                <p class="kicker !mb-0">Transcript</p>
+                @if (session()!.transcript.length) { <button class="copy-btn" (click)="copyTranscript()">Copy</button> }
+              </div>
               @if (session()!.transcript.length === 0) {
                 <p class="text-sm text-txt-mute">Tap “Push to talk” (or type) to begin.</p>
               } @else {
@@ -198,6 +224,18 @@ type VState = 'idle' | 'listening' | 'thinking' | 'speaking';
       .turn-who { font-size: 10px; text-transform: uppercase; letter-spacing: .06em; color: var(--text-mute); }
       .turn-text { font-size: 14px; }
       .copy-btn { font-size: 11px; padding: 3px 9px; border-radius: 999px; border: 1px solid var(--paper-3); background: transparent; color: var(--peri,#8aa6ff); cursor: pointer; }
+      .search { background: var(--ink-2, var(--paper-2)); border: 1px solid var(--paper-3); border-radius: 11px; padding: 7px 11px; color: var(--text); font-size: 13px; min-width: 180px; }
+      .search:focus { outline: none; border-color: var(--green); }
+      .fchip { font-size: 11.5px; padding: 3px 10px; border-radius: 999px; border: 1px solid var(--paper-3); background: var(--paper-2); color: var(--text-mute); cursor: pointer; transition: all .12s; }
+      .fchip:hover { color: var(--text-soft); }
+      .fchip.on { background: color-mix(in oklab, var(--green) 14%, transparent); color: var(--green-deep); border-color: color-mix(in oklab, var(--green) 38%, transparent); }
+      .fchip .ct { font-weight: 700; opacity: .8; }
+      .icon-btn { font-size: 13px; line-height: 1; padding: 5px 7px; border-radius: 9px; border: 1px solid transparent; background: transparent; color: var(--text-mute); cursor: pointer; transition: color .12s, border-color .12s; }
+      .icon-btn:hover { color: var(--text); border-color: var(--paper-3); }
+      .icon-btn.del:hover { color: var(--danger, #ff5d5d); border-color: color-mix(in oklab, var(--danger, #ff5d5d) 40%, transparent); }
+      .icon-btn.ok { color: var(--green-deep); }
+      .rename-inp { width: 100%; background: var(--ink-2, var(--paper-2)); border: 1px solid var(--green); border-radius: 9px; padding: 6px 9px; color: var(--text); font-size: 14px; font-weight: 600; }
+      .rename-inp:focus { outline: none; }
       .notes { font-size: 12px; white-space: pre-wrap; color: var(--text-soft); max-height: 240px; overflow: auto; margin: 0; }
     `,
   ],
@@ -225,7 +263,28 @@ export class VoiceRoomComponent implements OnDestroy {
   readonly autoRead = signal(true);
   readonly busy = signal<'flow' | 'quiz' | 'notes' | 'sum' | null>(null);
   readonly notes = signal('');
+  /** True until the server reports a live TTS provider — mic + speech run in-browser. */
+  readonly demoVoice = signal(true);
   typed = '';
+
+  // lobby session management
+  readonly query = signal('');
+  readonly modeFilter = signal<VoiceMode | ''>('');
+  readonly editingId = signal<string | null>(null);
+  readonly renameDraft = signal('');
+
+  readonly modesPresent = computed(() => {
+    const set = new Set(this.sessions().map((s) => s.mode));
+    return VOICE_MODE_LIST.filter((m) => set.has(m));
+  });
+  readonly filteredSessions = computed(() => {
+    const q = this.query().trim().toLowerCase();
+    const mf = this.modeFilter();
+    let out = this.sessions();
+    if (mf) out = out.filter((s) => s.mode === mf);
+    if (q) out = out.filter((s) => s.title.toLowerCase().includes(q) || s.mode.toLowerCase().includes(q));
+    return out;
+  });
 
   private readonly startedAt = Date.now();
 
@@ -245,6 +304,7 @@ export class VoiceRoomComponent implements OnDestroy {
       if (id) this.loadSession(id);
       else this.loadLobby();
     });
+    this.api.status().subscribe({ next: (s) => this.demoVoice.set(!s.serverTts) });
   }
 
   ngOnDestroy(): void {
@@ -283,6 +343,35 @@ export class VoiceRoomComponent implements OnDestroy {
   open(id: string): void { this.router.navigate(['/app/voice-room/session', id]); }
   lobby(): void { this.router.navigate(['/app/voice-room']); }
 
+  // ── lobby session management ──
+  modeCount(m: VoiceMode): number { return this.sessions().filter((s) => s.mode === m).length; }
+  ago(iso: string): string {
+    if (!iso) return '';
+    const d = Math.floor((Date.now() - new Date(iso).getTime()) / 86400000);
+    return d <= 0 ? 'today' : d === 1 ? 'yesterday' : d < 30 ? `${d}d ago` : `${Math.floor(d / 30)}mo ago`;
+  }
+  beginRename(s: VoiceSession): void { this.editingId.set(s.id); this.renameDraft.set(s.title); }
+  saveRename(s: VoiceSession): void {
+    const title = this.renameDraft().trim();
+    this.editingId.set(null);
+    if (!title || title === s.title) return;
+    this.api.rename(s.id, title).subscribe({
+      next: (u) => this.sessions.set(this.sessions().map((x) => (x.id === u.id ? u : x))),
+      error: () => this.toast.error('Could not rename'),
+    });
+  }
+  remove(s: VoiceSession): void {
+    this.api.remove(s.id).subscribe({
+      next: () => { this.sessions.set(this.sessions().filter((x) => x.id !== s.id)); this.toast.success('Session deleted'); },
+      error: () => this.toast.error('Could not delete'),
+    });
+  }
+  copyTranscript(): void {
+    const s = this.session(); if (!s) return;
+    const text = s.transcript.map((t) => `${t.role === 'user' ? 'You' : 'Asta'}: ${t.text}`).join('\n\n');
+    navigator.clipboard?.writeText(text).then(() => this.toast.success('Transcript copied'), () => this.toast.error('Clipboard unavailable'));
+  }
+
   // ── speech ──
   startListening(): void {
     if (!this.sttSupported) { this.toast.info('Speech recognition unavailable — type instead'); return; }
@@ -319,7 +408,13 @@ export class VoiceRoomComponent implements OnDestroy {
         const cur = this.session();
         if (cur) this.session.set({ ...cur, transcript: [...cur.transcript, { role: 'assistant', text: res.text, at: new Date().toISOString() }] });
         this.lastAnswer.set(res.text);
-        if (this.autoRead() && this.tts.supported) {
+        if (this.autoRead() && res.speak?.audioUrl) {
+          // Live server TTS — play the real audio.
+          this.state.set('speaking');
+          const audio = new Audio(res.speak.audioUrl);
+          audio.onended = audio.onerror = () => this.state.set('idle');
+          void audio.play().catch(() => this.state.set('idle'));
+        } else if (this.autoRead() && this.tts.supported) {
           this.state.set('speaking');
           this.tts.speak(res.text).then(() => this.state.set('idle'));
         } else {

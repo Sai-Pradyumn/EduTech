@@ -36,6 +36,11 @@ export class QuizService {
     return this.api.get<AttemptView[]>('/assessment/attempts');
   }
 
+  /** Attempts for one quiz, newest first (per-quiz trend). */
+  attemptsForQuiz(id: string): Observable<AttemptView[]> {
+    return this.api.get<AttemptView[]>(`/assessment/quizzes/${id}/attempts`);
+  }
+
   stats(): Observable<QuizStats> {
     return this.api.get<QuizStats>('/assessment/stats');
   }

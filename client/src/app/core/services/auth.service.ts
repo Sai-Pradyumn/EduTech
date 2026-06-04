@@ -24,16 +24,31 @@ export class AuthService {
     return localStorage.getItem(REFRESH_KEY);
   }
 
-  register(name: string, email: string, password: string): Observable<AuthResult> {
+  /** Step 1 of signup: creates an unverified account + emails an OTP (no session yet). */
+  register(name: string, email: string, password: string): Observable<{ pendingVerification: true; email: string }> {
+    return this.api.post<{ pendingVerification: true; email: string }>('/auth/register', { name, email, password });
+  }
+
+  /** Step 2 of signup: verify the OTP code → starts a session. */
+  verifyOtp(email: string, code: string): Observable<AuthResult> {
     return this.api
-      .post<AuthResult>('/auth/register', { name, email, password })
+      .post<AuthResult>('/auth/verify-otp', { email, code })
       .pipe(tap((res) => this.applySession(res)));
   }
 
-  login(email: string, password: string): Observable<AuthResult> {
+  resendOtp(email: string): Observable<{ sent: true }> {
+    return this.api.post<{ sent: true }>('/auth/resend-otp', { email });
+  }
+
+  /** Allowed email domains for signup (drives the form hint + pre-check). */
+  signupConfig(): Observable<{ allowedDomains: string[] }> {
+    return this.api.get<{ allowedDomains: string[] }>('/auth/signup-config');
+  }
+
+  login(email: string, password: string): Observable<AuthResult | { pendingVerification: true; email: string }> {
     return this.api
-      .post<AuthResult>('/auth/login', { email, password })
-      .pipe(tap((res) => this.applySession(res)));
+      .post<AuthResult | { pendingVerification: true; email: string }>('/auth/login', { email, password })
+      .pipe(tap((res) => { if ('user' in res) this.applySession(res); }));
   }
 
   /** Whether Google sign-in is configured + the client id to initialize GIS. */
@@ -73,7 +88,9 @@ export class AuthService {
   /** Where to send the user after auth, based on role + onboarding state. */
   postAuthRoute(user: User): string {
     if (user.role === 'admin') return '/admin';
-    return user.isOnboarded ? '/app/dashboard' : '/onboarding';
+    // Onboarded students land on `/app`, where astaModeRedirectGuard resolves the
+    // saved experience (Asta OS vs Classic) from localStorage.
+    return user.isOnboarded ? '/app' : '/onboarding';
   }
 
   private applySession(res: AuthResult): void {

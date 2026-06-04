@@ -41,6 +41,16 @@ export class AssessmentItem {
 }
 const AssessmentItemSchema = SchemaFactory.createForClass(AssessmentItem);
 
+/** One progress event — used to show momentum, streak and recent activity. */
+@Schema({ _id: false })
+export class ActivityEntry {
+  @Prop({ required: true }) at!: Date;
+  /** 'week' | 'task'. */
+  @Prop({ required: true }) kind!: string;
+  @Prop({ default: '' }) label!: string;
+}
+const ActivityEntrySchema = SchemaFactory.createForClass(ActivityEntry);
+
 export type RoadmapDocument = HydratedDocument<Roadmap>;
 
 @Schema({ timestamps: true })
@@ -100,6 +110,10 @@ export class Roadmap {
 
   @Prop({ type: [String], default: [] })
   completedTasks!: string[];
+
+  /** Timestamped completion log (most recent last; capped by the service). */
+  @Prop({ type: [ActivityEntrySchema], default: [] })
+  activity!: ActivityEntry[];
 }
 
 export const RoadmapSchema = SchemaFactory.createForClass(Roadmap);

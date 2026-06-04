@@ -63,10 +63,13 @@ const GAP_X = 56;
         <div class="vmd prose-asta" [innerHTML]="visual.content | markdown"></div>
       }
       @case ('mermaid') {
-        <div>
-          <p class="vhint">Mermaid diagram source — paste into any Mermaid viewer, or copy below.</p>
+        @if (mermaidSvg(); as svg) {
+          <div class="vmermaid" [innerHTML]="svg"></div>
+        } @else if (mermaidFailed()) {
           <pre class="vcode">{{ visual.content }}</pre>
-        </div>
+        } @else {
+          <p class="vhint">Rendering diagram…</p>
+        }
       }
     }
   `,
@@ -83,6 +86,8 @@ const GAP_X = 56;
       .vng { fill: var(--text-mute); font-size: 9px; text-transform: uppercase; letter-spacing: 0.05em; }
       .vimg { width: 100%; height: auto; border-radius: 14px; display: block; }
       .vsvg, .vhtml { width: 100%; overflow: auto; }
+      .vmermaid { width: 100%; overflow: auto; display: flex; justify-content: center; }
+      .vmermaid svg { max-width: 100%; height: auto; }
       .vmd { font-size: 14px; line-height: 1.6; }
       .vhint { font-size: 12px; color: var(--text-mute); margin-bottom: 8px; }
       .vcode { background: var(--ink-2, var(--paper-2)); border: 1px solid var(--paper-3); border-radius: 12px; padding: 14px; font-size: 12.5px; white-space: pre; overflow: auto; color: var(--text-soft); }
@@ -96,11 +101,28 @@ export class VisualRendererComponent {
   readonly NH = NH;
 
   private readonly _visual = signal<Visual | null>(null);
+  readonly mermaidSvg = signal<SafeHtml | null>(null);
+  readonly mermaidFailed = signal(false);
   @Input({ required: true }) set visual(v: Visual) {
     this._visual.set(v);
+    this.mermaidSvg.set(null);
+    this.mermaidFailed.set(false);
+    if (v.contentFormat === 'mermaid' && v.content) {
+      void this.drawMermaid(v.content);
+    }
   }
   get visual(): Visual {
     return this._visual()!;
+  }
+
+  private async drawMermaid(code: string): Promise<void> {
+    try {
+      const { renderMermaid } = await import('../../shared/util/mermaid');
+      const svg = await renderMermaid(code);
+      this.mermaidSvg.set(this.sanitizer.bypassSecurityTrustHtml(svg));
+    } catch {
+      this.mermaidFailed.set(true);
+    }
   }
 
   readonly graph = computed<VisualGraph | null>(() => {

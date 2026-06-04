@@ -13,6 +13,19 @@ export interface TwinAction {
   kind: 'repair' | 'flow' | 'quiz' | 'project' | 'visual' | 'voice' | 'explore';
 }
 
+export interface SkillTwinTrendPoint {
+  at: string;
+  readiness: number;
+  health: number;
+  retentionRisk: number;
+  burnoutRisk: number;
+}
+
+export interface SkillTwinAdvisory {
+  tone: 'positive' | 'warning' | 'info';
+  text: string;
+}
+
 export interface SkillTwin {
   hasData: boolean;
   headline: string;
@@ -30,6 +43,9 @@ export interface SkillTwin {
   misconceptionMemory: { concept: string; type: string; frequency: number }[];
   nextBestActions: TwinAction[];
   signals: { label: string; detail: string }[];
+  trend: SkillTwinTrendPoint[];
+  readinessDelta: number | null;
+  advisories: SkillTwinAdvisory[];
 }
 
 @Injectable({ providedIn: 'root' })

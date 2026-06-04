@@ -15,7 +15,7 @@ interface AccountRow {
 
 /**
  * Admin billing overview (Phase 10 · M1). Role.Admin. Plan distribution, MRR estimate and
- * the account roster. Read-only; mock-mode figures until a live provider is configured.
+ * the account roster, derived from real subscription + transaction records. Read-only.
  */
 @Component({
   selector: 'asta-admin-billing',

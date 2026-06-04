@@ -15,8 +15,10 @@ import { ProjectsService } from './services/projects.service';
 import { ProjectDocument } from './schemas/project.schema';
 import {
   AddTaskDto,
+  ArchiveProjectDto,
   GenerateProjectDto,
   MoveTaskDto,
+  ReorderTaskDto,
   SubmitProjectDto,
   ToggleImprovementDto,
 } from './dto/project.dto';
@@ -89,6 +91,7 @@ function toView(p: ProjectDocument) {
         }
       : null,
     caseStudy: p.caseStudy ?? '',
+    archived: p.archived ?? false,
     createdAt:
       (p as ProjectDocument & { createdAt?: Date }).createdAt?.toISOString() ??
       '',
@@ -132,6 +135,18 @@ export class ProjectsController {
   ) {
     return toView(
       await this.projects.moveTask(user.id, id, taskId, dto.status),
+    );
+  }
+
+  @Patch(':id/tasks/:taskId/reorder')
+  async reorderTask(
+    @CurrentUser() user: AuthUser,
+    @Param('id') id: string,
+    @Param('taskId') taskId: string,
+    @Body() dto: ReorderTaskDto,
+  ) {
+    return toView(
+      await this.projects.reorderTask(user.id, id, taskId, dto.direction),
     );
   }
 
@@ -190,6 +205,15 @@ export class ProjectsController {
     return toView(
       await this.projects.toggleImprovement(user.id, id, itemId, dto.done),
     );
+  }
+
+  @Patch(':id/archive')
+  async archive(
+    @CurrentUser() user: AuthUser,
+    @Param('id') id: string,
+    @Body() dto: ArchiveProjectDto,
+  ) {
+    return toView(await this.projects.setArchived(user.id, id, dto.archived));
   }
 
   @Delete(':id')

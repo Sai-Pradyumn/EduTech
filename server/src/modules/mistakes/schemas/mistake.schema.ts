@@ -89,9 +89,22 @@ export class Mistake {
 
   @Prop() lastSeenAt?: Date;
   @Prop() resolvedAt?: Date;
+
+  // ── Spaced review (SM-2-lite) — resurfaces weak concepts on a schedule ──
+  /** When this concept is next due for a review prompt. */
+  @Prop() nextReviewAt?: Date;
+  /** Current spacing interval in days. */
+  @Prop({ default: 1 }) reviewInterval!: number;
+  /** Ease factor (1.3–3.0); recall raises it, a lapse lowers it. */
+  @Prop({ default: 2.3, min: 1.3, max: 3 }) reviewEase!: number;
+  /** How many spaced reviews have happened. */
+  @Prop({ default: 0 }) reviewCount!: number;
+  @Prop() lastReviewedAt?: Date;
 }
 
 export const MistakeSchema = SchemaFactory.createForClass(Mistake);
 MistakeSchema.index({ user: 1, status: 1, severity: -1 });
+// Pull "due for review" cheaply (status filtered in the query).
+MistakeSchema.index({ user: 1, nextReviewAt: 1 });
 // One live entry per concept per user (capture upserts/increments instead of duplicating).
 MistakeSchema.index({ user: 1, concept: 1 }, { unique: false });
