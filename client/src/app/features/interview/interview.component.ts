@@ -8,6 +8,8 @@ import { RingComponent } from '../../shared/ui/ring.component';
 import { SkeletonComponent } from '../../shared/ui/skeleton.component';
 import { ToastService } from '../../core/services/toast.service';
 import { InterviewService, InterviewSession, InterviewTypeMeta } from '../../core/services/interview.service';
+import { printDocument, PrintSection } from '../../shared/util/print';
+import { downloadPdf } from '../../shared/util/pdf';
 
 @Component({
   selector: 'asta-interview',
@@ -50,7 +52,14 @@ import { InterviewService, InterviewSession, InterviewTypeMeta } from '../../cor
             </asta-card>
           }
           <asta-card class="block motion-card-reveal motion-row-3">
-            <p class="kicker mb-3">Question review</p>
+            <div class="flex items-center justify-between mb-3">
+              <p class="kicker !mb-0">Question review</p>
+              <div class="flex gap-3">
+                <button class="copy-report" (click)="copyReport(s)">Copy report</button>
+                <button class="copy-report" (click)="printReport(s)">Print</button>
+                <button class="copy-report" (click)="downloadReportPdf(s)">Download PDF</button>
+              </div>
+            </div>
             <div class="space-y-3">
               @for (q of s.questions; track q.id) {
                 <div class="qa">
@@ -152,6 +161,8 @@ import { InterviewService, InterviewSession, InterviewTypeMeta } from '../../cor
   `,
   styles: [`
     :host { display: block; }
+    .copy-report { font-size: 11px; color: var(--peri, #8aa6ff); background: transparent; border: none; cursor: pointer; }
+    .copy-report:hover { color: var(--green-deep); }
     .type { text-align: left; padding: 12px 14px; border: 1px solid var(--paper-3); border-radius: 12px; background: var(--paper-2); cursor: pointer; transition: border-color .15s, transform .1s; }
     .type:hover { border-color: color-mix(in oklab, var(--green) 45%, var(--paper-3)); transform: translateY(-1px); }
     .t-label { display: block; font-size: 13.5px; font-weight: 600; }
@@ -289,6 +300,47 @@ export class InterviewComponent {
   private refreshList(): void { this.api.types().subscribe({ next: (t) => this.types.set(t) }); this.api.sessions().subscribe({ next: (s) => this.sessions.set(s) }); }
   private resetTurn(): void { this.lastFeedback.set(''); this.lastScore.set(null); this.draft.set(''); }
   go(route: string): void { this.router.navigate([route]); }
+  copyReport(s: InterviewSession): void {
+    const lines: string[] = [];
+    lines.push(`# Interview report — ${s.typeLabel} · ${s.role}`);
+    lines.push(`\n**Overall ${s.overallScore}/100** · Technical ${s.technicalScore} · Communication ${s.communicationScore} · Confidence ${s.confidenceScore}\n`);
+    if (s.summary) lines.push(s.summary, '');
+    if (s.weakConcepts.length) lines.push(`**Weak areas:** ${s.weakConcepts.join(', ')}\n`);
+    lines.push('## Question review');
+    for (const q of s.questions) {
+      lines.push(`\n**Q: ${q.question}**`);
+      if (q.answered) {
+        lines.push(`A: ${q.answer}`);
+        lines.push(`_Score ${q.score} — ${q.feedback}_`);
+      } else lines.push('_Skipped_');
+    }
+    navigator.clipboard?.writeText(lines.join('\n')).then(
+      () => this.toast.success('Interview report copied as Markdown'),
+      () => this.toast.error('Copy failed'),
+    );
+  }
+  private reportSections(s: InterviewSession): PrintSection[] {
+    return [
+      { paragraphs: s.summary ? [s.summary] : [] },
+      ...(s.weakConcepts.length ? [{ heading: 'Weak areas', bullets: s.weakConcepts }] : []),
+      {
+        heading: 'Question review',
+        bullets: s.questions.map((q) =>
+          q.answered ? `${q.question} — score ${q.score}: ${q.feedback}` : `${q.question} — skipped`,
+        ),
+      },
+    ];
+  }
+  private reportSubtitle(s: InterviewSession): string {
+    return `${s.role} · Overall ${s.overallScore}/100 · Technical ${s.technicalScore} · Communication ${s.communicationScore} · Confidence ${s.confidenceScore}`;
+  }
+  printReport(s: InterviewSession): void {
+    printDocument(`Interview report — ${s.typeLabel}`, this.reportSubtitle(s), this.reportSections(s));
+  }
+  downloadReportPdf(s: InterviewSession): void {
+    downloadPdf(`interview-${s.typeLabel}`.replace(/[^a-z0-9]+/gi, '-').toLowerCase(), `Interview report — ${s.typeLabel}`, this.reportSubtitle(s), this.reportSections(s));
+    this.toast.success('Report PDF downloaded');
+  }
   date(iso: string): string { return new Date(iso).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }); }
   scoreColor(s: number | null): string { const v = s ?? 0; return v >= 70 ? 'var(--green-deep)' : v >= 50 ? 'var(--coral, #ffb454)' : 'var(--danger, #ff5d5d)'; }
 }

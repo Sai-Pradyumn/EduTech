@@ -7,6 +7,8 @@ import { RingComponent } from '../../shared/ui/ring.component';
 import { SkeletonComponent } from '../../shared/ui/skeleton.component';
 import { ToastService } from '../../core/services/toast.service';
 import { CareerReadinessService, CareerRoleSummary, ReadinessAnalysis, ReadinessDimension } from '../../core/services/career-readiness.service';
+import { printDocument, PrintSection } from '../../shared/util/print';
+import { downloadPdf } from '../../shared/util/pdf';
 
 @Component({
   selector: 'asta-career-readiness',
@@ -20,6 +22,11 @@ import { CareerReadinessService, CareerRoleSummary, ReadinessAnalysis, Readiness
         <span class="goal-pill"><span class="dot"></span>How close you are to your target role — and exactly what's blocking you</span>
       </div>
       <div class="flex gap-2.5 shrink-0">
+        @if (a()) {
+          <asta-btn variant="ghost" size="sm" (click)="copyDigest()">Copy plan</asta-btn>
+          <asta-btn variant="ghost" size="sm" (click)="printPlan()">Print</asta-btn>
+          <asta-btn variant="ghost" size="sm" (click)="downloadPlanPdf()">Download PDF</asta-btn>
+        }
         <asta-btn variant="ghost" size="sm" (click)="analyze()" [disabled]="loading() || busy()">Re-analyze</asta-btn>
       </div>
     </header>
@@ -225,6 +232,57 @@ export class CareerReadinessComponent {
       next: (a) => { this.a.set(a); this.busy.set(false); },
       error: () => { this.busy.set(false); this.toast.error('Could not set role'); },
     });
+  }
+
+  copyDigest(): void {
+    const an = this.a();
+    if (!an) return;
+    const lines: string[] = [];
+    lines.push(`# Career Readiness — ${an.role.title} (${an.role.level})`);
+    lines.push(`\n**${an.readinessScore}% ready · ${this.bandLabel(an.band)}**\n`);
+    lines.push(an.explanation, '');
+    lines.push('## Readiness by dimension');
+    for (const d of an.dimensions) {
+      lines.push(`- **${d.label}** — ${d.score}/100 (weight ×${this.pct(d.weight)}%) · fastest: ${d.fastestAction}`);
+    }
+    lines.push('\n## Skill gaps');
+    for (const s of an.skillGaps) lines.push(`- ${s.skill}: ${s.current}/${s.target}${s.met ? ' ✓' : ''}`);
+    if (an.blockers.length) {
+      lines.push('\n## Top blockers');
+      for (const b of an.blockers) lines.push(`- **${b.title}** — ${b.impact}`);
+    }
+    lines.push('\n## Your next 7 days');
+    for (const it of an.weekPlan) lines.push(`- **Day ${it.day}: ${it.title}** — ${it.reason}`);
+    lines.push('\n## Portfolio checklist');
+    for (const c of an.portfolioChecklist) lines.push(`- [${c.done ? 'x' : ' '}] ${c.item}`);
+    lines.push(`\n_Generated from Asta Career Readiness._`);
+    const md = lines.join('\n');
+    navigator.clipboard?.writeText(md).then(
+      () => this.toast.success('Readiness plan copied as Markdown'),
+      () => this.toast.error('Copy failed'),
+    );
+  }
+
+  private planSections(an: ReadinessAnalysis): PrintSection[] {
+    return [
+      { paragraphs: an.explanation ? [an.explanation] : [] },
+      { heading: 'Readiness by dimension', bullets: an.dimensions.map((d) => `${d.label}: ${d.score}/100 (×${this.pct(d.weight)}%) — fastest: ${d.fastestAction}`) },
+      { heading: 'Skill gaps', bullets: an.skillGaps.map((s) => `${s.skill}: ${s.current}/${s.target}${s.met ? ' ✓' : ''}`) },
+      ...(an.blockers.length ? [{ heading: 'Top blockers', bullets: an.blockers.map((b) => `${b.title} — ${b.impact}`) }] : []),
+      { heading: 'Your next 7 days', bullets: an.weekPlan.map((it) => `Day ${it.day}: ${it.title} — ${it.reason}`) },
+      { heading: 'Portfolio checklist', bullets: an.portfolioChecklist.map((c) => `${c.done ? '[x]' : '[ ]'} ${c.item}`) },
+    ];
+  }
+  printPlan(): void {
+    const an = this.a();
+    if (!an) return;
+    printDocument(`Career Readiness — ${an.role.title} (${an.role.level})`, `${an.readinessScore}% ready · ${this.bandLabel(an.band)}`, this.planSections(an));
+  }
+  downloadPlanPdf(): void {
+    const an = this.a();
+    if (!an) return;
+    downloadPdf(`career-readiness-${an.role.title}`.replace(/[^a-z0-9]+/gi, '-').toLowerCase(), `Career Readiness — ${an.role.title} (${an.role.level})`, `${an.readinessScore}% ready · ${this.bandLabel(an.band)}`, this.planSections(an));
+    this.toast.success('Readiness PDF downloaded');
   }
 
   toggle(k: ReadinessDimension['key']): void { this.open.set(this.open() === k ? null : k); }

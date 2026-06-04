@@ -35,7 +35,7 @@ import { LearningReplay, ReplayService } from '../../core/services/replay.servic
       <asta-card class="block motion-card-reveal motion-row-primary recap mb-4">
         <p class="kicker mb-1">3-minute recap</p>
         <p class="recap-text">{{ r.recapScript }}</p>
-        <p class="text-[11px] text-txt-mute mt-2">Readiness {{ r.readinessScore }}/100 · {{ r.pace }} pace · suggested modality: {{ r.modality.modality }}</p>
+        <p class="text-[11px] text-txt-mute mt-2">Readiness {{ r.readinessScore }}/100 · {{ r.pace }} pace · suggested modality: {{ r.modality.modality }} · last {{ r.windowDays }} days · generated {{ ago(r.generatedAt) }}</p>
       </asta-card>
 
       <div class="grid gap-4 lg:grid-cols-3">
@@ -98,6 +98,16 @@ export class ReplayComponent {
     this.tts.speak(r.recapScript);
   }
   go(route: string): void { this.router.navigate([route]); }
+  ago(iso: string): string {
+    if (!iso) return 'just now';
+    const m = Math.floor((Date.now() - new Date(iso).getTime()) / 60000);
+    if (m < 1) return 'just now';
+    if (m < 60) return `${m}m ago`;
+    const h = Math.floor(m / 60);
+    if (h < 24) return `${h}h ago`;
+    const d = Math.floor(h / 24);
+    return d === 1 ? 'yesterday' : `${d}d ago`;
+  }
 
   /** Export the recap as a shareable markdown digest. */
   copyRecap(): void {
