@@ -79,7 +79,7 @@ export const AGENTS: Record<AgentType, AgentMeta> = {
     type: 'career',
     id: 'career.agent',
     title: 'Career',
-    description: 'Career guidance (coming soon).',
+    description: 'Maps your skills to roles, preps interviews and plans next steps.',
     accent: 'green',
   },
   admin_insight: {

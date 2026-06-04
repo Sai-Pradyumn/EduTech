@@ -35,6 +35,12 @@ export interface RoadmapAssessment {
   description: string;
 }
 
+export interface RoadmapActivityEntry {
+  at: string;
+  kind: string;
+  label: string;
+}
+
 export interface Roadmap {
   id: string;
   userId: string;
@@ -53,6 +59,7 @@ export interface Roadmap {
   progressPercentage: number;
   completedWeeks: number[];
   completedTasks: string[];
+  activity?: RoadmapActivityEntry[];
   createdAt: string;
   updatedAt: string;
 }

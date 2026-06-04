@@ -22,6 +22,9 @@ import { MagneticDirective } from '../../shared/directives/magnetic.directive';
 import { CountDirective } from '../../shared/directives/count.directive';
 import { KnowledgeShardComponent } from './components/knowledge-shard.component';
 
+/** Device-local key for the Hub's grounded Q&A transcript (never persisted server-side). */
+const CHAT_KEY = 'asta.knowledge-chat';
+
 interface ChatMsg {
   role: 'user' | 'assistant';
   content: string;
@@ -103,9 +106,31 @@ const STARTERS = [
               <p class="text-sm text-txt-soft mb-3">No documents yet. Add one to start asking grounded questions.</p>
               <asta-btn variant="ghost" size="sm" (click)="fileInput.click()" [disabled]="uploading()">Upload your first doc <span class="arr">→</span></asta-btn>
             </div>
+          } @else {
+            <div class="lib-controls mt-3">
+              <div class="lib-search">
+                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+                <input class="lib-search-in" type="search" placeholder="Search title, topic, tag…" [(ngModel)]="searchTerm" (ngModelChange)="search.set($event)" aria-label="Search documents" />
+                @if (search()) { <button class="lib-clear" (click)="search.set(''); searchTerm = ''" aria-label="Clear search">✕</button> }
+              </div>
+              <div class="lib-selects">
+                <select class="lib-sel" [ngModel]="statusFilter()" (ngModelChange)="statusFilter.set($event)" aria-label="Filter by status">
+                  <option value="all">All statuses</option>
+                  <option value="ready">Ready</option>
+                  <option value="processing">Processing</option>
+                  <option value="failed">Failed</option>
+                </select>
+                <select class="lib-sel" [ngModel]="sortBy()" (ngModelChange)="sortBy.set($event)" aria-label="Sort documents">
+                  <option value="recent">Newest</option>
+                  <option value="title">Title A–Z</option>
+                  <option value="size">Most chunks</option>
+                </select>
+              </div>
+            </div>
+            <p class="lib-count">{{ filteredDocs().length }} of {{ docs().length }} shown</p>
           }
           <div class="space-y-2.5 mt-3 motion-row-2">
-            @for (d of docs(); track d.id; let i = $index) {
+            @for (d of filteredDocs(); track d.id; let i = $index) {
               <asta-knowledge-shard
                 class="block motion-card-reveal"
                 [style.--motion-card-index]="i"
@@ -116,7 +141,11 @@ const STARTERS = [
                 (flashcards)="loadFlashcards($event)"
                 (delete)="remove($event)"
                 (retry)="retryIngestion($event)"
+                (save)="saveDoc($event)"
               />
+            }
+            @if (docs().length > 0 && filteredDocs().length === 0) {
+              <p class="text-sm text-txt-mute text-center py-5">No documents match your search.</p>
             }
           </div>
         </asta-card>
@@ -158,6 +187,12 @@ const STARTERS = [
           </div>
         }
 
+        @if (messages().length > 0) {
+          <div class="flex items-center justify-between px-5 pt-3">
+            <span class="text-[11px] font-mono uppercase tracking-wider text-txt-mute">Conversation · synced to your account</span>
+            <button class="text-[11px] text-txt-mute hover:text-txt" (click)="clearChat()">Clear</button>
+          </div>
+        }
         <div class="flex-1 overflow-y-auto scroll-area px-5 py-5 space-y-5" style="max-height:calc(100dvh - 400px)">
           @if (messages().length === 0) {
             <div class="grid place-items-center text-center py-12">
@@ -245,6 +280,16 @@ const STARTERS = [
       .prose-asta :is(li) { margin: 3px 0; }
       .prose-asta :is(code) { font-family: var(--mono); background: var(--paper-2); padding: 1px 5px; border-radius: 5px; font-size: 13px; }
       .prose-asta :is(strong) { font-weight: 600; }
+      .lib-controls { display: flex; flex-direction: column; gap: 8px; }
+      .lib-search { display: flex; align-items: center; gap: 7px; padding: 6px 10px; border-radius: 10px; border: 1px solid var(--paper-3); background: var(--paper-2); color: var(--text-mute); }
+      .lib-search:focus-within { border-color: var(--green); color: var(--text-soft); }
+      .lib-search-in { flex: 1; min-width: 0; background: transparent; border: none; outline: none; font-size: 13px; color: var(--text); }
+      .lib-clear { font-size: 12px; color: var(--text-mute); padding: 0 2px; }
+      .lib-clear:hover { color: var(--text); }
+      .lib-selects { display: flex; gap: 8px; }
+      .lib-sel { flex: 1; font-size: 12px; padding: 6px 8px; border-radius: 9px; border: 1px solid var(--paper-3); background: var(--paper-2); color: var(--text-soft); cursor: pointer; }
+      .lib-sel:focus { outline: none; border-color: var(--green); }
+      .lib-count { font-size: 11px; color: var(--text-mute); margin-top: 7px; font-variant-numeric: tabular-nums; }
     `,
   ],
 })
@@ -267,8 +312,38 @@ export class KnowledgeHubComponent implements OnInit, OnDestroy {
   draft = '';
   pasteTitle = '';
   pasteBody = '';
+  searchTerm = '';
   private sessionId?: string;
   private pollTimer?: ReturnType<typeof setInterval>;
+
+  // ── library search / filter / sort ──
+  readonly search = signal('');
+  readonly statusFilter = signal<'all' | 'ready' | 'processing' | 'failed'>('all');
+  readonly sortBy = signal<'recent' | 'title' | 'size'>('recent');
+
+  readonly filteredDocs = computed(() => {
+    const q = this.search().trim().toLowerCase();
+    const sf = this.statusFilter();
+    const sort = this.sortBy();
+    let list = this.docs();
+    if (q) {
+      list = list.filter(
+        (d) =>
+          d.title.toLowerCase().includes(q) ||
+          (d.topic ?? '').toLowerCase().includes(q) ||
+          d.tags.some((t) => t.toLowerCase().includes(q)),
+      );
+    }
+    if (sf !== 'all') {
+      list = list.filter((d) =>
+        sf === 'processing' ? d.status !== 'ready' && d.status !== 'failed' : d.status === sf,
+      );
+    }
+    const sorted = [...list];
+    if (sort === 'title') sorted.sort((a, b) => a.title.localeCompare(b.title));
+    else if (sort === 'size') sorted.sort((a, b) => b.chunkCount - a.chunkCount);
+    return sorted; // 'recent' keeps the server's createdAt-desc order
+  });
 
   readonly readyCount = computed(() => this.docs().filter((d) => d.status === 'ready').length);
   readonly canAsk = computed(() => this.readyCount() > 0);
@@ -278,10 +353,80 @@ export class KnowledgeHubComponent implements OnInit, OnDestroy {
   });
 
   ngOnInit(): void {
+    this.restoreChat();
     this.refresh();
     this.pollTimer = setInterval(() => {
       if (this.docs().some((d) => d.status !== 'ready' && d.status !== 'failed')) this.refresh();
     }, 1500);
+  }
+
+  /**
+   * Q&A history syncs across devices via the server; the local cache is an offline fallback.
+   * Try the server first; fall back to the device cache if it's unreachable.
+   */
+  private restoreChat(): void {
+    this.knowledge.listQa().subscribe({
+      next: (turns) => {
+        if (turns.length) {
+          const msgs: ChatMsg[] = [];
+          for (const t of turns) {
+            msgs.push({ role: 'user', content: t.question, sources: [], visualBlocks: [], followUps: [], confidence: 1, streaming: false });
+            msgs.push({ role: 'assistant', content: t.answer, sources: (t.sources as ChatMsg['sources']) ?? [], visualBlocks: [], followUps: [], confidence: t.confidence, streaming: false });
+          }
+          this.messages.set(msgs);
+        } else {
+          this.restoreLocal();
+        }
+      },
+      error: () => this.restoreLocal(),
+    });
+  }
+
+  private restoreLocal(): void {
+    try {
+      const raw = localStorage.getItem(CHAT_KEY);
+      if (!raw) return;
+      const saved = JSON.parse(raw) as { messages: ChatMsg[]; sessionId?: string };
+      if (Array.isArray(saved.messages) && saved.messages.length) {
+        this.messages.set(saved.messages.map((m) => ({ ...m, streaming: false })));
+        if (saved.sessionId) this.sessionId = saved.sessionId;
+      }
+    } catch {
+      /* corrupt cache — ignore */
+    }
+  }
+
+  /** Local offline cache (server is the source of truth — see saveTurnToServer). */
+  private persistChat(): void {
+    try {
+      const settled = this.messages().filter((m) => !m.streaming);
+      if (!settled.length) { localStorage.removeItem(CHAT_KEY); return; }
+      localStorage.setItem(CHAT_KEY, JSON.stringify({ messages: settled, sessionId: this.sessionId }));
+    } catch {
+      /* storage unavailable — non-fatal */
+    }
+  }
+
+  /** Persist a completed turn to the server history (best-effort — local cache already holds it). */
+  private saveTurnToServer(assistant: ChatMsg): void {
+    const msgs = this.messages();
+    const ai = msgs.lastIndexOf(assistant);
+    const question = ai > 0 && msgs[ai - 1].role === 'user' ? msgs[ai - 1].content : '';
+    if (!question || !assistant.content) return;
+    this.knowledge.saveQa({
+      question,
+      answer: assistant.content,
+      sources: assistant.sources,
+      confidence: assistant.confidence,
+    }).subscribe({ next: () => undefined, error: () => undefined });
+  }
+
+  clearChat(): void {
+    this.messages.set([]);
+    this.steps.set([]);
+    this.sessionId = undefined;
+    try { localStorage.removeItem(CHAT_KEY); } catch { /* ignore */ }
+    this.knowledge.clearQa().subscribe({ next: () => undefined, error: () => undefined });
   }
 
   ngOnDestroy(): void {
@@ -356,6 +501,17 @@ export class KnowledgeHubComponent implements OnInit, OnDestroy {
         this.toast.success('Deleted');
         this.refresh();
       },
+    });
+  }
+
+  /** Save edited title/tags from a shard, replacing it in place. */
+  saveDoc(e: { doc: KnowledgeDoc; title: string; tags: string[] }): void {
+    this.knowledge.update(e.doc.id, { title: e.title, tags: e.tags }).subscribe({
+      next: (upd) => {
+        this.docs.update((list) => list.map((d) => (d.id === upd.id ? upd : d)));
+        this.toast.success('Document updated');
+      },
+      error: () => this.toast.error?.('Could not update document'),
     });
   }
 
@@ -479,6 +635,8 @@ export class KnowledgeHubComponent implements OnInit, OnDestroy {
         assistant.messageId = e.messageId;
         this.steps.update((s) => [...s, { kind: 'done', label: 'Done' }]);
         this.bump();
+        this.persistChat();
+        this.saveTurnToServer(assistant);
         this.busy.set(false);
         break;
       case 'error':

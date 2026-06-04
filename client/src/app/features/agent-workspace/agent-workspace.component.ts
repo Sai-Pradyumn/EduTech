@@ -4,7 +4,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { AgentService } from '../../core/services/agent.service';
 import { ToastService } from '../../core/services/toast.service';
 import { AgentAction, AgentStreamEvent, VisualBlock, WorkflowStepView } from '../../core/models';
-import { MarkdownPipe } from '../../shared/pipes/markdown.pipe';
+import { RichContentComponent } from '../../shared/components/ai/rich-content.component';
 import { CardComponent } from '../../shared/ui/card.component';
 import { AiAgentActivityFeedComponent } from '../../shared/components/ai/ai-agent-activity-feed.component';
 import { VisualBlockRendererComponent } from '../../shared/components/ai/visual-block-renderer.component';
@@ -42,7 +42,7 @@ const DEFAULT: WorkspaceConfig = { agentType: 'tutor', title: 'AI Agent', subtit
   selector: 'asta-agent-workspace',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormsModule, MarkdownPipe, CardComponent, AiAgentActivityFeedComponent, VisualBlockRendererComponent, ComposerComponent],
+  imports: [FormsModule, RichContentComponent, CardComponent, AiAgentActivityFeedComponent, VisualBlockRendererComponent, ComposerComponent],
   template: `
     <!-- Command header -->
     <header class="asta-page-command-header">
@@ -92,7 +92,7 @@ const DEFAULT: WorkspaceConfig = { agentType: 'tutor', title: 'AI Agent', subtit
                       <span class="sk-line" style="width:60%"></span>
                     </div>
                   } @else {
-                    <div class="prose-asta text-[15px]" [innerHTML]="msg.content | markdown"></div>
+                    <asta-rich-content class="text-[15px]" [text]="msg.content" [streaming]="!!msg.streaming" />
                   }
                   @if (msg.streaming && msg.content) { <span class="stream-cursor"></span> }
                   @if (msg.failed) {

@@ -44,6 +44,14 @@ import {
             @for (t of typeList; track t) { <option [value]="t">{{ meta(t).label }}</option> }
           </select>
         </label>
+        <label class="block">
+          <span class="text-xs text-txt-mute uppercase tracking-wide">Level</span>
+          <select class="v-input mt-1" [(ngModel)]="level" aria-label="Learner level">
+            <option value="beginner">Beginner</option>
+            <option value="intermediate">Intermediate</option>
+            <option value="advanced">Advanced</option>
+          </select>
+        </label>
         <asta-btn variant="accent" [loading]="generating()" [disabled]="!canGenerate()" (click)="generate()">
           Generate <span class="arr">→</span>
         </asta-btn>
@@ -53,6 +61,9 @@ import {
           <button class="idea-chip" type="button" (click)="concept = idea">{{ idea }}</button>
         }
       </div>
+      @if (!imageLive()) {
+        <p class="text-xs text-txt-mute mt-3">Diagrams render locally (SVG / Mermaid / graphs) — no image API needed. AI image generation activates when a provider key is configured.</p>
+      }
     </asta-card>
 
     @if (loading()) {
@@ -68,8 +79,25 @@ import {
         </asta-empty-state>
       </asta-card>
     } @else {
+      <div class="toolbar motion-row-2 mb-4">
+        <input class="tb-input" [ngModel]="query()" (ngModelChange)="query.set($event)" placeholder="Search visuals…" aria-label="Search visuals" />
+        <select class="tb-input tb-sel" [ngModel]="filterType()" (ngModelChange)="filterType.set($event)" aria-label="Filter by type">
+          <option value="">All types</option>
+          @for (t of typesPresent(); track t) { <option [value]="t">{{ meta(t).label }}</option> }
+        </select>
+        <select class="tb-input tb-sel" [ngModel]="sort()" (ngModelChange)="sort.set($event)" aria-label="Sort visuals">
+          <option value="newest">Newest</option>
+          <option value="title">Title A–Z</option>
+          <option value="type">Type</option>
+        </select>
+        <span class="tb-count">{{ filteredVisuals().length }} of {{ visuals().length }}</span>
+      </div>
+
+      @if (filteredVisuals().length === 0) {
+        <asta-card class="block"><asta-empty-state title="No matches" description="No visuals match your search or filter."><asta-btn variant="ghost" (click)="clearFilters()">Clear filters</asta-btn></asta-empty-state></asta-card>
+      } @else {
       <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 motion-row-2">
-        @for (v of visuals(); track v.id; let i = $index) {
+        @for (v of filteredVisuals(); track v.id; let i = $index) {
           <asta-card class="motion-card-reveal hover-lift cursor-pointer block" [interactive]="true" [style.--motion-card-index]="i % 3" (click)="open(v)">
             <div class="thumb">
               @if (v.thumbnail) { <img [src]="v.thumbnail" [alt]="v.title" /> } @else { <span class="thumb-glyph">{{ meta(v.type).glyph }}</span> }
@@ -82,6 +110,7 @@ import {
           </asta-card>
         }
       </div>
+      }
     }
   `,
   styles: [
@@ -96,6 +125,12 @@ import {
       .thumb-glyph { font-size: 40px; color: var(--green); }
       .fmt-badge { font-size: 10px; text-transform: uppercase; letter-spacing: .05em; padding: 2px 7px; border-radius: 999px; border: 1px solid var(--paper-3); color: var(--text-mute); white-space: nowrap; }
       .line-clamp-2 { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+      .toolbar { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+      .tb-input { background: var(--ink-2, var(--paper-2)); border: 1px solid var(--paper-3); border-radius: 11px; padding: 8px 12px; color: var(--text); font-size: 13.5px; }
+      .tb-input:focus { outline: none; border-color: var(--green); }
+      .tb-input:first-child { flex: 1 1 220px; }
+      .tb-sel { flex: 0 0 auto; }
+      .tb-count { font-size: 12px; color: var(--text-mute); margin-left: auto; white-space: nowrap; }
     `,
   ],
 })
@@ -108,16 +143,46 @@ export class VisualsListComponent {
   readonly loading = signal(true);
   readonly loadError = signal(false);
   readonly generating = signal(false);
+  /** True when a live image-generation provider is configured server-side. */
+  readonly imageLive = signal(false);
 
   concept = '';
   type: VisualType | '' = '';
+  level: 'beginner' | 'intermediate' | 'advanced' = 'beginner';
   readonly typeList = VISUAL_TYPE_LIST;
   readonly ideas = ['How a React render works', 'TCP vs UDP', 'Scalable web app architecture', 'Big-O complexity', 'JWT auth flow'];
 
+  readonly query = signal('');
+  readonly filterType = signal<VisualType | ''>('');
+  readonly sort = signal<'newest' | 'title' | 'type'>('newest');
+
+  /** Visual types actually present in the gallery — drives the filter dropdown. */
+  readonly typesPresent = computed(() => {
+    const set = new Set(this.visuals().map((v) => v.type));
+    return VISUAL_TYPE_LIST.filter((t) => set.has(t));
+  });
+
+  readonly filteredVisuals = computed(() => {
+    const q = this.query().trim().toLowerCase();
+    const ft = this.filterType();
+    let out = this.visuals();
+    if (ft) out = out.filter((v) => v.type === ft);
+    if (q) out = out.filter((v) => v.title.toLowerCase().includes(q) || v.prompt.toLowerCase().includes(q));
+    const s = this.sort();
+    return [...out].sort((a, b) => {
+      if (s === 'title') return a.title.localeCompare(b.title);
+      if (s === 'type') return this.meta(a.type).label.localeCompare(this.meta(b.type).label);
+      return (b.createdAt || '').localeCompare(a.createdAt || '');
+    });
+  });
+
   readonly canGenerate = computed(() => this.concept.trim().length >= 2 && !this.generating());
+
+  clearFilters(): void { this.query.set(''); this.filterType.set(''); this.sort.set('newest'); }
 
   constructor() {
     this.refresh();
+    this.api.status().subscribe({ next: (s) => this.imageLive.set(s.imageGeneration) });
   }
 
   meta(t: VisualType) {
@@ -140,7 +205,7 @@ export class VisualsListComponent {
   generate(): void {
     if (!this.canGenerate()) return;
     this.generating.set(true);
-    this.api.generate({ concept: this.concept.trim(), type: this.type || undefined }).subscribe({
+    this.api.generate({ concept: this.concept.trim(), type: this.type || undefined, level: this.level }).subscribe({
       next: (v) => {
         this.generating.set(false);
         this.toast.success('Visual generated');

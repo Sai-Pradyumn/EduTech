@@ -40,13 +40,27 @@ import { SpaceService, StudySpace } from '../../core/services/space.service';
     } @else if (spaces().length === 0) {
       <asta-card class="block motion-card-reveal"><asta-empty-state title="No study spaces yet" description="Create a space, drop in notes/transcripts/links, then ask grounded questions and generate flashcards, a quiz, a flow or a concept map."><asta-btn variant="accent" (click)="focusTitle()">Create your first space</asta-btn></asta-empty-state></asta-card>
     } @else {
+      <div class="toolbar motion-row-2 mb-4">
+        <input class="sp-input" [ngModel]="query()" (ngModelChange)="query.set($event)" placeholder="Search spaces…" aria-label="Search spaces" />
+        <select class="sp-input sp-sel" [ngModel]="sort()" (ngModelChange)="sort.set($event)" aria-label="Sort spaces">
+          <option value="newest">Newest</option>
+          <option value="title">Title A–Z</option>
+          <option value="sources">Most sources</option>
+        </select>
+        <span class="tb-count">{{ filteredSpaces().length }} of {{ spaces().length }}</span>
+      </div>
+
+      @if (filteredSpaces().length === 0) {
+        <asta-card class="block"><asta-empty-state title="No matches" description="No spaces match your search."><asta-btn variant="ghost" (click)="query.set('')">Clear search</asta-btn></asta-empty-state></asta-card>
+      } @else {
       <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 motion-row-2">
-        @for (s of spaces(); track s.id; let i = $index) {
+        @for (s of filteredSpaces(); track s.id; let i = $index) {
           <asta-card class="motion-card-reveal hover-lift cursor-pointer block" [interactive]="true" [style.--motion-card-index]="i % 3" (click)="open(s)">
             <p class="font-display text-lg leading-snug truncate">{{ s.title }}</p>
             <p class="text-sm text-txt-mute mt-0.5 line-clamp-2">{{ s.description || 'No description' }}</p>
             <div class="flex flex-wrap gap-1.5 mt-3 text-[11px] text-txt-mute">
               <span class="pill">{{ s.sources.length }} sources</span>
+              @if (s.artifacts.length) { <span class="pill chip-ok">✦ {{ s.artifacts.length }} generated</span> }
               @if (s.linkedFlowIds.length) { <span class="pill">→ {{ s.linkedFlowIds.length }} flow</span> }
               @if (s.linkedQuizIds.length) { <span class="pill">→ {{ s.linkedQuizIds.length }} quiz</span> }
               @if (s.linkedVisualIds.length) { <span class="pill">→ {{ s.linkedVisualIds.length }} visual</span> }
@@ -54,6 +68,7 @@ import { SpaceService, StudySpace } from '../../core/services/space.service';
           </asta-card>
         }
       </div>
+      }
     }
   `,
   styles: [
@@ -62,7 +77,12 @@ import { SpaceService, StudySpace } from '../../core/services/space.service';
       .sp-input { width: 100%; background: var(--ink-2, var(--paper-2)); border: 1px solid var(--paper-3); border-radius: 12px; padding: 10px 12px; color: var(--text); font-size: 14px; }
       .sp-input:focus { outline: none; border-color: var(--green); }
       .pill { padding: 2px 8px; border-radius: 999px; border: 1px solid var(--paper-3); background: color-mix(in oklab, var(--paper-2) 70%, transparent); }
+      .chip-ok { color: var(--green-deep); border-color: color-mix(in oklab, var(--green) 40%, var(--paper-3)); }
       .line-clamp-2 { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+      .toolbar { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+      .toolbar .sp-input:first-child { flex: 1 1 220px; }
+      .sp-sel { flex: 0 0 auto; width: auto; }
+      .tb-count { font-size: 12px; color: var(--text-mute); margin-left: auto; white-space: nowrap; }
     `,
   ],
 })
@@ -76,6 +96,20 @@ export class SpacesListComponent {
   readonly loadError = signal(false);
   readonly creating = signal(false);
   title = '';
+
+  readonly query = signal('');
+  readonly sort = signal<'newest' | 'title' | 'sources'>('newest');
+  readonly filteredSpaces = computed(() => {
+    const q = this.query().trim().toLowerCase();
+    const s = this.sort();
+    let out = this.spaces();
+    if (q) out = out.filter((sp) => sp.title.toLowerCase().includes(q) || sp.description.toLowerCase().includes(q));
+    return [...out].sort((a, b) => {
+      if (s === 'title') return a.title.localeCompare(b.title);
+      if (s === 'sources') return b.sources.length - a.sources.length;
+      return (b.createdAt || '').localeCompare(a.createdAt || '');
+    });
+  });
 
   constructor() { this.refresh(); }
 

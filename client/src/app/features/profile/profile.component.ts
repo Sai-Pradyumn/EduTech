@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component, OnInit, computed, inject, signal } from '@angular/core';
+import { DatePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { StudentProfileService } from '../../core/services/student-profile.service';
 import { AuthService } from '../../core/services/auth.service';
@@ -50,7 +51,7 @@ type Form = Pick<
   selector: 'asta-profile',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormsModule, FieldComponent, ChipInputComponent, SkeletonComponent, EmptyStateComponent],
+  imports: [FormsModule, DatePipe, FieldComponent, ChipInputComponent, SkeletonComponent, EmptyStateComponent],
   template: `
     @if (loading()) {
       <div class="mx-auto" style="max-width:var(--maxw-app)">
@@ -88,6 +89,14 @@ type Form = Pick<
               <input class="input" [value]="auth.user()?.email ?? ''" disabled />
             </asta-field>
           </div>
+          @if (meta(); as m) {
+            <div class="acct-meta">
+              <div class="am"><span class="am-v">{{ m.createdAt | date: 'mediumDate' }}</span><span class="am-l">Member since</span></div>
+              <div class="am"><span class="am-v">{{ memberDays() }} {{ memberDays() === 1 ? 'day' : 'days' }}</span><span class="am-l">With Asta</span></div>
+              <div class="am"><span class="am-v" [style.color]="m.onboardingCompleted ? 'var(--green-deep)' : 'var(--text-mute)'">{{ m.onboardingCompleted ? 'Complete' : 'Incomplete' }}</span><span class="am-l">Onboarding</span></div>
+              <div class="am"><span class="am-v capitalize">{{ auth.user()?.role ?? '—' }}</span><span class="am-l">Account type</span></div>
+            </div>
+          }
         </section>
 
         <!-- Learning profile -->
@@ -212,6 +221,14 @@ type Form = Pick<
   `,
   styles: [
     `
+      .acct-meta {
+        display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px;
+        margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--paper-3);
+      }
+      @media (min-width: 640px) { .acct-meta { grid-template-columns: repeat(4, 1fr); } }
+      .am { display: flex; flex-direction: column; gap: 1px; }
+      .am-v { font-size: 14px; font-weight: 600; }
+      .am-l { font-size: 10.5px; text-transform: uppercase; letter-spacing: .04em; color: var(--text-mute); }
       .seg {
         font-size: 13px; padding: 8px 16px; border-radius: 100px; border: 1px solid var(--paper-3);
         background: var(--paper); color: var(--text-soft); transition: all .15s var(--ease); min-height: 40px;
@@ -258,6 +275,14 @@ export class ProfileComponent implements OnInit {
   readonly error = signal<string | null>(null);
   readonly savedAt = signal(false);
   readonly form = signal<Form | null>(null);
+  /** Read-only account metadata surfaced in the Account section (from the loaded profile). */
+  readonly meta = signal<{ createdAt: string; onboardingCompleted: boolean } | null>(null);
+
+  memberDays(): number {
+    const c = this.meta()?.createdAt;
+    if (!c) return 0;
+    return Math.max(0, Math.floor((Date.now() - new Date(c).getTime()) / 86400000));
+  }
 
   readonly educationLevels = EDUCATION_LEVELS;
   readonly branches = BRANCHES;
@@ -299,6 +324,7 @@ export class ProfileComponent implements OnInit {
           preferredLanguage: p?.preferredLanguage ?? 'English',
           careerTarget: p?.careerTarget ?? 'fulltime',
         });
+        this.meta.set(p ? { createdAt: p.createdAt, onboardingCompleted: p.onboardingCompleted } : null);
         this.loading.set(false);
       },
       error: () => {

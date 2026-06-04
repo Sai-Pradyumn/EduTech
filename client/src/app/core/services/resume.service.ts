@@ -26,6 +26,7 @@ export interface Application {
   matchedSkills: string[];
   missingSkills: string[];
   tailoredSummary: string;
+  tailoredBullets: string[];
   coverLetter: string;
   prepPlan: string;
   status: 'saved' | 'applied' | 'interviewing' | 'offer' | 'rejected';

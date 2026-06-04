@@ -64,3 +64,6 @@ export * from './report.model';
 export * from './founder.model';
 export * from './admin.model';
 export * from './lab.model';
+export * from './practice.model';
+export * from './memory.model';
+export * from './guardian.model';

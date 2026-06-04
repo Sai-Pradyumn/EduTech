@@ -5,6 +5,7 @@ import { CardComponent } from '../../shared/ui/card.component';
 import { EmptyStateComponent } from '../../shared/ui/empty-state.component';
 import { SkeletonComponent } from '../../shared/ui/skeleton.component';
 import { TextToSpeechService } from '../../core/services/text-to-speech.service';
+import { ToastService } from '../../core/services/toast.service';
 import { LearningReplay, ReplayService } from '../../core/services/replay.service';
 
 @Component({
@@ -20,6 +21,7 @@ import { LearningReplay, ReplayService } from '../../core/services/replay.servic
       </div>
       <div class="flex gap-2.5 shrink-0">
         <asta-btn variant="ghost" size="sm" (click)="generate()" [disabled]="loading()">Regenerate</asta-btn>
+        @if (replay()) { <asta-btn variant="ghost" size="sm" (click)="copyRecap()">Copy</asta-btn> }
         @if (replay()) { <asta-btn variant="accent" size="sm" (click)="playRecap()">{{ tts.speaking() ? 'Stop' : '▶ Play recap' }}</asta-btn> }
       </div>
     </header>
@@ -78,6 +80,7 @@ import { LearningReplay, ReplayService } from '../../core/services/replay.servic
 export class ReplayComponent {
   private readonly api = inject(ReplayService);
   private readonly router = inject(Router);
+  private readonly toast = inject(ToastService);
   readonly tts = inject(TextToSpeechService);
 
   readonly replay = signal<LearningReplay | null>(null);
@@ -95,4 +98,30 @@ export class ReplayComponent {
     this.tts.speak(r.recapScript);
   }
   go(route: string): void { this.router.navigate([route]); }
+
+  /** Export the recap as a shareable markdown digest. */
+  copyRecap(): void {
+    const r = this.replay();
+    if (!r) return;
+    const lines = [
+      '# Learning Replay',
+      '',
+      r.recapScript,
+      '',
+      `Readiness ${r.readinessScore}/100 · ${r.pace} pace · suggested modality: ${r.modality.modality}`,
+      '',
+      '## What I did',
+      ...(r.did.length ? r.did.map((d) => `- ${d.title} — ${d.detail}`) : ['- (no recent verified events)']),
+      '',
+      '## Where I struggled',
+      ...(r.struggled.length ? r.struggled.map((s) => `- ${s.concept} (severity ${s.severity}/100)`) : ['- (no major gaps)']),
+      '',
+      '## What to do next',
+      ...r.nextActions.map((a) => `- ${a.label} — ${a.reason}`),
+    ];
+    navigator.clipboard?.writeText(lines.join('\n')).then(
+      () => this.toast.success('Recap copied'),
+      () => this.toast.error('Clipboard unavailable'),
+    );
+  }
 }

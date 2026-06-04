@@ -76,7 +76,20 @@ export interface Project {
   submission: ProjectSubmission | null;
   aiReview: AiProjectReview | null;
   mentorReview: MentorReviewView | null;
+  /** Portfolio-ready case study (Phase 9) — empty until generated. */
+  caseStudy: string;
+  /** Archived projects stay in history but are hidden from the active board by default. */
+  archived: boolean;
   createdAt: string;
+}
+
+/** Aggregate counts across all of a learner's projects. */
+export interface ProjectStats {
+  total: number;
+  completed: number;
+  inProgress: number;
+  submitted: number;
+  avgProgress: number;
 }
 
 export interface GenerateProjectRequest {

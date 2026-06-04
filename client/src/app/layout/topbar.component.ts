@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component, EventEmitter, Input, OnInit, Output, inject } from '@angular/core';
-import { RouterLink } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
+import { NotificationView } from '../core/services/notification.service';
 import { ThemeToggleComponent } from '../shared/ui/theme-toggle.component';
 import { DropdownComponent } from '../shared/ui/dropdown.component';
 import { NotificationService } from '../core/services/notification.service';
@@ -7,13 +8,14 @@ import { VoiceActivationService } from '../core/services/voice-activation.servic
 import { I18nService } from '../core/services/i18n.service';
 import { TranslatePipe } from '../shared/pipes/translate.pipe';
 import { Locale } from '../core/i18n/translations';
+import { AstaOsModeToggleComponent } from '../features/asta-os/asta-os-mode-toggle.component';
 
 /** Sticky topbar: page title + streak chip + notifications + Ask Asta (DESIGN_SPEC §5). */
 @Component({
   selector: 'asta-topbar',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink, ThemeToggleComponent, DropdownComponent, TranslatePipe],
+  imports: [RouterLink, ThemeToggleComponent, DropdownComponent, TranslatePipe, AstaOsModeToggleComponent],
   template: `
     <header
       class="sticky top-0 z-30 flex items-center gap-3 px-5 md:px-8"
@@ -42,6 +44,9 @@ import { Locale } from '../core/i18n/translations';
             style="background:var(--green)">{{ 'action.askAsta' | t }}</span>
         </a>
       }
+
+      <!-- Experience switch: Classic ↔ Asta OS -->
+      <asta-os-mode-toggle class="hidden md:inline-flex" />
 
       <!-- Language switcher (B15 · i18n) -->
       <asta-dropdown align="right">
@@ -97,12 +102,14 @@ import { Locale } from '../core/i18n/translations';
           <div style="max-height:340px;overflow:auto">
             @for (n of notify.items(); track n.id) {
               <button class="dd-item" style="align-items:flex-start;flex-direction:column;gap:2px"
-                [style.opacity]="n.read ? '0.6' : '1'" (click)="notify.markRead(n.id)">
-                <span class="flex items-center gap-2" style="font-weight:500;color:var(--text)">
+                [style.opacity]="n.read ? '0.6' : '1'" (click)="openNotification(n)">
+                <span class="flex items-center gap-2 w-full" style="font-weight:500;color:var(--text)">
                   @if (!n.read) { <span class="rounded-full" style="width:6px;height:6px;background:var(--green)"></span> }
-                  {{ n.title }}
+                  <span class="flex-1 truncate">{{ n.title }}</span>
+                  @if (n.createdAt) { <span class="text-[10px] text-txt-mute font-mono shrink-0">{{ ago(n.createdAt) }}</span> }
                 </span>
                 @if (n.body) { <span class="text-xs text-txt-mute" style="white-space:normal">{{ n.body }}</span> }
+                @if (n.link) { <span class="text-[11px] font-medium" style="color:var(--green-deep)">Open →</span> }
               </button>
             }
           </div>
@@ -120,9 +127,28 @@ export class TopbarComponent implements OnInit {
   readonly notify = inject(NotificationService);
   readonly voice = inject(VoiceActivationService);
   readonly i18n = inject(I18nService);
+  private readonly router = inject(Router);
 
   ngOnInit(): void {
     this.notify.load();
+  }
+
+  /** Mark read and, when the notification carries a deep link, navigate to it. */
+  openNotification(n: NotificationView): void {
+    if (!n.read) this.notify.markRead(n.id);
+    if (n.link) void this.router.navigateByUrl(n.link);
+  }
+
+  /** Compact relative time for the notification list. */
+  ago(iso: string): string {
+    const ms = Date.now() - new Date(iso).getTime();
+    const m = Math.floor(ms / 60000);
+    if (m < 1) return 'now';
+    if (m < 60) return `${m}m`;
+    const h = Math.floor(m / 60);
+    if (h < 24) return `${h}h`;
+    const d = Math.floor(h / 24);
+    return d < 7 ? `${d}d` : `${Math.floor(d / 7)}w`;
   }
 
   setLocale(locale: Locale): void {

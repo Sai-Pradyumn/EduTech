@@ -46,11 +46,13 @@ interface Draft {
 }
 
 const TOTAL_STEPS = 7;
+const DRAFT_KEY = 'asta.onboarding-draft';
 
 @Component({
   selector: 'asta-onboarding',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
+  host: { '(input)': 'persist()', '(change)': 'persist()' },
   imports: [FormsModule, ButtonComponent, ChipInputComponent, LogoComponent, MagneticDirective],
   template: `
     <div class="min-h-screen flex flex-col items-center px-5 py-8">
@@ -243,6 +245,35 @@ export class OnboardingComponent {
     careerTarget: '',
   };
 
+  constructor() {
+    this.restore();
+  }
+
+  /** Restore an in-progress draft saved on a previous visit (survives accidental refresh). */
+  private restore(): void {
+    try {
+      const raw = localStorage.getItem(DRAFT_KEY);
+      if (!raw) return;
+      const saved = JSON.parse(raw) as Partial<Draft> & { _step?: number };
+      this.draft = { ...this.draft, ...saved };
+      // Don't trust a name from storage over the live account name if empty.
+      if (!this.draft.fullName) this.draft.fullName = this.auth.user()?.name ?? '';
+      if (saved._step && saved._step >= 1 && saved._step <= TOTAL_STEPS) this.step.set(saved._step);
+      if (saved._step) this.toast.info('Picked up where you left off');
+    } catch {
+      /* corrupt draft — ignore and start fresh */
+    }
+  }
+
+  /** Persist the current answers + step. Bound to host input/change so every edit is captured. */
+  persist(): void {
+    try {
+      localStorage.setItem(DRAFT_KEY, JSON.stringify({ ...this.draft, _step: this.step() }));
+    } catch {
+      /* storage full / unavailable — non-fatal */
+    }
+  }
+
   labelOf<T extends string>(opts: { value: T; label: string }[], value: T): string {
     return opts.find((o) => o.value === value)?.label ?? '—';
   }
@@ -266,10 +297,10 @@ export class OnboardingComponent {
   }
 
   next(): void {
-    if (this.step() < TOTAL_STEPS && this.canAdvance()) this.step.update((s) => s + 1);
+    if (this.step() < TOTAL_STEPS && this.canAdvance()) { this.step.update((s) => s + 1); this.persist(); }
   }
   back(): void {
-    if (this.step() > 1) this.step.update((s) => s - 1);
+    if (this.step() > 1) { this.step.update((s) => s - 1); this.persist(); }
   }
 
   finish(): void {
@@ -289,6 +320,7 @@ export class OnboardingComponent {
   }
 
   private go(): void {
+    try { localStorage.removeItem(DRAFT_KEY); } catch { /* ignore */ }
     this.toast.success('Profile saved — let’s build your roadmap');
     void this.router.navigate(['/app/roadmap/generate']);
   }

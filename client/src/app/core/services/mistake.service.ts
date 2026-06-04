@@ -42,6 +42,11 @@ export interface Mistake {
   linkedVisualId: string | null;
   lastSeenAt: string | null;
   resolvedAt: string | null;
+  /** Spaced-review scheduling (SM-2-lite). */
+  nextReviewAt: string | null;
+  reviewInterval: number;
+  reviewCount: number;
+  lastReviewedAt: string | null;
   createdAt: string;
 }
 
@@ -49,6 +54,8 @@ export interface MistakeStats {
   open: number;
   repairing: number;
   resolved: number;
+  /** Concepts due for a spaced review right now. */
+  due: number;
   avgSeverity: number;
   topFocus: { id: string; concept: string; severity: number } | null;
   heatmap: { topic: string; severity: number; frequency: number; status: MistakeStatus }[];
@@ -63,6 +70,14 @@ export class MistakeService {
   }
   stats(): Observable<MistakeStats> {
     return this.api.get<MistakeStats>('/mistakes/stats');
+  }
+  /** Concepts due for a spaced review now (hardest first). */
+  due(): Observable<Mistake[]> {
+    return this.api.get<Mistake[]>('/mistakes/due');
+  }
+  /** Record a review attempt; reschedules the concept and adjusts severity. */
+  review(id: string, recalled: boolean): Observable<Mistake> {
+    return this.api.post<Mistake>(`/mistakes/${id}/review`, { recalled });
   }
   repair(id: string): Observable<Mistake> {
     return this.api.post<Mistake>(`/mistakes/${id}/repair`, {});

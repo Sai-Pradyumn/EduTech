@@ -48,6 +48,8 @@ export interface FlowNode {
   prerequisites: string[];
   resources: { label: string; url?: string; kind?: string }[];
   agentHints: string[];
+  /** Learner's private journal note for this node. */
+  notes: string;
   linkedRoadmapId: string | null;
   linkedQuizId: string | null;
   linkedProjectId: string | null;
@@ -86,6 +88,7 @@ export interface Flow {
   edges: FlowEdge[];
   timeline: FlowTimelineBucket[];
   metadata: Record<string, unknown>;
+  completedAt: string | null;
   createdAt: string;
   updatedAt: string;
 }

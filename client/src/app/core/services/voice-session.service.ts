@@ -29,7 +29,7 @@ export interface VoiceSession {
 export interface TurnResult {
   sessionId: string;
   text: string;
-  speak: { text: string; voice: string; provider: string };
+  speak: { text: string; voice: string; provider: string; audioUrl?: string };
 }
 
 @Injectable({ providedIn: 'root' })
@@ -50,6 +50,9 @@ export class VoiceSessionService {
   }
   turn(id: string, transcript: string): Observable<TurnResult> {
     return this.api.post<TurnResult>(`/voice/sessions/${id}/turn`, { transcript });
+  }
+  rename(id: string, title: string): Observable<VoiceSession> {
+    return this.api.patch<VoiceSession>(`/voice/sessions/${id}`, { title });
   }
   summarize(id: string): Observable<VoiceSession> {
     return this.api.post<VoiceSession>(`/voice/sessions/${id}/summarize`, {});
