@@ -48,9 +48,11 @@ import { DAILY_KIND_GLYPH, DailyDay, DailyItem, DailyPlan, DailyPlanMode, DailyP
             </asta-empty-state>
           } @else {
             <div class="space-y-2">
-              @for (it of p.items; track it.id) {
-                <div class="item" [class.done]="it.done" [class.focusing]="focusId() === it.id">
+              @for (it of p.items; track it.id; let i = $index) {
+                <div class="item" [class.done]="it.done" [class.focusing]="focusId() === it.id" [class.dragging]="dragIndex() === i"
+                     [draggable]="noteEditId() !== it.id" (dragstart)="onDragStart(i)" (dragover)="onDragOver($event)" (drop)="onDrop(i)" (dragend)="onDragEnd()">
                   <div class="item-row">
+                    <span class="grip" title="Drag to reorder" aria-hidden="true">⠿</span>
                     <button class="check" (click)="toggle(it)" [attr.aria-pressed]="it.done" [attr.aria-label]="it.done ? 'Mark not done' : 'Mark done'">{{ it.done ? '✓' : '' }}</button>
                     <span class="i-glyph">{{ glyph(it.kind) }}</span>
                     <span class="min-w-0 flex-1">
@@ -113,6 +115,7 @@ import { DAILY_KIND_GLYPH, DailyDay, DailyItem, DailyPlan, DailyPlanMode, DailyP
             <p class="ring-num">{{ pct() }}%</p>
             <div class="prog-track"><span class="prog-fill" [style.width.%]="pct()"></span></div>
             <p class="text-xs text-txt-mute mt-2">of today's plan complete</p>
+            @if (finishBy(); as fb) { <p class="text-[11px] text-txt-mute mt-1">⏱ On track to finish by ~{{ fb }}</p> }
           </asta-card>
           <asta-card class="block motion-card-reveal motion-row-3">
             <p class="kicker mb-2">Quick modes</p>
@@ -135,7 +138,10 @@ import { DAILY_KIND_GLYPH, DailyDay, DailyItem, DailyPlan, DailyPlanMode, DailyP
       .mode-pill.active { background: color-mix(in oklab, var(--green) 22%, transparent); color: var(--text); }
       .item { display: flex; flex-direction: column; gap: 6px; padding: 10px 12px; border-radius: 12px; border: 1px solid var(--paper-3); background: var(--paper-2); }
       .item.focusing { border-color: color-mix(in oklab, var(--green) 45%, var(--paper-3)); }
+      .item.dragging { opacity: .4; }
       .item-row { display: flex; align-items: center; gap: 10px; }
+      .grip { cursor: grab; color: var(--text-mute); font-size: 13px; line-height: 1; user-select: none; flex-shrink: 0; }
+      .grip:active { cursor: grabbing; }
       .item.done { opacity: .55; }
       .item.done .i-title { text-decoration: line-through; }
       .check { width: 22px; height: 22px; border-radius: 6px; border: 1.5px solid var(--paper-3); background: transparent; color: var(--green); cursor: pointer; flex-shrink: 0; font-size: 13px; }
@@ -185,6 +191,9 @@ export class TodayComponent implements OnDestroy {
   readonly focusLeft = signal(0);
   private timer?: ReturnType<typeof setInterval>;
 
+  // Drag-to-reorder state (index of the item being dragged).
+  readonly dragIndex = signal<number | null>(null);
+
   readonly modes: { id: DailyPlanMode; label: string; hint: string }[] = [
     { id: 'normal', label: 'Today', hint: 'A balanced daily plan' },
     { id: 'quick', label: 'Quick', hint: 'Only 20 minutes' },
@@ -195,6 +204,15 @@ export class TodayComponent implements OnDestroy {
   readonly pct = computed(() => {
     const p = this.plan();
     return p && p.items.length ? Math.round((p.completed / p.items.length) * 100) : 0;
+  });
+
+  /** Projected finish time if the learner does the remaining items back-to-back from now. */
+  readonly finishBy = computed(() => {
+    const p = this.plan();
+    if (!p) return null;
+    const remaining = p.items.filter((i) => !i.done).reduce((s, i) => s + i.estimateMinutes, 0);
+    if (remaining <= 0) return null;
+    return new Date(Date.now() + remaining * 60000).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
   });
 
   constructor() { this.load(); }
@@ -243,6 +261,25 @@ export class TodayComponent implements OnDestroy {
     this.api.completeItem(it.id).subscribe({
       next: (p) => { this.plan.set(p); this.refreshStreak(); },
       error: () => this.toast.error('Could not update item'),
+    });
+  }
+
+  // ── drag-to-reorder ──
+  onDragStart(i: number): void { this.dragIndex.set(i); }
+  onDragOver(ev: DragEvent): void { ev.preventDefault(); }
+  onDragEnd(): void { this.dragIndex.set(null); }
+  onDrop(target: number): void {
+    const from = this.dragIndex();
+    this.dragIndex.set(null);
+    const p = this.plan();
+    if (from === null || !p || from === target) return;
+    const items = [...p.items];
+    const [moved] = items.splice(from, 1);
+    items.splice(target, 0, moved);
+    this.plan.set({ ...p, items }); // optimistic
+    this.api.reorder(items.map((i) => i.id)).subscribe({
+      next: (np) => this.plan.set(np),
+      error: () => { this.plan.set(p); this.toast.error('Could not reorder'); },
     });
   }
 

@@ -3,6 +3,7 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { RoadmapStatus } from '../../common/enums';
 import { FlowsService } from '../flows/flows.service';
+import { LedgerService } from '../ledger/ledger.service';
 import { MistakesService } from '../mistakes/mistakes.service';
 import { Roadmap, RoadmapDocument } from '../roadmap/schemas/roadmap.schema';
 import {
@@ -21,6 +22,7 @@ export class DailyPlanService {
     private readonly roadmaps: Model<RoadmapDocument>,
     private readonly flows: FlowsService,
     private readonly mistakes: MistakesService,
+    private readonly ledger: LedgerService,
   ) {}
 
   private today(): string {
@@ -173,6 +175,33 @@ export class DailyPlanService {
     const item = plan.items.find((i) => i.id === itemId);
     if (!item) throw new NotFoundException('Plan item not found');
     item.done = !item.done;
+    plan.markModified('items');
+
+    // First time the whole plan is finished, record a verified proof event.
+    const allDone = plan.items.length > 0 && plan.items.every((i) => i.done);
+    if (allDone && !plan.completedLoggedAt) {
+      plan.completedLoggedAt = new Date();
+      await this.ledger.record(userId, {
+        kind: 'daily_plan_completed',
+        title: `Completed daily plan (${plan.items.length} items)`,
+        detail: `${plan.mode} mode · ${plan.totalMinutes} min of focused learning.`,
+        evidenceRef: String(plan._id),
+        verificationLevel: 'system',
+      });
+    }
+    return plan.save();
+  }
+
+  /** Persist a learner-chosen item order (drag-to-reorder on the Today screen). */
+  async reorder(userId: string, itemIds: string[]): Promise<DailyPlanDocument> {
+    const plan = await this.getToday(userId);
+    const byId = new Map(plan.items.map((i) => [i.id, i]));
+    const reordered = itemIds
+      .map((id) => byId.get(id))
+      .filter((i): i is DailyItem => !!i);
+    // Append any items the client didn't mention so nothing is silently dropped.
+    for (const it of plan.items) if (!itemIds.includes(it.id)) reordered.push(it);
+    plan.items = reordered;
     plan.markModified('items');
     return plan.save();
   }

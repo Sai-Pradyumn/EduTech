@@ -6,6 +6,7 @@ import { DailyPlanDocument } from './schemas/daily-plan.schema';
 import {
   CompleteItemDto,
   GeneratePlanDto,
+  ReorderItemsDto,
   SetItemNoteDto,
 } from './dto/daily-plan.dto';
 
@@ -57,6 +58,11 @@ export class DailyPlanController {
   @Post('carry-over')
   async carryOver(@CurrentUser() user: AuthUser) {
     return toView(await this.plan.carryOver(user.id));
+  }
+
+  @Post('reorder')
+  async reorder(@CurrentUser() user: AuthUser, @Body() dto: ReorderItemsDto) {
+    return toView(await this.plan.reorder(user.id, dto.itemIds));
   }
 
   @Post('recalculate')

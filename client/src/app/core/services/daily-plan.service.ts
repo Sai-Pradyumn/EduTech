@@ -49,6 +49,7 @@ export class DailyPlanService {
   completeItem(itemId: string): Observable<DailyPlan> { return this.api.post<DailyPlan>('/daily-plan/complete-item', { itemId }); }
   setItemNote(itemId: string, note: string): Observable<DailyPlan> { return this.api.post<DailyPlan>('/daily-plan/item-note', { itemId, note }); }
   carryOver(): Observable<DailyPlan> { return this.api.post<DailyPlan>('/daily-plan/carry-over', {}); }
+  reorder(itemIds: string[]): Observable<DailyPlan> { return this.api.post<DailyPlan>('/daily-plan/reorder', { itemIds }); }
   recalculate(): Observable<DailyPlan> { return this.api.post<DailyPlan>('/daily-plan/recalculate', {}); }
   quickMode(): Observable<DailyPlan> { return this.api.post<DailyPlan>('/daily-plan/quick-mode', {}); }
   streak(): Observable<DailyStreak> { return this.api.get<DailyStreak>('/daily-plan/streak'); }

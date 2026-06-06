@@ -49,6 +49,10 @@ export class DailyPlan {
 
   @Prop({ type: [DailyItemSchema], default: [] }) items!: DailyItem[];
   @Prop({ default: 0 }) totalMinutes!: number;
+
+  /** Set once, the first time every item in the plan is complete — guards the
+   *  one-per-day `daily_plan_completed` Proof-Ledger event from double-firing. */
+  @Prop({ type: Date }) completedLoggedAt?: Date;
 }
 
 export const DailyPlanSchema = SchemaFactory.createForClass(DailyPlan);
