@@ -3,7 +3,7 @@ import { ButtonComponent } from '../../shared/ui/button.component';
 import { CardComponent } from '../../shared/ui/card.component';
 import { EmptyStateComponent } from '../../shared/ui/empty-state.component';
 import { SkeletonComponent } from '../../shared/ui/skeleton.component';
-import { LEDGER_KIND_META, LedgerEntry, LedgerKind, LedgerService, LedgerStats, VerificationLevel } from '../../core/services/ledger.service';
+import { ledgerKindMeta, LedgerEntry, LedgerKind, LedgerService, LedgerStats, VerificationLevel } from '../../core/services/ledger.service';
 
 const VER_META: Record<VerificationLevel, { label: string; tone: string }> = {
   certificate: { label: 'Certificate', tone: 'var(--green-deep)' },
@@ -116,8 +116,8 @@ export class LedgerComponent {
   });
 
   constructor() { this.refresh(); }
-  glyph(k: LedgerKind): string { return LEDGER_KIND_META[k].glyph; }
-  kindLabel(k: LedgerKind): string { return LEDGER_KIND_META[k].label; }
+  glyph(k: LedgerKind): string { return ledgerKindMeta(k).glyph; }
+  kindLabel(k: LedgerKind): string { return ledgerKindMeta(k).label; }
   verLabel(v: VerificationLevel): string { return VER_META[v].label; }
   verTone(v: VerificationLevel): string { return VER_META[v].tone; }
   date(iso: string): string { return new Date(iso).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }); }
