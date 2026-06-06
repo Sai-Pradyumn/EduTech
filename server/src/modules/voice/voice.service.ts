@@ -11,6 +11,7 @@ import { AgentType, Difficulty, Role } from '../../common/enums';
 import { AgentOrchestratorService } from '../agents/agent-orchestrator.service';
 import { FlowsService } from '../flows/flows.service';
 import { AssessmentService } from '../assessment/services/assessment.service';
+import { LedgerService } from '../ledger/ledger.service';
 import {
   IVoiceProvider,
   SynthesisResult,
@@ -92,6 +93,7 @@ export class VoiceService {
     private readonly sessions: Model<VoiceSessionDocument>,
     private readonly flows: FlowsService,
     private readonly assessment: AssessmentService,
+    private readonly ledger: LedgerService,
     @Inject(VOICE_PROVIDER_TOKEN) private readonly provider: IVoiceProvider,
   ) {}
 
@@ -206,7 +208,19 @@ export class VoiceService {
     s.status = 'completed';
     if (typeof durationMs === 'number') s.durationMs = durationMs;
     if (!s.summary) this.applySummary(s);
-    return s.save();
+    const saved = await s.save();
+    // A completed viva with real back-and-forth is proof of oral mastery (feeds Skill Passport).
+    const userTurns = s.transcript.filter((t) => t.role === 'user').length;
+    if (s.mode === 'viva' && userTurns >= 3) {
+      await this.ledger.record(userId, {
+        kind: 'voice_viva_passed',
+        title: `Completed a voice viva: ${s.title}`,
+        detail: `${userTurns} spoken answers in an oral assessment.`,
+        evidenceRef: String(s._id),
+        verificationLevel: 'self',
+      });
+    }
+    return saved;
   }
 
   // ───────────────────────── derived artifacts ─────────────────────────
