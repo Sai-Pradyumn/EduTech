@@ -14,6 +14,7 @@ export interface DailyItem {
   estimateMinutes: number;
   done: boolean;
   sourceId: string | null;
+  note: string;
 }
 
 export interface DailyPlan {
@@ -46,6 +47,8 @@ export class DailyPlanService {
   today(): Observable<DailyPlan> { return this.api.get<DailyPlan>('/daily-plan/today'); }
   generate(mode: DailyPlanMode): Observable<DailyPlan> { return this.api.post<DailyPlan>('/daily-plan/generate', { mode }); }
   completeItem(itemId: string): Observable<DailyPlan> { return this.api.post<DailyPlan>('/daily-plan/complete-item', { itemId }); }
+  setItemNote(itemId: string, note: string): Observable<DailyPlan> { return this.api.post<DailyPlan>('/daily-plan/item-note', { itemId, note }); }
+  carryOver(): Observable<DailyPlan> { return this.api.post<DailyPlan>('/daily-plan/carry-over', {}); }
   recalculate(): Observable<DailyPlan> { return this.api.post<DailyPlan>('/daily-plan/recalculate', {}); }
   quickMode(): Observable<DailyPlan> { return this.api.post<DailyPlan>('/daily-plan/quick-mode', {}); }
   streak(): Observable<DailyStreak> { return this.api.get<DailyStreak>('/daily-plan/streak'); }

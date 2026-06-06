@@ -29,6 +29,8 @@ export class DailyItem {
   @Prop({ default: 20 }) estimateMinutes!: number;
   @Prop({ default: false }) done!: boolean;
   @Prop() sourceId?: string;
+  /** Optional learner note — a reminder or reflection attached to this item. */
+  @Prop({ default: '' }) note?: string;
 }
 const DailyItemSchema = SchemaFactory.createForClass(DailyItem);
 

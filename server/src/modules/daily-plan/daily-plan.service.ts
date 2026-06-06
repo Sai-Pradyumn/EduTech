@@ -177,6 +177,67 @@ export class DailyPlanService {
     return plan.save();
   }
 
+  /** Attach (or clear) a short note on a single plan item. */
+  async setItemNote(
+    userId: string,
+    itemId: string,
+    note: string,
+  ): Promise<DailyPlanDocument> {
+    const plan = await this.getToday(userId);
+    const item = plan.items.find((i) => i.id === itemId);
+    if (!item) throw new NotFoundException('Plan item not found');
+    item.note = note.slice(0, 500);
+    plan.markModified('items');
+    return plan.save();
+  }
+
+  /**
+   * Pull yesterday's unfinished items into today's plan so nothing silently
+   * drops off. Skips items already present today (matched on sourceId/title)
+   * and is safe to run more than once.
+   */
+  async carryOver(userId: string): Promise<DailyPlanDocument> {
+    const today = await this.getToday(userId);
+    const dayMs = 86_400_000;
+    const yStr = new Date(
+      new Date(`${today.date}T00:00:00.000Z`).getTime() - dayMs,
+    )
+      .toISOString()
+      .slice(0, 10);
+    const yesterday = await this.model
+      .findOne({ user: new Types.ObjectId(userId), date: yStr })
+      .exec();
+    if (!yesterday) return today;
+
+    const existingKeys = new Set(
+      today.items.map((i) => i.sourceId ?? i.title),
+    );
+    const carried = yesterday.items.filter(
+      (i) => !i.done && !existingKeys.has(i.sourceId ?? i.title),
+    );
+    if (!carried.length) return today;
+
+    for (const it of carried) {
+      today.items.push({
+        id: `carry_${it.id}`,
+        kind: it.kind,
+        title: it.title,
+        reason: `Carried over from yesterday · ${it.reason}`,
+        route: it.route,
+        estimateMinutes: it.estimateMinutes,
+        done: false,
+        sourceId: it.sourceId,
+        note: it.note,
+      } as DailyItem);
+    }
+    today.totalMinutes = today.items.reduce(
+      (s, i) => s + i.estimateMinutes,
+      0,
+    );
+    today.markModified('items');
+    return today.save();
+  }
+
   recalculate(userId: string): Promise<DailyPlanDocument> {
     return this.generate(userId, 'normal');
   }

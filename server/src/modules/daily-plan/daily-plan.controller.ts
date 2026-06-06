@@ -3,7 +3,11 @@ import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { AuthUser } from '../../common/interfaces';
 import { DailyPlanService } from './daily-plan.service';
 import { DailyPlanDocument } from './schemas/daily-plan.schema';
-import { CompleteItemDto, GeneratePlanDto } from './dto/daily-plan.dto';
+import {
+  CompleteItemDto,
+  GeneratePlanDto,
+  SetItemNoteDto,
+} from './dto/daily-plan.dto';
 
 function toView(p: DailyPlanDocument) {
   return {
@@ -20,6 +24,7 @@ function toView(p: DailyPlanDocument) {
       estimateMinutes: i.estimateMinutes,
       done: i.done,
       sourceId: i.sourceId ?? null,
+      note: i.note ?? '',
     })),
     completed: p.items.filter((i) => i.done).length,
   };
@@ -42,6 +47,16 @@ export class DailyPlanController {
   @Post('complete-item')
   async complete(@CurrentUser() user: AuthUser, @Body() dto: CompleteItemDto) {
     return toView(await this.plan.completeItem(user.id, dto.itemId));
+  }
+
+  @Post('item-note')
+  async setNote(@CurrentUser() user: AuthUser, @Body() dto: SetItemNoteDto) {
+    return toView(await this.plan.setItemNote(user.id, dto.itemId, dto.note));
+  }
+
+  @Post('carry-over')
+  async carryOver(@CurrentUser() user: AuthUser) {
+    return toView(await this.plan.carryOver(user.id));
   }
 
   @Post('recalculate')
