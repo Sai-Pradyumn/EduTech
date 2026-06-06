@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { ButtonComponent } from '../../shared/ui/button.component';
 import { CardComponent } from '../../shared/ui/card.component';
@@ -167,6 +168,8 @@ export class MentorsComponent {
 
   constructor() {
     this.api.list().subscribe({ next: (m) => { this.mentors.set(m); this.loading.set(false); }, error: () => this.loading.set(false) });
+    // Deep-link: /app/mentor-sessions opens the Sessions tab directly.
+    if (inject(Router).url.includes('mentor-sessions')) this.loadSessions();
   }
 
   loadSessions(): void {
