@@ -179,11 +179,11 @@ const DIFFS: Difficulty[] = ['beginner', 'intermediate', 'advanced'];
                       <div class="flex items-center justify-between">
                         <span class="phase">{{ t.phase }}</span>
                         <div class="flex gap-1">
-                          <button class="mv" title="Move up" [disabled]="ti === 0" (click)="reorder(t, 'up')">▲</button>
-                          <button class="mv" title="Move down" [disabled]="last" (click)="reorder(t, 'down')">▼</button>
-                          @if (col.key !== 'todo') { <button class="mv" title="Move left" (click)="move(t, -1)">◀</button> }
-                          @if (col.key !== 'done') { <button class="mv" title="Move right" (click)="move(t, 1)">▶</button> }
-                          <button class="mv del" title="Delete task" (click)="removeTask(t)">✕</button>
+                          <button class="mv" title="Move up" aria-label="Move task up" [disabled]="ti === 0" (click)="reorder(t, 'up')">▲</button>
+                          <button class="mv" title="Move down" aria-label="Move task down" [disabled]="last" (click)="reorder(t, 'down')">▼</button>
+                          @if (col.key !== 'todo') { <button class="mv" title="Move left" aria-label="Move task to previous column" (click)="move(t, -1)">◀</button> }
+                          @if (col.key !== 'done') { <button class="mv" title="Move right" aria-label="Move task to next column" (click)="move(t, 1)">▶</button> }
+                          <button class="mv del" title="Delete task" aria-label="Delete task" (click)="removeTask(t)">✕</button>
                         </div>
                       </div>
                     </div>

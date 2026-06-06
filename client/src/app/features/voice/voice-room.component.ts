@@ -87,11 +87,11 @@ type VState = 'idle' | 'listening' | 'thinking' | 'speaking';
                   @if (s.linkedFlowId) { <span class="link-pill">→ flow</span> }
                   @if (s.linkedQuizId) { <span class="link-pill">→ quiz</span> }
                   @if (editingId() === s.id) {
-                    <button class="icon-btn ok" (click)="saveRename(s); $event.stopPropagation()" title="Save">✓</button>
-                    <button class="icon-btn" (click)="editingId.set(null); $event.stopPropagation()" title="Cancel">✕</button>
+                    <button class="icon-btn ok" (click)="saveRename(s); $event.stopPropagation()" title="Save" aria-label="Save session name">✓</button>
+                    <button class="icon-btn" (click)="editingId.set(null); $event.stopPropagation()" title="Cancel" aria-label="Cancel rename">✕</button>
                   } @else {
-                    <button class="icon-btn" (click)="beginRename(s); $event.stopPropagation()" title="Rename">✎</button>
-                    <button class="icon-btn del" (click)="remove(s); $event.stopPropagation()" title="Delete">🗑</button>
+                    <button class="icon-btn" (click)="beginRename(s); $event.stopPropagation()" title="Rename" aria-label="Rename session">✎</button>
+                    <button class="icon-btn del" (click)="remove(s); $event.stopPropagation()" title="Delete" aria-label="Delete session">🗑</button>
                   }
                 </div>
               </asta-card>
