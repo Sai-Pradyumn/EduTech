@@ -45,6 +45,12 @@ import { downloadPdf } from '../../shared/util/pdf';
               </div>
             </div>
           </asta-card>
+          @if (s.strengths.length) {
+            <asta-card class="block motion-card-reveal motion-row-2 mb-4">
+              <p class="kicker mb-2">What went well</p>
+              <div class="flex flex-wrap gap-1.5">@for (st of s.strengths; track st) { <span class="strength">{{ st }}</span> }</div>
+            </asta-card>
+          }
           @if (s.weakConcepts.length) {
             <asta-card class="block motion-card-reveal motion-row-2 mb-4">
               <div class="flex items-center justify-between mb-2"><p class="kicker !mb-0">Weak areas → added to Mistake OS</p><asta-btn variant="ghost" size="sm" (click)="go('/app/mistakes')">Repair →</asta-btn></div>
@@ -185,6 +191,7 @@ import { downloadPdf } from '../../shared/util/pdf';
     .sv { display: block; font-size: 18px; font-weight: 700; font-variant-numeric: tabular-nums; }
     .sl { display: block; font-size: 10.5px; color: var(--text-mute); text-transform: uppercase; letter-spacing: .04em; }
     .weak { font-size: 12px; padding: 3px 9px; border-radius: 999px; border: 1px solid color-mix(in oklab, var(--coral, #ffb454) 35%, var(--paper-3)); }
+    .strength { font-size: 12px; padding: 3px 9px; border-radius: 999px; border: 1px solid color-mix(in oklab, var(--green) 38%, var(--paper-3)); color: var(--green-deep); }
     .qa { padding: 10px 12px; border: 1px solid var(--paper-3); border-radius: 11px; background: var(--paper-2); }
     .q { font-size: 13px; font-weight: 600; }
     .a { font-size: 12.5px; color: var(--text-soft); margin-top: 5px; }
@@ -305,6 +312,7 @@ export class InterviewComponent {
     lines.push(`# Interview report — ${s.typeLabel} · ${s.role}`);
     lines.push(`\n**Overall ${s.overallScore}/100** · Technical ${s.technicalScore} · Communication ${s.communicationScore} · Confidence ${s.confidenceScore}\n`);
     if (s.summary) lines.push(s.summary, '');
+    if (s.strengths.length) lines.push(`**Strengths:** ${s.strengths.join(', ')}\n`);
     if (s.weakConcepts.length) lines.push(`**Weak areas:** ${s.weakConcepts.join(', ')}\n`);
     lines.push('## Question review');
     for (const q of s.questions) {
@@ -322,6 +330,7 @@ export class InterviewComponent {
   private reportSections(s: InterviewSession): PrintSection[] {
     return [
       { paragraphs: s.summary ? [s.summary] : [] },
+      ...(s.strengths.length ? [{ heading: 'Strengths', bullets: s.strengths }] : []),
       ...(s.weakConcepts.length ? [{ heading: 'Weak areas', bullets: s.weakConcepts }] : []),
       {
         heading: 'Question review',
