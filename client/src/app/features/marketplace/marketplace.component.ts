@@ -35,6 +35,9 @@ const TYPES = ['', 'flow', 'roadmap', 'quiz', 'project', 'simulation', 'intervie
     </div>
 
     @if (loading()) { <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">@for (i of [1,2,3,4,5,6]; track i) { <asta-card><asta-skeleton h="130px" /></asta-card> }</div> }
+    @else if (loadError()) {
+      <asta-card><asta-empty-state title="Couldn't load the marketplace" description="Check your connection and try again."><asta-btn variant="ghost" (click)="load()">Retry</asta-btn></asta-empty-state></asta-card>
+    }
     @else if (view().length) {
       <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 motion-row-2">
         @for (t of view(); track t.id) {
@@ -88,6 +91,7 @@ export class MarketplaceComponent {
   readonly levelFilter = signal('');
   readonly templates = signal<Template[]>([]);
   readonly loading = signal(true);
+  readonly loadError = signal(false);
 
   readonly view = computed(() => {
     const lvl = this.levelFilter();
@@ -97,7 +101,8 @@ export class MarketplaceComponent {
   constructor() { this.load(); }
   load(): void {
     this.loading.set(true);
-    this.api.list(this.filter() || undefined).subscribe({ next: (t) => { this.templates.set(t); this.loading.set(false); }, error: () => this.loading.set(false) });
+    this.loadError.set(false);
+    this.api.list(this.filter() || undefined).subscribe({ next: (t) => { this.templates.set(t); this.loading.set(false); }, error: () => { this.loadError.set(true); this.loading.set(false); } });
   }
   setFilter(t: string): void { this.filter.set(t); this.load(); }
   use(t: Template): void {
