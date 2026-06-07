@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { forkJoin } from 'rxjs';
 import { FormsModule } from '@angular/forms';
 import { ButtonComponent } from '../../shared/ui/button.component';
 import { CardComponent } from '../../shared/ui/card.component';
@@ -95,12 +96,26 @@ import { Application, ApplicationService, JdMatch } from '../../core/services/re
               }
             }
           </div>
+          @if (selected().size > 0) {
+            <div class="bulk-bar">
+              <span class="bb-count">{{ selected().size }} selected</span>
+              <select class="bb-sel" (change)="bulkStatus($event)" aria-label="Set status for selected">
+                <option value="">Set status…</option>
+                @for (s of statuses; track s) { <option [value]="s">{{ s }}</option> }
+              </select>
+              <button class="bb-btn danger" [disabled]="bulkBusy()" (click)="bulkDelete()">Delete</button>
+              <button class="bb-btn" (click)="clearSel()">Clear</button>
+            </div>
+          }
           @if (filteredApps().length) {
             <div class="space-y-2">
               @for (a of filteredApps(); track a.id) {
-                <div class="app" [class.open]="expandedId() === a.id">
+                <div class="app" [class.open]="expandedId() === a.id" [class.picked]="selected().has(a.id)">
                   <div class="flex items-center justify-between gap-2 cursor-pointer" (click)="toggle(a.id)">
-                    <span class="min-w-0"><span class="a-role">{{ a.role }}</span><span class="a-co">{{ a.company }} · {{ ago(a.createdAt) }}</span></span>
+                    <span class="flex items-center gap-2 min-w-0">
+                      <input type="checkbox" class="sel" [checked]="selected().has(a.id)" (click)="$event.stopPropagation()" (change)="toggleSel(a.id)" [attr.aria-label]="'Select ' + a.role + ' at ' + a.company" />
+                      <span class="min-w-0"><span class="a-role">{{ a.role }}</span><span class="a-co">{{ a.company }} · {{ ago(a.createdAt) }}</span></span>
+                    </span>
                     <span class="a-score" [style.color]="scoreColor(a.matchScore)">{{ a.matchScore }}</span>
                   </div>
                   <div class="flex items-center gap-2 mt-1.5">
@@ -168,6 +183,15 @@ import { Application, ApplicationService, JdMatch } from '../../core/services/re
     .ft .ct { font-weight: 700; opacity: .8; }
     .app { padding: 9px 11px; border: 1px solid var(--paper-3); border-radius: 11px; background: var(--paper-2); transition: border-color .12s; }
     .app.open { border-color: color-mix(in oklab, var(--peri, #8aa6ff) 30%, var(--paper-3)); }
+    .app.picked { border-color: color-mix(in oklab, var(--green) 45%, var(--paper-3)); background: color-mix(in oklab, var(--green) 7%, var(--paper-2)); }
+    .sel { width: 15px; height: 15px; flex-shrink: 0; cursor: pointer; accent-color: var(--green); }
+    .bulk-bar { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 10px; padding: 8px 11px; border-radius: 11px; border: 1px solid color-mix(in oklab, var(--green) 35%, var(--paper-3)); background: color-mix(in oklab, var(--green) 8%, transparent); }
+    .bb-count { font-size: 12px; font-weight: 600; color: var(--green-deep); }
+    .bb-sel { padding: 5px 8px; border-radius: 8px; border: 1px solid var(--paper-3); background: var(--paper); color: var(--text); font-size: 12px; text-transform: capitalize; cursor: pointer; }
+    .bb-btn { font-size: 12px; padding: 5px 11px; border-radius: 999px; border: 1px solid var(--paper-3); background: var(--paper); color: var(--text-soft); cursor: pointer; }
+    .bb-btn:hover { border-color: var(--green); }
+    .bb-btn.danger:hover { border-color: var(--danger, #ff5d5d); color: var(--danger, #ff5d5d); }
+    .bb-btn:disabled { opacity: .5; cursor: default; }
     .a-role { display: block; font-size: 13px; font-weight: 600; }
     .a-co { display: block; font-size: 11.5px; color: var(--text-mute); }
     .a-score { font-size: 16px; font-weight: 700; }
@@ -248,6 +272,50 @@ export class ApplicationsComponent {
   });
 
   constructor() { this.api.list().subscribe({ next: (a) => { this.apps.set(a); this.loading.set(false); }, error: () => this.loading.set(false) }); }
+
+  // ── bulk selection ──
+  readonly selected = signal<Set<string>>(new Set());
+  readonly bulkBusy = signal(false);
+  toggleSel(id: string): void {
+    this.selected.update((s) => { const n = new Set(s); n.has(id) ? n.delete(id) : n.add(id); return n; });
+  }
+  clearSel(): void { this.selected.set(new Set()); }
+
+  /** Apply a status to every selected application in one go. */
+  bulkStatus(ev: Event): void {
+    const status = (ev.target as HTMLSelectElement).value;
+    (ev.target as HTMLSelectElement).value = '';
+    const ids = [...this.selected()];
+    if (!status || !ids.length) return;
+    this.bulkBusy.set(true);
+    forkJoin(ids.map((id) => this.api.update(id, { status }))).subscribe({
+      next: (updated) => {
+        const byId = new Map(updated.map((u) => [u.id, u]));
+        this.apps.set(this.apps().map((a) => byId.get(a.id) ?? a));
+        this.bulkBusy.set(false);
+        this.clearSel();
+        this.toast.success(`Updated ${updated.length} application${updated.length === 1 ? '' : 's'}`);
+      },
+      error: () => { this.bulkBusy.set(false); this.toast.error('Bulk update failed'); },
+    });
+  }
+
+  /** Delete every selected application. */
+  bulkDelete(): void {
+    const ids = [...this.selected()];
+    if (!ids.length) return;
+    this.bulkBusy.set(true);
+    forkJoin(ids.map((id) => this.api.remove(id))).subscribe({
+      next: () => {
+        const gone = new Set(ids);
+        this.apps.set(this.apps().filter((a) => !gone.has(a.id)));
+        this.bulkBusy.set(false);
+        this.clearSel();
+        this.toast.success(`Deleted ${ids.length} application${ids.length === 1 ? '' : 's'}`);
+      },
+      error: () => { this.bulkBusy.set(false); this.toast.error('Bulk delete failed'); },
+    });
+  }
 
   toggle(id: string): void { this.expandedId.set(this.expandedId() === id ? null : id); }
   ago(iso: string): string {
