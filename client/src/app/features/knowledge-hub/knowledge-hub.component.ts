@@ -127,7 +127,19 @@ const STARTERS = [
                 </select>
               </div>
             </div>
-            <p class="lib-count">{{ filteredDocs().length }} of {{ docs().length }} shown</p>
+            <div class="lib-meta">
+              <span class="lib-count">{{ filteredDocs().length }} of {{ docs().length }} shown</span>
+              @if (readyCount() > 0) {
+                <span class="lib-scope">
+                  @if (selected().size < readyCount()) {
+                    <button class="lib-link" (click)="selectAllReady()">Scope: all ready</button>
+                  }
+                  @if (selected().size > 0) {
+                    <button class="lib-link" (click)="clearSelection()">Clear ({{ selected().size }})</button>
+                  }
+                </span>
+              }
+            </div>
           }
           <div class="space-y-2.5 mt-3 motion-row-2">
             @for (d of filteredDocs(); track d.id; let i = $index) {
@@ -292,7 +304,11 @@ const STARTERS = [
       .lib-selects { display: flex; gap: 8px; }
       .lib-sel { flex: 1; font-size: 12px; padding: 6px 8px; border-radius: 9px; border: 1px solid var(--paper-3); background: var(--paper-2); color: var(--text-soft); cursor: pointer; }
       .lib-sel:focus { outline: none; border-color: var(--green); }
-      .lib-count { font-size: 11px; color: var(--text-mute); margin-top: 7px; font-variant-numeric: tabular-nums; }
+      .lib-meta { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 7px; flex-wrap: wrap; }
+      .lib-count { font-size: 11px; color: var(--text-mute); font-variant-numeric: tabular-nums; }
+      .lib-scope { display: flex; gap: 10px; }
+      .lib-link { font-size: 11px; font-weight: 600; color: var(--green-deep); background: transparent; border: none; cursor: pointer; padding: 0; }
+      .lib-link:hover { text-decoration: underline; }
     `,
   ],
 })
@@ -544,6 +560,14 @@ export class KnowledgeHubComponent implements OnInit, OnDestroy {
       next.has(id) ? next.delete(id) : next.add(id);
       return next;
     });
+  }
+  /** Scope the grounded chat to every ready document at once. */
+  selectAllReady(): void {
+    const ids = this.docs().filter((d) => d.status === 'ready').map((d) => d.id);
+    this.selected.set(new Set(ids));
+  }
+  clearSelection(): void {
+    this.selected.set(new Set());
   }
 
   // ── summary / flashcards ──────────────────────────────────────────────────
