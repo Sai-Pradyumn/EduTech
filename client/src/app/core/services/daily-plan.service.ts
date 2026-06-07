@@ -24,6 +24,8 @@ export interface DailyPlan {
   totalMinutes: number;
   items: DailyItem[];
   completed: number;
+  mood: number | null;
+  reflection: string;
 }
 
 export interface DailyStreak {
@@ -38,6 +40,7 @@ export interface DailyDay {
   completed: number;
   total: number;
   active: boolean;
+  mood: number | null;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -48,6 +51,7 @@ export class DailyPlanService {
   generate(mode: DailyPlanMode): Observable<DailyPlan> { return this.api.post<DailyPlan>('/daily-plan/generate', { mode }); }
   completeItem(itemId: string): Observable<DailyPlan> { return this.api.post<DailyPlan>('/daily-plan/complete-item', { itemId }); }
   setItemNote(itemId: string, note: string): Observable<DailyPlan> { return this.api.post<DailyPlan>('/daily-plan/item-note', { itemId, note }); }
+  setReflection(input: { mood?: number; reflection?: string }): Observable<DailyPlan> { return this.api.post<DailyPlan>('/daily-plan/reflection', input); }
   carryOver(): Observable<DailyPlan> { return this.api.post<DailyPlan>('/daily-plan/carry-over', {}); }
   reorder(itemIds: string[]): Observable<DailyPlan> { return this.api.post<DailyPlan>('/daily-plan/reorder', { itemIds }); }
   recalculate(): Observable<DailyPlan> { return this.api.post<DailyPlan>('/daily-plan/recalculate', {}); }

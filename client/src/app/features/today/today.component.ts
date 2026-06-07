@@ -101,7 +101,7 @@ import { DAILY_KIND_GLYPH, DailyDay, DailyItem, DailyPlan, DailyPlanMode, DailyP
               @if (history().length) {
                 <div class="week-strip" role="img" aria-label="Activity over the last 7 days">
                   @for (d of history(); track d.date) {
-                    <span class="wk-day" [class.on]="d.active" [title]="d.date + ' · ' + d.completed + '/' + d.total + ' done'">{{ dayLetter(d.date) }}</span>
+                    <span class="wk-day" [class.on]="d.active" [title]="d.date + ' · ' + d.completed + '/' + d.total + ' done' + (d.mood ? ' · felt ' + moodLabel(d.mood) : '')">{{ d.mood ? moodEmoji(d.mood) : dayLetter(d.date) }}</span>
                   }
                 </div>
               }
@@ -116,6 +116,16 @@ import { DAILY_KIND_GLYPH, DailyDay, DailyItem, DailyPlan, DailyPlanMode, DailyP
             <div class="prog-track"><span class="prog-fill" [style.width.%]="pct()"></span></div>
             <p class="text-xs text-txt-mute mt-2">of today's plan complete</p>
             @if (finishBy(); as fb) { <p class="text-[11px] text-txt-mute mt-1">⏱ On track to finish by ~{{ fb }}</p> }
+          </asta-card>
+          <asta-card class="block motion-card-reveal motion-row-3 reflect-card">
+            <p class="kicker mb-2">Reflect on today</p>
+            <div class="mood-row" role="group" aria-label="How did today feel?">
+              @for (m of moods; track m.v) {
+                <button class="mood" [class.on]="p.mood === m.v" (click)="setMood(m.v)" [title]="m.label" [attr.aria-label]="m.label" [attr.aria-pressed]="p.mood === m.v">{{ m.e }}</button>
+              }
+            </div>
+            <input class="reflect-in" [value]="p.reflection" (change)="saveReflection($any($event.target).value)" maxlength="280"
+              placeholder="One line about today (optional)…" aria-label="Daily reflection" />
           </asta-card>
           <asta-card class="block motion-card-reveal motion-row-3">
             <p class="kicker mb-2">Quick modes</p>
@@ -169,6 +179,13 @@ import { DAILY_KIND_GLYPH, DailyDay, DailyItem, DailyPlan, DailyPlanMode, DailyP
       .ring-num { font-size: 34px; font-weight: 700; font-variant-numeric: tabular-nums; }
       .prog-track { height: 6px; border-radius: 999px; background: var(--paper-3); overflow: hidden; }
       .prog-fill { display: block; height: 100%; background: linear-gradient(90deg, var(--green-deep), var(--green)); transition: width .4s var(--ease); }
+      .reflect-card { border: 1px solid color-mix(in oklab, var(--peri, #8aa6ff) 22%, var(--paper-3)); }
+      .mood-row { display: flex; gap: 6px; margin-bottom: 10px; }
+      .mood { flex: 1; aspect-ratio: 1; font-size: 18px; border-radius: 9px; border: 1px solid var(--paper-3); background: var(--paper-2); cursor: pointer; transition: transform .12s var(--ease-spring), border-color .15s, background .15s; filter: grayscale(.5); opacity: .75; }
+      .mood:hover { transform: translateY(-1px); filter: grayscale(0); opacity: 1; }
+      .mood.on { border-color: color-mix(in oklab, var(--peri, #8aa6ff) 50%, var(--paper-3)); background: color-mix(in oklab, var(--peri, #8aa6ff) 14%, transparent); filter: grayscale(0); opacity: 1; }
+      .reflect-in { width: 100%; font: inherit; font-size: 13px; border-radius: 9px; border: 1px solid var(--paper-3); background: var(--paper); color: var(--text); padding: 7px 10px; }
+      .reflect-in:focus { outline: none; border-color: var(--peri, #8aa6ff); }
     `,
   ],
 })
@@ -200,6 +217,16 @@ export class TodayComponent implements OnDestroy {
     { id: 'exam', label: 'Exam', hint: 'Exam tomorrow' },
     { id: 'burnout_recovery', label: 'Recover', hint: 'Light, low-pressure' },
   ];
+
+  readonly moods: { v: number; e: string; label: string }[] = [
+    { v: 1, e: '😞', label: 'Rough' },
+    { v: 2, e: '😕', label: 'Meh' },
+    { v: 3, e: '😐', label: 'Okay' },
+    { v: 4, e: '🙂', label: 'Good' },
+    { v: 5, e: '😄', label: 'Great' },
+  ];
+  moodEmoji(v: number): string { return this.moods.find((m) => m.v === v)?.e ?? ''; }
+  moodLabel(v: number): string { return this.moods.find((m) => m.v === v)?.label ?? ''; }
 
   readonly pct = computed(() => {
     const p = this.plan();
@@ -294,6 +321,24 @@ export class TodayComponent implements OnDestroy {
         this.toast.success(added > 0 ? `Carried over ${added} item${added === 1 ? '' : 's'} from yesterday` : 'Nothing to carry over');
       },
       error: () => { this.busy.set(false); this.toast.error('Could not carry over'); },
+    });
+  }
+
+  // ── end-of-day reflection ──
+  setMood(v: number): void {
+    this.api.setReflection({ mood: v }).subscribe({
+      next: (p) => { this.plan.set(p); this.refreshStreak(); },
+      error: () => this.toast.error('Could not save mood'),
+    });
+  }
+  saveReflection(text: string): void {
+    const p = this.plan();
+    if (!p) return;
+    const r = text.trim();
+    if (r === (p.reflection ?? '')) return;
+    this.api.setReflection({ reflection: r }).subscribe({
+      next: (np) => this.plan.set(np),
+      error: () => this.toast.error('Could not save reflection'),
     });
   }
 

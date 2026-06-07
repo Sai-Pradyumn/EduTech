@@ -8,6 +8,7 @@ import {
   GeneratePlanDto,
   ReorderItemsDto,
   SetItemNoteDto,
+  SetReflectionDto,
 } from './dto/daily-plan.dto';
 
 function toView(p: DailyPlanDocument) {
@@ -28,6 +29,8 @@ function toView(p: DailyPlanDocument) {
       note: i.note ?? '',
     })),
     completed: p.items.filter((i) => i.done).length,
+    mood: p.mood ?? null,
+    reflection: p.reflection ?? '',
   };
 }
 
@@ -53,6 +56,14 @@ export class DailyPlanController {
   @Post('item-note')
   async setNote(@CurrentUser() user: AuthUser, @Body() dto: SetItemNoteDto) {
     return toView(await this.plan.setItemNote(user.id, dto.itemId, dto.note));
+  }
+
+  @Post('reflection')
+  async reflection(
+    @CurrentUser() user: AuthUser,
+    @Body() dto: SetReflectionDto,
+  ) {
+    return toView(await this.plan.setReflection(user.id, dto.mood, dto.reflection));
   }
 
   @Post('carry-over')

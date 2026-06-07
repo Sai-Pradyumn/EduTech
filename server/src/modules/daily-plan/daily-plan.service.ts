@@ -221,6 +221,18 @@ export class DailyPlanService {
     return plan.save();
   }
 
+  /** Save the end-of-day reflection (mood 1–5 and/or a one-line note) on today's plan. */
+  async setReflection(
+    userId: string,
+    mood: number | undefined,
+    reflection: string | undefined,
+  ): Promise<DailyPlanDocument> {
+    const plan = await this.getToday(userId);
+    if (mood !== undefined) plan.mood = Math.min(5, Math.max(1, Math.round(mood)));
+    if (reflection !== undefined) plan.reflection = reflection.slice(0, 280);
+    return plan.save();
+  }
+
   /**
    * Pull yesterday's unfinished items into today's plan so nothing silently
    * drops off. Skips items already present today (matched on sourceId/title)
@@ -332,7 +344,13 @@ export class DailyPlanService {
     userId: string,
     days = 7,
   ): Promise<
-    { date: string; completed: number; total: number; active: boolean }[]
+    {
+      date: string;
+      completed: number;
+      total: number;
+      active: boolean;
+      mood: number | null;
+    }[]
   > {
     const span = Math.min(Math.max(days, 1), 31);
     const dayMs = 86_400_000;
@@ -344,7 +362,7 @@ export class DailyPlanService {
     const plans = await this.model
       .find(
         { user: new Types.ObjectId(userId), date: { $gte: fromStr } },
-        { date: 1, items: 1 },
+        { date: 1, items: 1, mood: 1 },
       )
       .exec();
 
@@ -354,6 +372,7 @@ export class DailyPlanService {
       completed: number;
       total: number;
       active: boolean;
+      mood: number | null;
     }[] = [];
     for (let i = span - 1; i >= 0; i--) {
       const date = new Date(todayStart - i * dayMs).toISOString().slice(0, 10);
@@ -364,6 +383,7 @@ export class DailyPlanService {
         completed,
         total: p ? p.items.length : 0,
         active: completed > 0,
+        mood: p?.mood ?? null,
       });
     }
     return out;
