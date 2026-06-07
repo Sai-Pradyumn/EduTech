@@ -115,7 +115,12 @@ import { ProgressComponent } from '../../shared/ui/progress.component';
 
             <!-- Leaderboard -->
             <div class="card motion-card-reveal" style="padding:18px" [style.--motion-card-index]="1">
-              <p class="kicker mb-3" style="color:var(--green-deep)">Leaderboard</p>
+              <div class="flex items-center justify-between mb-3">
+                <p class="kicker !mb-0" style="color:var(--green-deep)">Leaderboard</p>
+                @if (canManage() && leaderboard().length) {
+                  <button class="pill" style="cursor:pointer" (click)="exportLeaderboard()">⬇ CSV</button>
+                }
+              </div>
               @if (leaderboard().length === 0) {
                 <p class="text-sm text-txt-mute">No students yet — add some to populate the leaderboard.</p>
               }
@@ -243,6 +248,28 @@ export class CohortsComponent implements OnInit {
     if (this.canManage()) {
       this.cohorts.listForOrg().subscribe({ next: (c) => this.orgCohorts.set(c) });
     }
+  }
+
+  /** Export the selected cohort's leaderboard as CSV (for cohort managers). */
+  exportLeaderboard(): void {
+    const rows = this.leaderboard();
+    if (!rows.length) return;
+    const esc = (v: unknown): string => {
+      const s = String(v ?? '').replace(/"/g, '""');
+      return /[",\n]/.test(s) ? `"${s}"` : s;
+    };
+    const header = ['Rank', 'Name', 'Health %', 'Readiness %', 'Active days'];
+    const body = rows.map((r) => [r.rank, r.name, r.health, r.readiness, r.activeDays]);
+    const csv = [header, ...body].map((row) => row.map(esc).join(',')).join('\r\n');
+    const name = (this.selected()?.name ?? 'cohort').replace(/[^a-z0-9]+/gi, '-').toLowerCase();
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `asta-leaderboard-${name}-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+    this.toast.success('Leaderboard exported');
   }
 
   select(id: string): void {
