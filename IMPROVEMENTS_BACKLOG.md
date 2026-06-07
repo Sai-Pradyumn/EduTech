@@ -57,7 +57,7 @@ effort `S` (hours) · `M` (a day) · `L` (multi-day).
 - [ ] `P2·S` **Undo for destructive actions** — deleting a flow/space/source/application is immediate; add an undo toast or confirm.
 - [ ] `P2·M` **Bulk actions** — multi-select on applications, mistakes, notifications (mark/clear/export).
 - [x] **Notifications page** — full `/app/notifications` history (server `?limit=`, type-filter chips, unread-only, mark-all-read, bell "See all" link).
-- [ ] `P3·M` **Today reflection journal** — optional mood + one-line note per day, surfaced in the week strip.
+- [x] **Today reflection journal** — optional mood (1–5) + one-line note per day (server schema + `/daily-plan/reflection`), surfaced as mood emoji in the week strip.
 
 ## 9. Observability
 - [x] **Global client `ErrorHandler`** — swallows benign noise, prompts reload on stale chunk loads, logs + shows one throttled toast (no longer silent). _Remaining:_ `P2·S` add a transport to POST client errors to a server feed/Sentry.
@@ -104,6 +104,7 @@ Beyond per-screen affordances — tightening loops and adding operator depth:
 - **Admin content browsers** — CSV export for the roadmap, assessment + document inventories (respect the active search/filter).
 - **Cohorts** — export a cohort's leaderboard as CSV (managers).
 - **Notifications (new feature)** — full `/app/notifications` history page (server `?limit=` param up to 200, type-filter chips, unread-only toggle, mark-all-read, deep-link follow) + bell "See all" link.
+- **Today reflection journal (new feature)** — end-of-day mood (1–5) + one-line note (schema `mood`/`reflection` + `/daily-plan/reflection`), surfaced as mood emoji in the activity week strip.
 
 - **Daily Plan** — per-item notes, carry-over of unfinished items, focus timer, drag-to-reorder, "finish by ~HH:MM", and a one-per-day `daily_plan_completed` proof event.
 - **Proof Ledger** — wired 3 orphaned event kinds (`certificate_earned`, `flow_generated`, `voice_viva_passed`); fixed a `practice_solved` crash + added a defensive kind lookup; added a 13-week activity heatmap; seeded the new events.
