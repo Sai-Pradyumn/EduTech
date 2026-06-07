@@ -22,7 +22,7 @@ effort `S` (hours) · `M` (a day) · `L` (multi-day).
 - [x] **Focus management** — focus moves into `#main-content` on route change; the Modal already traps + restores focus.
 - [x] **ARIA live regions** — toast container is `aria-live="polite"`; the agent workspace now has a polite SR live region announcing AI response start/ready/failed.
 - [ ] `P2·M` **Contrast audit** — verify OKLCH token pairs meet WCAG AA in both light and dark themes (muted text on paper is the likely offender).
-- [ ] `P2·S` **Keyboard reachability** — ensure drag-to-reorder (Today) and hover-only affordances have keyboard equivalents.
+- [ ] `P2·M` **Keyboard reachability** — clickable `<div>`s need role+tabindex+key handlers; `<label>`s need association. **Now enumerated** by `npm run lint --workspace client` (~56 template-a11y warnings) — a focused pass can work straight off that list.
 - [ ] `P3·S` **`prefers-reduced-motion`** — audit the heatmap/aurora/constellation for full reduced-motion coverage.
 
 ## 3. Performance
@@ -32,7 +32,7 @@ effort `S` (hours) · `M` (a day) · `L` (multi-day).
 - [ ] `P3·S` **Image/asset optimization** — audit any raster assets; prefer SVG (mostly already SVG).
 
 ## 4. Type safety & lint
-- [ ] `P1·L` **Client ESLint** — set up `angular-eslint` (currently none). Expect a large first-pass cleanup; do it as a dedicated effort, not a tail-end add-on.
+- [x] **Client ESLint** — `angular-eslint` v18 flat config (mirrors the server's ESLint 9 + typescript-eslint 8); `npm run lint` is green (0 errors). Fixed the 10 real issues it surfaced (dead imports, ternary-as-statement, template `!=`, missing `aria-selected`). _Remaining (tracked as warnings):_ `P2·M` ~56 keyboard-a11y findings (clickable divs / label association / focus) + 6 non-`asta` selectors.
 - [ ] `P2·M` **Reduce `any`** — ~58 occurrences (concentrated in `visual-block-renderer`, `speech-recognition`, `asta-os-*`). Type the justified ones with proper DOM/lib types; remove the rest.
 - [x] **Strict templates** — already enabled in `tsconfig.json` (`strictTemplates: true`).
 
@@ -108,6 +108,7 @@ Beyond per-screen affordances — tightening loops and adding operator depth:
 - **Bulk actions** — Applications (set-status / delete) and Mistake OS (resolve / reopen / delete) multi-select via forkJoin.
 - **A11y** — polite screen-reader live regions announce AI response start / ready / failed across all three streaming surfaces: agent workspace, Knowledge Hub grounded chat, and the AI Tutor.
 - **Proof Ledger** — export the (filtered) proof-of-learning timeline as CSV.
+- **Client ESLint (infra)** — angular-eslint v18 flat config; `npm run lint` green; fixed 10 real issues; ~62 a11y/selector items surfaced as tracked warnings.
 
 - **Daily Plan** — per-item notes, carry-over of unfinished items, focus timer, drag-to-reorder, "finish by ~HH:MM", and a one-per-day `daily_plan_completed` proof event.
 - **Proof Ledger** — wired 3 orphaned event kinds (`certificate_earned`, `flow_generated`, `voice_viva_passed`); fixed a `practice_solved` crash + added a defensive kind lookup; added a 13-week activity heatmap; seeded the new events.
