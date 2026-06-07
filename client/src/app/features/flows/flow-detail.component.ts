@@ -422,6 +422,7 @@ export class FlowDetailComponent {
     this.flowApi.get(id).subscribe({
       next: (f) => {
         this.applyFlow(f);
+        this.applyDeepLink(f);
         this.loading.set(false);
       },
       error: () => {
@@ -436,6 +437,23 @@ export class FlowDetailComponent {
     const map: Record<string, { x: number; y: number }> = {};
     for (const n of f.nodes) map[n.id] = { x: n.position.x, y: n.position.y };
     this.positions.set(map);
+  }
+
+  private deepLinkDone = false;
+  /** Honor `?node=<id|next>` once — focus a specific node, or the first incomplete one. */
+  private applyDeepLink(f: Flow): void {
+    if (this.deepLinkDone) return;
+    const node = this.route.snapshot.queryParamMap.get('node');
+    if (!node) return;
+    this.deepLinkDone = true;
+    const target =
+      node === 'next'
+        ? f.nodes.find((n) => n.status !== 'completed' && n.status !== 'skipped')
+        : f.nodes.find((n) => n.id === node);
+    if (target) {
+      this.selectedId.set(target.id);
+      this.view.set('focus');
+    }
   }
 
   // ───────── view + helpers ─────────

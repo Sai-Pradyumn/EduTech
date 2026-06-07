@@ -153,6 +153,9 @@ interface FlowIdea {
                 <span>{{ f.progressPercentage }}%</span>
               </div>
             </div>
+            @if (f.status === 'active' && f.progressPercentage < 100 && f.progressPercentage > 0) {
+              <button class="resume-btn" (click)="resume(f); $event.stopPropagation()">Resume next step <span class="arr">→</span></button>
+            }
           </asta-card>
         }
       </div>
@@ -206,6 +209,8 @@ interface FlowIdea {
       .st-draft, .st-archived { color: var(--text-mute); }
       .prog-track { height: 6px; border-radius: 999px; background: var(--paper-3); overflow: hidden; }
       .prog-fill { display: block; height: 100%; background: linear-gradient(90deg, var(--green-deep), var(--green)); transition: width 0.4s var(--ease); }
+      .resume-btn { margin-top: 12px; width: 100%; padding: 8px 12px; border-radius: 10px; border: 1px solid color-mix(in oklab, var(--green) 35%, var(--paper-3)); background: color-mix(in oklab, var(--green) 10%, transparent); color: var(--green-deep); font-size: 12.5px; font-weight: 600; cursor: pointer; transition: background .15s; }
+      .resume-btn:hover { background: color-mix(in oklab, var(--green) 20%, transparent); }
       .line-clamp-2 { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
       .fl-toolbar { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
       .fl-search { position: relative; display: flex; align-items: center; flex: 1; min-width: 200px; }
@@ -338,6 +343,11 @@ export class FlowsListComponent {
 
   open(f: Flow): void {
     this.router.navigate(['/app/flows', f.id]);
+  }
+
+  /** Jump straight into the first incomplete node of this flow. */
+  resume(f: Flow): void {
+    this.router.navigate(['/app/flows', f.id], { queryParams: { node: 'next' } });
   }
 
   completedCount(f: Flow): number {
