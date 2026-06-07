@@ -77,6 +77,7 @@ import { SIM_TYPE_META, Simulation, SimulationService, SimulationType } from '..
               <div class="rub-row">
                 <span class="rub-c">{{ c.criterion }}</span>
                 <span class="rub-track"><span class="rub-fill" [style.width.%]="c.score" [style.background]="c.score >= 70 ? 'var(--green)' : 'var(--coral, #ffb454)'"></span></span>
+                <span class="rub-s" [style.color]="c.score >= 70 ? 'var(--green-deep)' : 'var(--text-soft)'">{{ c.score }}</span>
               </div>
             }
           </div>
@@ -100,10 +101,11 @@ import { SIM_TYPE_META, Simulation, SimulationService, SimulationType } from '..
       .text { font-size: 14px; }
       .score { font-size: 20px; font-weight: 700; color: var(--green-deep); font-variant-numeric: tabular-nums; }
       .score.low { color: var(--coral, #ffb454); }
-      .rub-row { display: grid; grid-template-columns: 110px 1fr; align-items: center; gap: 8px; }
+      .rub-row { display: grid; grid-template-columns: 110px 1fr 28px; align-items: center; gap: 8px; }
       .rub-c { font-size: 12px; }
       .rub-track { height: 7px; border-radius: 999px; background: var(--paper-3); overflow: hidden; }
       .rub-fill { display: block; height: 100%; }
+      .rub-s { font-size: 11px; font-weight: 700; font-variant-numeric: tabular-nums; text-align: right; }
       .skill-tags { display: flex; flex-wrap: wrap; gap: 6px; }
       .skill-tag { font-size: 11.5px; padding: 2px 9px; border-radius: 999px; border: 1px solid color-mix(in oklab, var(--peri, #8aa6ff) 35%, var(--paper-3)); color: var(--peri, #8aa6ff); }
     `,
