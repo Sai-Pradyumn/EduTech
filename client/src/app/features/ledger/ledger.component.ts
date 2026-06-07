@@ -24,7 +24,10 @@ const VER_META: Record<VerificationLevel, { label: string; tone: string }> = {
         <h1 class="text-[26px] leading-tight mb-2 grad-flow">Proof-of-Learning</h1>
         <span class="goal-pill"><span class="dot"></span>A private, verified timeline of everything you've actually learned</span>
       </div>
-      <div class="flex gap-2.5 shrink-0"><asta-btn variant="ghost" size="sm" (click)="refresh()" [disabled]="loading()">Refresh</asta-btn></div>
+      <div class="flex gap-2.5 shrink-0">
+        @if (filteredEntries().length) { <asta-btn variant="ghost" size="sm" (click)="exportCsv()">⬇ Export CSV</asta-btn> }
+        <asta-btn variant="ghost" size="sm" (click)="refresh()" [disabled]="loading()">Refresh</asta-btn>
+      </div>
     </header>
 
     @if (loading()) {
@@ -180,6 +183,30 @@ export class LedgerComponent {
   });
 
   level(count: number): number { return count === 0 ? 0 : count === 1 ? 1 : count === 2 ? 2 : 3; }
+
+  /** Export the (filtered) proof-of-learning timeline as CSV. */
+  exportCsv(): void {
+    const rows = this.filteredEntries();
+    if (!rows.length) return;
+    const esc = (v: unknown): string => {
+      const s = String(v ?? '').replace(/"/g, '""');
+      return /[",\n]/.test(s) ? `"${s}"` : s;
+    };
+    const header = ['Date', 'Kind', 'Title', 'Detail', 'Verification', 'Score'];
+    const body = rows.map((e) => [
+      e.at ? new Date(e.at).toISOString().slice(0, 10) : '',
+      this.kindLabel(e.kind), e.title, e.detail ?? '',
+      this.verLabel(e.verificationLevel), e.score ?? '',
+    ]);
+    const csv = [header, ...body].map((r) => r.map(esc).join(',')).join('\r\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `asta-proof-of-learning-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
 
   constructor() { this.refresh(); }
   glyph(k: LedgerKind): string { return ledgerKindMeta(k).glyph; }
