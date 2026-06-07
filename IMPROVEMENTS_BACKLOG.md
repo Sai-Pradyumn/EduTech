@@ -86,6 +86,9 @@ Deepening existing features with genuinely useful capabilities (not data-surfaci
 - **Quiz Studio** — in-attempt question navigator (jump to any question; filled = answered) for long quizzes; result "Incorrect only" review filter (preserving original question numbers).
 - **Roadmap** — projected finish date computed from real pace (weeks completed ÷ days elapsed), with weeks/days-left and sensible fallbacks.
 - **Community** — thread-list search + sort (recent / top-voted / most replies).
+- **Knowledge Hub** — "Scope: all ready" / "Clear" controls to scope grounded chat across many docs at once (was one-by-one).
+- **Interview OS** — **Skip question** during an active session (server `:id/skip` route + client) — advances without scoring; the report already renders skipped items.
+- **Simulation Labs** — status filter (any / in-progress / finished) to resume unfinished rounds or review completed ones.
 
 - **Daily Plan** — per-item notes, carry-over of unfinished items, focus timer, drag-to-reorder, "finish by ~HH:MM", and a one-per-day `daily_plan_completed` proof event.
 - **Proof Ledger** — wired 3 orphaned event kinds (`certificate_earned`, `flow_generated`, `voice_viva_passed`); fixed a `practice_solved` crash + added a defensive kind lookup; added a 13-week activity heatmap; seeded the new events.
