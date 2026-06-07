@@ -55,7 +55,7 @@ effort `S` (hours) · `M` (a day) · `L` (multi-day).
 - [x] **Keyboard-shortcuts help overlay** (`?`) — modal listing app + palette shortcuts.
 - [x] **Command-palette quick actions** — New learning flow, Toggle theme, Sign out (action callbacks).
 - [ ] `P2·S` **Undo for destructive actions** — deleting a flow/space/source/application is immediate; add an undo toast or confirm.
-- [x] **Bulk actions** — Applications: multi-select to bulk set-status or delete. _Remaining:_ extend to mistakes/notifications if wanted.
+- [x] **Bulk actions** — Applications (set-status / delete) and Mistake OS (resolve / reopen / delete) support multi-select.
 - [x] **Notifications page** — full `/app/notifications` history (server `?limit=`, type-filter chips, unread-only, mark-all-read, bell "See all" link).
 - [x] **Today reflection journal** — optional mood (1–5) + one-line note per day (server schema + `/daily-plan/reflection`), surfaced as mood emoji in the week strip.
 
@@ -105,8 +105,8 @@ Beyond per-screen affordances — tightening loops and adding operator depth:
 - **Cohorts** — export a cohort's leaderboard as CSV (managers).
 - **Notifications (new feature)** — full `/app/notifications` history page (server `?limit=` param up to 200, type-filter chips, unread-only toggle, mark-all-read, deep-link follow) + bell "See all" link.
 - **Today reflection journal (new feature)** — end-of-day mood (1–5) + one-line note (schema `mood`/`reflection` + `/daily-plan/reflection`), surfaced as mood emoji in the activity week strip.
-- **Applications bulk actions** — multi-select rows to bulk set-status or delete (forkJoin).
-- **A11y** — agent workspace gets a polite screen-reader live region announcing AI response start / ready / failed.
+- **Bulk actions** — Applications (set-status / delete) and Mistake OS (resolve / reopen / delete) multi-select via forkJoin.
+- **A11y** — polite screen-reader live regions announce AI response start / ready / failed on the agent workspace **and** the Knowledge Hub grounded chat.
 
 - **Daily Plan** — per-item notes, carry-over of unfinished items, focus timer, drag-to-reorder, "finish by ~HH:MM", and a one-per-day `daily_plan_completed` proof event.
 - **Proof Ledger** — wired 3 orphaned event kinds (`certificate_earned`, `flow_generated`, `voice_viva_passed`); fixed a `practice_solved` crash + added a defensive kind lookup; added a 13-week activity heatmap; seeded the new events.
