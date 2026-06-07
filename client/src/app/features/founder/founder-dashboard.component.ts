@@ -37,6 +37,16 @@ import { CountDirective } from '../../shared/directives/count.directive';
         </div>
       </div>
 
+      <!-- Derived KPIs founders track — computed from the raw totals above -->
+      @if (kpis(); as k) {
+        <div class="kpi-row mb-5">
+          <span class="kpi" title="Average monthly revenue per active subscription (MRR ÷ active subs).">ARPU <b>₹{{ k.arpu }}</b><span class="kpi-u">/mo</span></span>
+          <span class="kpi" title="Share of students on an active paid plan.">Paid conversion <b>{{ k.paidConversion }}%</b></span>
+          <span class="kpi" title="Total new signups across the last 14 days.">Signups 14d <b>{{ k.signups14d }}</b></span>
+          <span class="kpi" title="Active subscriptions ÷ organizations.">Subs / org <b>{{ k.subsPerOrg }}</b></span>
+        </div>
+      }
+
       @if (d.subscriptions.byPlan.length) {
         <div class="plan-mix mb-5">
           <span class="kicker !mb-0">Plan mix</span>
@@ -133,6 +143,10 @@ import { CountDirective } from '../../shared/directives/count.directive';
       .bar { height: 7px; border-radius: 100px; background: var(--paper-3); overflow: hidden; }
       .bar-fill { height: 100%; border-radius: 100px; transition: width .5s var(--ease); }
       .badge { font-family: var(--mono); font-size: 12px; padding: 2px 9px; border-radius: 100px; }
+      .kpi-row { display: flex; flex-wrap: wrap; gap: 8px; }
+      .kpi { display: inline-flex; align-items: baseline; gap: 6px; font-size: 12px; color: var(--text-mute); padding: 6px 12px; border-radius: 999px; border: 1px solid var(--paper-3); background: var(--paper-2); }
+      .kpi b { font-size: 14px; color: var(--text); font-variant-numeric: tabular-nums; }
+      .kpi-u { font-size: 10px; color: var(--text-mute); }
       .plan-mix { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
       .plan-chip { font-size: 12px; text-transform: capitalize; padding: 3px 10px; border-radius: 999px; border: 1px solid var(--paper-3); background: var(--paper-2); color: var(--text-soft); }
       .plan-chip b { color: var(--text); font-variant-numeric: tabular-nums; }
@@ -143,6 +157,22 @@ import { CountDirective } from '../../shared/directives/count.directive';
 export class FounderDashboardComponent implements OnInit {
   private readonly api = inject(FounderService);
   readonly data = signal<FounderDashboard | null>(null);
+
+  /** Derived operator KPIs from the raw aggregates (no extra API call). */
+  readonly kpis = computed(() => {
+    const d = this.data();
+    if (!d) return null;
+    const active = d.subscriptions.active;
+    const students = d.totals.students;
+    const orgs = d.totals.organizations;
+    const signups14d = (d.signups ?? []).reduce((sum, s) => sum + s.count, 0);
+    return {
+      arpu: active > 0 ? Math.round(d.subscriptions.estMrrInr / active) : 0,
+      paidConversion: students > 0 ? Math.round((active / students) * 100) : 0,
+      signups14d,
+      subsPerOrg: orgs > 0 ? (active / orgs).toFixed(1) : '0',
+    };
+  });
 
   /** AI calls by agent → horizontal bar chart data. */
   readonly agentData = computed<ChartDatum[]>(() =>
