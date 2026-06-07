@@ -114,6 +114,8 @@ import { AstaOsModeToggleComponent } from '../features/asta-os/asta-os-mode-togg
               </button>
             }
           </div>
+          <a routerLink="/app/notifications" class="block text-center px-2.5 py-2.5 text-[12px] font-medium"
+            style="color:var(--green-deep);border-top:1px solid var(--paper-3)">See all notifications →</a>
         </div>
       </asta-dropdown>
     </header>
