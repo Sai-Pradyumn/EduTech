@@ -46,8 +46,11 @@ import { BarChartComponent, ChartDatum } from '../../shared/charts';
           </div>
         </div>
       }
-      <input class="input mb-4" style="max-width:320px" placeholder="Search title, topic or owner…"
-        [(ngModel)]="query" (ngModelChange)="q.set($event)" />
+      <div class="flex items-center gap-2 mb-4 flex-wrap">
+        <input class="input" style="max-width:320px;flex:1 1 240px" placeholder="Search title, topic or owner…"
+          [(ngModel)]="query" (ngModelChange)="q.set($event)" />
+        @if (filtered().length) { <button class="retry" style="min-height:0;padding:8px 14px;font-size:12.5px" (click)="exportCsv()">⬇ CSV</button> }
+      </div>
       <div class="card motion-card-reveal motion-row-2" style="padding:0;overflow:auto;--motion-card-index:0">
         <table>
           <thead><tr><th>Quiz</th><th>Owner</th><th>Topic</th><th>Difficulty</th><th>Source</th><th>Qs</th><th>Attempts</th><th>Best</th><th>Created</th></tr></thead>
@@ -135,5 +138,28 @@ export class AdminAssessmentsComponent implements OnInit {
 
   diffColor(d: string): string {
     return d === 'advanced' ? 'var(--coral-deep)' : d === 'intermediate' ? 'var(--peri-deep)' : 'var(--green-deep)';
+  }
+
+  /** Export the (filtered) quiz inventory as CSV. */
+  exportCsv(): void {
+    const rows = this.filtered();
+    if (!rows.length) return;
+    const esc = (v: unknown): string => {
+      const s = String(v ?? '').replace(/"/g, '""');
+      return /[",\n]/.test(s) ? `"${s}"` : s;
+    };
+    const header = ['Title', 'Owner', 'Topic', 'Difficulty', 'Source', 'Questions', 'Attempts', 'Best score', 'Created'];
+    const body = rows.map((a) => [
+      a.title, a.owner, a.topic, a.difficulty, a.source, a.questionCount, a.attemptCount,
+      a.bestScore != null ? a.bestScore : '', a.createdAt ? new Date(a.createdAt).toISOString().slice(0, 10) : '',
+    ]);
+    const csv = [header, ...body].map((row) => row.map(esc).join(',')).join('\r\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `asta-assessments-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
   }
 }

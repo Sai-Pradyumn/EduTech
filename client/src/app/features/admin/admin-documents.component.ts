@@ -42,8 +42,11 @@ import { DonutChartComponent, ChartDatum } from '../../shared/charts';
           <asta-donut-chart [data]="statusMix()" centerLabel="docs" label="Documents by ingestion status" />
         </div>
       }
-      <input class="input mb-4" style="max-width:320px" placeholder="Search title, owner or topic…"
-        [(ngModel)]="query" (ngModelChange)="q.set($event)" />
+      <div class="flex items-center gap-2 mb-4 flex-wrap">
+        <input class="input" style="max-width:320px;flex:1 1 240px" placeholder="Search title, owner or topic…"
+          [(ngModel)]="query" (ngModelChange)="q.set($event)" />
+        @if (filtered().length) { <button class="retry" style="min-height:0;padding:8px 14px;font-size:12.5px" (click)="exportCsv()">⬇ CSV</button> }
+      </div>
       <div class="card motion-card-reveal motion-row-2" style="padding:0;overflow:auto;--motion-card-index:0">
         <table>
           <thead><tr><th>Document</th><th>Owner</th><th>Source</th><th>Status</th><th>Chunks</th><th>Tokens</th><th>Lang</th><th>Added</th></tr></thead>
@@ -124,5 +127,28 @@ export class AdminDocumentsComponent implements OnInit {
 
   statusColor(status: string): string {
     return status === 'ready' ? 'var(--green-deep)' : status === 'failed' ? 'var(--coral-deep)' : 'var(--peri-deep)';
+  }
+
+  /** Export the (filtered) document inventory as CSV. */
+  exportCsv(): void {
+    const rows = this.filtered();
+    if (!rows.length) return;
+    const esc = (v: unknown): string => {
+      const s = String(v ?? '').replace(/"/g, '""');
+      return /[",\n]/.test(s) ? `"${s}"` : s;
+    };
+    const header = ['Title', 'Owner', 'Source', 'Status', 'Chunks', 'Tokens', 'Language', 'Added'];
+    const body = rows.map((d) => [
+      d.title, d.owner, d.source, d.status, d.chunkCount, d.tokenCount, d.language,
+      d.createdAt ? new Date(d.createdAt).toISOString().slice(0, 10) : '',
+    ]);
+    const csv = [header, ...body].map((row) => row.map(esc).join(',')).join('\r\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `asta-documents-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
   }
 }
