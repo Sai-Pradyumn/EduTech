@@ -64,6 +64,11 @@ export class InterviewController {
     return toView(await this.interview.respond(user.id, id, dto.answer));
   }
 
+  @Post(':id/skip')
+  async skip(@CurrentUser() user: AuthUser, @Param('id') id: string) {
+    return toView(await this.interview.skip(user.id, id));
+  }
+
   @Post(':id/finish')
   async finish(@CurrentUser() user: AuthUser, @Param('id') id: string) {
     return toView(await this.interview.finish(user.id, id));

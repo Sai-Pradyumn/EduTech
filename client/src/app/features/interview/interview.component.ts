@@ -92,6 +92,9 @@ import { downloadPdf } from '../../shared/util/pdf';
               @if (lastFeedback()) { <div class="fb-box"><span class="score" [style.color]="scoreColor(lastScore())">{{ lastScore() }}</span> {{ lastFeedback() }}</div> }
               <div class="mt-3 flex gap-2">
                 <asta-btn variant="accent" size="sm" (click)="submit(s)" [disabled]="busy() || !draft().trim()">{{ busy() ? 'Scoring…' : 'Submit answer' }}</asta-btn>
+                @if (s.currentIndex < s.total - 1) {
+                  <asta-btn variant="ghost" size="sm" (click)="skip(s)" [disabled]="busy()">Skip</asta-btn>
+                }
                 <asta-btn variant="ghost" size="sm" (click)="finish(s)" [disabled]="busy()">Finish &amp; get report</asta-btn>
               </div>
             } @else {
@@ -297,6 +300,13 @@ export class InterviewComponent {
         this.draft.set(''); this.session.set(updated); this.busy.set(false);
       },
       error: () => { this.busy.set(false); this.toast.error('Scoring failed'); },
+    });
+  }
+  skip(s: InterviewSession): void {
+    this.busy.set(true);
+    this.api.skip(s.id).subscribe({
+      next: (updated) => { this.resetTurn(); this.session.set(updated); this.busy.set(false); },
+      error: () => { this.busy.set(false); this.toast.error('Could not skip'); },
     });
   }
   finish(s: InterviewSession): void {

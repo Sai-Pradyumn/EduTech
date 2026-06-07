@@ -90,6 +90,26 @@ export class InterviewService {
     return session;
   }
 
+  /** Move past the current question without answering it (leaves it unscored). */
+  async skip(
+    userId: string,
+    sessionId: string,
+  ): Promise<InterviewSessionDocument> {
+    const session = await this.owned(userId, sessionId);
+    if (session.status === 'finished')
+      throw new BadRequestException('This interview is already finished.');
+    if (!session.questions[session.currentIndex])
+      throw new BadRequestException(
+        'No more questions — finish the interview.',
+      );
+    session.currentIndex = Math.min(
+      session.currentIndex + 1,
+      session.questions.length,
+    );
+    await session.save();
+    return session;
+  }
+
   async finish(
     userId: string,
     sessionId: string,
