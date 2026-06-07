@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component, OnInit, computed, inject, signal } from '@angular/core';
+import { FormsModule } from '@angular/forms';
 import { OpsService } from '../../core/services/ops.service';
 
 interface Funnel {
@@ -18,6 +19,7 @@ interface Overview {
   selector: 'asta-admin-product-analytics',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [FormsModule],
   template: `
     <header class="asta-page-command-header">
       <div class="min-w-0">
@@ -27,9 +29,10 @@ interface Overview {
     </header>
 
     @if (overview(); as o) {
-      <div class="grid gap-3 sm:grid-cols-3 mb-5">
+      <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4 mb-5">
         <div class="card" style="padding:16px"><p class="font-display text-2xl grad-flow">{{ o.dau }}</p><p class="t-label mt-1">Daily active</p></div>
         <div class="card" style="padding:16px"><p class="font-display text-2xl grad-flow">{{ o.wau }}</p><p class="t-label mt-1">Weekly active</p></div>
+        <div class="card" style="padding:16px" title="Stickiness — share of weekly-active users who return on a given day (DAU ÷ WAU). 20%+ is healthy."><p class="font-display text-2xl grad-flow">{{ stickiness() }}%</p><p class="t-label mt-1">Stickiness (DAU/WAU)</p></div>
         <div class="card" style="padding:16px"><p class="font-display text-2xl grad-flow">{{ o.totalEvents }}</p><p class="t-label mt-1">Events (30d)</p></div>
       </div>
     } @else {
@@ -81,15 +84,20 @@ interface Overview {
     </div>
 
     <div class="card" style="padding:18px">
-      <p class="kicker mb-3">Event volume (30d)</p>
-      @if (overview(); as o) {
+      <div class="flex items-center justify-between gap-3 mb-3 flex-wrap">
+        <p class="kicker !mb-0">Event volume (30d)</p>
+        @if (overview() && overview()!.byEvent.length > 8) {
+          <input class="ev-search" type="search" placeholder="Filter events…" [ngModel]="eventQuery()" (ngModelChange)="eventQuery.set($event)" aria-label="Filter events" />
+        }
+      </div>
+      @if (overview()) {
         <div class="space-y-1">
-          @for (e of o.byEvent; track e.event) {
+          @for (e of filteredEvents(); track e.event) {
             <div class="flex items-center justify-between text-sm py-1.5" style="border-bottom:1px solid var(--paper-3)">
               <span>{{ pretty(e.event) }}</span>
               <span class="font-mono text-txt-mute">{{ e.count }}</span>
             </div>
-          } @empty { <p class="text-sm text-txt-mute">No events yet.</p> }
+          } @empty { <p class="text-sm text-txt-mute">{{ eventQuery().trim() ? 'No events match “' + eventQuery() + '”.' : 'No events yet.' }}</p> }
         </div>
       }
     </div>
@@ -100,6 +108,8 @@ interface Overview {
     .ret-col{flex:1;height:100%;display:flex;align-items:flex-end;min-width:2px}
     .ret-bar{display:block;width:100%;border-radius:3px 3px 0 0;background:linear-gradient(180deg,var(--green),var(--green-deep));min-height:2px;transition:height .4s var(--ease)}
     .ret-col:hover .ret-bar{background:var(--peri,#8aa6ff)}
+    .ev-search{padding:6px 11px;border-radius:9px;border:1px solid var(--paper-3);background:var(--paper-2);color:var(--text);font-size:12.5px;font-family:inherit;min-width:180px}
+    .ev-search:focus{outline:none;border-color:var(--green)}
   `],
 })
 export class AdminProductAnalyticsComponent implements OnInit {
@@ -107,10 +117,24 @@ export class AdminProductAnalyticsComponent implements OnInit {
   readonly overview = signal<Overview | null>(null);
   readonly funnels = signal<Funnel[]>([]);
   readonly retention = signal<{ day: string; activeUsers: number }[]>([]);
+  readonly eventQuery = signal('');
 
   readonly retentionPeak = computed(() =>
     this.retention().reduce((m, d) => Math.max(m, d.activeUsers), 0),
   );
+
+  /** Stickiness = DAU/WAU as a percentage — a standard engagement KPI. */
+  readonly stickiness = computed(() => {
+    const o = this.overview();
+    return o && o.wau > 0 ? Math.round((o.dau / o.wau) * 100) : 0;
+  });
+
+  readonly filteredEvents = computed(() => {
+    const o = this.overview();
+    if (!o) return [];
+    const q = this.eventQuery().trim().toLowerCase();
+    return q ? o.byEvent.filter((e) => e.event.toLowerCase().includes(q)) : o.byEvent;
+  });
 
   ngOnInit(): void {
     this.ops.productOverview().subscribe({ next: (o) => this.overview.set(o) });
