@@ -20,7 +20,7 @@ effort `S` (hours) · `M` (a day) · `L` (multi-day).
 - [x] Icon-only buttons have aria-labels (swept: voice-room, project-studio, etc.).
 - [x] All form `<input>`s are labelled (verified: 0 unlabelled inputs).
 - [x] **Focus management** — focus moves into `#main-content` on route change; the Modal already traps + restores focus.
-- [x] **ARIA live regions (toasts)** — the toast container is `aria-live="polite"`. _Remaining:_ `P2·S` add a live region for streaming AI output.
+- [x] **ARIA live regions** — toast container is `aria-live="polite"`; the agent workspace now has a polite SR live region announcing AI response start/ready/failed.
 - [ ] `P2·M` **Contrast audit** — verify OKLCH token pairs meet WCAG AA in both light and dark themes (muted text on paper is the likely offender).
 - [ ] `P2·S` **Keyboard reachability** — ensure drag-to-reorder (Today) and hover-only affordances have keyboard equivalents.
 - [ ] `P3·S` **`prefers-reduced-motion`** — audit the heatmap/aurora/constellation for full reduced-motion coverage.
@@ -55,7 +55,7 @@ effort `S` (hours) · `M` (a day) · `L` (multi-day).
 - [x] **Keyboard-shortcuts help overlay** (`?`) — modal listing app + palette shortcuts.
 - [x] **Command-palette quick actions** — New learning flow, Toggle theme, Sign out (action callbacks).
 - [ ] `P2·S` **Undo for destructive actions** — deleting a flow/space/source/application is immediate; add an undo toast or confirm.
-- [ ] `P2·M` **Bulk actions** — multi-select on applications, mistakes, notifications (mark/clear/export).
+- [x] **Bulk actions** — Applications: multi-select to bulk set-status or delete. _Remaining:_ extend to mistakes/notifications if wanted.
 - [x] **Notifications page** — full `/app/notifications` history (server `?limit=`, type-filter chips, unread-only, mark-all-read, bell "See all" link).
 - [x] **Today reflection journal** — optional mood (1–5) + one-line note per day (server schema + `/daily-plan/reflection`), surfaced as mood emoji in the week strip.
 
@@ -105,6 +105,8 @@ Beyond per-screen affordances — tightening loops and adding operator depth:
 - **Cohorts** — export a cohort's leaderboard as CSV (managers).
 - **Notifications (new feature)** — full `/app/notifications` history page (server `?limit=` param up to 200, type-filter chips, unread-only toggle, mark-all-read, deep-link follow) + bell "See all" link.
 - **Today reflection journal (new feature)** — end-of-day mood (1–5) + one-line note (schema `mood`/`reflection` + `/daily-plan/reflection`), surfaced as mood emoji in the activity week strip.
+- **Applications bulk actions** — multi-select rows to bulk set-status or delete (forkJoin).
+- **A11y** — agent workspace gets a polite screen-reader live region announcing AI response start / ready / failed.
 
 - **Daily Plan** — per-item notes, carry-over of unfinished items, focus timer, drag-to-reorder, "finish by ~HH:MM", and a one-per-day `daily_plan_completed` proof event.
 - **Proof Ledger** — wired 3 orphaned event kinds (`certificate_earned`, `flow_generated`, `voice_viva_passed`); fixed a `practice_solved` crash + added a defensive kind lookup; added a 13-week activity heatmap; seeded the new events.
