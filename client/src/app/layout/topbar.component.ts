@@ -105,6 +105,7 @@ import { AstaOsModeToggleComponent } from '../features/asta-os/asta-os-mode-togg
                 [style.opacity]="n.read ? '0.6' : '1'" (click)="openNotification(n)">
                 <span class="flex items-center gap-2 w-full" style="font-weight:500;color:var(--text)">
                   @if (!n.read) { <span class="rounded-full" style="width:6px;height:6px;background:var(--green)"></span> }
+                  <span class="shrink-0" aria-hidden="true">{{ typeGlyph(n.type) }}</span>
                   <span class="flex-1 truncate">{{ n.title }}</span>
                   @if (n.createdAt) { <span class="text-[10px] text-txt-mute font-mono shrink-0">{{ ago(n.createdAt) }}</span> }
                 </span>
@@ -132,6 +133,12 @@ export class TopbarComponent implements OnInit {
   ngOnInit(): void {
     this.notify.load();
   }
+
+  /** Glyph per notification type so the bell list is scannable at a glance. */
+  private readonly typeGlyphs: Record<string, string> = {
+    progression: '📈', nudge: '💡', announcement: '📣', session: '🎥', info: '🔔',
+  };
+  typeGlyph(type: string): string { return this.typeGlyphs[type] ?? '🔔'; }
 
   /** Mark read and, when the notification carries a deep link, navigate to it. */
   openNotification(n: NotificationView): void {
