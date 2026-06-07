@@ -18,7 +18,7 @@ import { ConstellationComponent } from '../shared/components/constellation.compo
 import { RouteTransitionDirective } from '../shared/directives/route-transition.directive';
 import { AuthService } from '../core/services/auth.service';
 import { OrgContextService } from '../core/services/org-context.service';
-import { IntelligenceService } from '../core/services/intelligence.service';
+import { DailyPlanService } from '../core/services/daily-plan.service';
 import { EntitlementService } from '../core/services/entitlement.service';
 import { FeatureFlagService } from '../core/services/feature-flag.service';
 import { ProductAnalyticsService } from '../core/services/product-analytics.service';
@@ -68,7 +68,7 @@ import { ADMIN_NAV, STUDENT_NAV, workspaceNav } from '../core/constants/nav';
 
         <asta-topbar
           class="shrink-0 relative z-[2]"
-          [title]="title()" [isAdmin]="isAdmin()" [streak]="intel.streak()"
+          [title]="title()" [isAdmin]="isAdmin()" [streak]="dailyStreak()"
           (toggleMenu)="drawerOpen.set(true)"
         />
         <!-- Offline / pending-sync banner (M4) -->
@@ -205,7 +205,10 @@ export class ShellComponent {
   private readonly offline = inject(OfflineService);
   readonly net = inject(NetworkStatusService);
   readonly sync = inject(SyncQueueService);
-  readonly intel = inject(IntelligenceService);
+  private readonly dailyPlan = inject(DailyPlanService);
+  /** Canonical learning streak (same daily-plan streak the Today screen shows). */
+  readonly dailyStreak = signal(0);
+  private streakLoaded = false;
 
   readonly user = this.auth.user;
   readonly isAdmin = this.auth.isAdmin;
@@ -254,10 +257,17 @@ export class ShellComponent {
         this.analytics.track('user_returned');
       }
     });
-    // Real learning streak for the topbar (students only; the overview endpoint
-    // is student-scoped). Cached after first fetch; errors leave the streak at 0.
+    // Canonical learning streak for the topbar (students only) — the same
+    // daily-plan streak the Today screen features, so the two never disagree.
+    // Fetched once; errors leave the streak at 0.
     effect(() => {
-      if (this.user() && !this.isAdmin()) this.intel.load();
+      if (this.user() && !this.isAdmin() && !this.streakLoaded) {
+        this.streakLoaded = true;
+        this.dailyPlan.streak().subscribe({
+          next: (s) => this.dailyStreak.set(s.current),
+          error: () => { this.streakLoaded = false; },
+        });
+      }
     });
     // Scroll-position restoration for the internal main container: jump to top
     // on every completed navigation (the window no longer scrolls in the split shell).
