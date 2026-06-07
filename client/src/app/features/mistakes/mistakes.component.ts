@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { forkJoin } from 'rxjs';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { ButtonComponent } from '../../shared/ui/button.component';
@@ -121,10 +122,20 @@ type Filter = 'all' | 'due' | MistakeStatus;
           </asta-card>
         }
       } @else {
+        @if (selected().size > 0) {
+          <div class="bulk-bar mb-3">
+            <span class="bb-count">{{ selected().size }} selected</span>
+            <button class="bb-btn" [disabled]="bulkBusy()" (click)="bulkSetStatus('resolved')">Mark resolved</button>
+            <button class="bb-btn" [disabled]="bulkBusy()" (click)="bulkSetStatus('open')">Reopen</button>
+            <button class="bb-btn danger" [disabled]="bulkBusy()" (click)="bulkDelete()">Delete</button>
+            <button class="bb-btn" (click)="clearSel()">Clear</button>
+          </div>
+        }
         <div class="space-y-3 motion-row-3">
           @for (m of filtered(); track m.id; let i = $index) {
-            <asta-card class="block motion-card-reveal" [style.--motion-card-index]="i % 4">
+            <asta-card class="block motion-card-reveal" [class.picked]="selected().has(m.id)" [style.--motion-card-index]="i % 4">
               <div class="flex items-start gap-3 cursor-pointer" (click)="toggle(m.id)">
+                <input type="checkbox" class="sel" [checked]="selected().has(m.id)" (click)="$event.stopPropagation()" (change)="toggleSel(m.id)" [attr.aria-label]="'Select ' + m.concept" />
                 <span class="sev-dot" [style.background]="sevColor(m.severity)" [title]="'severity ' + m.severity"></span>
                 <div class="min-w-0 flex-1">
                   <div class="flex items-center gap-2 flex-wrap">
@@ -231,6 +242,14 @@ type Filter = 'all' | 'due' | MistakeStatus;
       .view-tabs { display: inline-flex; gap: 2px; background: var(--paper-2); border: 1px solid var(--paper-3); border-radius: 999px; padding: 3px; }
       .view-tab { font-size: 12px; padding: 5px 12px; border-radius: 999px; border: none; background: transparent; color: var(--text-soft); cursor: pointer; }
       .view-tab.active { background: color-mix(in oklab, var(--green) 22%, transparent); color: var(--text); }
+      .sel { width: 15px; height: 15px; margin-top: 3px; flex-shrink: 0; cursor: pointer; accent-color: var(--green); }
+      asta-card.picked { border-color: color-mix(in oklab, var(--green) 45%, var(--paper-3)); }
+      .bulk-bar { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding: 8px 11px; border-radius: 11px; border: 1px solid color-mix(in oklab, var(--green) 35%, var(--paper-3)); background: color-mix(in oklab, var(--green) 8%, transparent); }
+      .bb-count { font-size: 12px; font-weight: 600; color: var(--green-deep); }
+      .bb-btn { font-size: 12px; padding: 5px 11px; border-radius: 999px; border: 1px solid var(--paper-3); background: var(--paper); color: var(--text-soft); cursor: pointer; }
+      .bb-btn:hover { border-color: var(--green); }
+      .bb-btn.danger:hover { border-color: var(--danger, #ff5d5d); color: var(--danger, #ff5d5d); }
+      .bb-btn:disabled { opacity: .5; cursor: default; }
       .sev-dot { width: 12px; height: 12px; border-radius: 50%; margin-top: 4px; flex-shrink: 0; }
       .type-badge { font-size: 10px; padding: 2px 8px; border-radius: 999px; border: 1px solid var(--paper-3); color: var(--text-mute); text-transform: uppercase; letter-spacing: .04em; }
       .status-badge { font-size: 10px; padding: 2px 8px; border-radius: 999px; text-transform: uppercase; letter-spacing: .04em; border: 1px solid var(--paper-3); }
@@ -357,6 +376,49 @@ export class MistakesComponent {
         this.toast.success(recalled ? 'Nice — spaced out further' : 'Resurfacing sooner');
       },
       error: () => { this.busyId.set(null); this.toast.error('Could not save review'); },
+    });
+  }
+
+  // ── bulk selection ──
+  readonly selected = signal<Set<string>>(new Set());
+  readonly bulkBusy = signal(false);
+  toggleSel(id: string): void {
+    this.selected.update((s) => { const n = new Set(s); n.has(id) ? n.delete(id) : n.add(id); return n; });
+  }
+  clearSel(): void { this.selected.set(new Set()); }
+
+  bulkSetStatus(status: MistakeStatus): void {
+    const ids = [...this.selected()];
+    if (!ids.length) return;
+    this.bulkBusy.set(true);
+    forkJoin(ids.map((id) => this.api.setStatus(id, status))).subscribe({
+      next: (updated) => {
+        const byId = new Map(updated.map((u) => [u.id, u]));
+        this.mistakes.update((l) => l.map((m) => byId.get(m.id) ?? m));
+        this.bulkBusy.set(false);
+        this.clearSel();
+        this.refreshStats();
+        this.toast.success(`Updated ${updated.length} concept${updated.length === 1 ? '' : 's'}`);
+      },
+      error: () => { this.bulkBusy.set(false); this.toast.error('Bulk update failed'); },
+    });
+  }
+
+  bulkDelete(): void {
+    const ids = [...this.selected()];
+    if (!ids.length) return;
+    this.bulkBusy.set(true);
+    forkJoin(ids.map((id) => this.api.remove(id))).subscribe({
+      next: () => {
+        const gone = new Set(ids);
+        this.mistakes.update((l) => l.filter((m) => !gone.has(m.id)));
+        this.dueList.update((l) => l.filter((m) => !gone.has(m.id)));
+        this.bulkBusy.set(false);
+        this.clearSel();
+        this.refreshStats();
+        this.toast.success(`Deleted ${ids.length} concept${ids.length === 1 ? '' : 's'}`);
+      },
+      error: () => { this.bulkBusy.set(false); this.toast.error('Bulk delete failed'); },
     });
   }
 
