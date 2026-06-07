@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { ButtonComponent } from '../../shared/ui/button.component';
 import { CardComponent } from '../../shared/ui/card.component';
@@ -20,7 +21,7 @@ type Filter = 'all' | 'due' | MistakeStatus;
   selector: 'asta-mistakes',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ButtonComponent, CardComponent, EmptyStateComponent, SkeletonComponent],
+  imports: [FormsModule, ButtonComponent, CardComponent, EmptyStateComponent, SkeletonComponent],
   template: `
     <header class="asta-page-command-header">
       <div class="min-w-0">
@@ -90,19 +91,35 @@ type Filter = 'all' | 'due' | MistakeStatus;
       }
 
       <!-- filters -->
-      <div class="view-tabs mb-3">
-        @for (f of filters; track f.id) {
-          <button class="view-tab" [class.active]="filter() === f.id" (click)="setFilter(f.id)">{{ f.label }}</button>
+      <div class="mk-toolbar mb-3">
+        <div class="view-tabs">
+          @for (f of filters; track f.id) {
+            <button class="view-tab" [class.active]="filter() === f.id" (click)="setFilter(f.id)">{{ f.label }}</button>
+          }
+        </div>
+        @if (mistakes().length > 3) {
+          <div class="mk-tools">
+            <input class="mk-search" type="search" placeholder="Search concepts…" [ngModel]="search()" (ngModelChange)="search.set($event)" aria-label="Search mistakes" />
+            @if (filter() !== 'due') {
+              <select class="mk-sort" [ngModel]="sort()" (ngModelChange)="sort.set($event)" aria-label="Sort mistakes">
+                @for (s of sorts; track s.id) { <option [value]="s.id">{{ s.label }}</option> }
+              </select>
+            }
+          </div>
         }
       </div>
 
       <!-- list -->
       @if (filtered().length === 0) {
-        <asta-card class="block">
-          <asta-empty-state title="Nothing here" description="As you take quizzes, Asta logs the concepts you miss here and builds repair loops. Resolve them to strengthen your Skill Twin.">
-            <asta-btn variant="accent" (click)="goQuiz()">Take a quiz</asta-btn>
-          </asta-empty-state>
-        </asta-card>
+        @if (search().trim()) {
+          <asta-card class="block"><p class="text-sm text-txt-mute py-4 text-center">No concepts match “{{ search() }}”.</p></asta-card>
+        } @else {
+          <asta-card class="block">
+            <asta-empty-state title="Nothing here" description="As you take quizzes, Asta logs the concepts you miss here and builds repair loops. Resolve them to strengthen your Skill Twin.">
+              <asta-btn variant="accent" (click)="goQuiz()">Take a quiz</asta-btn>
+            </asta-empty-state>
+          </asta-card>
+        }
       } @else {
         <div class="space-y-3 motion-row-3">
           @for (m of filtered(); track m.id; let i = $index) {
@@ -206,6 +223,11 @@ type Filter = 'all' | 'due' | MistakeStatus;
       .hm-track { height: 8px; border-radius: 999px; background: var(--paper-3); overflow: hidden; }
       .hm-fill { display: block; height: 100%; border-radius: 999px; transition: width .4s var(--ease); }
       .hm-meta { font-size: 11px; color: var(--text-mute); font-variant-numeric: tabular-nums; white-space: nowrap; }
+      .mk-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+      .mk-tools { display: flex; gap: 6px; align-items: center; }
+      .mk-search { padding: 6px 11px; border-radius: 999px; border: 1px solid var(--paper-3); background: var(--paper-2); color: var(--text); font-size: 12.5px; font-family: inherit; min-width: 160px; }
+      .mk-search:focus { outline: none; border-color: var(--green); }
+      .mk-sort { padding: 6px 9px; border-radius: 999px; border: 1px solid var(--paper-3); background: var(--paper-2); color: var(--text); font-size: 12px; cursor: pointer; }
       .view-tabs { display: inline-flex; gap: 2px; background: var(--paper-2); border: 1px solid var(--paper-3); border-radius: 999px; padding: 3px; }
       .view-tab { font-size: 12px; padding: 5px 12px; border-radius: 999px; border: none; background: transparent; color: var(--text-soft); cursor: pointer; }
       .view-tab.active { background: color-mix(in oklab, var(--green) 22%, transparent); color: var(--text); }
@@ -252,6 +274,13 @@ export class MistakesComponent {
   readonly filter = signal<Filter>('all');
   readonly expanded = signal<string | null>(null);
   readonly busyId = signal<string | null>(null);
+  readonly search = signal('');
+  readonly sort = signal<'severity' | 'frequency' | 'recent'>('severity');
+  readonly sorts: { id: 'severity' | 'frequency' | 'recent'; label: string }[] = [
+    { id: 'severity', label: 'Severity' },
+    { id: 'frequency', label: 'Most seen' },
+    { id: 'recent', label: 'Recent' },
+  ];
 
   readonly filters: { id: Filter; label: string }[] = [
     { id: 'all', label: 'All' },
@@ -263,9 +292,19 @@ export class MistakesComponent {
 
   readonly filtered = computed(() => {
     const f = this.filter();
-    if (f === 'due') return this.dueList();
-    const list = this.mistakes();
-    return f === 'all' ? list : list.filter((m) => m.status === f);
+    const base = f === 'due' ? this.dueList() : f === 'all' ? this.mistakes() : this.mistakes().filter((m) => m.status === f);
+    const q = this.search().trim().toLowerCase();
+    const list = q
+      ? base.filter((m) => `${m.concept} ${m.source}`.toLowerCase().includes(q))
+      : base;
+    // The "due" queue keeps its review-priority order; everything else is sortable.
+    if (f === 'due') return list;
+    const s = this.sort();
+    const sorted = [...list];
+    if (s === 'frequency') sorted.sort((a, b) => b.frequency - a.frequency);
+    else if (s === 'recent') sorted.sort((a, b) => +new Date(b.lastSeenAt || 0) - +new Date(a.lastSeenAt || 0));
+    else sorted.sort((a, b) => b.severity - a.severity);
+    return sorted;
   });
 
   constructor() {
