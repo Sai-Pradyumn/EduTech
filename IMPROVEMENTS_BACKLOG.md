@@ -97,6 +97,8 @@ Beyond per-screen affordances — tightening loops and adding operator depth:
 - **Resume where you left off** — Flow cards have a **"Resume next step"** button; flow-detail honors `?node=next` (or a node id) and focuses the first incomplete node. (Simulations/interviews already resume on open.)
 - **Admin** — export the (filtered) **student roster as CSV**.
 - **Founder** — **derived KPIs** founders track: ARPU, paid-conversion rate, 14-day signup total, subs/org — all computed from existing aggregates.
+- **Product analytics** — **stickiness (DAU/WAU)** KPI card + searchable event-volume list.
+- **Reports** — sort the student-outcomes table (lowest-health/at-risk first, readiness, quizzes, projects, active days, name).
 
 - **Daily Plan** — per-item notes, carry-over of unfinished items, focus timer, drag-to-reorder, "finish by ~HH:MM", and a one-per-day `daily_plan_completed` proof event.
 - **Proof Ledger** — wired 3 orphaned event kinds (`certificate_earned`, `flow_generated`, `voice_viva_passed`); fixed a `practice_solved` crash + added a defensive kind lookup; added a 13-week activity heatmap; seeded the new events.
