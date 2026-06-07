@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { Router } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { ButtonComponent } from '../../shared/ui/button.component';
 import { CardComponent } from '../../shared/ui/card.component';
 import { EmptyStateComponent } from '../../shared/ui/empty-state.component';
@@ -265,6 +265,7 @@ export class MistakesComponent {
   private readonly api = inject(MistakeService);
   private readonly toast = inject(ToastService);
   private readonly router = inject(Router);
+  private readonly route = inject(ActivatedRoute);
 
   readonly mistakes = signal<Mistake[]>([]);
   readonly dueList = signal<Mistake[]>([]);
@@ -308,6 +309,9 @@ export class MistakesComponent {
   });
 
   constructor() {
+    // Deep-link support: /app/mistakes?filter=due (or open/repairing/resolved).
+    const f = this.route.snapshot.queryParamMap.get('filter');
+    if (f && this.filters.some((x) => x.id === f)) this.filter.set(f as Filter);
     this.refresh();
   }
 

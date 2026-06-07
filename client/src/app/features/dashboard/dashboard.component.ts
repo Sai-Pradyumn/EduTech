@@ -20,6 +20,7 @@ import { ConfettiService } from '../../core/services/confetti.service';
 import { CareerReadinessService, ReadinessAnalysis } from '../../core/services/career-readiness.service';
 import { SkillPassportService, SkillPassport } from '../../core/services/skill-passport.service';
 import { DailyPlanService, DailyPlan, DAILY_KIND_GLYPH, DailyItemKind } from '../../core/services/daily-plan.service';
+import { MistakeService } from '../../core/services/mistake.service';
 
 /**
  * Dashboard — compact Noir cockpit. Command header → active-roadmap + progress
@@ -115,6 +116,20 @@ import { DailyPlanService, DailyPlan, DAILY_KIND_GLYPH, DailyItemKind } from '..
             </div>
           </a>
         }
+      }
+
+      <!-- Spaced-review nudge — concepts due for recall (drives Skill Twin) -->
+      @if (reviewsDue() > 0) {
+        <a routerLink="/app/mistakes" [queryParams]="{ filter: 'due' }" class="card hover-lift block mb-5 review-strip dashboard-reveal" style="padding:13px 18px;text-decoration:none;--motion-card-index:0">
+          <div class="flex items-center gap-3 flex-wrap">
+            <span class="rev-ico" aria-hidden="true">⟳</span>
+            <div class="flex-1 min-w-[200px]">
+              <p class="kicker mb-0.5">Spaced review</p>
+              <p class="text-sm text-txt-soft"><span class="font-semibold text-txt">{{ reviewsDue() }}</span> concept{{ reviewsDue() === 1 ? '' : 's' }} due for a quick recall check</p>
+            </div>
+            <span class="text-sm font-semibold shrink-0" style="color:var(--peri-deep, #6f86e0)">Start review <span class="arr">→</span></span>
+          </div>
+        </a>
       }
 
       <!-- Active roadmap (anchor) + progress — same row, same reveal family -->
@@ -272,6 +287,8 @@ import { DailyPlanService, DailyPlan, DAILY_KIND_GLYPH, DailyItemKind } from '..
     `
       .today-strip { border: 1px solid color-mix(in oklch, var(--green) 22%, var(--paper-3)); }
       .td-glyph { font-size: 12px; }
+      .review-strip { border: 1px solid color-mix(in oklch, var(--peri, #8aa6ff) 28%, var(--paper-3)); }
+      .rev-ico { width: 32px; height: 32px; flex-shrink: 0; display: grid; place-items: center; border-radius: 10px; font-size: 17px; color: var(--peri-deep, #6f86e0); background: color-mix(in oklch, var(--peri, #8aa6ff) 14%, transparent); }
       .panel-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
       .panel-ico {
         width: 34px; height: 34px; flex-shrink: 0;
@@ -339,6 +356,7 @@ export class DashboardComponent {
   private readonly career = inject(CareerReadinessService);
   private readonly passportApi = inject(SkillPassportService);
   private readonly dailyPlan = inject(DailyPlanService);
+  private readonly mistakes = inject(MistakeService);
 
   readonly profile = signal<StudentProfile | null>(null);
   readonly roadmap = signal<Roadmap | null>(null);
@@ -347,6 +365,7 @@ export class DashboardComponent {
   readonly readiness = signal<ReadinessAnalysis | null>(null);
   readonly passport = signal<SkillPassport | null>(null);
   readonly plan = signal<DailyPlan | null>(null);
+  readonly reviewsDue = signal(0);
   readonly loading = signal(true);
   readonly error = signal(false);
 
@@ -472,6 +491,7 @@ export class DashboardComponent {
           this.career.me().subscribe({ next: (a) => this.readiness.set(a), error: () => undefined });
           this.passportApi.me().subscribe({ next: (p) => this.passport.set(p), error: () => undefined });
           this.dailyPlan.today().subscribe({ next: (p) => this.plan.set(p), error: () => undefined });
+          this.mistakes.stats().subscribe({ next: (s) => this.reviewsDue.set(s.due), error: () => undefined });
         }
         if (profile && roadmap) {
           this.intelligence.overview().subscribe({ next: (d) => this.intel.set(d), error: () => undefined });
