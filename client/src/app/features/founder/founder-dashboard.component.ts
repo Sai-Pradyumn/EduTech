@@ -37,6 +37,15 @@ import { CountDirective } from '../../shared/directives/count.directive';
         </div>
       </div>
 
+      @if (d.subscriptions.byPlan.length) {
+        <div class="plan-mix mb-5">
+          <span class="kicker !mb-0">Plan mix</span>
+          @for (p of d.subscriptions.byPlan; track p.plan) {
+            <span class="plan-chip">{{ p.plan }} <b>{{ p.count }}</b></span>
+          }
+        </div>
+      }
+
       <div class="grid gap-5 lg:grid-cols-2 motion-row-2">
         <!-- AI cost + agents -->
         <div class="card motion-card-reveal" style="padding:18px;--motion-card-index:0">
@@ -124,6 +133,9 @@ import { CountDirective } from '../../shared/directives/count.directive';
       .bar { height: 7px; border-radius: 100px; background: var(--paper-3); overflow: hidden; }
       .bar-fill { height: 100%; border-radius: 100px; transition: width .5s var(--ease); }
       .badge { font-family: var(--mono); font-size: 12px; padding: 2px 9px; border-radius: 100px; }
+      .plan-mix { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+      .plan-chip { font-size: 12px; text-transform: capitalize; padding: 3px 10px; border-radius: 999px; border: 1px solid var(--paper-3); background: var(--paper-2); color: var(--text-soft); }
+      .plan-chip b { color: var(--text); font-variant-numeric: tabular-nums; }
       .gen { font-size: 11px; font-family: var(--mono); color: var(--text-mute); margin-top: 14px; }
     `,
   ],
