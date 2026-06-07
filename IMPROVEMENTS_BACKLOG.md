@@ -99,6 +99,8 @@ Beyond per-screen affordances — tightening loops and adding operator depth:
 - **Founder** — **derived KPIs** founders track: ARPU, paid-conversion rate, 14-day signup total, subs/org — all computed from existing aggregates.
 - **Product analytics** — **stickiness (DAU/WAU)** KPI card + searchable event-volume list.
 - **Reports** — sort the student-outcomes table (lowest-health/at-risk first, readiness, quizzes, projects, active days, name).
+- **Audit logs** — export the (filtered) audit trail as CSV (compliance-friendly: ISO time, action, actor, target, metadata).
+- **Billing** — export invoice history as CSV (for expense reports / accounting).
 
 - **Daily Plan** — per-item notes, carry-over of unfinished items, focus timer, drag-to-reorder, "finish by ~HH:MM", and a one-per-day `daily_plan_completed` proof event.
 - **Proof Ledger** — wired 3 orphaned event kinds (`certificate_earned`, `flow_generated`, `voice_viva_passed`); fixed a `practice_solved` crash + added a defensive kind lookup; added a 13-week activity heatmap; seeded the new events.
