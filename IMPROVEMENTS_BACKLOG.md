@@ -76,6 +76,17 @@ effort `S` (hours) · `M` (a day) · `L` (multi-day).
 ## Recently shipped (this sweep)
 Branch `feat/daily-plan-deepening`, additive/low-risk, each commit build-verified:
 
+### Feature-depth sweep (latest)
+Deepening existing features with genuinely useful capabilities (not data-surfacing):
+
+- **Applications** — hiring-pipeline funnel (Saved → Applied → Interview → Offer) with interview/offer conversion rates; search by company/role; sort (recent / best match / company A–Z).
+- **Flow Studio** — portfolio summary (active count · avg progress · completed); status filter (active/completed/draft/archived) alongside difficulty; sort (recently updated / progress / title).
+- **Mistake OS** — search concepts; sort by severity / most-seen / recency (the spaced-review "due" queue keeps its priority order).
+- **Dashboard** — surfaces today's daily-plan progress (ring + done/total + next concrete item) linking to the Today surface.
+- **Quiz Studio** — in-attempt question navigator (jump to any question; filled = answered) for long quizzes; result "Incorrect only" review filter (preserving original question numbers).
+- **Roadmap** — projected finish date computed from real pace (weeks completed ÷ days elapsed), with weeks/days-left and sensible fallbacks.
+- **Community** — thread-list search + sort (recent / top-voted / most replies).
+
 - **Daily Plan** — per-item notes, carry-over of unfinished items, focus timer, drag-to-reorder, "finish by ~HH:MM", and a one-per-day `daily_plan_completed` proof event.
 - **Proof Ledger** — wired 3 orphaned event kinds (`certificate_earned`, `flow_generated`, `voice_viva_passed`); fixed a `practice_solved` crash + added a defensive kind lookup; added a 13-week activity heatmap; seeded the new events.
 - **Surfaced received-but-unrendered data** — interview strengths, resume generated-date, simulation rubric scores, study-space voice links + source URLs, outcome-council reasoning, portfolio highlights + timeline, course lesson content + narration script, cohort leaderboard readiness/active-days, founder plan-mix, notification type glyphs.
