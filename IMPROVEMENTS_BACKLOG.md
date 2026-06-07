@@ -90,6 +90,14 @@ Deepening existing features with genuinely useful capabilities (not data-surfaci
 - **Interview OS** — **Skip question** during an active session (server `:id/skip` route + client) — advances without scoring; the report already renders skipped items.
 - **Simulation Labs** — status filter (any / in-progress / finished) to resume unfinished rounds or review completed ones.
 
+### Deeper-capability work (cross-feature)
+Beyond per-screen affordances — tightening loops and adding operator depth:
+
+- **Learning loop** — Dashboard now surfaces a **spaced-review nudge** (concepts due for recall) that deep-links to the Mistakes "due" queue; Mistake OS honors `?filter=` deep-links.
+- **Resume where you left off** — Flow cards have a **"Resume next step"** button; flow-detail honors `?node=next` (or a node id) and focuses the first incomplete node. (Simulations/interviews already resume on open.)
+- **Admin** — export the (filtered) **student roster as CSV**.
+- **Founder** — **derived KPIs** founders track: ARPU, paid-conversion rate, 14-day signup total, subs/org — all computed from existing aggregates.
+
 - **Daily Plan** — per-item notes, carry-over of unfinished items, focus timer, drag-to-reorder, "finish by ~HH:MM", and a one-per-day `daily_plan_completed` proof event.
 - **Proof Ledger** — wired 3 orphaned event kinds (`certificate_earned`, `flow_generated`, `voice_viva_passed`); fixed a `practice_solved` crash + added a defensive kind lookup; added a 13-week activity heatmap; seeded the new events.
 - **Surfaced received-but-unrendered data** — interview strengths, resume generated-date, simulation rubric scores, study-space voice links + source URLs, outcome-council reasoning, portfolio highlights + timeline, course lesson content + narration script, cohort leaderboard readiness/active-days, founder plan-mix, notification type glyphs.
