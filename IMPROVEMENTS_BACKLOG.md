@@ -19,8 +19,8 @@ effort `S` (hours) · `M` (a day) · `L` (multi-day).
 ## 2. Accessibility
 - [x] Icon-only buttons have aria-labels (swept: voice-room, project-studio, etc.).
 - [x] All form `<input>`s are labelled (verified: 0 unlabelled inputs).
-- [ ] `P1·M` **Focus management** — move focus to the main heading on route change; trap focus inside modals/command palette and restore it on close.
-- [ ] `P2·S` **ARIA live regions** — announce toasts and streaming AI output (`aria-live="polite"`) for screen-reader users.
+- [x] **Focus management** — focus moves into `#main-content` on route change; the Modal already traps + restores focus.
+- [x] **ARIA live regions (toasts)** — the toast container is `aria-live="polite"`. _Remaining:_ `P2·S` add a live region for streaming AI output.
 - [ ] `P2·M` **Contrast audit** — verify OKLCH token pairs meet WCAG AA in both light and dark themes (muted text on paper is the likely offender).
 - [ ] `P2·S` **Keyboard reachability** — ensure drag-to-reorder (Today) and hover-only affordances have keyboard equivalents.
 - [ ] `P3·S` **`prefers-reduced-motion`** — audit the heatmap/aurora/constellation for full reduced-motion coverage.
@@ -37,7 +37,7 @@ effort `S` (hours) · `M` (a day) · `L` (multi-day).
 - [ ] `P3·S` **Strict templates** — enable `strictTemplates` in `tsconfig` if not already, and fix fallout.
 
 ## 5. Security & dependencies
-- [ ] `P1·S` **Dependency audit** — `npm install` reports ~49 advisories (5 low / 15 moderate / 28 high / 1 critical). Triage and `npm audit fix` the safe ones; document the rest.
+- [x] **Dependency audit (triaged)** — all 49 advisories sit in the **dev/build toolchain** (webpack-dev-server, sockjs, uuid-via-webpack, @angular-devkit/build-angular), not the production runtime. `npm audit fix` (non-breaking) fixes **none** of them; every fix needs `--force` = a major Angular devkit upgrade. _Deferred as a dedicated upgrade:_ `P2·L` bump @angular-devkit/build-angular to clear the dev-tooling advisories.
 - [ ] `P2·M` **CSP / security headers** — verify Content-Security-Policy, HSTS, and frame-ancestors are set (helmet is present server-side; confirm the policy is tight, not default).
 - [ ] `P2·S` **Rate-limit coverage** — confirm auth endpoints + AI endpoints have per-IP and per-user limits (per-user AI limit exists; verify auth brute-force protection).
 - [ ] `P3·S` **Secrets hygiene** — confirm no secrets in client env; document required server env in one place.
@@ -52,22 +52,22 @@ effort `S` (hours) · `M` (a day) · `L` (multi-day).
 - [ ] `P3·S` **Timezone correctness** — daily-plan "today" uses UTC slice; verify behaviour for non-UTC users (streak/day boundaries).
 
 ## 8. UX & features
-- [ ] `P2·M` **Keyboard-shortcuts help overlay** (`?`) — discoverable list of shortcuts; complements the existing ⌘K palette.
-- [ ] `P2·M` **Command-palette quick actions** — beyond navigation: "Generate today's plan", "Start a mock interview", "New flow".
+- [x] **Keyboard-shortcuts help overlay** (`?`) — modal listing app + palette shortcuts.
+- [x] **Command-palette quick actions** — New learning flow, Toggle theme, Sign out (action callbacks).
 - [ ] `P2·S` **Undo for destructive actions** — deleting a flow/space/source/application is immediate; add an undo toast or confirm.
 - [ ] `P2·M` **Bulk actions** — multi-select on applications, mistakes, notifications (mark/clear/export).
 - [ ] `P3·M` **Notifications page** — the bell is capped at 30; add a full `/app/notifications` history with filters by `type`.
 - [ ] `P3·M` **Today reflection journal** — optional mood + one-line note per day, surfaced in the week strip.
 
 ## 9. Observability
-- [ ] `P2·M` **Client error tracking** — wire a global `ErrorHandler` that reports to the existing server error feed (or Sentry) instead of only `console`.
+- [x] **Global client `ErrorHandler`** — swallows benign noise, prompts reload on stale chunk loads, logs + shows one throttled toast (no longer silent). _Remaining:_ `P2·S` add a transport to POST client errors to a server feed/Sentry.
 - [ ] `P3·S` **Web-vitals** — emit LCP/CLS/INP via the product-analytics `track()` channel.
 
 ## 10. PWA / offline
 - [ ] `P3·M` **Expand offline coverage** — the offline cache + sync queue exist; extend the cached GET allowlist and add offline-friendly empty states on more screens.
 
 ## 11. Docs & DevEx
-- [ ] `P2·S` **Pre-commit hooks** — husky + lint-staged to run server lint (and client lint once it exists) before commit.
+- [ ] `P2·S` **Pre-commit hooks** — husky + lint-staged. _Deferred:_ the server lint script bakes in `--fix` (mutates files) and flat-config resolution from the monorepo root is fiddly; do it once client lint exists so one lint-staged config covers both.
 - [ ] `P3·S` **API docs** — generate/serve OpenAPI (Swagger) from the Nest controllers.
 - [ ] `P3·S` **ADRs** — short architecture-decision records for the big calls (Agent OS pipeline, provider abstraction, entitlements).
 
@@ -80,5 +80,8 @@ Branch `feat/daily-plan-deepening`, additive/low-risk, each commit build-verifie
 - **Proof Ledger** — wired 3 orphaned event kinds (`certificate_earned`, `flow_generated`, `voice_viva_passed`); fixed a `practice_solved` crash + added a defensive kind lookup; added a 13-week activity heatmap; seeded the new events.
 - **Surfaced received-but-unrendered data** — interview strengths, resume generated-date, simulation rubric scores, study-space voice links + source URLs, outcome-council reasoning, portfolio highlights + timeline, course lesson content + narration script, cohort leaderboard readiness/active-days, founder plan-mix, notification type glyphs.
 - **Correctness/UX** — error-vs-empty states on certificates & marketplace, mentor-sessions deep-link + nav/palette entry, streak harmonized.
-- **A11y** — aria-labels on icon-only buttons.
+- **A11y** — aria-labels on icon-only buttons; route-change focus management; toast live region.
+- **UX** — keyboard-shortcuts overlay (`?`), command-palette quick actions (new flow / theme / sign out).
+- **Observability** — global client `ErrorHandler` (chunk-reload prompt + throttled toast).
+- **Security** — dependency audit triaged (all 49 are dev-tooling, need a major devkit upgrade).
 - **Testing** — first Playwright public-page smoke suite + scripts (`e2e/`).
