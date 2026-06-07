@@ -10,7 +10,7 @@ effort `S` (hours) · `M` (a day) · `L` (multi-day).
 ---
 
 ## 1. Testing & CI
-- [ ] `P1·L` **Client unit tests** — the Angular client has *no* test setup. Add Jest/Karma + a handful of tests for core services (auth, daily-plan, ledger) and a couple of signal-heavy components.
+- [x] **Client unit-test harness** — jest-preset-angular stood up (jsdom, no browser); `npm test` runs server + client. First specs green (ledger pure fn, daily-plan service via HttpClientTesting). _Remaining:_ `P2·M` broaden coverage to more services + a few signal-heavy components.
 - [ ] `P1·M` **Expand e2e** — extend the new Playwright smoke suite (`e2e/`) to authenticated flows via the seeded demo user (login → dashboard → take a quiz → see ledger event), gated behind an env flag so the no-backend smoke run stays green.
 - [ ] `P1·S` **Wire e2e into CI** — add a GitHub Actions job that boots Mongo+Redis, seeds, starts the app, and runs `npm run test:e2e`.
 - [ ] `P2·M` **Server test coverage** — broaden beyond the existing ~12 unit tests; add tests for the newly-wired ledger events (certificate/flow/viva/daily-plan) and the daily-plan carry-over/reorder logic.
@@ -34,7 +34,7 @@ effort `S` (hours) · `M` (a day) · `L` (multi-day).
 ## 4. Type safety & lint
 - [ ] `P1·L` **Client ESLint** — set up `angular-eslint` (currently none). Expect a large first-pass cleanup; do it as a dedicated effort, not a tail-end add-on.
 - [ ] `P2·M` **Reduce `any`** — ~58 occurrences (concentrated in `visual-block-renderer`, `speech-recognition`, `asta-os-*`). Type the justified ones with proper DOM/lib types; remove the rest.
-- [ ] `P3·S` **Strict templates** — enable `strictTemplates` in `tsconfig` if not already, and fix fallout.
+- [x] **Strict templates** — already enabled in `tsconfig.json` (`strictTemplates: true`).
 
 ## 5. Security & dependencies
 - [x] **Dependency audit (triaged)** — all 49 advisories sit in the **dev/build toolchain** (webpack-dev-server, sockjs, uuid-via-webpack, @angular-devkit/build-angular), not the production runtime. `npm audit fix` (non-breaking) fixes **none** of them; every fix needs `--force` = a major Angular devkit upgrade. _Deferred as a dedicated upgrade:_ `P2·L` bump @angular-devkit/build-angular to clear the dev-tooling advisories.
@@ -84,4 +84,4 @@ Branch `feat/daily-plan-deepening`, additive/low-risk, each commit build-verifie
 - **UX** — keyboard-shortcuts overlay (`?`), command-palette quick actions (new flow / theme / sign out).
 - **Observability** — global client `ErrorHandler` (chunk-reload prompt + throttled toast).
 - **Security** — dependency audit triaged (all 49 are dev-tooling, need a major devkit upgrade).
-- **Testing** — first Playwright public-page smoke suite + scripts (`e2e/`).
+- **Testing** — first Playwright public-page smoke suite + scripts (`e2e/`); Jest client unit-test harness + first specs.
