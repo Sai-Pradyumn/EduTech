@@ -56,7 +56,7 @@ effort `S` (hours) · `M` (a day) · `L` (multi-day).
 - [x] **Command-palette quick actions** — New learning flow, Toggle theme, Sign out (action callbacks).
 - [ ] `P2·S` **Undo for destructive actions** — deleting a flow/space/source/application is immediate; add an undo toast or confirm.
 - [ ] `P2·M` **Bulk actions** — multi-select on applications, mistakes, notifications (mark/clear/export).
-- [ ] `P3·M` **Notifications page** — the bell is capped at 30; add a full `/app/notifications` history with filters by `type`.
+- [x] **Notifications page** — full `/app/notifications` history (server `?limit=`, type-filter chips, unread-only, mark-all-read, bell "See all" link).
 - [ ] `P3·M` **Today reflection journal** — optional mood + one-line note per day, surfaced in the week strip.
 
 ## 9. Observability
@@ -101,6 +101,9 @@ Beyond per-screen affordances — tightening loops and adding operator depth:
 - **Reports** — sort the student-outcomes table (lowest-health/at-risk first, readiness, quizzes, projects, active days, name).
 - **Audit logs** — export the (filtered) audit trail as CSV (compliance-friendly: ISO time, action, actor, target, metadata).
 - **Billing** — export invoice history as CSV (for expense reports / accounting).
+- **Admin content browsers** — CSV export for the roadmap, assessment + document inventories (respect the active search/filter).
+- **Cohorts** — export a cohort's leaderboard as CSV (managers).
+- **Notifications (new feature)** — full `/app/notifications` history page (server `?limit=` param up to 200, type-filter chips, unread-only toggle, mark-all-read, deep-link follow) + bell "See all" link.
 
 - **Daily Plan** — per-item notes, carry-over of unfinished items, focus timer, drag-to-reorder, "finish by ~HH:MM", and a one-per-day `daily_plan_completed` proof event.
 - **Proof Ledger** — wired 3 orphaned event kinds (`certificate_earned`, `flow_generated`, `voice_viva_passed`); fixed a `practice_solved` crash + added a defensive kind lookup; added a 13-week activity heatmap; seeded the new events.
