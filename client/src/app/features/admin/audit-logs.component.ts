@@ -21,6 +21,9 @@ import { AuditView, OpsService } from '../../core/services/ops.service';
           <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
           <input [ngModel]="q()" (ngModelChange)="q.set($event)" placeholder="Search actor or target…" aria-label="Search audit logs" />
         </div>
+        @if (filtered().length) {
+          <button class="al-export" (click)="exportCsv()" aria-label="Export audit logs as CSV">⬇ CSV</button>
+        }
       </div>
     </header>
 
@@ -61,6 +64,8 @@ import { AuditView, OpsService } from '../../core/services/ops.service';
     .al-chip:hover { color: var(--text-soft); }
     .al-chip.on { color: var(--green-deep); border-color: color-mix(in oklab, var(--green) 45%, var(--paper-3)); background: color-mix(in oklab, var(--green) 12%, transparent); }
     .al-chip .ct { font-weight: 700; opacity: .7; }
+    .al-export { font-size: 12.5px; padding: 8px 13px; border-radius: 11px; border: 1px solid var(--paper-3); background: var(--paper-2); color: var(--text-soft); cursor: pointer; transition: border-color .15s, color .15s; }
+    .al-export:hover { border-color: var(--green); color: var(--green-deep); }
   `],
 })
 export class AdminAuditLogsComponent implements OnInit {
@@ -92,5 +97,29 @@ export class AdminAuditLogsComponent implements OnInit {
 
   actionCount(action: string): number {
     return this.logs().filter((l) => l.action === action).length;
+  }
+
+  /** Export the currently-filtered audit trail as CSV (compliance-friendly). */
+  exportCsv(): void {
+    const rows = this.filtered();
+    if (!rows.length) return;
+    const esc = (v: unknown): string => {
+      const s = String(v ?? '').replace(/"/g, '""');
+      return /[",\n]/.test(s) ? `"${s}"` : s;
+    };
+    const header = ['Time (ISO)', 'Action', 'Actor', 'Target type', 'Target id', 'Metadata'];
+    const body = rows.map((l) => [
+      l.createdAt ? new Date(l.createdAt).toISOString() : '',
+      l.action, l.actorEmail || 'system', l.targetType ?? '', l.targetId ?? '',
+      l.metadata ? JSON.stringify(l.metadata) : '',
+    ]);
+    const csv = [header, ...body].map((r) => r.map(esc).join(',')).join('\r\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `asta-audit-logs-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
   }
 }
