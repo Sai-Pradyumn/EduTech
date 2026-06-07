@@ -106,7 +106,8 @@ Beyond per-screen affordances — tightening loops and adding operator depth:
 - **Notifications (new feature)** — full `/app/notifications` history page (server `?limit=` param up to 200, type-filter chips, unread-only toggle, mark-all-read, deep-link follow) + bell "See all" link.
 - **Today reflection journal (new feature)** — end-of-day mood (1–5) + one-line note (schema `mood`/`reflection` + `/daily-plan/reflection`), surfaced as mood emoji in the activity week strip.
 - **Bulk actions** — Applications (set-status / delete) and Mistake OS (resolve / reopen / delete) multi-select via forkJoin.
-- **A11y** — polite screen-reader live regions announce AI response start / ready / failed on the agent workspace **and** the Knowledge Hub grounded chat.
+- **A11y** — polite screen-reader live regions announce AI response start / ready / failed across all three streaming surfaces: agent workspace, Knowledge Hub grounded chat, and the AI Tutor.
+- **Proof Ledger** — export the (filtered) proof-of-learning timeline as CSV.
 
 - **Daily Plan** — per-item notes, carry-over of unfinished items, focus timer, drag-to-reorder, "finish by ~HH:MM", and a one-per-day `daily_plan_completed` proof event.
 - **Proof Ledger** — wired 3 orphaned event kinds (`certificate_earned`, `flow_generated`, `voice_viva_passed`); fixed a `practice_solved` crash + added a defensive kind lookup; added a 13-week activity heatmap; seeded the new events.
