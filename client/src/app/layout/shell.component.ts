@@ -110,6 +110,9 @@ import { ADMIN_NAV, STUDENT_NAV, workspaceNav } from '../core/constants/nav';
         height: 100dvh;
         overflow: hidden;
       }
+      /* Programmatic post-navigation focus moves into #main-content; don't paint
+         a focus ring around the whole content region for that mouse/route case. */
+      #main-content:focus { outline: none; }
       /* Ambient background is pinned (absolute) to the content column, behind it,
          so it stays put while main scrolls and never bleeds under the sidebar. */
       .ambient {
@@ -269,13 +272,19 @@ export class ShellComponent {
         });
       }
     });
-    // Scroll-position restoration for the internal main container: jump to top
-    // on every completed navigation (the window no longer scrolls in the split shell).
+    // Scroll-position restoration + a11y focus management: on every completed
+    // navigation jump the main container to the top and (after the first load)
+    // move focus into it, so keyboard/screen-reader users land on new content.
     effect(() => {
-      this.navEnd();
-      this.mainScroll()?.nativeElement.scrollTo({ top: 0, behavior: 'auto' });
+      const end = this.navEnd();
+      const el = this.mainScroll()?.nativeElement;
+      el?.scrollTo({ top: 0, behavior: 'auto' });
+      if (end && !this.firstNav) el?.focus({ preventScroll: true });
+      if (end) this.firstNav = false;
     });
   }
+
+  private firstNav = true;
 
   private readonly navEnd = toSignal(
     this.router.events.pipe(filter((e): e is NavigationEnd => e instanceof NavigationEnd)),
