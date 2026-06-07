@@ -19,6 +19,7 @@ import { CountDirective } from '../../shared/directives/count.directive';
 import { ConfettiService } from '../../core/services/confetti.service';
 import { CareerReadinessService, ReadinessAnalysis } from '../../core/services/career-readiness.service';
 import { SkillPassportService, SkillPassport } from '../../core/services/skill-passport.service';
+import { DailyPlanService, DailyPlan, DAILY_KIND_GLYPH, DailyItemKind } from '../../core/services/daily-plan.service';
 
 /**
  * Dashboard — compact Noir cockpit. Command header → active-roadmap + progress
@@ -95,6 +96,25 @@ import { SkillPassportService, SkillPassport } from '../../core/services/skill-p
             <asta-btn variant="accent" astaMagnetic (click)="goNext(nm)">Let’s go <span class="arr">→</span></asta-btn>
           </div>
         </asta-card>
+      }
+
+      <!-- Today's plan — concrete, time-sensitive nudge linking to the Today surface -->
+      @if (plan(); as p) {
+        @if (p.items.length) {
+          <a routerLink="/app/today" class="card hover-lift block mb-5 today-strip dashboard-reveal" style="padding:14px 18px;text-decoration:none;--motion-card-index:0">
+            <div class="flex items-center gap-4 flex-wrap">
+              <div class="text-center shrink-0"><asta-ring [value]="planPct()" [size]="54" /><p class="text-[10px] text-txt-mute mt-1">Today</p></div>
+              <div class="flex-1 min-w-[200px]">
+                <p class="kicker mb-1">Today’s plan</p>
+                <p class="text-sm text-txt-soft"><span class="font-semibold text-txt">{{ p.completed }}/{{ p.items.length }}</span> done · {{ p.totalMinutes }} min planned</p>
+                @if (nextItem(); as ni) {
+                  <p class="text-[13px] text-txt-mute mt-0.5">Next: <span class="td-glyph">{{ glyph(ni.kind) }}</span> {{ ni.title }}</p>
+                } @else { <p class="text-[13px] text-txt-mute mt-0.5">All done for today — nice work 🎉</p> }
+              </div>
+              <span class="text-sm font-semibold shrink-0" style="color:var(--green-deep)">Open Today <span class="arr">→</span></span>
+            </div>
+          </a>
+        }
       }
 
       <!-- Active roadmap (anchor) + progress — same row, same reveal family -->
@@ -250,6 +270,8 @@ import { SkillPassportService, SkillPassport } from '../../core/services/skill-p
   `,
   styles: [
     `
+      .today-strip { border: 1px solid color-mix(in oklch, var(--green) 22%, var(--paper-3)); }
+      .td-glyph { font-size: 12px; }
       .panel-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
       .panel-ico {
         width: 34px; height: 34px; flex-shrink: 0;
@@ -316,6 +338,7 @@ export class DashboardComponent {
   private readonly confetti = inject(ConfettiService);
   private readonly career = inject(CareerReadinessService);
   private readonly passportApi = inject(SkillPassportService);
+  private readonly dailyPlan = inject(DailyPlanService);
 
   readonly profile = signal<StudentProfile | null>(null);
   readonly roadmap = signal<Roadmap | null>(null);
@@ -323,8 +346,18 @@ export class DashboardComponent {
   readonly nextMove = signal<NextAction | null>(null);
   readonly readiness = signal<ReadinessAnalysis | null>(null);
   readonly passport = signal<SkillPassport | null>(null);
+  readonly plan = signal<DailyPlan | null>(null);
   readonly loading = signal(true);
   readonly error = signal(false);
+
+  /** First unfinished item in today's plan — the concrete next thing to do. */
+  readonly nextItem = computed(() => this.plan()?.items.find((i) => !i.done) ?? null);
+  readonly planPct = computed(() => {
+    const p = this.plan();
+    if (!p || !p.items.length) return 0;
+    return Math.round((p.completed / p.items.length) * 100);
+  });
+  glyph(kind: DailyItemKind): string { return DAILY_KIND_GLYPH[kind] ?? '•'; }
 
   readonly firstName = computed(() => this.auth.user()?.name?.split(' ')[0] ?? 'there');
   readonly greeting = computed(() => {
@@ -438,6 +471,7 @@ export class DashboardComponent {
           this.agent.nextAction().subscribe({ next: (n) => this.nextMove.set(n), error: () => undefined });
           this.career.me().subscribe({ next: (a) => this.readiness.set(a), error: () => undefined });
           this.passportApi.me().subscribe({ next: (p) => this.passport.set(p), error: () => undefined });
+          this.dailyPlan.today().subscribe({ next: (p) => this.plan.set(p), error: () => undefined });
         }
         if (profile && roadmap) {
           this.intelligence.overview().subscribe({ next: (d) => this.intel.set(d), error: () => undefined });
