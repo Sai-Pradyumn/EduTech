@@ -1,8 +1,10 @@
 import {
   APP_INITIALIZER,
   ApplicationConfig,
+  ErrorHandler,
   provideZoneChangeDetection,
 } from '@angular/core';
+import { GlobalErrorHandler } from './core/error/global-error-handler';
 import { provideHttpClient, withInterceptors } from '@angular/common/http';
 import { provideRouter, withComponentInputBinding, withInMemoryScrolling } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
@@ -38,5 +40,6 @@ export const appConfig: ApplicationConfig = {
       deps: [AuthService],
       useFactory: sessionInitializer,
     },
+    { provide: ErrorHandler, useClass: GlobalErrorHandler },
   ],
 };
