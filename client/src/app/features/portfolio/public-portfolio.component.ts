@@ -45,6 +45,9 @@ import { PortfolioService, PublicPortfolio } from '../../core/services/portfolio
                   <div class="flex items-center justify-between gap-2"><span class="proj-title">{{ pr.title }}</span></div>
                   <div class="flex flex-wrap gap-1 mt-1.5">@for (t of pr.stack.slice(0,5); track t) { <span class="tech">{{ t }}</span> }</div>
                   <p class="proj-cs">{{ pr.caseStudy }}</p>
+                  @if (pr.highlights.length) {
+                    <ul class="proj-hl">@for (h of pr.highlights; track h) { <li>{{ h }}</li> }</ul>
+                  }
                   <div class="flex gap-2 mt-2 text-[11px]">@if (pr.githubUrl) { <a [href]="pr.githubUrl" target="_blank" rel="noopener" class="lnk">repo</a> }@if (pr.demoUrl) { <a [href]="pr.demoUrl" target="_blank" rel="noopener" class="lnk">demo</a> }</div>
                 </asta-card>
               }
@@ -53,6 +56,12 @@ import { PortfolioService, PublicPortfolio } from '../../core/services/portfolio
 
           @if (pp.certificates.length) {
             <asta-card class="block mt-4"><p class="kicker mb-2">Certificates</p><div class="space-y-1.5">@for (c of pp.certificates; track c.id) { <div class="cert"><span>{{ c.title }}</span><span class="cert-id">{{ c.verificationId }}</span></div> }</div></asta-card>
+          }
+
+          @if (pp.timeline.length) {
+            <asta-card class="block mt-4"><p class="kicker mb-2">Learning timeline</p>
+              <div class="space-y-1.5">@for (t of pp.timeline; track $index) { <div class="tl"><span class="min-w-0 truncate">{{ t.title }}</span><span class="tl-at">{{ fmtDate(t.at) }}</span></div> }</div>
+            </asta-card>
           }
 
           <p class="footer">Powered by <a routerLink="/">Asta</a> · every claim backed by verifiable proof.</p>
@@ -73,6 +82,10 @@ import { PortfolioService, PublicPortfolio } from '../../core/services/portfolio
     .link-pill { font-size: 12px; padding: 4px 10px; border-radius: 999px; border: 1px solid var(--paper-3); color: var(--peri, #8aa6ff); }
     .proj-title { font-size: 14px; font-weight: 600; }
     .proj-cs { font-size: 12.5px; color: var(--text-soft); margin-top: 6px; line-height: 1.5; }
+    .proj-hl { list-style: disc; padding-left: 18px; margin-top: 6px; font-size: 12px; color: var(--text-soft); }
+    .proj-hl li { margin-top: 2px; }
+    .tl { display: flex; align-items: center; justify-content: space-between; gap: 10px; font-size: 12.5px; color: var(--text-soft); }
+    .tl-at { color: var(--text-mute); font-size: 10.5px; white-space: nowrap; flex-shrink: 0; }
     .tech { font-size: 10.5px; padding: 1px 7px; border-radius: 999px; background: var(--paper-3); color: var(--text-soft); }
     .lnk { color: var(--peri, #8aa6ff); }
     .cert { display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: 12.5px; }
@@ -94,5 +107,10 @@ export class PublicPortfolioComponent {
       next: (p) => { this.p.set(p); this.loading.set(false); },
       error: () => { this.loadError.set(true); this.loading.set(false); },
     });
+  }
+
+  fmtDate(iso: string): string {
+    const d = new Date(iso);
+    return isNaN(d.getTime()) ? '' : d.toLocaleDateString([], { year: 'numeric', month: 'short' });
   }
 }
