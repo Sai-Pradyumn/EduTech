@@ -60,6 +60,9 @@ const STARTERS = [
       </div>
     </header>
 
+    <!-- Screen-reader-only status for streaming grounded answers (a11y). -->
+    <span class="sr-only" aria-live="polite" role="status">{{ liveStatus() }}</span>
+
     <div class="grid gap-5 lg:grid-cols-[minmax(300px,360px)_1fr]" style="min-height:calc(100dvh - 230px)">
       <!-- LEFT: upload + library -->
       <div class="space-y-5 motion-row-primary">
@@ -323,6 +326,8 @@ export class KnowledgeHubComponent implements OnInit, OnDestroy {
   readonly messages = signal<ChatMsg[]>([]);
   readonly steps = signal<WorkflowStepView[]>([]);
   readonly busy = signal(false);
+  /** Polite screen-reader status for streaming grounded answers (no visual footprint). */
+  readonly liveStatus = signal('');
   readonly uploading = signal(false);
   readonly dragOver = signal(false);
   readonly pasteMode = signal(false);
@@ -620,6 +625,7 @@ export class KnowledgeHubComponent implements OnInit, OnDestroy {
     if (!message || this.busy() || !this.canAsk()) return;
     this.draft = '';
     this.busy.set(true);
+    this.liveStatus.set('Asta is retrieving an answer…');
     this.steps.set([]);
 
     this.push({ role: 'user', content: message, sources: [], visualBlocks: [], followUps: [], confidence: 1, streaming: false });
@@ -636,6 +642,7 @@ export class KnowledgeHubComponent implements OnInit, OnDestroy {
           assistant.content = assistant.content || 'Something went wrong. Please try again.';
           this.bump();
           this.busy.set(false);
+          this.liveStatus.set('The answer failed to load.');
         },
       });
   }
@@ -679,12 +686,14 @@ export class KnowledgeHubComponent implements OnInit, OnDestroy {
         this.persistChat();
         this.saveTurnToServer(assistant);
         this.busy.set(false);
+        this.liveStatus.set('Answer ready.');
         break;
       case 'error':
         assistant.streaming = false;
         assistant.content = assistant.content || e.message;
         this.bump();
         this.busy.set(false);
+        this.liveStatus.set('The answer failed to load.');
         break;
     }
   }
