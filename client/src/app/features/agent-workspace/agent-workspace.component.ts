@@ -52,6 +52,9 @@ const DEFAULT: WorkspaceConfig = { agentType: 'tutor', title: 'AI Agent', subtit
       </div>
     </header>
 
+    <!-- Screen-reader-only status for streaming AI replies (a11y). -->
+    <span class="sr-only" aria-live="polite" role="status">{{ liveStatus() }}</span>
+
     <div class="grid gap-5 lg:grid-cols-[1fr_minmax(320px,420px)]" style="min-height:calc(100dvh - 230px)">
       <!-- LEFT: chat -->
       <div class="flex flex-col card" style="padding:0;overflow:hidden">
@@ -232,6 +235,8 @@ export class AgentWorkspaceComponent implements OnInit {
   readonly messages = signal<ChatMsg[]>([]);
   readonly steps = signal<WorkflowStepView[]>([]);
   readonly busy = signal(false);
+  /** Polite screen-reader status for streaming AI replies (no visual footprint). */
+  readonly liveStatus = signal('');
 
   draft = '';
   private sessionId?: string;
@@ -278,6 +283,7 @@ export class AgentWorkspaceComponent implements OnInit {
     this.lastTopic = message;
     this.draft = '';
     this.busy.set(true);
+    this.liveStatus.set('Asta is responding…');
     this.steps.set([]);
 
     this.push({ role: 'user', content: message, visualBlocks: [], actions: [], followUps: [], recommended: [], streaming: false });
@@ -291,6 +297,7 @@ export class AgentWorkspaceComponent implements OnInit {
         assistant.failed = true;
         this.bump();
         this.busy.set(false);
+        this.liveStatus.set('The response failed.');
       },
     });
   }
@@ -358,12 +365,14 @@ export class AgentWorkspaceComponent implements OnInit {
         this.steps.update((s) => [...s, { kind: 'done', label: 'Done' }]);
         this.bump();
         this.busy.set(false);
+        this.liveStatus.set('Response ready.');
         break;
       case 'error':
         assistant.streaming = false;
         if (!assistant.content) assistant.failed = true;
         this.bump();
         this.busy.set(false);
+        this.liveStatus.set('The response failed.');
         break;
     }
   }
