@@ -117,6 +117,14 @@ import { OfflineToggleComponent } from '../../shared/ui/offline-toggle.component
           <div class="mt-4">
             <asta-progress [value]="r.progressPercentage" />
           </div>
+          @if (projection(); as pj) {
+            <div class="proj">
+              <span class="proj-ico" aria-hidden="true">
+                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+              </span>
+              <span class="min-w-0"><span class="proj-label">{{ pj.label }}</span><span class="proj-sub">{{ pj.sub }}</span></span>
+            </div>
+          }
         </asta-card>
       </div>
 
@@ -343,6 +351,10 @@ import { OfflineToggleComponent } from '../../shared/ui/offline-toggle.component
       }
       .panel-ico.peri { color: var(--peri-deep); background: color-mix(in oklch, var(--peri) 15%, transparent); }
       asta-card:hover .panel-ico { transform: scale(1.14) rotate(-8deg); }
+      .proj { display: flex; align-items: center; gap: 9px; margin-top: 14px; padding-top: 13px; border-top: 1px solid var(--paper-3); }
+      .proj-ico { width: 26px; height: 26px; flex-shrink: 0; display: grid; place-items: center; border-radius: 8px; color: var(--peri-deep, #6f86e0); background: color-mix(in oklch, var(--peri, #8aa6ff) 14%, transparent); }
+      .proj-label { display: block; font-size: 13px; font-weight: 600; }
+      .proj-sub { display: block; font-size: 11.5px; color: var(--text-mute); }
       .act-dot { width: 7px; height: 7px; flex-shrink: 0; border-radius: 50%; background: var(--green); }
       .act-dot.task { background: var(--peri); }
       .regen { display: flex; gap: 8px; margin-top: 14px; flex-wrap: wrap; }
@@ -390,6 +402,32 @@ export class RoadmapDetailsComponent {
     const r = this.roadmap();
     if (!r) return 0;
     return r.milestones.filter((m) => m.targetWeek <= r.completedWeeks.length).length;
+  });
+
+  /**
+   * Projected finish, derived from real pace (weeks completed ÷ days elapsed).
+   * Returns a friendly label for the Progress card — or a nudge when there's
+   * not enough signal yet.
+   */
+  readonly projection = computed<{ label: string; sub: string } | null>(() => {
+    const r = this.roadmap();
+    if (!r) return null;
+    const total = r.weeklyPlan.length;
+    const done = r.completedWeeks.length;
+    if (total === 0) return null;
+    if (done >= total) return { label: 'Roadmap complete 🎉', sub: 'Every week done' };
+    const elapsedDays = Math.max(0, (Date.now() - new Date(r.createdAt).getTime()) / 86_400_000);
+    if (done < 1 || elapsedDays < 1) {
+      return { label: `${total - done} weeks to go`, sub: 'Finish a week to project your pace' };
+    }
+    const weeksPerDay = done / elapsedDays;
+    const daysLeft = Math.ceil((total - done) / weeksPerDay);
+    // Cap absurd projections (very slow pace) to avoid silly far-future dates.
+    if (daysLeft > 730) return { label: `${total - done} weeks to go`, sub: 'Pick up the pace to set a finish date' };
+    const finish = new Date(Date.now() + daysLeft * 86_400_000);
+    const date = finish.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+    const wk = daysLeft >= 14 ? `~${Math.round(daysLeft / 7)} weeks left` : `~${daysLeft} days left`;
+    return { label: `On pace to finish ${date}`, sub: `${wk} at your current rhythm` };
   });
 
   // ── Momentum (from the activity log) ──
