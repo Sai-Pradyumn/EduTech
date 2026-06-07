@@ -126,6 +126,7 @@ import { ProgressComponent } from '../../shared/ui/progress.component';
                     <div class="flex-1 min-w-0">
                       <div class="flex justify-between text-sm mb-1"><span class="truncate">{{ r.name }}</span><span class="font-mono text-txt-mute">{{ r.health }}%</span></div>
                       <asta-progress [value]="r.health" />
+                      <div class="flex gap-3 mt-1 text-[10.5px] text-txt-mute"><span>{{ r.readiness }}% ready</span><span>{{ r.activeDays }} active day{{ r.activeDays === 1 ? '' : 's' }}</span></div>
                     </div>
                   </div>
                 }
