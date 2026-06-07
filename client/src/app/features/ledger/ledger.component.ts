@@ -44,6 +44,30 @@ const VER_META: Record<VerificationLevel, { label: string; tone: string }> = {
       @if (entries().length === 0) {
         <asta-card class="block motion-card-reveal"><asta-empty-state title="Nothing logged yet" description="As you complete flow nodes, pass quizzes, resolve mistakes and finish simulations, each verified event lands here as proof of learning."></asta-empty-state></asta-card>
       } @else {
+        <asta-card class="block motion-card-reveal motion-row-strip mb-4">
+          <div class="flex items-center justify-between mb-3">
+            <p class="kicker !mb-0">Activity · last 13 weeks</p>
+            <span class="text-[11px] text-txt-mute">{{ recentCount() }} events</span>
+          </div>
+          <div class="heat" role="img" aria-label="Proof-of-learning activity over the last 13 weeks">
+            @for (week of heatmap(); track $index) {
+              <div class="hcol">
+                @for (cell of week; track cell.date) {
+                  <span class="hcell" [class.future]="cell.future" [attr.data-lvl]="level(cell.count)" [title]="cell.title"></span>
+                }
+              </div>
+            }
+          </div>
+          <div class="heat-legend">
+            <span>Less</span>
+            <span class="hcell" data-lvl="0"></span>
+            <span class="hcell" data-lvl="1"></span>
+            <span class="hcell" data-lvl="2"></span>
+            <span class="hcell" data-lvl="3"></span>
+            <span>More</span>
+          </div>
+        </asta-card>
+
         <asta-card class="block motion-card-reveal motion-row-2">
           <p class="kicker mb-3">Timeline</p>
           @if (kindsPresent().length > 1) {
@@ -77,6 +101,15 @@ const VER_META: Record<VerificationLevel, { label: string; tone: string }> = {
       .stat { text-align: center; }
       .stat .num { font-size: 28px; font-weight: 700; font-variant-numeric: tabular-nums; }
       .stat .lbl { font-size: 11px; color: var(--text-mute); text-transform: uppercase; letter-spacing: .05em; }
+      .heat { display: flex; gap: 3px; overflow-x: auto; padding-bottom: 2px; }
+      .hcol { display: flex; flex-direction: column; gap: 3px; }
+      .hcell { width: 12px; height: 12px; border-radius: 3px; background: var(--paper-3); flex-shrink: 0; }
+      .hcell[data-lvl="1"] { background: color-mix(in oklab, var(--green) 30%, var(--paper-3)); }
+      .hcell[data-lvl="2"] { background: color-mix(in oklab, var(--green) 58%, var(--paper-3)); }
+      .hcell[data-lvl="3"] { background: linear-gradient(135deg, var(--green-deep), var(--green)); }
+      .hcell.future { visibility: hidden; }
+      .heat-legend { display: flex; align-items: center; gap: 4px; justify-content: flex-end; margin-top: 8px; font-size: 10px; color: var(--text-mute); }
+      .heat-legend .hcell { width: 10px; height: 10px; }
       .timeline { display: flex; flex-direction: column; }
       .row { display: flex; gap: 12px; padding: 10px 0; position: relative; }
       .glyph { font-size: 16px; width: 28px; height: 28px; display: grid; place-items: center; border-radius: 50%; background: var(--paper-2); border: 1px solid var(--paper-3); flex-shrink: 0; z-index: 1; }
@@ -114,6 +147,39 @@ export class LedgerComponent {
     const k = this.kindFilter();
     return k === 'all' ? this.entries() : this.entries().filter((e) => e.kind === k);
   });
+
+  /** GitHub-style 13-week grid (columns = weeks Sun→Sat) of proof-event counts per day. */
+  readonly heatmap = computed(() => {
+    const weeks = 13;
+    const counts = new Map<string, number>();
+    for (const e of this.entries()) {
+      const key = e.at.slice(0, 10);
+      counts.set(key, (counts.get(key) ?? 0) + 1);
+    }
+    const today = new Date(); today.setHours(0, 0, 0, 0);
+    const end = new Date(today); end.setDate(end.getDate() + (6 - end.getDay())); // this week's Saturday
+    const grid: { date: string; count: number; future: boolean; title: string }[][] = [];
+    for (let w = 0; w < weeks; w++) {
+      const col: { date: string; count: number; future: boolean; title: string }[] = [];
+      for (let d = 0; d < 7; d++) {
+        const cur = new Date(end);
+        cur.setDate(end.getDate() - ((weeks - 1 - w) * 7 + (6 - d)));
+        const key = cur.toISOString().slice(0, 10);
+        const count = counts.get(key) ?? 0;
+        col.push({ date: key, count, future: cur > today, title: `${key} · ${count} event${count === 1 ? '' : 's'}` });
+      }
+      grid.push(col);
+    }
+    return grid;
+  });
+
+  /** Events within the heatmap window (last 13 weeks). */
+  readonly recentCount = computed(() => {
+    const cutoff = Date.now() - 13 * 7 * 86_400_000;
+    return this.entries().filter((e) => new Date(e.at).getTime() >= cutoff).length;
+  });
+
+  level(count: number): number { return count === 0 ? 0 : count === 1 ? 1 : count === 2 ? 2 : 3; }
 
   constructor() { this.refresh(); }
   glyph(k: LedgerKind): string { return ledgerKindMeta(k).glyph; }
