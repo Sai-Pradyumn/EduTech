@@ -683,7 +683,8 @@ async function run(): Promise<void> {
       {
         kind: 'flow_generated',
         title: 'Generated learning flow: Learn the MERN stack',
-        detail: '22 steps toward "Learn the MERN stack and land an internship".',
+        detail:
+          '22 steps toward "Learn the MERN stack and land an internship".',
         verificationLevel: 'system',
         at: new Date(now - 10 * day),
       },

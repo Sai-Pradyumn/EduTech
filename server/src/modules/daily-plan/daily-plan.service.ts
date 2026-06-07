@@ -200,7 +200,8 @@ export class DailyPlanService {
       .map((id) => byId.get(id))
       .filter((i): i is DailyItem => !!i);
     // Append any items the client didn't mention so nothing is silently dropped.
-    for (const it of plan.items) if (!itemIds.includes(it.id)) reordered.push(it);
+    for (const it of plan.items)
+      if (!itemIds.includes(it.id)) reordered.push(it);
     plan.items = reordered;
     plan.markModified('items');
     return plan.save();
@@ -238,9 +239,7 @@ export class DailyPlanService {
       .exec();
     if (!yesterday) return today;
 
-    const existingKeys = new Set(
-      today.items.map((i) => i.sourceId ?? i.title),
-    );
+    const existingKeys = new Set(today.items.map((i) => i.sourceId ?? i.title));
     const carried = yesterday.items.filter(
       (i) => !i.done && !existingKeys.has(i.sourceId ?? i.title),
     );
@@ -257,12 +256,9 @@ export class DailyPlanService {
         done: false,
         sourceId: it.sourceId,
         note: it.note,
-      } as DailyItem);
+      });
     }
-    today.totalMinutes = today.items.reduce(
-      (s, i) => s + i.estimateMinutes,
-      0,
-    );
+    today.totalMinutes = today.items.reduce((s, i) => s + i.estimateMinutes, 0);
     today.markModified('items');
     return today.save();
   }

@@ -1,4 +1,10 @@
-import { ArrayNotEmpty, IsArray, IsIn, IsString, MaxLength } from 'class-validator';
+import {
+  ArrayNotEmpty,
+  IsArray,
+  IsIn,
+  IsString,
+  MaxLength,
+} from 'class-validator';
 import { DAILY_PLAN_MODES, DailyPlanMode } from '../schemas/daily-plan.schema';
 
 export class GeneratePlanDto {
