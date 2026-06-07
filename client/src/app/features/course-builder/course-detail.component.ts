@@ -49,12 +49,18 @@ import { Course, CourseModule, CourseService, CourseVisibility } from '../../cor
               </div>
               <div class="lessons mt-2">
                 @for (l of m.lessons; track l.id) {
-                  <div class="lesson">
-                    <input class="l-title" [(ngModel)]="l.title" (blur)="dirty.set(true)" aria-label="Lesson title" />
-                    <span class="l-min">{{ l.estimateMinutes }}m</span>
+                  <div class="lesson-wrap">
+                    <div class="lesson">
+                      <input class="l-title" [(ngModel)]="l.title" (blur)="dirty.set(true)" aria-label="Lesson title" />
+                      <span class="l-min">{{ l.estimateMinutes }}m</span>
+                    </div>
+                    @if (l.content) { <p class="l-content">{{ l.content }}</p> }
                   </div>
                 }
               </div>
+              @if (m.voiceScript) {
+                <details class="vs mt-2"><summary>Narration script</summary><p>{{ m.voiceScript }}</p></details>
+              }
               <div class="flex gap-2 mt-2">
                 <asta-btn variant="ghost" size="sm" [loading]="busy()==='quiz_'+m.id" (click)="genQuiz(m)">Generate quiz</asta-btn>
                 <asta-btn variant="ghost" size="sm" [loading]="busy()==='visual_'+m.id" (click)="genVisual(m)">Generate visual</asta-btn>
@@ -101,7 +107,11 @@ import { Course, CourseModule, CourseService, CourseVisibility } from '../../cor
       .lesson { display: flex; align-items: center; gap: 8px; padding: 4px 0; }
       .l-title { flex: 1; background: var(--ink-2, var(--paper-2)); border: 1px solid var(--paper-3); border-radius: 8px; padding: 6px 9px; color: var(--text-soft); font-size: 13px; font-family: inherit; }
       .l-title:focus { outline: none; border-color: var(--green); }
-      .l-min { font-size: 11px; color: var(--text-mute); }
+      .l-min { font-size: 11px; color: var(--text-mute); white-space: nowrap; }
+      .l-content { font-size: 12px; color: var(--text-mute); line-height: 1.5; margin: 2px 0 6px 2px; }
+      .vs { font-size: 12px; color: var(--text-soft); }
+      .vs summary { cursor: pointer; font-size: 11px; text-transform: uppercase; letter-spacing: .04em; color: var(--text-mute); }
+      .vs p { margin-top: 6px; line-height: 1.55; white-space: pre-wrap; }
       .link { font-size: 10px; padding: 2px 7px; border-radius: 999px; border: 1px solid color-mix(in oklab, var(--green) 40%, var(--paper-3)); color: var(--green-deep); }
     `,
   ],
