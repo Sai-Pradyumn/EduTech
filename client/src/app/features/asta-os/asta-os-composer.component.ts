@@ -37,7 +37,7 @@ const SLASH_COMMANDS: SlashCommand[] = [
       @if (slashItems().length) {
         <div class="slash" role="listbox" aria-label="Slash commands">
           @for (c of slashItems(); track c.name; let i = $index) {
-            <button type="button" role="option" class="slash-item" [class.on]="i === 0" (click)="applyCommand(c)">
+            <button type="button" role="option" [attr.aria-selected]="i === 0" class="slash-item" [class.on]="i === 0" (click)="applyCommand(c)">
               <span class="s-name">{{ c.label }}</span><span class="s-hint">{{ c.hint }}</span>
             </button>
           }

@@ -64,7 +64,7 @@ import { BarChartComponent, ChartDatum } from '../../shared/charts';
                 <td class="sub">{{ a.source }}</td>
                 <td>{{ a.questionCount }}</td>
                 <td>{{ a.attemptCount }}</td>
-                <td>{{ a.bestScore != null ? a.bestScore + '%' : '—' }}</td>
+                <td>{{ a.bestScore !== null ? a.bestScore + '%' : '—' }}</td>
                 <td class="sub">{{ a.createdAt ? (a.createdAt | date: 'MMM d') : '—' }}</td>
               </tr>
             } @empty { <tr><td colspan="9" class="empty">No quizzes match.</td></tr> }

@@ -383,7 +383,7 @@ export class MistakesComponent {
   readonly selected = signal<Set<string>>(new Set());
   readonly bulkBusy = signal(false);
   toggleSel(id: string): void {
-    this.selected.update((s) => { const n = new Set(s); n.has(id) ? n.delete(id) : n.add(id); return n; });
+    this.selected.update((s) => { const n = new Set(s); if (n.has(id)) n.delete(id); else n.add(id); return n; });
   }
   clearSel(): void { this.selected.set(new Set()); }
 

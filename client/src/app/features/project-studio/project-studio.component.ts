@@ -310,7 +310,7 @@ const DIFFS: Difficulty[] = ['beginner', 'intermediate', 'advanced'];
               </div>
               <div class="flex items-center gap-2 mb-2">
                 <span class="status" [attr.data-s]="mr.decision === 'approved' ? 'completed' : 'in_progress'">{{ mr.decision === 'approved' ? 'Approved' : 'Changes requested' }}</span>
-                @if (mr.score != null) { <span class="text-[12px] text-txt-mute">{{ mr.score }}/100</span> }
+                @if (mr.score !== null) { <span class="text-[12px] text-txt-mute">{{ mr.score }}/100</span> }
                 <span class="text-[11px] text-txt-mute">— {{ mr.reviewerName }}</span>
               </div>
               <p class="text-sm text-txt-soft">{{ mr.feedback }}</p>
