@@ -28,7 +28,7 @@ effort `S` (hours) · `M` (a day) · `L` (multi-day).
 ## 3. Performance
 - [ ] `P2·M` **Bundle audit** — confirm heavy deps (mermaid, katex, html2canvas, jsPDF, d3/venn) are all lazy/`@defer`-loaded and not pulled into the initial chunk.
 - [ ] `P2·M` **Virtualize long lists** — ledger timeline, audit logs, admin students, community threads can grow unbounded; add CDK virtual scroll (note: CDK is not yet a dependency).
-- [ ] `P3·S` **`@defer` below-the-fold** — defer the ledger heatmap, dashboard learning-river, and other non-critical blocks.
+- [x] **`@defer` below-the-fold** — first `@defer` usage in the app: the dashboard learning-river (lower-section ~300px SVG) and the intelligence-cockpit skill-radar now render `on viewport`, code-splitting into lazy chunks. Each `@placeholder` reserves the exact footprint (300px / 240px) so there's no layout shift. (The ledger heatmap turned out to sit above its timeline, not below the fold, and is cheap inline divs — not worth deferring.)
 - [ ] `P3·S` **Image/asset optimization** — audit any raster assets; prefer SVG (mostly already SVG).
 
 ## 4. Type safety & lint
@@ -111,6 +111,7 @@ Beyond per-screen affordances — tightening loops and adding operator depth:
 - **Client ESLint (infra)** — angular-eslint v18 flat config; `npm run lint` green; fixed 10 real issues.
 - **Keyboard a11y + asta- selector pass** — closed all ~62 a11y/selector findings (role/tabindex/keyup handlers, label association, shell-drawer ESC, ai-* → asta-ai-* renames); the rules are now enforced as lint errors.
 - **Web Speech typing** — added `core/types/web-speech.ts` (typed SpeechRecognition surface + ctor helper); reworked the speech service + composer mic off `any`. Client is any-free; `no-explicit-any` now enforced as error.
+- **`@defer` below-the-fold** — dashboard learning-river + cockpit skill-radar render `on viewport` with footprint-reserving placeholders (first `@defer` usage; no layout shift).
 
 - **Daily Plan** — per-item notes, carry-over of unfinished items, focus timer, drag-to-reorder, "finish by ~HH:MM", and a one-per-day `daily_plan_completed` proof event.
 - **Proof Ledger** — wired 3 orphaned event kinds (`certificate_earned`, `flow_generated`, `voice_viva_passed`); fixed a `practice_solved` crash + added a defensive kind lookup; added a 13-week activity heatmap; seeded the new events.
