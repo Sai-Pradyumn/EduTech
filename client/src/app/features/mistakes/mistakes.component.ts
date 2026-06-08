@@ -134,7 +134,7 @@ type Filter = 'all' | 'due' | MistakeStatus;
         <div class="space-y-3 motion-row-3">
           @for (m of filtered(); track m.id; let i = $index) {
             <asta-card class="block motion-card-reveal" [class.picked]="selected().has(m.id)" [style.--motion-card-index]="i % 4">
-              <div class="flex items-start gap-3 cursor-pointer" (click)="toggle(m.id)">
+              <div class="flex items-start gap-3 cursor-pointer" role="button" tabindex="0" [attr.aria-expanded]="expanded() === m.id" (click)="toggle(m.id)" (keyup.enter)="toggle(m.id)">
                 <input type="checkbox" class="sel" [checked]="selected().has(m.id)" (click)="$event.stopPropagation()" (change)="toggleSel(m.id)" [attr.aria-label]="'Select ' + m.concept" />
                 <span class="sev-dot" [style.background]="sevColor(m.severity)" [title]="'severity ' + m.severity"></span>
                 <div class="min-w-0 flex-1">
@@ -149,6 +149,7 @@ type Filter = 'all' | 'due' | MistakeStatus;
               </div>
 
               @if (filter() === 'due' && m.status !== 'resolved') {
+                <!-- eslint-disable-next-line @angular-eslint/template/click-events-have-key-events, @angular-eslint/template/interactive-supports-focus -- not interactive; only stops the review buttons' clicks from toggling the row -->
                 <div class="review-mini mt-2.5" (click)="$event.stopPropagation()">
                   <span class="rm-q">Did you recall this?</span>
                   <button class="rm-btn yes" [disabled]="busyId() === m.id" (click)="review(m, true)">Recalled</button>

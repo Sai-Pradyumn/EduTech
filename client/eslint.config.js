@@ -33,11 +33,11 @@ module.exports = tseslint.config(
     processor: angular.processInlineTemplates,
     rules: {
       '@angular-eslint/directive-selector': [
-        'warn',
+        'error',
         { type: 'attribute', prefix: 'asta', style: 'camelCase' },
       ],
       '@angular-eslint/component-selector': [
-        'warn',
+        'error',
         { type: 'element', prefix: 'asta', style: 'kebab-case' },
       ],
       // Matches the server stance — `any` is allowed where justified (DOM/lib gaps).
@@ -60,12 +60,14 @@ module.exports = tseslint.config(
       ...angular.configs.templateAccessibility,
     ],
     rules: {
-      // Genuine, pervasive keyboard-a11y gaps (clickable divs, label association).
-      // Surfaced as warnings so the lint baseline is green; a focused keyboard-a11y
-      // pass is tracked separately in IMPROVEMENTS_BACKLOG.md.
-      '@angular-eslint/template/click-events-have-key-events': 'warn',
-      '@angular-eslint/template/interactive-supports-focus': 'warn',
-      '@angular-eslint/template/label-has-associated-control': 'warn',
+      // Keyboard-a11y: clickable elements need key handlers + focusability, and form
+      // labels must be associated with a control. The codebase passes these cleanly
+      // (genuine controls fixed; a handful of mouse-only conveniences sitting behind a
+      // real keyboard path — ESC, projected buttons — carry a justified inline disable),
+      // so they're enforced as errors to prevent regressions.
+      '@angular-eslint/template/click-events-have-key-events': 'error',
+      '@angular-eslint/template/interactive-supports-focus': 'error',
+      '@angular-eslint/template/label-has-associated-control': 'error',
     },
   },
 );

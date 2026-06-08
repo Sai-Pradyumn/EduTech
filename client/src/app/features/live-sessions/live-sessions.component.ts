@@ -38,13 +38,13 @@ import { CohortView, LiveSessionStatus, SessionDetail, SessionView } from '../..
             <p class="kicker mb-3" style="color:var(--green-deep)">Schedule a session</p>
             <input class="input mb-2" placeholder="Title (e.g. React Hooks deep-dive)" [(ngModel)]="newTitle" />
             <textarea class="input mb-2" rows="2" placeholder="Description (optional)" [(ngModel)]="newDesc"></textarea>
-            <label class="text-[11px] font-mono uppercase tracking-wider text-txt-mute">Cohort (optional)</label>
-            <select class="input mb-2 mt-1" [(ngModel)]="newCohortId">
+            <label for="ls-cohort" class="text-[11px] font-mono uppercase tracking-wider text-txt-mute">Cohort (optional)</label>
+            <select id="ls-cohort" class="input mb-2 mt-1" [(ngModel)]="newCohortId">
               <option value="">— Org-wide —</option>
               @for (c of orgCohorts(); track c.id) { <option [value]="c.id">{{ c.name }}</option> }
             </select>
-            <label class="text-[11px] font-mono uppercase tracking-wider text-txt-mute">Start</label>
-            <input class="input mb-2 mt-1" type="datetime-local" [(ngModel)]="newStart" />
+            <label for="ls-start" class="text-[11px] font-mono uppercase tracking-wider text-txt-mute">Start</label>
+            <input id="ls-start" class="input mb-2 mt-1" type="datetime-local" [(ngModel)]="newStart" />
             <input class="input mb-3" type="number" min="10" max="480" placeholder="Duration (mins)" [(ngModel)]="newDuration" />
             <button class="w-full inline-flex items-center justify-center rounded-full px-4 py-2.5 text-sm font-semibold text-ink"
               style="background:var(--green)" [disabled]="!newTitle.trim() || !newStart || creating()" (click)="create()">

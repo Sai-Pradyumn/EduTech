@@ -64,7 +64,7 @@ import { downloadPdf } from '../../shared/util/pdf';
         <div class="space-y-2">
           @for (d of an.dimensions; track d.key) {
             <div class="dim">
-              <div class="dim-head" (click)="toggle(d.key)">
+              <div class="dim-head" role="button" tabindex="0" (click)="toggle(d.key)" (keyup.enter)="toggle(d.key)">
                 <span class="d-label">{{ d.label }}</span>
                 <span class="d-track"><span class="d-fill" [style.width.%]="d.score" [style.background]="scoreColor(d.score)"></span></span>
                 <span class="d-score">{{ d.score }}</span>

@@ -3,7 +3,7 @@ import { WorkflowStepView } from '../../../core/models';
 
 /** Live "agent is working" transparency feed: Loading profile → Searching KB → … */
 @Component({
-  selector: 'ai-agent-activity-feed',
+  selector: 'asta-ai-agent-activity-feed',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `

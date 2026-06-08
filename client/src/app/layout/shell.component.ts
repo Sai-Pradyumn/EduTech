@@ -4,6 +4,7 @@ import {
   computed,
   effect,
   ElementRef,
+  HostListener,
   inject,
   signal,
   viewChild,
@@ -47,6 +48,8 @@ import { ADMIN_NAV, STUDENT_NAV, workspaceNav } from '../core/constants/nav';
       <!-- Mobile off-canvas drawer -->
       @if (drawerOpen()) {
         <div class="fixed inset-0 z-50 lg:hidden">
+          <!-- Backdrop click is a mouse convenience; keyboard users close via ESC (onEsc) or in-drawer navigation. -->
+          <!-- eslint-disable-next-line @angular-eslint/template/click-events-have-key-events, @angular-eslint/template/interactive-supports-focus -->
           <div class="absolute inset-0" style="background:oklch(0.19 0.035 264 / .5)" (click)="drawerOpen.set(false)"></div>
           <div class="absolute left-0 top-0 h-full overflow-y-auto scroll-area">
             <asta-sidebar
@@ -291,6 +294,12 @@ export class ShellComponent {
   );
 
   readonly drawerOpen = signal(false);
+
+  /** Close the mobile drawer on ESC (keyboard parity with the backdrop click). */
+  @HostListener('document:keydown.escape')
+  onEsc(): void {
+    if (this.drawerOpen()) this.drawerOpen.set(false);
+  }
 
   /**
    * Per-route accent tint for the ambient background (A3): the dominant aurora

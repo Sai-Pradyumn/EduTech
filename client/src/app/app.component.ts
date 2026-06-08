@@ -10,7 +10,7 @@ import { AiDockComponent } from './shared/components/ai-dock.component';
 import { AstaVoiceOverlayComponent } from './shared/components/ai/asta-voice-overlay.component';
 
 @Component({
-  selector: 'app-root',
+  selector: 'asta-root',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [RouterOutlet, ToastContainerComponent, CommandPaletteComponent, ShortcutsOverlayComponent, AiDockComponent, AstaVoiceOverlayComponent],

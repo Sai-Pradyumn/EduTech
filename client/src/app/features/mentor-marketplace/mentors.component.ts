@@ -99,14 +99,14 @@ import { Mentor, MentorMarketplaceService, MentorProfileInput, MentorSession } f
     @if (tab() === 'profile') {
       <asta-card class="block motion-card-reveal">
         <p class="kicker mb-2">Your mentor profile</p>
-        <label class="lbl">Headline</label>
-        <input class="inp" [(ngModel)]="prof.headline" placeholder="e.g. Senior Full-Stack Engineer · 6 yrs" />
-        <label class="lbl">Expertise (comma separated)</label>
-        <input class="inp" [ngModel]="expertiseStr()" (ngModelChange)="expertiseStr.set($event)" placeholder="React, Node, System Design" />
-        <label class="lbl">Bio</label>
-        <textarea class="inp" rows="3" [(ngModel)]="prof.bio"></textarea>
-        <label class="lbl">Availability</label>
-        <input class="inp" [(ngModel)]="prof.availability" placeholder="Weekends, async reviews" />
+        <label for="mp-headline" class="lbl">Headline</label>
+        <input id="mp-headline" class="inp" [(ngModel)]="prof.headline" placeholder="e.g. Senior Full-Stack Engineer · 6 yrs" />
+        <label for="mp-expertise" class="lbl">Expertise (comma separated)</label>
+        <input id="mp-expertise" class="inp" [ngModel]="expertiseStr()" (ngModelChange)="expertiseStr.set($event)" placeholder="React, Node, System Design" />
+        <label for="mp-bio" class="lbl">Bio</label>
+        <textarea id="mp-bio" class="inp" rows="3" [(ngModel)]="prof.bio"></textarea>
+        <label for="mp-availability" class="lbl">Availability</label>
+        <input id="mp-availability" class="inp" [(ngModel)]="prof.availability" placeholder="Weekends, async reviews" />
         <div class="mt-3"><asta-btn variant="accent" size="sm" (click)="saveProfile()" [disabled]="busy() || !prof.headline">Save profile</asta-btn></div>
       </asta-card>
     }

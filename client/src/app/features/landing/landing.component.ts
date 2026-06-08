@@ -45,7 +45,7 @@ import { TiltDirective } from '../../shared/directives/tilt.directive';
         <div class="nav-cta">
           <asta-theme-toggle />
           <a routerLink="/login" class="nav-login">Log in</a>
-          <a class="btn btn-accent nav-start" astaMagnetic (click)="goStart()">
+          <a class="btn btn-accent nav-start" astaMagnetic role="button" tabindex="0" (click)="goStart()" (keyup.enter)="goStart()">
             Start learning <span class="arrow">→</span>
           </a>
         </div>
@@ -83,7 +83,7 @@ import { TiltDirective } from '../../shared/directives/tilt.directive';
             roadmap, teach you, answer doubts from trusted sources, quiz you, and help you ship real projects.
           </p>
           <div class="hero-actions reveal" data-d="3">
-            <a class="btn btn-accent" astaMagnetic (click)="goStart()">Build my roadmap <span class="arrow">→</span></a>
+            <a class="btn btn-accent" astaMagnetic role="button" tabindex="0" (click)="goStart()" (keyup.enter)="goStart()">Build my roadmap <span class="arrow">→</span></a>
             <a class="btn btn-ghost" href="#product" (click)="scrollTo('product', $event)">See how it works</a>
           </div>
           <div class="hero-meta reveal" data-d="4">
@@ -304,7 +304,7 @@ import { TiltDirective } from '../../shared/directives/tilt.directive';
         <h2 class="cta-h">Start where you are.<br />Asta maps the rest.</h2>
         <p>Tell us your goal. In two minutes you'll have a roadmap and a mentor that never logs off.</p>
         <div class="hero-actions" style="justify-content:center">
-          <a class="btn btn-accent" astaMagnetic (click)="goStart()">Build my roadmap free <span class="arrow">→</span></a>
+          <a class="btn btn-accent" astaMagnetic role="button" tabindex="0" (click)="goStart()" (keyup.enter)="goStart()">Build my roadmap free <span class="arrow">→</span></a>
           <a routerLink="/login" class="btn btn-ghost">Explore a demo</a>
         </div>
       </div>

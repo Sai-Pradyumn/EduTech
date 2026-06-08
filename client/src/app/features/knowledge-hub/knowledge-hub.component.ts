@@ -16,7 +16,7 @@ import { MarkdownPipe } from '../../shared/pipes/markdown.pipe';
 import { ButtonComponent } from '../../shared/ui/button.component';
 import { CardComponent } from '../../shared/ui/card.component';
 import { ComposerComponent, ComposerSubmit } from '../../shared/ui/composer.component';
-import { AiAgentActivityFeedComponent } from '../../shared/components/ai/ai-agent-activity-feed.component';
+import { AiAgentActivityFeedComponent } from '../../shared/components/ai/asta-ai-agent-activity-feed.component';
 import { VisualBlockRendererComponent } from '../../shared/components/ai/visual-block-renderer.component';
 import { MagneticDirective } from '../../shared/directives/magnetic.directive';
 import { CountDirective } from '../../shared/directives/count.directive';
@@ -263,13 +263,13 @@ const STARTERS = [
                     </div>
                   }
                   @for (block of msg.visualBlocks; track $index) {
-                    <div class="mt-3"><ai-visual-block [block_]="block" /></div>
+                    <div class="mt-3"><asta-ai-visual-block [block_]="block" /></div>
                   }
                 </div>
               </div>
             }
           }
-          @if (busy()) { <ai-agent-activity-feed [steps]="steps()" [running]="busy()" /> }
+          @if (busy()) { <asta-ai-agent-activity-feed [steps]="steps()" [running]="busy()" /> }
         </div>
 
         <div class="px-4 py-3" style="border-top:1px solid color-mix(in oklch, var(--paper-3) 60%, transparent)">

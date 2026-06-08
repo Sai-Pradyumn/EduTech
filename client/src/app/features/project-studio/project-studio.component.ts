@@ -94,7 +94,7 @@ const DIFFS: Difficulty[] = ['beginner', 'intermediate', 'advanced'];
             }
             <div class="grid gap-3 sm:grid-cols-2">
               @for (p of visibleProjects(); track p.id) {
-                <div class="proj" [class.archived]="p.archived" (click)="openBoard(p.id)" role="button" tabindex="0">
+                <div class="proj" [class.archived]="p.archived" (click)="openBoard(p.id)" (keyup.enter)="openBoard(p.id)" role="button" tabindex="0">
                   <div class="flex items-start justify-between gap-2">
                     <p class="text-sm font-semibold">{{ p.title }}</p>
                     <span class="status" [attr.data-s]="p.status">{{ p.status }}</span>

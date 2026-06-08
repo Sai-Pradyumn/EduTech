@@ -48,8 +48,8 @@ import { downloadPdf } from '../../shared/util/pdf';
               <asta-card class="block motion-card-reveal motion-row-primary">
                 <p class="kicker mb-1">{{ rr.headline }}</p>
                 @if (rr.generatedAt) { <p class="text-[11px] text-txt-mute mb-2">Generated {{ fmtDate(rr.generatedAt) }}</p> }
-                <label class="lbl">Professional summary</label>
-                <textarea class="inp" rows="3" [ngModel]="rr.summary" (ngModelChange)="editSummary($event)"></textarea>
+                <label for="rs-summary" class="lbl">Professional summary</label>
+                <textarea id="rs-summary" class="inp" rows="3" [ngModel]="rr.summary" (ngModelChange)="editSummary($event)"></textarea>
                 <div class="mt-2"><asta-btn variant="ghost" size="sm" (click)="saveSummary()" [disabled]="busy()">Save summary</asta-btn></div>
               </asta-card>
 

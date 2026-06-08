@@ -263,10 +263,10 @@ const NODE_H = 70;
             <p class="kicker mb-2">Mission briefing</p>
             <p class="text-sm text-txt-soft">{{ flow()!.description }}</p>
             <div class="grid grid-cols-2 gap-2 my-3">
-              <div class="brief-stat"><span>{{ flow()!.nodes.length }}</span><label>nodes</label></div>
-              <div class="brief-stat"><span>{{ flow()!.edges.length }}</span><label>links</label></div>
-              <div class="brief-stat"><span>{{ availableCount() }}</span><label>available</label></div>
-              <div class="brief-stat"><span>{{ weakCount() }}</span><label>repairs</label></div>
+              <div class="brief-stat"><span>{{ flow()!.nodes.length }}</span><small>nodes</small></div>
+              <div class="brief-stat"><span>{{ flow()!.edges.length }}</span><small>links</small></div>
+              <div class="brief-stat"><span>{{ availableCount() }}</span><small>available</small></div>
+              <div class="brief-stat"><span>{{ weakCount() }}</span><small>repairs</small></div>
             </div>
             <p class="kicker mt-3 mb-1">Legend</p>
             <div class="flex flex-wrap gap-1.5 text-[11px]">
@@ -342,7 +342,7 @@ const NODE_H = 70;
       .inspector { max-height: calc(100dvh - 120px); overflow: auto; }
       .brief-stat { background: var(--paper-2); border: 1px solid var(--paper-3); border-radius: 12px; padding: 8px 10px; text-align: center; }
       .brief-stat span { display: block; font-size: 20px; font-weight: 700; font-variant-numeric: tabular-nums; }
-      .brief-stat label { font-size: 10px; color: var(--text-mute); text-transform: uppercase; letter-spacing: 0.05em; }
+      .brief-stat small { font-size: 10px; color: var(--text-mute); text-transform: uppercase; letter-spacing: 0.05em; }
       @media (max-width: 1023.98px) { .inspector { position: static; max-height: none; } }
       @media (prefers-reduced-motion: reduce) { .node-box, .edge, .node { transition: none; } }
     `,

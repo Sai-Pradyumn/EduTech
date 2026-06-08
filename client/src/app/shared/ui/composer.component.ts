@@ -133,7 +133,7 @@ export class ComposerComponent {
     typeof window !== 'undefined' &&
     !!((window as unknown as Record<string, unknown>)['SpeechRecognition'] ||
       (window as unknown as Record<string, unknown>)['webkitSpeechRecognition']);
-  private recognition: any; // eslint-disable-line @typescript-eslint/no-explicit-any
+  private recognition: any;
 
   canSend(): boolean {
     return this.draft().trim().length > 0 || this.files().length > 0;

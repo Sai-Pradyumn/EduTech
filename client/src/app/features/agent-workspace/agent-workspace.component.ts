@@ -6,7 +6,7 @@ import { ToastService } from '../../core/services/toast.service';
 import { AgentAction, AgentStreamEvent, VisualBlock, WorkflowStepView } from '../../core/models';
 import { RichContentComponent } from '../../shared/components/ai/rich-content.component';
 import { CardComponent } from '../../shared/ui/card.component';
-import { AiAgentActivityFeedComponent } from '../../shared/components/ai/ai-agent-activity-feed.component';
+import { AiAgentActivityFeedComponent } from '../../shared/components/ai/asta-ai-agent-activity-feed.component';
 import { VisualBlockRendererComponent } from '../../shared/components/ai/visual-block-renderer.component';
 import { ComposerComponent, ComposerSubmit } from '../../shared/ui/composer.component';
 
@@ -136,7 +136,7 @@ const DEFAULT: WorkspaceConfig = { agentType: 'tutor', title: 'AI Agent', subtit
 
       <!-- RIGHT: agent rail — one reveal family (.motion-row-panel) -->
       <div class="space-y-5 motion-row-panel">
-        <div class="motion-card-reveal" style="--motion-card-index:0"><ai-agent-activity-feed [steps]="steps()" [running]="busy()" /></div>
+        <div class="motion-card-reveal" style="--motion-card-index:0"><asta-ai-agent-activity-feed [steps]="steps()" [running]="busy()" /></div>
 
         @if (latestActions().length) {
           <asta-card class="motion-card-reveal" style="--motion-card-index:1" pad="16px 18px">
@@ -151,7 +151,7 @@ const DEFAULT: WorkspaceConfig = { agentType: 'tutor', title: 'AI Agent', subtit
         }
 
         @for (block of latestBlocks(); track $index) {
-          <div class="motion-card-reveal" style="--motion-card-index:2"><ai-visual-block [block_]="block" /></div>
+          <div class="motion-card-reveal" style="--motion-card-index:2"><asta-ai-visual-block [block_]="block" /></div>
         }
 
         @if (latestRecommended().length) {
@@ -161,7 +161,7 @@ const DEFAULT: WorkspaceConfig = { agentType: 'tutor', title: 'AI Agent', subtit
               <span class="panel-ico" aria-hidden="true"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
             </div>
             <ul class="space-y-2 text-sm text-txt-soft mt-3">
-              @for (r of latestRecommended(); track r) { <li class="rec-item" (click)="send(r)"><span class="arr" style="color:var(--green-deep)">→</span><span>{{ r }}</span></li> }
+              @for (r of latestRecommended(); track r) { <li class="rec-item" role="button" tabindex="0" (click)="send(r)" (keyup.enter)="send(r)"><span class="arr" style="color:var(--green-deep)">→</span><span>{{ r }}</span></li> }
             </ul>
           </asta-card>
         }

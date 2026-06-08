@@ -314,7 +314,7 @@ const DIFFS: Difficulty[] = ['beginner', 'intermediate', 'advanced'];
               </div>
             </asta-card>
 
-            @if (weaknessBlock(); as wb) { <ai-visual-block [block_]="wb" /> }
+            @if (weaknessBlock(); as wb) { <asta-ai-visual-block [block_]="wb" /> }
 
             <asta-card class="block motion-card-reveal" style="--motion-card-index:1">
               <div class="panel-head mb-3">

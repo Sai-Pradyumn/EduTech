@@ -7,7 +7,7 @@ import { CardComponent } from '../../shared/ui/card.component';
 import { RingComponent } from '../../shared/ui/ring.component';
 import { SkeletonComponent } from '../../shared/ui/skeleton.component';
 import { EmptyStateComponent } from '../../shared/ui/empty-state.component';
-import { AiSkillRadarComponent, RadarAxis } from '../../shared/components/ai/ai-skill-radar.component';
+import { AiSkillRadarComponent, RadarAxis } from '../../shared/components/ai/asta-ai-skill-radar.component';
 import { LineChartComponent, ChartDatum } from '../../shared/charts';
 import { MagneticDirective } from '../../shared/directives/magnetic.directive';
 
@@ -70,7 +70,7 @@ import { MagneticDirective } from '../../shared/directives/magnetic.directive';
           <asta-card class="motion-card-reveal" style="--motion-card-index:0">
             <p class="kicker mb-3">Skill radar</p>
             @if (radarAxes().length >= 3) {
-              <div class="grid place-items-center"><ai-skill-radar [data]="radarAxes()" /></div>
+              <div class="grid place-items-center"><asta-ai-skill-radar [data]="radarAxes()" /></div>
               <div class="flex items-center justify-center gap-4 mt-2 text-[11px] text-txt-mute">
                 <span class="lg-dot" style="background:var(--green-deep)"></span> current
                 <span class="lg-dot" style="background:var(--peri)"></span> target

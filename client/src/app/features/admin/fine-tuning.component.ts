@@ -41,10 +41,10 @@ import { FineTuningJob } from '../../core/models';
             <option value="llama-3-8b">llama-3-8b</option>
             <option value="phi-3-mini">phi-3-mini</option>
           </select>
-          <label class="text-[11px] font-mono uppercase text-txt-mute">Dataset size: {{ datasetSize }}</label>
-          <input type="range" min="100" max="5000" step="100" [(ngModel)]="datasetSize" class="w-full mb-2" />
-          <label class="text-[11px] font-mono uppercase text-txt-mute">Epochs: {{ epochs }}</label>
-          <input type="range" min="1" max="10" [(ngModel)]="epochs" class="w-full mb-3" />
+          <label for="ft-dataset" class="text-[11px] font-mono uppercase text-txt-mute">Dataset size: {{ datasetSize }}</label>
+          <input id="ft-dataset" type="range" min="100" max="5000" step="100" [(ngModel)]="datasetSize" class="w-full mb-2" />
+          <label for="ft-epochs" class="text-[11px] font-mono uppercase text-txt-mute">Epochs: {{ epochs }}</label>
+          <input id="ft-epochs" type="range" min="1" max="10" [(ngModel)]="epochs" class="w-full mb-3" />
           <button class="btn-go w-full" [disabled]="name.trim().length < 2 || creating()" (click)="create()">{{ creating() ? 'Launching…' : 'Launch LoRA job' }}</button>
         </div>
 

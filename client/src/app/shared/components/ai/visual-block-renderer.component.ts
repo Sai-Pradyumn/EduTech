@@ -1,25 +1,25 @@
 import { ChangeDetectionStrategy, Component, Input, computed, signal } from '@angular/core';
 import { VisualBlock } from '../../../core/models';
-import { AiConceptMapComponent } from './ai-concept-map.component';
-import { AiSkillRadarComponent, RadarAxis } from './ai-skill-radar.component';
+import { AiConceptMapComponent } from './asta-ai-concept-map.component';
+import { AiSkillRadarComponent, RadarAxis } from './asta-ai-skill-radar.component';
 import { CardComponent } from '../../ui/card.component';
 import { RingComponent } from '../../ui/ring.component';
 
 /** Renders a single AgentResponse visual block by type. */
 @Component({
-  selector: 'ai-visual-block',
+  selector: 'asta-ai-visual-block',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [AiConceptMapComponent, AiSkillRadarComponent, CardComponent, RingComponent],
   template: `
     @switch (block().type) {
       @case ('concept_map') {
-        <ai-concept-map [data]="$any(block())" />
+        <asta-ai-concept-map [data]="$any(block())" />
       }
       @case ('skill_gap') {
         <asta-card>
           <p class="kicker mb-3">{{ $any(block()).title }}</p>
-          <ai-skill-radar [data]="radarAxes()" />
+          <asta-ai-skill-radar [data]="radarAxes()" />
         </asta-card>
       }
       @case ('study_plan') {

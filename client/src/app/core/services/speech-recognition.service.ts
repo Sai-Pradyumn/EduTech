@@ -1,7 +1,5 @@
 import { Injectable } from '@angular/core';
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
-
 export interface RecognitionHandlers {
   /** Fired on every result; `isFinal` marks a settled phrase. */
   onResult: (text: string, isFinal: boolean) => void;

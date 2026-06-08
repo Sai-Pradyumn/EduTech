@@ -124,7 +124,7 @@ import { MODALITY_META, SkillTwin, SkillTwinService, TwinAction } from '../../co
               <div class="space-y-2">
                 @for (s of t.skills; track s.skill) {
                   <div class="skill-wrap" [class.open]="openSkill() === s.skill">
-                    <div class="skill-row cursor-pointer" (click)="toggleSkill(s.skill)">
+                    <div class="skill-row cursor-pointer" role="button" tabindex="0" [attr.aria-expanded]="openSkill() === s.skill" (click)="toggleSkill(s.skill)" (keyup.enter)="toggleSkill(s.skill)">
                       <span class="s-label" [title]="s.skill">{{ s.skill }}</span>
                       <span class="s-track">
                         <span class="s-fill" [style.width.%]="s.mastery"></span>

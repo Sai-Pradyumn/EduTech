@@ -111,7 +111,7 @@ import { Application, ApplicationService, JdMatch } from '../../core/services/re
             <div class="space-y-2">
               @for (a of filteredApps(); track a.id) {
                 <div class="app" [class.open]="expandedId() === a.id" [class.picked]="selected().has(a.id)">
-                  <div class="flex items-center justify-between gap-2 cursor-pointer" (click)="toggle(a.id)">
+                  <div class="flex items-center justify-between gap-2 cursor-pointer" role="button" tabindex="0" [attr.aria-expanded]="expandedId() === a.id" (click)="toggle(a.id)" (keyup.enter)="toggle(a.id)">
                     <span class="flex items-center gap-2 min-w-0">
                       <input type="checkbox" class="sel" [checked]="selected().has(a.id)" (click)="$event.stopPropagation()" (change)="toggleSel(a.id)" [attr.aria-label]="'Select ' + a.role + ' at ' + a.company" />
                       <span class="min-w-0"><span class="a-role">{{ a.role }}</span><span class="a-co">{{ a.company }} · {{ ago(a.createdAt) }}</span></span>

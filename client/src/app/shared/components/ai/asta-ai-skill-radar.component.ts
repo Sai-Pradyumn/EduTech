@@ -8,7 +8,7 @@ export interface RadarAxis {
 
 /** Lightweight SVG radar/spider chart for skill intelligence. */
 @Component({
-  selector: 'ai-skill-radar',
+  selector: 'asta-ai-skill-radar',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `

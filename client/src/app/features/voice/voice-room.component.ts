@@ -76,7 +76,7 @@ type VState = 'idle' | 'listening' | 'thinking' | 'speaking';
               <asta-card class="motion-card-reveal hover-lift block" [interactive]="true" [style.--motion-card-index]="i % 4">
                 <div class="flex items-center gap-3">
                   <span class="mode-glyph sm">{{ modeMeta(s.mode).glyph }}</span>
-                  <span class="min-w-0 flex-1 cursor-pointer" (click)="editingId() === s.id ? null : open(s.id)">
+                  <span class="min-w-0 flex-1 cursor-pointer" role="button" tabindex="0" (click)="editingId() === s.id ? null : open(s.id)" (keyup.enter)="editingId() === s.id ? null : open(s.id)">
                     @if (editingId() === s.id) {
                       <input class="rename-inp" [ngModel]="renameDraft()" (ngModelChange)="renameDraft.set($event)" (keydown.enter)="saveRename(s)" (keydown.escape)="editingId.set(null)" (click)="$event.stopPropagation()" aria-label="Session title" />
                     } @else {
