@@ -70,7 +70,11 @@ import { MagneticDirective } from '../../shared/directives/magnetic.directive';
           <asta-card class="motion-card-reveal" style="--motion-card-index:0">
             <p class="kicker mb-3">Skill radar</p>
             @if (radarAxes().length >= 3) {
-              <div class="grid place-items-center"><asta-ai-skill-radar [data]="radarAxes()" /></div>
+              @defer (on viewport) {
+                <div class="grid place-items-center"><asta-ai-skill-radar [data]="radarAxes()" /></div>
+              } @placeholder {
+                <div class="radar-ph" aria-hidden="true"></div>
+              }
               <div class="flex items-center justify-center gap-4 mt-2 text-[11px] text-txt-mute">
                 <span class="lg-dot" style="background:var(--green-deep)"></span> current
                 <span class="lg-dot" style="background:var(--peri)"></span> target
@@ -169,6 +173,8 @@ import { MagneticDirective } from '../../shared/directives/magnetic.directive';
       .bar-fill { height: 100%; border-radius: 100px; background: var(--green); transition: width .8s var(--ease); }
       .lg-dot { display: inline-block; width: 10px; height: 10px; border-radius: 3px; }
       .tl-dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
+      /* Reserves the skill-radar's footprint while it's deferred (no layout shift). */
+      .radar-ph { height: 240px; max-width: 240px; margin: 0 auto; border-radius: 50%; background: color-mix(in oklch, var(--paper-3) 35%, transparent); }
     `,
   ],
 })

@@ -277,7 +277,11 @@ import { MistakeService } from '../../core/services/mistake.service';
           <asta-btn variant="ghost" size="sm" [routerLink]="['/app/roadmap', r.id]">View full roadmap <span class="arr">→</span></asta-btn>
         </div>
         <div class="mt-2">
-          <asta-learning-river [nodes]="riverNodes()" (select)="goToRoadmap()" />
+          @defer (on viewport) {
+            <asta-learning-river [nodes]="riverNodes()" (select)="goToRoadmap()" />
+          } @placeholder {
+            <div class="river-ph" aria-hidden="true"></div>
+          }
         </div>
       </asta-card>
       }
@@ -285,6 +289,9 @@ import { MistakeService } from '../../core/services/mistake.service';
   `,
   styles: [
     `
+      /* Reserves the learning-river's footprint while it's deferred (no layout shift). */
+      .river-ph { height: 300px; border-radius: 12px; background: color-mix(in oklch, var(--paper-3) 40%, transparent); }
+      @media (max-width: 720px) { .river-ph { height: 360px; } }
       .today-strip { border: 1px solid color-mix(in oklch, var(--green) 22%, var(--paper-3)); }
       .td-glyph { font-size: 12px; }
       .review-strip { border: 1px solid color-mix(in oklch, var(--peri, #8aa6ff) 28%, var(--paper-3)); }
