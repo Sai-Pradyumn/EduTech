@@ -33,7 +33,7 @@ effort `S` (hours) · `M` (a day) · `L` (multi-day).
 
 ## 4. Type safety & lint
 - [x] **Client ESLint** — `angular-eslint` v18 flat config (mirrors the server's ESLint 9 + typescript-eslint 8); `npm run lint` is green (**0 problems**). Fixed the 10 real issues it surfaced (dead imports, ternary-as-statement, template `!=`, missing `aria-selected`), then closed the ~62 a11y + selector findings it had flagged and promoted those rules from `warn` to `error` (keyboard-a11y ×3, component/directive selector prefix).
-- [ ] `P2·M` **Reduce `any`** — ~58 occurrences (concentrated in `visual-block-renderer`, `speech-recognition`, `asta-os-*`). Type the justified ones with proper DOM/lib types; remove the rest.
+- [x] **Reduce `any`** — the genuine TS `any` holes were all one root cause: the Web Speech API (lib.dom omits it). Added `core/types/web-speech.ts` (typed surface + `getSpeechRecognitionCtor()` helper) and reworked both consumers (speech-recognition service, composer mic) to use it. Client is now **any-free**; `no-explicit-any` flipped from `off` → `error` to keep it that way. (The remaining `$any(...)` matches are the Angular template helper, not the TS type — idiomatic for the discriminated-union visual-block renderer.)
 - [x] **Strict templates** — already enabled in `tsconfig.json` (`strictTemplates: true`).
 
 ## 5. Security & dependencies
@@ -110,6 +110,7 @@ Beyond per-screen affordances — tightening loops and adding operator depth:
 - **Proof Ledger** — export the (filtered) proof-of-learning timeline as CSV.
 - **Client ESLint (infra)** — angular-eslint v18 flat config; `npm run lint` green; fixed 10 real issues.
 - **Keyboard a11y + asta- selector pass** — closed all ~62 a11y/selector findings (role/tabindex/keyup handlers, label association, shell-drawer ESC, ai-* → asta-ai-* renames); the rules are now enforced as lint errors.
+- **Web Speech typing** — added `core/types/web-speech.ts` (typed SpeechRecognition surface + ctor helper); reworked the speech service + composer mic off `any`. Client is any-free; `no-explicit-any` now enforced as error.
 
 - **Daily Plan** — per-item notes, carry-over of unfinished items, focus timer, drag-to-reorder, "finish by ~HH:MM", and a one-per-day `daily_plan_completed` proof event.
 - **Proof Ledger** — wired 3 orphaned event kinds (`certificate_earned`, `flow_generated`, `voice_viva_passed`); fixed a `practice_solved` crash + added a defensive kind lookup; added a 13-week activity heatmap; seeded the new events.
