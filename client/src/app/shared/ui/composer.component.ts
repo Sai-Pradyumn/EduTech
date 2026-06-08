@@ -8,6 +8,11 @@ import {
   ViewChild,
   signal,
 } from '@angular/core';
+import {
+  SpeechRecognition,
+  SpeechRecognitionEvent,
+  getSpeechRecognitionCtor,
+} from '../../core/types/web-speech';
 
 export interface ComposerSubmit {
   text: string;
@@ -128,12 +133,9 @@ export class ComposerComponent {
   readonly recording = signal(false);
   readonly dragging = signal(false);
 
-  // Web Speech API (vendor-prefixed in Chromium). Loosely typed for portability.
-  readonly micSupported =
-    typeof window !== 'undefined' &&
-    !!((window as unknown as Record<string, unknown>)['SpeechRecognition'] ||
-      (window as unknown as Record<string, unknown>)['webkitSpeechRecognition']);
-  private recognition: any;
+  // Web Speech API (vendor-prefixed in Chromium); typed via core/types/web-speech.
+  readonly micSupported = getSpeechRecognitionCtor() !== null;
+  private recognition: SpeechRecognition | null = null;
 
   canSend(): boolean {
     return this.draft().trim().length > 0 || this.files().length > 0;
@@ -191,16 +193,14 @@ export class ComposerComponent {
       this.recognition?.stop?.();
       return;
     }
-    const Ctor =
-      (window as unknown as Record<string, any>)['SpeechRecognition'] ||
-      (window as unknown as Record<string, any>)['webkitSpeechRecognition'];
+    const Ctor = getSpeechRecognitionCtor();
     if (!Ctor) return;
     const rec = new Ctor();
     rec.lang = navigator.language || 'en-US';
     rec.interimResults = false;
     rec.continuous = false;
-    rec.onresult = (ev: any) => {
-      const transcript = Array.from(ev.results as ArrayLike<any>)
+    rec.onresult = (ev: SpeechRecognitionEvent) => {
+      const transcript = Array.from(ev.results)
         .map((r) => r[0].transcript)
         .join(' ');
       const next = (this.draft() ? this.draft() + ' ' : '') + transcript;

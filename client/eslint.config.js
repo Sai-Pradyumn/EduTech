@@ -40,8 +40,11 @@ module.exports = tseslint.config(
         'error',
         { type: 'element', prefix: 'asta', style: 'kebab-case' },
       ],
-      // Matches the server stance — `any` is allowed where justified (DOM/lib gaps).
-      '@typescript-eslint/no-explicit-any': 'off',
+      // The client is now any-free — the one hard case (the Web Speech API, which
+      // lib.dom omits) is typed in core/types/web-speech. Enforced as an error to keep
+      // it that way; reach for an inline disable only when a lib genuinely gives no type.
+      // (Deliberately stricter than the server, which still carries justified `any`s.)
+      '@typescript-eslint/no-explicit-any': 'error',
       // Underscore-prefixed args/vars are intentionally unused (signatures, stubs).
       '@typescript-eslint/no-unused-vars': [
         'error',
