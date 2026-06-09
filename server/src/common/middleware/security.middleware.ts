@@ -15,6 +15,12 @@ export function securityHeaders(
   res.setHeader('Referrer-Policy', 'no-referrer');
   res.setHeader('X-DNS-Prefetch-Control', 'off');
   res.setHeader('Cross-Origin-Opener-Policy', 'same-origin');
+  // HSTS: pin clients to HTTPS for 180 days. Inert over plain HTTP (dev), so it's
+  // safe to send unconditionally; meaningful once served behind TLS in production.
+  res.setHeader(
+    'Strict-Transport-Security',
+    'max-age=15552000; includeSubDomains',
+  );
   res.setHeader(
     'Permissions-Policy',
     'geolocation=(), camera=(), microphone=(self)',
