@@ -37,7 +37,10 @@ effort `S` (hours) · `M` (a day) · `L` (multi-day).
 - [x] **Strict templates** — already enabled in `tsconfig.json` (`strictTemplates: true`).
 
 ## 5. Security & dependencies
-- [x] **Dependency audit (triaged)** — all 49 advisories sit in the **dev/build toolchain** (webpack-dev-server, sockjs, uuid-via-webpack, @angular-devkit/build-angular), not the production runtime. `npm audit fix` (non-breaking) fixes **none** of them; every fix needs `--force` = a major Angular devkit upgrade. _Deferred as a dedicated upgrade:_ `P2·L` bump @angular-devkit/build-angular to clear the dev-tooling advisories.
+- [x] **Dependency audit (triaged + partially fixed)** — re-triaged the prod (`--omit=dev`) tree: it was 11 advisories. Fixed the two that don't need a major bump — removed the **unused `uuid`** dep from the server (it uses `crypto.randomUUID`), and added a root `overrides` pinning **DOMPurify** to `^3.4.0` so jspdf stops pulling its vulnerable optional `2.5.9` (we only use jsPDF's text API, never `doc.html()`, so DOMPurify is off our runtime path). Prod advisories now **9**, all needing deliberate majors:
+  - [ ] `P2·L` **Angular 18 → 19/20** — the 8 high + 1 critical are all `@angular/core` XSS (SVG/MathML script attrs, i18n) + XSRF-token-leakage advisories (`<=18.2.14`), cascading to every `@angular/*` package. Framework major; touches everything — needs a dedicated upgrade + full regression.
+  - [ ] `P2·M` **jspdf 2 → 4** — jsPDF's own ReDoS/DoS (`<=4.2.0`). Breaking API change to the `pdf.ts` text exporter; verify resume/certificate PDF output after.
+  - _(Most remaining dev-tree advisories are still build-toolchain: webpack-dev-server/sockjs via @angular-devkit — same Angular-major upgrade clears them.)_
 - [ ] `P2·M` **CSP / security headers** — verify Content-Security-Policy, HSTS, and frame-ancestors are set (helmet is present server-side; confirm the policy is tight, not default).
 - [ ] `P2·S` **Rate-limit coverage** — confirm auth endpoints + AI endpoints have per-IP and per-user limits (per-user AI limit exists; verify auth brute-force protection).
 - [ ] `P3·S` **Secrets hygiene** — confirm no secrets in client env; document required server env in one place.
@@ -112,6 +115,7 @@ Beyond per-screen affordances — tightening loops and adding operator depth:
 - **Keyboard a11y + asta- selector pass** — closed all ~62 a11y/selector findings (role/tabindex/keyup handlers, label association, shell-drawer ESC, ai-* → asta-ai-* renames); the rules are now enforced as lint errors.
 - **Web Speech typing** — added `core/types/web-speech.ts` (typed SpeechRecognition surface + ctor helper); reworked the speech service + composer mic off `any`. Client is any-free; `no-explicit-any` now enforced as error.
 - **`@defer` below-the-fold** — dashboard learning-river + cockpit skill-radar render `on viewport` with footprint-reserving placeholders (first `@defer` usage; no layout shift).
+- **Dep security** — removed the unused `uuid` server dep; `overrides`-pinned DOMPurify to a patched 3.4.x so jspdf drops its vulnerable optional copy (prod advisories 11 → 9; rest are Angular/jspdf majors, flagged).
 
 - **Daily Plan** — per-item notes, carry-over of unfinished items, focus timer, drag-to-reorder, "finish by ~HH:MM", and a one-per-day `daily_plan_completed` proof event.
 - **Proof Ledger** — wired 3 orphaned event kinds (`certificate_earned`, `flow_generated`, `voice_viva_passed`); fixed a `practice_solved` crash + added a defensive kind lookup; added a 13-week activity heatmap; seeded the new events.
