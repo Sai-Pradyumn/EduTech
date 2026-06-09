@@ -41,8 +41,8 @@ effort `S` (hours) · `M` (a day) · `L` (multi-day).
   - [ ] `P2·L` **Angular 18 → 19/20** — the 8 high + 1 critical are all `@angular/core` XSS (SVG/MathML script attrs, i18n) + XSRF-token-leakage advisories (`<=18.2.14`), cascading to every `@angular/*` package. Framework major; touches everything — needs a dedicated upgrade + full regression.
   - [ ] `P2·M` **jspdf 2 → 4** — jsPDF's own ReDoS/DoS (`<=4.2.0`). Breaking API change to the `pdf.ts` text exporter; verify resume/certificate PDF output after.
   - _(Most remaining dev-tree advisories are still build-toolchain: webpack-dev-server/sockjs via @angular-devkit — same Angular-major upgrade clears them.)_
-- [ ] `P2·M` **CSP / security headers** — verify Content-Security-Policy, HSTS, and frame-ancestors are set (helmet is present server-side; confirm the policy is tight, not default).
-- [ ] `P2·S` **Rate-limit coverage** — confirm auth endpoints + AI endpoints have per-IP and per-user limits (per-user AI limit exists; verify auth brute-force protection).
+- [x] **Security headers** — the server middleware sets nosniff, `X-Frame-Options: DENY` (frame-ancestors equivalent), Referrer-Policy, COOP, Permissions-Policy, and now **HSTS** (180d, includeSubDomains). CSP is intentionally *not* on the API: it serves JSON under `/api`, not the SPA's HTML — CSP belongs on the static host / reverse proxy serving `index.html` (the one remaining `P3` deployment task).
+- [x] **Rate-limit coverage** — AI endpoints have a per-user limit (`AiRateLimitService`); a global per-IP limiter (300/min) covers everything; and the **credential/OTP endpoints** (login, register, verify-otp, resend-otp, google) now have a dedicated **20/min per-IP** brute-force budget. _Residual `P3`:_ swap the in-memory limiter for Redis-backed when scaling horizontally (single-instance today).
 - [ ] `P3·S` **Secrets hygiene** — confirm no secrets in client env; document required server env in one place.
 
 ## 6. Internationalization
@@ -116,6 +116,7 @@ Beyond per-screen affordances — tightening loops and adding operator depth:
 - **Web Speech typing** — added `core/types/web-speech.ts` (typed SpeechRecognition surface + ctor helper); reworked the speech service + composer mic off `any`. Client is any-free; `no-explicit-any` now enforced as error.
 - **`@defer` below-the-fold** — dashboard learning-river + cockpit skill-radar render `on viewport` with footprint-reserving placeholders (first `@defer` usage; no layout shift).
 - **Dep security** — removed the unused `uuid` server dep; `overrides`-pinned DOMPurify to a patched 3.4.x so jspdf drops its vulnerable optional copy (prod advisories 11 → 9; rest are Angular/jspdf majors, flagged).
+- **Security hardening** — added HSTS to the headers middleware; gave the credential/OTP auth endpoints a tight 20/min per-IP brute-force limit (vs the global 300/min). Both verified at runtime.
 
 - **Daily Plan** — per-item notes, carry-over of unfinished items, focus timer, drag-to-reorder, "finish by ~HH:MM", and a one-per-day `daily_plan_completed` proof event.
 - **Proof Ledger** — wired 3 orphaned event kinds (`certificate_earned`, `flow_generated`, `voice_viva_passed`); fixed a `practice_solved` crash + added a defensive kind lookup; added a 13-week activity heatmap; seeded the new events.
