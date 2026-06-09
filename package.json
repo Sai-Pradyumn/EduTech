@@ -26,6 +26,9 @@
     "@playwright/test": "^1.49.0",
     "concurrently": "^9.1.0"
   },
+  "overrides": {
+    "dompurify": "^3.4.0"
+  },
   "engines": {
     "node": ">=20"
   }
