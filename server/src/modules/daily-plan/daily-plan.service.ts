@@ -228,7 +228,8 @@ export class DailyPlanService {
     reflection: string | undefined,
   ): Promise<DailyPlanDocument> {
     const plan = await this.getToday(userId);
-    if (mood !== undefined) plan.mood = Math.min(5, Math.max(1, Math.round(mood)));
+    if (mood !== undefined)
+      plan.mood = Math.min(5, Math.max(1, Math.round(mood)));
     if (reflection !== undefined) plan.reflection = reflection.slice(0, 280);
     return plan.save();
   }

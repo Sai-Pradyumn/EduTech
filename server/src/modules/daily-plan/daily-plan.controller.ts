@@ -63,7 +63,9 @@ export class DailyPlanController {
     @CurrentUser() user: AuthUser,
     @Body() dto: SetReflectionDto,
   ) {
-    return toView(await this.plan.setReflection(user.id, dto.mood, dto.reflection));
+    return toView(
+      await this.plan.setReflection(user.id, dto.mood, dto.reflection),
+    );
   }
 
   @Post('carry-over')

@@ -11,7 +11,9 @@ export class NotificationsController {
   @Get()
   list(@CurrentUser() user: AuthUser, @Query('limit') limit?: string) {
     // The bell asks for the default 30; the full history page asks for more.
-    const n = limit ? Math.min(200, Math.max(1, parseInt(limit, 10) || 30)) : 30;
+    const n = limit
+      ? Math.min(200, Math.max(1, parseInt(limit, 10) || 30))
+      : 30;
     return this.notifications.list(user.id, n);
   }
 
