@@ -12,7 +12,7 @@ effort `S` (hours) · `M` (a day) · `L` (multi-day).
 ## 1. Testing & CI
 - [x] **Client unit-test harness** — jest-preset-angular stood up (jsdom, no browser); `npm test` runs server + client. First specs green (ledger pure fn, daily-plan service via HttpClientTesting). _Remaining:_ `P2·M` broaden coverage to more services + a few signal-heavy components.
 - [ ] `P1·M` **Expand e2e** — extend the new Playwright smoke suite (`e2e/`) to authenticated flows via the seeded demo user (login → dashboard → take a quiz → see ledger event), gated behind an env flag so the no-backend smoke run stays green.
-- [ ] `P1·S` **Wire e2e into CI** — add a GitHub Actions job that boots Mongo+Redis, seeds, starts the app, and runs `npm run test:e2e`.
+- [x] **Wire e2e into CI** — `ci.yml` now has an `e2e` job: installs Playwright Chromium, runs the smoke suite (auto-starts the client; no backend needed), uploads traces on failure. _Remaining:_ once the authenticated-flow specs exist (item above), extend the job with Mongo+Redis services + seed.
 - [ ] `P2·M` **Server test coverage** — broaden beyond the existing ~12 unit tests; add tests for the newly-wired ledger events (certificate/flow/viva/daily-plan) and the daily-plan carry-over/reorder logic.
 - [ ] `P3·S` **Coverage reporting** — emit coverage in CI and add a badge.
 
@@ -26,7 +26,7 @@ effort `S` (hours) · `M` (a day) · `L` (multi-day).
 - [ ] `P3·S` **`prefers-reduced-motion`** — audit the heatmap/aurora/constellation for full reduced-motion coverage.
 
 ## 3. Performance
-- [ ] `P2·M` **Bundle audit** — confirm heavy deps (mermaid, katex, html2canvas, jsPDF, d3/venn) are all lazy/`@defer`-loaded and not pulled into the initial chunk.
+- [x] **Bundle audit** — verified from the build stats: mermaid, katex, html2canvas and jsPDF all land in lazy chunks (initial total 577 kB raw / 156 kB transfer). jsPDF was statically imported by 3 feature chunks — `downloadPdf()` now dynamic-imports it, so the 411 kB chunk loads only on the export click.
 - [ ] `P2·M` **Virtualize long lists** — ledger timeline, audit logs, admin students, community threads can grow unbounded; add CDK virtual scroll (note: CDK is not yet a dependency).
 - [x] **`@defer` below-the-fold** — first `@defer` usage in the app: the dashboard learning-river (lower-section ~300px SVG) and the intelligence-cockpit skill-radar now render `on viewport`, code-splitting into lazy chunks. Each `@placeholder` reserves the exact footprint (300px / 240px) so there's no layout shift. (The ledger heatmap turned out to sit above its timeline, not below the fold, and is cheap inline divs — not worth deferring.)
 - [ ] `P3·S` **Image/asset optimization** — audit any raster assets; prefer SVG (mostly already SVG).
@@ -39,9 +39,9 @@ effort `S` (hours) · `M` (a day) · `L` (multi-day).
 ## 5. Security & dependencies
 - [x] **Dependency audit (triaged + partially fixed)** — re-triaged the prod (`--omit=dev`) tree: it was 11 advisories. Fixed the two that don't need a major bump — removed the **unused `uuid`** dep from the server (it uses `crypto.randomUUID`), and added a root `overrides` pinning **DOMPurify** to `^3.4.0` so jspdf stops pulling its vulnerable optional `2.5.9` (we only use jsPDF's text API, never `doc.html()`, so DOMPurify is off our runtime path). Prod advisories now **9**, all needing deliberate majors:
   - [ ] `P2·L` **Angular 18 → 19/20** — the 8 high + 1 critical are all `@angular/core` XSS (SVG/MathML script attrs, i18n) + XSRF-token-leakage advisories (`<=18.2.14`), cascading to every `@angular/*` package. Framework major; touches everything — needs a dedicated upgrade + full regression.
-  - [ ] `P2·M` **jspdf 2 → 4** — jsPDF's own ReDoS/DoS (`<=4.2.0`). Breaking API change to the `pdf.ts` text exporter; verify resume/certificate PDF output after.
+  - [x] **jspdf 2 → 4** — upgraded to 4.2.1 (prod advisories 9 → 8; the rest are the Angular major). The `pdf.ts` text API (splitTextToSize/text/addPage/save) is unchanged in v4 and the strict build is green. _Needs manual verification:_ download one resume/interview/readiness PDF and eyeball the layout.
   - _(Most remaining dev-tree advisories are still build-toolchain: webpack-dev-server/sockjs via @angular-devkit — same Angular-major upgrade clears them.)_
-- [x] **Security headers** — the server middleware sets nosniff, `X-Frame-Options: DENY` (frame-ancestors equivalent), Referrer-Policy, COOP, Permissions-Policy, and now **HSTS** (180d, includeSubDomains). CSP is intentionally *not* on the API: it serves JSON under `/api`, not the SPA's HTML — CSP belongs on the static host / reverse proxy serving `index.html` (the one remaining `P3` deployment task).
+- [x] **Security headers** — the server middleware sets nosniff, `X-Frame-Options: DENY` (frame-ancestors equivalent), Referrer-Policy, COOP, Permissions-Policy, and now **HSTS** (180d, includeSubDomains). CSP is intentionally *not* on the API: it serves JSON under `/api`, not the SPA's HTML — and the static host now sets it: `vercel.json` ships CSP (script-src 'self' — the two inline boot scripts moved to `public/boot.js`), HSTS, nosniff, frame-deny, COOP, Permissions-Policy + immutable caching for hashed assets.
 - [x] **Rate-limit coverage** — AI endpoints have a per-user limit (`AiRateLimitService`); a global per-IP limiter (300/min) covers everything; and the **credential/OTP endpoints** (login, register, verify-otp, resend-otp, google) now have a dedicated **20/min per-IP** brute-force budget. _Residual `P3`:_ swap the in-memory limiter for Redis-backed when scaling horizontally (single-instance today).
 - [ ] `P3·S` **Secrets hygiene** — confirm no secrets in client env; document required server env in one place.
 
@@ -57,24 +57,36 @@ effort `S` (hours) · `M` (a day) · `L` (multi-day).
 ## 8. UX & features
 - [x] **Keyboard-shortcuts help overlay** (`?`) — modal listing app + palette shortcuts.
 - [x] **Command-palette quick actions** — New learning flow, Toggle theme, Sign out (action callbacks).
-- [ ] `P2·S` **Undo for destructive actions** — deleting a flow/space/source/application is immediate; add an undo toast or confirm.
+- [x] **Confirm for destructive actions** — space delete, space-source remove, knowledge-doc delete, application remove and both bulk deletes (applications, Mistake OS) now use the armed two-click confirm pattern (label flips to "Confirm delete?", auto-disarms after 4–5s). Flows have no delete UI (archive only).
 - [x] **Bulk actions** — Applications (set-status / delete) and Mistake OS (resolve / reopen / delete) support multi-select.
 - [x] **Notifications page** — full `/app/notifications` history (server `?limit=`, type-filter chips, unread-only, mark-all-read, bell "See all" link).
 - [x] **Today reflection journal** — optional mood (1–5) + one-line note per day (server schema + `/daily-plan/reflection`), surfaced as mood emoji in the week strip.
 
 ## 9. Observability
-- [x] **Global client `ErrorHandler`** — swallows benign noise, prompts reload on stale chunk loads, logs + shows one throttled toast (no longer silent). _Remaining:_ `P2·S` add a transport to POST client errors to a server feed/Sentry.
-- [ ] `P3·S` **Web-vitals** — emit LCP/CLS/INP via the product-analytics `track()` channel.
+- [x] **Global client `ErrorHandler`** — swallows benign noise, prompts reload on stale chunk loads, logs + shows one throttled toast — and now POSTs uncaught errors to the server feed (`POST /ops/client-errors`: public, 10/min per-IP, strict payload caps; deduped + max 5/session client-side, raw `fetch` + `keepalive`). Visible in `/admin/ops`.
+- [x] **Web-vitals** — dependency-free `WebVitalsService` (PerformanceObserver, outside the Angular zone) reports LCP/CLS/INP once per page load via the product-analytics `track()` channel (new whitelisted `web_vital` event).
 
 ## 10. PWA / offline
 - [ ] `P3·M` **Expand offline coverage** — the offline cache + sync queue exist; extend the cached GET allowlist and add offline-friendly empty states on more screens.
 
 ## 11. Docs & DevEx
 - [ ] `P2·S` **Pre-commit hooks** — husky + lint-staged. _Deferred:_ the server lint script bakes in `--fix` (mutates files) and flat-config resolution from the monorepo root is fiddly; do it once client lint exists so one lint-staged config covers both.
-- [ ] `P3·S` **API docs** — generate/serve OpenAPI (Swagger) from the Nest controllers.
+- [x] **API docs** — Swagger UI served at `/api/docs`, generated from the Nest controllers (non-production by default; `ENABLE_API_DOCS=true` to expose in prod).
 - [ ] `P3·S` **ADRs** — short architecture-decision records for the big calls (Agent OS pipeline, provider abstraction, entitlements).
 
 ---
+
+## Recently shipped (production-readiness sweep, 2026-06-11, branch `feat/full-revamp`)
+All build-verified (server build, lint 0 errors, 19 unit tests green, client prod build warning-free):
+
+- **jspdf 2 → 4.2.1** + dynamic import (411 kB chunk now loads on export click only); prod advisories 9 → 8.
+- **Static-host security headers** — `vercel.json` CSP/HSTS/nosniff/frame-deny/COOP/Permissions-Policy + asset caching; inline boot scripts moved to `public/boot.js` so `script-src 'self'` holds.
+- **Real 404 page** (`features/not-found/`) replaces the silent `**` → landing redirect.
+- **Client error transport** — `POST /ops/client-errors` (public, 10/min per-IP, capped payloads) + GlobalErrorHandler beacon (deduped, max 5/session).
+- **Core Web Vitals** — `WebVitalsService` emits LCP/CLS/INP via `track('web_vital')`.
+- **Swagger** at `/api/docs` (non-prod by default).
+- **e2e in CI** — Playwright Chromium smoke job in `ci.yml`, traces on failure.
+- **Two-step delete confirms** — spaces, space sources, knowledge docs, applications (row + bulk), Mistake OS bulk.
 
 ## Recently shipped (this sweep)
 Branch `feat/daily-plan-deepening`, additive/low-risk, each commit build-verified:
