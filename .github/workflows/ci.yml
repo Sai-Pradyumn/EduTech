@@ -26,3 +26,25 @@ jobs:
           JWT_REFRESH_SECRET: ci-build-not-a-secret
       - name: Test (server unit tests)
         run: npm test --if-present
+
+  e2e:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+      - name: Install (single hoisted workspace tree)
+        run: npm ci
+      - name: Install Playwright Chromium
+        run: npx playwright install --with-deps chromium
+      - name: Run e2e smoke suite (auto-starts the client; no backend needed)
+        run: npm run test:e2e
+      - name: Upload Playwright traces on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-traces
+          path: test-results/
+          retention-days: 7

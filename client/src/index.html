@@ -17,25 +17,9 @@
   <meta name="apple-mobile-web-app-title" content="Asta">
   <!-- iOS ignores SVG touch icons — point at the rasterized PNG (Workstream I). -->
   <link rel="apple-touch-icon" href="icon-192.png">
-  <script>
-    // Register the service worker (PWA shell caching) in production builds only.
-    if ('serviceWorker' in navigator) {
-      window.addEventListener('load', function () {
-        navigator.serviceWorker.register('/sw.js').catch(function () {});
-      });
-    }
-  </script>
-  <script>
-    // Set the theme pre-paint to avoid a flash of the wrong theme. ThemeService
-    // keeps this in sync at runtime (storage key: asta.theme).
-    (function () {
-      try {
-        var t = localStorage.getItem('asta.theme') || 'system';
-        var dark = t === 'dark' || (t === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
-        document.documentElement.setAttribute('data-theme', dark ? 'dark' : 'light');
-      } catch (e) {}
-    })();
-  </script>
+  <!-- Pre-paint theme + SW registration. External (not inline) so the static
+       host's CSP can keep script-src to 'self'; synchronous so no theme flash. -->
+  <script src="boot.js"></script>
 </head>
 <body>
   <asta-root></asta-root>

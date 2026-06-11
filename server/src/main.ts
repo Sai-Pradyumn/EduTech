@@ -1,6 +1,7 @@
 import { Logger, ValidationPipe } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { NestFactory } from '@nestjs/core';
+import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { AppModule } from './app.module';
 import { AppConfig } from './config/configuration';
 import { securityHeaders } from './common/middleware/security.middleware';
@@ -51,6 +52,21 @@ async function bootstrap(): Promise<void> {
       transformOptions: { enableImplicitConversion: false },
     }),
   );
+
+  // API docs (backlog §11): generated from the Nest controllers at /api/docs.
+  // Non-production only by default; set ENABLE_API_DOCS=true to expose in prod.
+  const nodeEnv = config.get('nodeEnv', { infer: true });
+  if (nodeEnv !== 'production' || process.env.ENABLE_API_DOCS === 'true') {
+    const docConfig = new DocumentBuilder()
+      .setTitle('Asta API')
+      .setDescription('Asta — AI Skill Mentor REST API')
+      .setVersion(process.env.npm_package_version ?? '0.1.0')
+      .addBearerAuth()
+      .build();
+    SwaggerModule.setup('api/docs', app, () =>
+      SwaggerModule.createDocument(app, docConfig),
+    );
+  }
 
   const port = config.get('port', { infer: true });
   await app.listen(port);

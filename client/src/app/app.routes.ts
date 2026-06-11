@@ -573,5 +573,10 @@ export const routes: Routes = [
     ],
   },
 
-  { path: '**', redirectTo: '' },
+  // Real 404 (no silent redirect): broken/stale links land on a page that says so.
+  {
+    path: '**',
+    title: 'Page not found',
+    loadComponent: () => import('./features/not-found/not-found.component').then((m) => m.NotFoundComponent),
+  },
 ];
