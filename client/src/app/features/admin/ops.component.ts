@@ -26,7 +26,7 @@ import { ToastService } from '../../core/services/toast.service';
     </header>
 
     @if (health(); as h) {
-      <div class="grid gap-3 sm:grid-cols-4 mb-5">
+      <div class="grid gap-3 sm:grid-cols-4 mb-5 motion-stagger">
         <div class="card" style="padding:16px">
           <p class="font-display text-2xl" [style.color]="h.status === 'ok' ? 'var(--green-deep)' : 'var(--danger)'">{{ h.status }}</p>
           <p class="t-label mt-1">API · {{ h.version }} · {{ h.commit }}</p>
@@ -36,7 +36,7 @@ import { ToastService } from '../../core/services/toast.service';
         <div class="card" style="padding:16px"><p class="font-display text-2xl" [style.color]="(h.errors24h || 0) > 0 ? 'var(--danger)' : 'var(--green-deep)'">{{ h.errors24h || 0 }}</p><p class="t-label mt-1">Errors 24h · {{ h.jobsFailed || 0 }} jobs failed</p></div>
       </div>
 
-      <div class="card mb-5" style="padding:14px 18px">
+      <div class="card mb-5 motion-card-reveal motion-row-2" style="padding:14px 18px">
         <p class="kicker mb-2">Dependencies</p>
         <div class="flex flex-wrap gap-2">
           @for (c of depList(h); track c.key) {
@@ -47,7 +47,7 @@ import { ToastService } from '../../core/services/toast.service';
     }
 
     <!-- Realtime + storage -->
-    <div class="grid gap-3 sm:grid-cols-2 mb-5">
+    <div class="grid gap-3 sm:grid-cols-2 mb-5 motion-row-2 motion-stagger">
       <div class="card" style="padding:16px">
         <div class="flex items-center justify-between">
           <p class="kicker">Realtime</p>
@@ -69,7 +69,7 @@ import { ToastService } from '../../core/services/toast.service';
     </div>
 
     <!-- Jobs -->
-    <div class="card mb-5" style="padding:18px">
+    <div class="card mb-5 motion-card-reveal motion-row-3" style="padding:18px">
       <div class="flex items-center justify-between gap-3 mb-3 flex-wrap">
         <div class="flex items-center gap-3">
           <p class="kicker">Background jobs</p>
@@ -99,7 +99,7 @@ import { ToastService } from '../../core/services/toast.service';
     </div>
 
     <!-- Errors -->
-    <div class="card" style="padding:18px">
+    <div class="card motion-card-reveal motion-lower" style="padding:18px">
       <p class="kicker mb-3">Recent errors</p>
       <div class="space-y-1">
         @for (e of errors(); track e.errorId) {
@@ -120,6 +120,9 @@ import { ToastService } from '../../core/services/toast.service';
     @media (prefers-reduced-motion:reduce){.live-dot.up{animation:none}}
     .toggle{font-size:11px;padding:3px 10px;border-radius:999px;color:var(--text-soft);background:color-mix(in oklch,var(--paper-2) 55%,transparent);border:1px solid var(--paper-3);cursor:pointer;transition:color .18s,border-color .18s,background .18s}
     .toggle.on{color:var(--danger);border-color:color-mix(in oklch,var(--danger) 50%,transparent);background:color-mix(in oklch,var(--danger) 11%,transparent)}
+    /* Job + error rows respond on hover so dense ops lists stay scannable. */
+    .card .space-y-1 > div{transition:background .15s var(--ease)}
+    .card .space-y-1 > div:hover{background:color-mix(in oklch,var(--green) 4%,transparent)}
   `],
 })
 export class AdminOpsComponent implements OnInit {

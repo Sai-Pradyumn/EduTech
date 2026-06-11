@@ -36,10 +36,10 @@ import { AuditView, OpsService } from '../../core/services/ops.service';
       </div>
     }
 
-    <div class="card" style="padding:18px">
+    <div class="card motion-card-reveal motion-row-2" style="padding:18px">
       <div class="space-y-1">
         @for (l of filtered(); track l.id) {
-          <div class="flex items-center gap-3 text-sm py-2" style="border-bottom:1px solid var(--paper-3)">
+          <div class="al-row flex items-center gap-3 text-sm py-2" style="border-bottom:1px solid var(--paper-3)">
             <span class="pill font-mono">{{ l.action }}</span>
             <span class="min-w-0 flex-1 truncate">
               {{ l.actorEmail || 'system' }}
@@ -66,6 +66,12 @@ import { AuditView, OpsService } from '../../core/services/ops.service';
     .al-chip .ct { font-weight: 700; opacity: .7; }
     .al-export { font-size: 12.5px; padding: 8px 13px; border-radius: 11px; border: 1px solid var(--paper-3); background: var(--paper-2); color: var(--text-soft); cursor: pointer; transition: border-color .15s, color .15s; }
     .al-export:hover { border-color: var(--green); color: var(--green-deep); }
+    .al-row { transition: background .15s var(--ease); animation: astaRevealUp .35s var(--ease) both; }
+    .al-row:nth-child(2) { animation-delay: .04s; }
+    .al-row:nth-child(3) { animation-delay: .08s; }
+    .al-row:nth-child(4) { animation-delay: .12s; }
+    .al-row:hover { background: color-mix(in oklch, var(--green) 4%, transparent); }
+    @media (prefers-reduced-motion: reduce) { .al-row { animation: none; } }
   `],
 })
 export class AdminAuditLogsComponent implements OnInit {

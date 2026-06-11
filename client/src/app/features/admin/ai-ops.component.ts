@@ -27,7 +27,7 @@ interface Providers {
     </header>
 
     @if (overview(); as o) {
-      <div class="grid gap-3 sm:grid-cols-4 mb-5">
+      <div class="grid gap-3 sm:grid-cols-4 mb-5 motion-stagger">
         <div class="card" style="padding:16px"><p class="font-display text-2xl grad-flow">{{ o.calls }}</p><p class="t-label mt-1">AI calls ({{ o.windowDays }}d)</p></div>
         <div class="card" style="padding:16px"><p class="font-display text-2xl" style="color:var(--peri-deep)">~\${{ o.costUsd }}</p><p class="t-label mt-1">Est. cost</p></div>
         <div class="card" style="padding:16px"><p class="font-display text-2xl grad-flow">{{ o.avgLatencyMs }}ms</p><p class="t-label mt-1">Avg latency</p></div>
@@ -39,7 +39,7 @@ interface Providers {
 
     <!-- Spend over time — byDay was fetched but never rendered before -->
     @if (costs()?.byDay?.length) {
-      <div class="card mb-5" style="padding:18px">
+      <div class="card mb-5 motion-card-reveal motion-row-2" style="padding:18px">
         <div class="flex items-center justify-between mb-3">
           <p class="kicker">Spend over time · last {{ costs()!.byDay.length }} days</p>
           <span class="font-mono text-xs text-txt-mute">peak ~\${{ dayPeak() }}/day</span>
@@ -58,7 +58,7 @@ interface Providers {
       </div>
     }
 
-    <div class="grid gap-5 md:grid-cols-2 mb-5">
+    <div class="grid gap-5 md:grid-cols-2 mb-5 motion-row-3 motion-stagger">
       <div class="card" style="padding:18px">
         <p class="kicker mb-3">Cost by feature</p>
         @if (costs(); as c) {
@@ -110,8 +110,10 @@ interface Providers {
     .skel{background:linear-gradient(90deg,var(--paper-2) 25%,var(--paper-3) 50%,var(--paper-2) 75%);background-size:200% 100%;animation:s 1.4s ease infinite}@keyframes s{0%{background-position:200% 0}100%{background-position:-200% 0}}@media (prefers-reduced-motion:reduce){.skel{animation:none}}
     .cost-chart{display:flex;align-items:flex-end;gap:2px;height:84px}
     .cost-col{flex:1;height:100%;display:flex;align-items:flex-end;min-width:2px}
-    .cost-bar{display:block;width:100%;border-radius:3px 3px 0 0;background:linear-gradient(180deg,var(--peri,#8aa6ff),color-mix(in oklab,var(--peri,#8aa6ff) 60%,var(--ink)));min-height:2px;transition:height .4s var(--ease)}
-    .cost-col:hover .cost-bar{background:var(--green)}
+    .cost-bar{display:block;width:100%;border-radius:3px 3px 0 0;background:linear-gradient(180deg,var(--peri,#8aa6ff),color-mix(in oklab,var(--peri,#8aa6ff) 60%,var(--ink)));min-height:2px;transition:height .4s var(--ease);transform-origin:bottom;animation:aiBarGrow .7s var(--ease) both}
+    @keyframes aiBarGrow{from{transform:scaleY(0)}}
+    .cost-col:hover .cost-bar{background:var(--green);box-shadow:0 0 10px var(--asta-accent-glow)}
+    @media (prefers-reduced-motion:reduce){.cost-bar{animation:none}}
   `],
 })
 export class AdminAiOpsComponent implements OnInit {

@@ -31,14 +31,14 @@ interface AccountRow {
     </header>
 
     @if (overview(); as o) {
-      <div class="grid gap-3 sm:grid-cols-4 mb-5">
+      <div class="grid gap-3 sm:grid-cols-4 mb-5 motion-stagger">
         <div class="card" style="padding:16px"><p class="font-display text-2xl grad-flow">{{ o.totalAccounts }}</p><p class="t-label mt-1">Accounts</p></div>
         <div class="card" style="padding:16px"><p class="font-display text-2xl grad-flow">{{ o.paidAccounts }}</p><p class="t-label mt-1">Paid</p></div>
         <div class="card" style="padding:16px"><p class="font-display text-2xl" style="color:var(--green-deep)">₹{{ o.mrrInr }}</p><p class="t-label mt-1">Est. MRR</p></div>
         <div class="card" style="padding:16px"><p class="font-display text-2xl grad-flow">{{ o.paidTransactions }}</p><p class="t-label mt-1">Paid invoices</p></div>
       </div>
 
-      <div class="card mb-5" style="padding:18px">
+      <div class="card mb-5 motion-card-reveal motion-row-2" style="padding:18px">
         <p class="kicker mb-3">Plan distribution</p>
         <div class="space-y-2.5">
           @for (p of o.byPlan; track p.planId) {
@@ -48,7 +48,7 @@ interface AccountRow {
                 <span class="font-mono text-txt-mute">{{ p.count }}</span>
               </div>
               <div class="h-1.5 rounded-full overflow-hidden" style="background:var(--paper-3)">
-                <div class="h-full rounded-full" style="background:var(--green)"
+                <div class="h-full rounded-full ab-fill" style="background:linear-gradient(90deg, var(--green-deep), var(--green))"
                   [style.width.%]="o.totalAccounts ? (p.count / o.totalAccounts) * 100 : 0"></div>
               </div>
             </div>
@@ -59,11 +59,11 @@ interface AccountRow {
       <span class="skel" style="display:block;width:100%;height:120px;border-radius:12px"></span>
     }
 
-    <div class="card" style="padding:18px">
+    <div class="card motion-card-reveal motion-row-3" style="padding:18px">
       <p class="kicker mb-3">Accounts</p>
       <div class="space-y-1">
         @for (a of accounts(); track a.userId) {
-          <div class="flex items-center gap-3 text-sm py-1.5" style="border-bottom:1px solid var(--paper-3)">
+          <div class="ab-row flex items-center gap-3 text-sm py-1.5" style="border-bottom:1px solid var(--paper-3)">
             <span class="min-w-0 flex-1 truncate">{{ a.name }} <span class="text-txt-mute">· {{ a.email }}</span></span>
             <span class="pill capitalize">{{ a.planId }}</span>
             <span class="pill" [style.color]="a.status === 'active' ? 'var(--green-deep)' : 'var(--text-mute)'">{{ a.status }}</span>
@@ -76,7 +76,15 @@ interface AccountRow {
     </div>
   `,
   styles: [
-    `.skel{background:linear-gradient(90deg,var(--paper-2) 25%,var(--paper-3) 50%,var(--paper-2) 75%);background-size:200% 100%;animation:s 1.4s ease infinite}@keyframes s{0%{background-position:200% 0}100%{background-position:-200% 0}}@media (prefers-reduced-motion:reduce){.skel{animation:none}}`,
+    `
+      .skel{background:linear-gradient(90deg,var(--paper-2) 25%,var(--paper-3) 50%,var(--paper-2) 75%);background-size:200% 100%;animation:s 1.4s ease infinite}
+      @keyframes s{0%{background-position:200% 0}100%{background-position:-200% 0}}
+      .ab-fill{transform-origin:left;animation:abFill .8s var(--ease) .2s both;box-shadow:0 0 8px var(--asta-accent-glow)}
+      @keyframes abFill{from{transform:scaleX(0)}}
+      .ab-row{transition:background .15s var(--ease)}
+      .ab-row:hover{background:color-mix(in oklch,var(--green) 4%,transparent)}
+      @media (prefers-reduced-motion:reduce){.skel,.ab-fill{animation:none}}
+    `,
   ],
 })
 export class AdminBillingComponent implements OnInit {

@@ -21,7 +21,7 @@ import { FeatureFlagView } from '../../core/models';
 
     <div class="space-y-2.5">
       @for (f of flags(); track f.key) {
-        <div class="card flex items-center gap-4" style="padding:16px 18px">
+        <div class="card ff-row flex items-center gap-4" [class.ff-on]="f.enabled" style="padding:16px 18px">
           <div class="min-w-0 flex-1">
             <div class="flex items-center gap-2 flex-wrap">
               <span class="font-semibold text-sm">{{ f.label }}</span>
@@ -54,14 +54,22 @@ import { FeatureFlagView } from '../../core/models';
   `,
   styles: [
     `
-      .toggle { position: relative; width: 46px; height: 26px; border-radius: 999px; background: var(--paper-3); transition: background .2s; }
-      .toggle.on { background: var(--green); }
+      .ff-row { animation: astaRevealUp .4s var(--ease) both; transition: border-color .2s var(--ease), transform .2s var(--ease); }
+      .ff-row:nth-child(2) { animation-delay: .05s; }
+      .ff-row:nth-child(3) { animation-delay: .1s; }
+      .ff-row:nth-child(4) { animation-delay: .15s; }
+      .ff-row:nth-child(5) { animation-delay: .2s; }
+      .ff-row:hover { transform: translateY(-1px); }
+      /* Enabled flags carry a faint live edge so scan-reading the wall is instant. */
+      .ff-on { border-color: color-mix(in oklch, var(--green) 26%, var(--paper-3)); }
+      .toggle { position: relative; width: 46px; height: 26px; border-radius: 999px; background: var(--paper-3); transition: background .2s, box-shadow .2s; }
+      .toggle.on { background: var(--green); box-shadow: 0 0 12px var(--asta-accent-glow); }
       .toggle .knob { position: absolute; top: 3px; left: 3px; width: 20px; height: 20px; border-radius: 50%; background: #fff; box-shadow: var(--shadow-sm); transition: transform .2s var(--ease-spring); }
       .toggle.on .knob { transform: translateX(20px); }
       .toggle:disabled { opacity: .5; }
       .skel { display:block; border-radius:8px; background:linear-gradient(90deg,var(--paper-2) 25%,var(--paper-3) 50%,var(--paper-2) 75%); background-size:200% 100%; animation:skel-shimmer 1.4s ease infinite; }
       @keyframes skel-shimmer { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
-      @media (prefers-reduced-motion: reduce) { .skel,.toggle .knob { animation:none; transition:none } }
+      @media (prefers-reduced-motion: reduce) { .skel,.toggle .knob { animation:none; transition:none } .ff-row { animation:none } .ff-row:hover { transform:none } }
     `,
   ],
 })

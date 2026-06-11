@@ -29,7 +29,7 @@ interface Overview {
     </header>
 
     @if (overview(); as o) {
-      <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4 mb-5">
+      <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4 mb-5 motion-stagger">
         <div class="card" style="padding:16px"><p class="font-display text-2xl grad-flow">{{ o.dau }}</p><p class="t-label mt-1">Daily active</p></div>
         <div class="card" style="padding:16px"><p class="font-display text-2xl grad-flow">{{ o.wau }}</p><p class="t-label mt-1">Weekly active</p></div>
         <div class="card" style="padding:16px" title="Stickiness — share of weekly-active users who return on a given day (DAU ÷ WAU). 20%+ is healthy."><p class="font-display text-2xl grad-flow">{{ stickiness() }}%</p><p class="t-label mt-1">Stickiness (DAU/WAU)</p></div>
@@ -39,7 +39,7 @@ interface Overview {
       <span class="skel" style="display:block;height:80px;border-radius:12px;margin-bottom:20px"></span>
     }
 
-    <div class="grid gap-5 md:grid-cols-3 mb-5">
+    <div class="grid gap-5 md:grid-cols-3 mb-5 motion-row-2 motion-stagger">
       @for (f of funnels(); track f.name) {
         <div class="card" style="padding:18px">
           <p class="kicker mb-3">{{ f.name }} funnel</p>
@@ -51,7 +51,7 @@ interface Overview {
                   <span class="font-mono text-txt-mute">{{ s.users }} · {{ s.conversionPct }}%</span>
                 </div>
                 <div class="h-1.5 rounded-full overflow-hidden" style="background:var(--paper-3)">
-                  <div class="h-full rounded-full" style="background:var(--green)" [style.width.%]="s.conversionPct"></div>
+                  <div class="h-full rounded-full pa-fill" style="background:linear-gradient(90deg, var(--green-deep), var(--green))" [style.width.%]="s.conversionPct"></div>
                 </div>
               </div>
             }
@@ -61,7 +61,7 @@ interface Overview {
     </div>
 
     <!-- Retention (active users over time) — previously-unused /retention endpoint -->
-    <div class="card mb-5" style="padding:18px">
+    <div class="card mb-5 motion-card-reveal motion-row-3" style="padding:18px">
       <div class="flex items-center justify-between mb-3">
         <p class="kicker">Active users · last {{ retention().length }} days</p>
         @if (retentionPeak() > 0) { <span class="font-mono text-xs text-txt-mute">peak {{ retentionPeak() }}</span> }
@@ -106,8 +106,13 @@ interface Overview {
     .skel{background:linear-gradient(90deg,var(--paper-2) 25%,var(--paper-3) 50%,var(--paper-2) 75%);background-size:200% 100%;animation:s 1.4s ease infinite}@keyframes s{0%{background-position:200% 0}100%{background-position:-200% 0}}@media (prefers-reduced-motion:reduce){.skel{animation:none}}
     .ret-chart{display:flex;align-items:flex-end;gap:2px;height:84px}
     .ret-col{flex:1;height:100%;display:flex;align-items:flex-end;min-width:2px}
-    .ret-bar{display:block;width:100%;border-radius:3px 3px 0 0;background:linear-gradient(180deg,var(--green),var(--green-deep));min-height:2px;transition:height .4s var(--ease)}
-    .ret-col:hover .ret-bar{background:var(--peri,#8aa6ff)}
+    .ret-bar{display:block;width:100%;border-radius:3px 3px 0 0;background:linear-gradient(180deg,var(--green),var(--green-deep));min-height:2px;transition:height .4s var(--ease);transform-origin:bottom;animation:paBarGrow .7s var(--ease) both}
+    @keyframes paBarGrow{from{transform:scaleY(0)}}
+    .ret-col:hover .ret-bar{background:var(--peri,#8aa6ff);box-shadow:0 0 10px var(--asta-glow-violet)}
+    /* Funnel fills slide in from zero so conversion drop-off reads as motion. */
+    .pa-fill{transform-origin:left;animation:paFill .8s var(--ease) .25s both;box-shadow:0 0 8px var(--asta-accent-glow)}
+    @keyframes paFill{from{transform:scaleX(0)}}
+    @media (prefers-reduced-motion:reduce){.ret-bar,.pa-fill{animation:none}}
     .ev-search{padding:6px 11px;border-radius:9px;border:1px solid var(--paper-3);background:var(--paper-2);color:var(--text);font-size:12.5px;font-family:inherit;min-width:180px}
     .ev-search:focus{outline:none;border-color:var(--green)}
   `],
