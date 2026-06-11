@@ -67,14 +67,17 @@ import { CouncilVerdict, MentorCouncilService } from '../../core/services/mentor
   styles: [
     `
       :host { display: block; }
-      .verdict { border: 1px solid color-mix(in oklab, var(--green) 40%, var(--paper-3)); }
-      .v-glyph { font-size: 30px; }
-      .m-glyph { font-size: 18px; }
+      /* The verdict is the moment — accent ring + soft glow. */
+      .verdict { border: 1px solid color-mix(in oklab, var(--green) 40%, var(--paper-3)); box-shadow: 0 0 24px var(--asta-accent-glow); }
+      .v-glyph { font-size: 30px; animation: astaSoftPop .45s var(--ease-spring) .15s both; }
+      .m-glyph { font-size: 18px; transition: transform .3s var(--ease-spring); }
+      asta-card:hover .m-glyph { transform: scale(1.15) rotate(-6deg); }
       .m-agent { font-weight: 600; font-size: 14px; }
-      .chosen-tag { font-size: 10px; text-transform: uppercase; letter-spacing: .05em; padding: 2px 7px; border-radius: 999px; background: color-mix(in oklab, var(--green) 20%, transparent); color: var(--green-deep); }
+      .chosen-tag { font-size: 10px; text-transform: uppercase; letter-spacing: .05em; padding: 2px 7px; border-radius: 999px; background: color-mix(in oklab, var(--green) 20%, transparent); color: var(--green-deep); animation: astaSoftPop .35s var(--ease-spring) .4s both; }
       .urgency { margin-left: auto; font-size: 12px; color: var(--text-mute); font-variant-numeric: tabular-nums; }
       .m-stance { font-size: 13px; color: var(--peri, #8aa6ff); font-style: italic; }
-      .is-chosen { box-shadow: 0 0 0 1px var(--green) inset; }
+      .is-chosen { box-shadow: 0 0 0 1px var(--green) inset, 0 0 18px var(--asta-accent-glow); }
+      @media (prefers-reduced-motion: reduce) { .v-glyph, .chosen-tag { animation: none; } asta-card:hover .m-glyph { transform: none; } }
       .m-go { margin-top: 8px; font-size: 12px; padding: 4px 10px; border-radius: 999px; border: 1px solid var(--paper-3); background: transparent; color: var(--text-soft); cursor: pointer; }
       .m-go:hover { border-color: var(--green); color: var(--text); }
     `,

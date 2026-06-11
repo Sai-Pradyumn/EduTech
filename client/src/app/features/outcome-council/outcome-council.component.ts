@@ -86,9 +86,11 @@ import { CouncilAction, CouncilResult, OutcomeCouncilService } from '../../core/
   `,
   styles: [`
     :host { display: block; }
-    .verdict { border: 1px solid color-mix(in oklab, var(--green) 24%, var(--paper-3)); }
+    /* The ranked verdict carries the room — accent ring + glow; the action rises in. */
+    .verdict { border: 1px solid color-mix(in oklab, var(--green) 24%, var(--paper-3)); box-shadow: 0 0 24px var(--asta-accent-glow); }
     .g-lbl { font-size: 10.5px; color: var(--text-mute); text-transform: uppercase; letter-spacing: .05em; margin-top: 2px; text-align: center; }
-    .best-action { font-size: 19px; font-weight: 700; line-height: 1.2; }
+    .best-action { font-size: 19px; font-weight: 700; line-height: 1.2; animation: astaRevealUp .5s var(--ease) .15s both; }
+    @media (prefers-reduced-motion: reduce) { .best-action { animation: none; } }
     .best-why { font-size: 12.5px; color: var(--text-soft); margin-top: 4px; line-height: 1.5; }
     .verdict-text { font-size: 13.5px; color: var(--text-soft); margin-top: 6px; line-height: 1.55; }
     .meta-chip { font-size: 11px; padding: 3px 9px; border-radius: 999px; background: var(--paper-2); border: 1px solid var(--paper-3); color: var(--text-mute); }

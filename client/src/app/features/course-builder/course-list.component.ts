@@ -78,8 +78,12 @@ import { Course, CourseService, Difficulty } from '../../core/services/course.se
       .cb-input:focus { outline: none; border-color: var(--green); }
       .pill { padding: 2px 8px; border-radius: 999px; border: 1px solid var(--paper-3); background: color-mix(in oklab, var(--paper-2) 70%, transparent); }
       .status { font-size: 10px; text-transform: uppercase; letter-spacing: .05em; padding: 3px 9px; border-radius: 999px; border: 1px solid var(--paper-3); white-space: nowrap; }
-      .st-published { color: var(--green-deep); border-color: color-mix(in oklab, var(--green) 45%, var(--paper-3)); }
+      /* Published courses carry a live edge; drafts stay quiet. */
+      .st-published { color: var(--green-deep); border-color: color-mix(in oklab, var(--green) 45%, var(--paper-3)); box-shadow: 0 0 8px var(--asta-accent-glow); }
       .st-draft { color: var(--text-mute); }
+      .cb-stat .num { transition: transform .25s var(--ease-spring); display: inline-block; }
+      asta-card:hover .cb-stat .num { transform: scale(1.1); }
+      @media (prefers-reduced-motion: reduce) { asta-card:hover .cb-stat .num { transform: none; } }
       .line-clamp-2 { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
       .cb-stat { text-align: center; }
       .cb-stat .num { font-size: 26px; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--green-deep); }

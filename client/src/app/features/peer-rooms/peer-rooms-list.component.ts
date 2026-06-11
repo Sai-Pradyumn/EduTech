@@ -87,9 +87,12 @@ import { PeerRoom, PeerRoomService } from '../../core/services/peer-room.service
       .pr-input { width: 100%; background: var(--ink-2, var(--paper-2)); border: 1px solid var(--paper-3); border-radius: 12px; padding: 9px 12px; color: var(--text); font-size: 14px; }
       .pr-input:focus { outline: none; border-color: var(--green); }
       .pill { padding: 2px 8px; border-radius: 999px; border: 1px solid var(--paper-3); background: color-mix(in oklab, var(--paper-2) 70%, transparent); }
-      .status { font-size: 10px; text-transform: uppercase; letter-spacing: .05em; padding: 3px 9px; border-radius: 999px; border: 1px solid var(--paper-3); }
-      .st-open { color: var(--green-deep); border-color: color-mix(in oklab, var(--green) 45%, var(--paper-3)); }
+      .status { font-size: 10px; text-transform: uppercase; letter-spacing: .05em; padding: 3px 9px; border-radius: 999px; border: 1px solid var(--paper-3); position: relative; }
+      /* Open rooms breathe — the door is open, come in. */
+      .st-open { color: var(--green-deep); border-color: color-mix(in oklab, var(--green) 45%, var(--paper-3)); animation: prOpen 2.6s ease-in-out infinite; }
+      @keyframes prOpen { 0%, 100% { box-shadow: 0 0 0 0 var(--asta-accent-glow); } 50% { box-shadow: 0 0 10px 0 var(--asta-accent-glow); } }
       .st-closed { color: var(--text-mute); }
+      @media (prefers-reduced-motion: reduce) { .st-open { animation: none; } }
       .toolbar { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
       .toolbar .pr-input:first-child { flex: 1 1 200px; }
       .pr-sel { flex: 0 0 auto; width: auto; }

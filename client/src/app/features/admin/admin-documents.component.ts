@@ -76,6 +76,8 @@ import { DonutChartComponent, ChartDatum } from '../../shared/charts';
       th { text-align: left; font-family: var(--mono); font-size: 10px; text-transform: uppercase; letter-spacing: .04em; color: var(--text-mute); padding: 12px 14px; border-bottom: 1px solid var(--paper-3); white-space: nowrap; }
       td { padding: 11px 14px; border-bottom: 1px solid var(--paper-2); vertical-align: top; }
       tr:last-child td { border-bottom: none; }
+      tbody tr { transition: background .15s var(--ease); }
+      tbody tr:hover { background: color-mix(in oklch, var(--green) 5%, transparent); }
       .sub { font-size: 11px; color: var(--text-mute); white-space: nowrap; }
       .sub2 { font-size: 12px; color: var(--text-soft); }
       .clamp { display: inline-block; max-width: 240px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; vertical-align: bottom; }

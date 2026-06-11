@@ -66,14 +66,20 @@ import { LearningReplay, ReplayService } from '../../core/services/replay.servic
   styles: [
     `
       :host { display: block; }
-      .recap { border: 1px solid color-mix(in oklab, var(--peri,#8aa6ff) 30%, var(--paper-3)); }
-      .recap-text { font-size: 15px; line-height: 1.6; }
+      /* The narrated recap is the stage — violet ring + glow, text rises in. */
+      .recap { border: 1px solid color-mix(in oklab, var(--peri,#8aa6ff) 30%, var(--paper-3)); box-shadow: 0 0 22px var(--asta-glow-violet); }
+      .recap-text { font-size: 15px; line-height: 1.6; animation: astaRevealUp .5s var(--ease) .15s both; }
       .cnt { color: var(--text-mute); font-weight: 400; }
       .list { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 8px; }
+      .list li { animation: astaRevealUp .4s var(--ease) both; }
+      .list li:nth-child(2) { animation-delay: .05s; }
+      .list li:nth-child(3) { animation-delay: .1s; }
+      .list li:nth-child(4) { animation-delay: .15s; }
       .list li b { display: block; font-size: 13px; }
       .list li span { display: block; font-size: 12px; color: var(--text-mute); }
-      .next { text-align: left; width: 100%; background: var(--paper-2); border: 1px solid var(--paper-3); border-radius: 10px; padding: 8px 10px; cursor: pointer; }
-      .next:hover { border-color: var(--green); }
+      .next { text-align: left; width: 100%; background: var(--paper-2); border: 1px solid var(--paper-3); border-radius: 10px; padding: 8px 10px; cursor: pointer; transition: border-color .15s var(--ease), transform .15s var(--ease); }
+      .next:hover { border-color: var(--green); transform: translateX(2px); }
+      @media (prefers-reduced-motion: reduce) { .recap-text, .list li { animation: none; } .next:hover { transform: none; } }
     `,
   ],
 })
