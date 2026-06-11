@@ -18,7 +18,7 @@ import { ToastService } from '../../core/services/toast.service';
       </div>
     </header>
 
-    <div class="max-w-app mx-auto grid gap-5 md:grid-cols-3">
+    <div class="max-w-app mx-auto grid gap-5 md:grid-cols-3 motion-stagger">
       <div class="card md:col-span-2" style="padding:18px">
         <p class="kicker mb-3">White-label settings</p>
         <div class="space-y-3">
@@ -48,7 +48,7 @@ import { ToastService } from '../../core/services/toast.service';
 
       <div class="card" style="padding:18px">
         <p class="kicker mb-3">Certificate preview</p>
-        <div class="rounded-[14px] p-4 text-center" style="border:1px solid var(--paper-3);background:var(--paper-2)"
+        <div class="ob-preview rounded-[14px] p-4 text-center" style="border:1px solid var(--paper-3);background:var(--paper-2)"
           [style.borderTop]="'3px solid ' + (form.accentColor || 'var(--green)')">
           @if (form.logoUrl) { <img [src]="form.logoUrl" alt="logo" class="h-8 mx-auto mb-2 object-contain" /> }
           <p class="font-display text-lg">{{ form.publicName || 'Your Organization' }}</p>
@@ -60,7 +60,14 @@ import { ToastService } from '../../core/services/toast.service';
       </div>
     </div>
   `,
-  styles: [`.asta-input{width:100%;margin-top:4px;padding:8px 12px;border-radius:10px;border:1px solid var(--paper-3);background:var(--paper);font-size:14px}.asta-input:focus{outline:none;border-color:var(--green)}`],
+  styles: [`
+    .asta-input{width:100%;margin-top:4px;padding:8px 12px;border-radius:10px;border:1px solid var(--paper-3);background:var(--paper);font-size:14px}
+    .asta-input:focus{outline:none;border-color:var(--green)}
+    /* The live preview breathes slightly when settings change focus — it IS the product here. */
+    .ob-preview{transition:transform .25s var(--ease),box-shadow .25s var(--ease)}
+    .ob-preview:hover{transform:translateY(-2px) scale(1.01);box-shadow:var(--shadow-md)}
+    @media (prefers-reduced-motion:reduce){.ob-preview:hover{transform:none}}
+  `],
 })
 export class OrgBrandingComponent implements OnInit {
   private readonly enterprise = inject(EnterpriseService);
