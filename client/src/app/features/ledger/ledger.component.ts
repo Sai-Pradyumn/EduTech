@@ -106,7 +106,9 @@ const VER_META: Record<VerificationLevel, { label: string; tone: string }> = {
       .stat .lbl { font-size: 11px; color: var(--text-mute); text-transform: uppercase; letter-spacing: .05em; }
       .heat { display: flex; gap: 3px; overflow-x: auto; padding-bottom: 2px; }
       .hcol { display: flex; flex-direction: column; gap: 3px; }
-      .hcell { width: 12px; height: 12px; border-radius: 3px; background: var(--paper-3); flex-shrink: 0; }
+      .hcell { width: 12px; height: 12px; border-radius: 3px; background: var(--paper-3); flex-shrink: 0; transition: transform .15s var(--ease-spring), box-shadow .15s var(--ease); }
+      /* Heatmap cells pop under the cursor — the proof grid invites exploration. */
+      .heat .hcell:hover { transform: scale(1.35); box-shadow: 0 0 8px var(--asta-accent-glow); }
       .hcell[data-lvl="1"] { background: color-mix(in oklab, var(--green) 30%, var(--paper-3)); }
       .hcell[data-lvl="2"] { background: color-mix(in oklab, var(--green) 58%, var(--paper-3)); }
       .hcell[data-lvl="3"] { background: linear-gradient(135deg, var(--green-deep), var(--green)); }
@@ -114,8 +116,13 @@ const VER_META: Record<VerificationLevel, { label: string; tone: string }> = {
       .heat-legend { display: flex; align-items: center; gap: 4px; justify-content: flex-end; margin-top: 8px; font-size: 10px; color: var(--text-mute); }
       .heat-legend .hcell { width: 10px; height: 10px; }
       .timeline { display: flex; flex-direction: column; }
-      .row { display: flex; gap: 12px; padding: 10px 0; position: relative; }
-      .glyph { font-size: 16px; width: 28px; height: 28px; display: grid; place-items: center; border-radius: 50%; background: var(--paper-2); border: 1px solid var(--paper-3); flex-shrink: 0; z-index: 1; }
+      .row { display: flex; gap: 12px; padding: 10px 0; position: relative; animation: astaRevealUp .35s var(--ease) both; transition: background .15s var(--ease); border-radius: 8px; }
+      .row:nth-child(2) { animation-delay: .04s; }
+      .row:nth-child(3) { animation-delay: .08s; }
+      .row:nth-child(4) { animation-delay: .12s; }
+      .row:hover { background: color-mix(in oklch, var(--green) 4%, transparent); }
+      .glyph { font-size: 16px; width: 28px; height: 28px; display: grid; place-items: center; border-radius: 50%; background: var(--paper-2); border: 1px solid var(--paper-3); flex-shrink: 0; z-index: 1; transition: transform .3s var(--ease-spring), border-color .2s var(--ease); }
+      .row:hover .glyph { transform: scale(1.12); border-color: color-mix(in oklab, var(--green) 40%, var(--paper-3)); }
       .line { position: absolute; left: 13px; top: 32px; bottom: -10px; width: 2px; background: var(--paper-3); }
       .row:last-child .line { display: none; }
       .t-title { display: block; font-size: 14px; font-weight: 600; }
@@ -127,6 +134,10 @@ const VER_META: Record<VerificationLevel, { label: string; tone: string }> = {
       .lg-chip:hover { border-color: var(--green); }
       .lg-chip.on { color: var(--green-deep); border-color: color-mix(in oklab, var(--green) 50%, var(--paper-3)); background: color-mix(in oklab, var(--green) 12%, transparent); }
       .lg-chip .ct { font-weight: 700; opacity: .7; }
+      @media (prefers-reduced-motion: reduce) {
+        .row { animation: none; }
+        .heat .hcell:hover, .row:hover .glyph { transform: none; }
+      }
     `,
   ],
 })

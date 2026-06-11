@@ -121,8 +121,12 @@ import {
       .idea-chip { font-size: 12px; padding: 5px 11px; border-radius: 999px; border: 1px solid var(--paper-3); color: var(--text-soft); background: transparent; cursor: pointer; transition: border-color .2s, color .2s, transform .2s; }
       .idea-chip:hover { border-color: var(--green); color: var(--text); transform: translateY(-1px); }
       .thumb { height: 120px; border-radius: 12px; overflow: hidden; background: var(--ink-2, var(--paper-2)); border: 1px solid var(--paper-3); display: grid; place-items: center; }
-      .thumb img { width: 100%; height: 100%; object-fit: cover; }
-      .thumb-glyph { font-size: 40px; color: var(--green); }
+      .thumb img { width: 100%; height: 100%; object-fit: cover; transition: transform .4s var(--ease); }
+      /* Gallery feel: artwork zooms gently under the cursor; glyph thumbs spring. */
+      asta-card:hover .thumb img { transform: scale(1.05); }
+      .thumb-glyph { font-size: 40px; color: var(--green); transition: transform .35s var(--ease-spring); }
+      asta-card:hover .thumb-glyph { transform: scale(1.15) rotate(-5deg); }
+      @media (prefers-reduced-motion: reduce) { asta-card:hover .thumb img, asta-card:hover .thumb-glyph { transform: none; } }
       .fmt-badge { font-size: 10px; text-transform: uppercase; letter-spacing: .05em; padding: 2px 7px; border-radius: 999px; border: 1px solid var(--paper-3); color: var(--text-mute); white-space: nowrap; }
       .line-clamp-2 { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
       .toolbar { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }

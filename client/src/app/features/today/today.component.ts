@@ -146,15 +146,25 @@ import { DAILY_KIND_GLYPH, DailyDay, DailyItem, DailyPlan, DailyPlanMode, DailyP
       .mode-row { display: inline-flex; gap: 2px; background: var(--paper-2); border: 1px solid var(--paper-3); border-radius: 999px; padding: 3px; }
       .mode-pill { font-size: 12px; padding: 5px 12px; border-radius: 999px; border: none; background: transparent; color: var(--text-soft); cursor: pointer; }
       .mode-pill.active { background: color-mix(in oklab, var(--green) 22%, transparent); color: var(--text); }
-      .item { display: flex; flex-direction: column; gap: 6px; padding: 10px 12px; border-radius: 12px; border: 1px solid var(--paper-3); background: var(--paper-2); }
-      .item.focusing { border-color: color-mix(in oklab, var(--green) 45%, var(--paper-3)); }
+      .item { display: flex; flex-direction: column; gap: 6px; padding: 10px 12px; border-radius: 12px; border: 1px solid var(--paper-3); background: var(--paper-2); transition: border-color .2s var(--ease), transform .2s var(--ease), opacity .25s var(--ease); animation: astaRevealUp .4s var(--ease) both; }
+      .item:nth-child(2) { animation-delay: .05s; }
+      .item:nth-child(3) { animation-delay: .1s; }
+      .item:nth-child(4) { animation-delay: .15s; }
+      .item:nth-child(5) { animation-delay: .2s; }
+      .item:hover { border-color: color-mix(in oklab, var(--green) 28%, var(--paper-3)); }
+      /* The focused item is the live moment of this screen — soft breathing glow. */
+      .item.focusing { border-color: color-mix(in oklab, var(--green) 45%, var(--paper-3)); animation: tdFocus 2.4s ease-in-out infinite; }
+      @keyframes tdFocus { 0%, 100% { box-shadow: 0 0 0 0 var(--asta-accent-glow); } 50% { box-shadow: 0 0 18px 0 var(--asta-accent-glow); } }
       .item.dragging { opacity: .4; }
       .item-row { display: flex; align-items: center; gap: 10px; }
       .grip { cursor: grab; color: var(--text-mute); font-size: 13px; line-height: 1; user-select: none; flex-shrink: 0; }
       .grip:active { cursor: grabbing; }
       .item.done { opacity: .55; }
       .item.done .i-title { text-decoration: line-through; }
-      .check { width: 22px; height: 22px; border-radius: 6px; border: 1.5px solid var(--paper-3); background: transparent; color: var(--green); cursor: pointer; flex-shrink: 0; font-size: 13px; }
+      .check { width: 22px; height: 22px; border-radius: 6px; border: 1.5px solid var(--paper-3); background: transparent; color: var(--green); cursor: pointer; flex-shrink: 0; font-size: 13px; transition: border-color .15s var(--ease), background .15s var(--ease), transform .15s var(--ease-spring); }
+      .check:hover { border-color: var(--green); }
+      .check:active { transform: scale(.85); }
+      .item.done .check { background: color-mix(in oklab, var(--green) 18%, transparent); border-color: var(--green); animation: astaSoftPop .3s var(--ease-spring); }
       .i-glyph { font-size: 16px; }
       .i-title { display: block; font-size: 14px; font-weight: 600; }
       .i-reason { display: block; font-size: 11px; color: var(--text-mute); }
@@ -186,6 +196,10 @@ import { DAILY_KIND_GLYPH, DailyDay, DailyItem, DailyPlan, DailyPlanMode, DailyP
       .mood.on { border-color: color-mix(in oklab, var(--peri, #8aa6ff) 50%, var(--paper-3)); background: color-mix(in oklab, var(--peri, #8aa6ff) 14%, transparent); filter: grayscale(0); opacity: 1; }
       .reflect-in { width: 100%; font: inherit; font-size: 13px; border-radius: 9px; border: 1px solid var(--paper-3); background: var(--paper); color: var(--text); padding: 7px 10px; }
       .reflect-in:focus { outline: none; border-color: var(--peri, #8aa6ff); }
+      @media (prefers-reduced-motion: reduce) {
+        .item, .item.focusing, .item.done .check { animation: none; }
+        .check:active { transform: none; }
+      }
     `,
   ],
 })

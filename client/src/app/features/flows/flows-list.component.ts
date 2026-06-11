@@ -208,9 +208,12 @@ interface FlowIdea {
       .st-completed { color: var(--peri, #8aa6ff); }
       .st-draft, .st-archived { color: var(--text-mute); }
       .prog-track { height: 6px; border-radius: 999px; background: var(--paper-3); overflow: hidden; }
-      .prog-fill { display: block; height: 100%; background: linear-gradient(90deg, var(--green-deep), var(--green)); transition: width 0.4s var(--ease); }
-      .resume-btn { margin-top: 12px; width: 100%; padding: 8px 12px; border-radius: 10px; border: 1px solid color-mix(in oklab, var(--green) 35%, var(--paper-3)); background: color-mix(in oklab, var(--green) 10%, transparent); color: var(--green-deep); font-size: 12.5px; font-weight: 600; cursor: pointer; transition: background .15s; }
-      .resume-btn:hover { background: color-mix(in oklab, var(--green) 20%, transparent); }
+      .prog-fill { display: block; height: 100%; background: linear-gradient(90deg, var(--green-deep), var(--green)); transition: width 0.4s var(--ease); transform-origin: left; animation: flFill .8s var(--ease) .25s both; box-shadow: 0 0 8px var(--asta-accent-glow); }
+      @keyframes flFill { from { transform: scaleX(0); } }
+      .resume-btn { margin-top: 12px; width: 100%; padding: 8px 12px; border-radius: 10px; border: 1px solid color-mix(in oklab, var(--green) 35%, var(--paper-3)); background: color-mix(in oklab, var(--green) 10%, transparent); color: var(--green-deep); font-size: 12.5px; font-weight: 600; cursor: pointer; transition: background .15s, transform .15s var(--ease-spring); }
+      .resume-btn:hover { background: color-mix(in oklab, var(--green) 20%, transparent); transform: translateY(-1px); }
+      .resume-btn:active { transform: scale(.97); }
+      @media (prefers-reduced-motion: reduce) { .prog-fill { animation: none; } .resume-btn:hover { transform: none; } }
       .line-clamp-2 { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
       .fl-toolbar { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
       .fl-search { position: relative; display: flex; align-items: center; flex: 1; min-width: 200px; }

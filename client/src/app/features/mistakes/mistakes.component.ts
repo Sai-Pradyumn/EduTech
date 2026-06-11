@@ -233,7 +233,9 @@ type Filter = 'all' | 'due' | MistakeStatus;
       .hm-row { display: grid; grid-template-columns: 150px 1fr auto; align-items: center; gap: 10px; }
       .hm-label { font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
       .hm-track { height: 8px; border-radius: 999px; background: var(--paper-3); overflow: hidden; }
-      .hm-fill { display: block; height: 100%; border-radius: 999px; transition: width .4s var(--ease); }
+      .hm-fill { display: block; height: 100%; border-radius: 999px; transition: width .4s var(--ease); transform-origin: left; animation: mkFill .8s var(--ease) .25s both; }
+      @keyframes mkFill { from { transform: scaleX(0); } }
+      @media (prefers-reduced-motion: reduce) { .hm-fill { animation: none; } }
       .hm-meta { font-size: 11px; color: var(--text-mute); font-variant-numeric: tabular-nums; white-space: nowrap; }
       .mk-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
       .mk-tools { display: flex; gap: 6px; align-items: center; }
@@ -268,7 +270,10 @@ type Filter = 'all' | 'due' | MistakeStatus;
       .ar-check { color: var(--green); }
       .ar-label { flex: 1; font-size: 13px; }
       .ar-go { color: var(--text-mute); font-size: 12px; }
-      .due-banner { border: 1px solid color-mix(in oklab, var(--peri, #8aa6ff) 35%, var(--paper-3)); }
+      /* Due-for-review banner breathes gently — it is the call to action. */
+      .due-banner { border: 1px solid color-mix(in oklab, var(--peri, #8aa6ff) 35%, var(--paper-3)); animation: mkDue 3s ease-in-out infinite; }
+      @keyframes mkDue { 0%, 100% { box-shadow: 0 0 0 0 var(--asta-glow-violet); } 50% { box-shadow: 0 0 16px 0 var(--asta-glow-violet); } }
+      @media (prefers-reduced-motion: reduce) { .due-banner { animation: none; } }
       .review-mini { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding-left: 24px; }
       .rm-q { font-size: 12px; color: var(--text-mute); }
       .review-block { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--paper-3); background: var(--paper-2); }

@@ -76,8 +76,10 @@ import { SpaceService, StudySpace } from '../../core/services/space.service';
       :host { display: block; }
       .sp-input { width: 100%; background: var(--ink-2, var(--paper-2)); border: 1px solid var(--paper-3); border-radius: 12px; padding: 10px 12px; color: var(--text); font-size: 14px; }
       .sp-input:focus { outline: none; border-color: var(--green); }
-      .pill { padding: 2px 8px; border-radius: 999px; border: 1px solid var(--paper-3); background: color-mix(in oklab, var(--paper-2) 70%, transparent); }
+      .pill { padding: 2px 8px; border-radius: 999px; border: 1px solid var(--paper-3); background: color-mix(in oklab, var(--paper-2) 70%, transparent); transition: border-color .2s var(--ease), color .2s var(--ease); }
       .chip-ok { color: var(--green-deep); border-color: color-mix(in oklab, var(--green) 40%, var(--paper-3)); }
+      /* Hovering a space warms its source/artifact pills toward the accent. */
+      asta-card:hover .pill { border-color: color-mix(in oklab, var(--green) 35%, var(--paper-3)); color: var(--text-soft); }
       .line-clamp-2 { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
       .toolbar { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
       .toolbar .sp-input:first-child { flex: 1 1 220px; }
