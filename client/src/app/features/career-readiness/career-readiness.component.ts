@@ -281,8 +281,8 @@ export class CareerReadinessComponent {
   downloadPlanPdf(): void {
     const an = this.a();
     if (!an) return;
-    downloadPdf(`career-readiness-${an.role.title}`.replace(/[^a-z0-9]+/gi, '-').toLowerCase(), `Career Readiness — ${an.role.title} (${an.role.level})`, `${an.readinessScore}% ready · ${this.bandLabel(an.band)}`, this.planSections(an));
-    this.toast.success('Readiness PDF downloaded');
+    void downloadPdf(`career-readiness-${an.role.title}`.replace(/[^a-z0-9]+/gi, '-').toLowerCase(), `Career Readiness — ${an.role.title} (${an.role.level})`, `${an.readinessScore}% ready · ${this.bandLabel(an.band)}`, this.planSections(an))
+      .then(() => this.toast.success('Readiness PDF downloaded'));
   }
 
   toggle(k: ReadinessDimension['key']): void { this.open.set(this.open() === k ? null : k); }

@@ -166,8 +166,8 @@ export class ResumeComponent {
     const rr = this.r();
     if (!rr) return;
     const name = (rr.headline || 'resume').replace(/[^a-z0-9]+/gi, '-').toLowerCase();
-    downloadPdf(`${name}.pdf`, rr.headline || 'Resume', rr.skills.join(' · '), this.resumeSections());
-    this.toast.success('Resume PDF downloaded');
+    void downloadPdf(`${name}.pdf`, rr.headline || 'Resume', rr.skills.join(' · '), this.resumeSections())
+      .then(() => this.toast.success('Resume PDF downloaded'));
   }
   go(route: string): void { this.router.navigate([route]); }
 }

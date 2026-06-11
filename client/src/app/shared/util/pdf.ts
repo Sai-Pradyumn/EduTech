@@ -1,17 +1,20 @@
-import { jsPDF } from 'jspdf';
 import type { PrintSection } from './print';
 
 /**
  * Generate and download a real .pdf file from structured sections, using jsPDF.
  * Text-based (selectable, small file size), with word-wrap and automatic
  * pagination. Shares the {@link PrintSection} shape with the browser-print path.
+ *
+ * jsPDF is dynamically imported so the library only loads on the (rare) export
+ * click instead of shipping inside every feature chunk that offers a download.
  */
-export function downloadPdf(
+export async function downloadPdf(
   filename: string,
   title: string,
   subtitle: string,
   sections: PrintSection[],
-): void {
+): Promise<void> {
+  const { jsPDF } = await import('jspdf');
   const doc = new jsPDF({ unit: 'pt', format: 'a4' });
   const pageW = doc.internal.pageSize.getWidth();
   const pageH = doc.internal.pageSize.getHeight();

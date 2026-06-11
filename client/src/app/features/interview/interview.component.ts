@@ -357,8 +357,8 @@ export class InterviewComponent {
     printDocument(`Interview report — ${s.typeLabel}`, this.reportSubtitle(s), this.reportSections(s));
   }
   downloadReportPdf(s: InterviewSession): void {
-    downloadPdf(`interview-${s.typeLabel}`.replace(/[^a-z0-9]+/gi, '-').toLowerCase(), `Interview report — ${s.typeLabel}`, this.reportSubtitle(s), this.reportSections(s));
-    this.toast.success('Report PDF downloaded');
+    void downloadPdf(`interview-${s.typeLabel}`.replace(/[^a-z0-9]+/gi, '-').toLowerCase(), `Interview report — ${s.typeLabel}`, this.reportSubtitle(s), this.reportSections(s))
+      .then(() => this.toast.success('Report PDF downloaded'));
   }
   date(iso: string): string { return new Date(iso).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }); }
   scoreColor(s: number | null): string { const v = s ?? 0; return v >= 70 ? 'var(--green-deep)' : v >= 50 ? 'var(--coral, #ffb454)' : 'var(--danger, #ff5d5d)'; }
