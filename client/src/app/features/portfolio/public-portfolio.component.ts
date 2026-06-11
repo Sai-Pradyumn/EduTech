@@ -14,9 +14,10 @@ import { PortfolioService, PublicPortfolio } from '../../core/services/portfolio
   imports: [RouterLink, CardComponent, EmptyStateComponent, SkeletonComponent, LogoComponent],
   template: `
     <div class="wrap">
+      <div class="pf-bloom" aria-hidden="true"></div>
       <header class="pub-top">
         <a routerLink="/"><asta-logo /></a>
-        <span class="verify">Built on Asta</span>
+        <span class="verify"><span class="v-dot" aria-hidden="true"></span>Built on Asta</span>
       </header>
 
       @if (loading()) {
@@ -26,7 +27,7 @@ import { PortfolioService, PublicPortfolio } from '../../core/services/portfolio
         <asta-card><asta-empty-state title="This portfolio is not published" description="The link may be incorrect, or the owner hasn't published yet."></asta-empty-state></asta-card>
       } @else if (p()) {
         @if (p(); as pp) {
-          <asta-card class="block hero">
+          <asta-card class="block hero motion-fade-up">
             <p class="kicker mb-1">{{ pp.targetRole }}</p>
             <h1 class="h-title">{{ pp.title }}</h1>
             <p class="h-tag">{{ pp.tagline }}</p>
@@ -39,9 +40,9 @@ import { PortfolioService, PublicPortfolio } from '../../core/services/portfolio
 
           @if (pp.projects.length) {
             <p class="kicker mt-5 mb-3">Projects</p>
-            <div class="grid gap-3 md:grid-cols-2">
+            <div class="grid gap-3 md:grid-cols-2 motion-stagger">
               @for (pr of pp.projects; track pr.projectId) {
-                <asta-card class="block">
+                <asta-card class="block proj-card">
                   <div class="flex items-center justify-between gap-2"><span class="proj-title">{{ pr.title }}</span></div>
                   <div class="flex flex-wrap gap-1 mt-1.5">@for (t of pr.stack.slice(0,5); track t) { <span class="tech">{{ t }}</span> }</div>
                   <p class="proj-cs">{{ pr.caseStudy }}</p>
@@ -71,9 +72,13 @@ import { PortfolioService, PublicPortfolio } from '../../core/services/portfolio
   `,
   styles: [`
     :host { display: block; }
-    .wrap { max-width: 920px; margin: 0 auto; padding: 24px 18px 60px; min-height: 100dvh; }
-    .pub-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 18px; }
-    .verify { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--green-deep); padding: 4px 10px; border-radius: 999px; border: 1px solid color-mix(in oklab, var(--green) 40%, var(--paper-3)); }
+    .wrap { position: relative; max-width: 920px; margin: 0 auto; padding: 24px 18px 60px; min-height: 100dvh; }
+    .pf-bloom { position: absolute; top: -200px; left: 50%; transform: translateX(-50%); width: 760px; height: 480px; border-radius: 50%; filter: blur(110px); opacity: .35; pointer-events: none; background: radial-gradient(circle, color-mix(in oklch, var(--green) 24%, transparent), transparent 70%); }
+    .pub-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 18px; position: relative; }
+    .verify { display: inline-flex; align-items: center; gap: 7px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--green-deep); padding: 4px 10px; border-radius: 999px; border: 1px solid color-mix(in oklab, var(--green) 40%, var(--paper-3)); }
+    .v-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--green); animation: astaPulse 2.4s ease-in-out infinite; }
+    .proj-card { transition: transform .22s var(--ease), box-shadow .22s var(--ease); }
+    .proj-card:hover { transform: translateY(-3px); box-shadow: var(--shadow-md); }
     .hero { border: 1px solid color-mix(in oklab, var(--green) 22%, var(--paper-3)); }
     .h-title { font-size: 26px; font-weight: 700; line-height: 1.1; }
     .h-tag { font-size: 14px; color: var(--text-soft); margin-top: 4px; }

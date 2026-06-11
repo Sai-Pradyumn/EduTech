@@ -25,6 +25,7 @@ import { FieldComponent } from '../../shared/ui/field.component';
 import { ChipInputComponent } from '../../shared/ui/chip-input.component';
 import { SkeletonComponent } from '../../shared/ui/skeleton.component';
 import { EmptyStateComponent } from '../../shared/ui/empty-state.component';
+import { MagneticDirective } from '../../shared/directives/magnetic.directive';
 
 type Form = Pick<
   CreateStudentProfilePayload,
@@ -51,7 +52,7 @@ type Form = Pick<
   selector: 'asta-profile',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormsModule, DatePipe, FieldComponent, ChipInputComponent, SkeletonComponent, EmptyStateComponent],
+  imports: [FormsModule, DatePipe, FieldComponent, ChipInputComponent, SkeletonComponent, EmptyStateComponent, MagneticDirective],
   template: `
     @if (loading()) {
       <div class="mx-auto" style="max-width:var(--maxw-app)">
@@ -78,10 +79,20 @@ type Form = Pick<
       @if (form(); as f) {
       <form class="mx-auto" style="max-width:var(--maxw-app)" (ngSubmit)="save()">
         <!-- Account -->
-        <section class="card mb-4 p-5 md:p-6">
-          <h2 class="t-h-card mb-1">Account</h2>
-          <p class="t-small text-txt-mute mb-4">Your identity across Asta.</p>
-          <div class="grid gap-x-4 sm:grid-cols-2">
+        <section class="card mb-4 p-5 md:p-6 motion-card-reveal motion-row-primary" style="--motion-card-index:0">
+          <div class="sec-head">
+            <div class="flex items-center gap-3">
+              <span class="pf-avatar" aria-hidden="true">{{ initial() }}</span>
+              <div>
+                <h2 class="t-h-card mb-0.5">Account</h2>
+                <p class="t-small text-txt-mute">Your identity across Asta.</p>
+              </div>
+            </div>
+            <span class="panel-ico" aria-hidden="true">
+              <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+            </span>
+          </div>
+          <div class="grid gap-x-4 sm:grid-cols-2 mt-4">
             <asta-field label="Full name">
               <input class="input" [(ngModel)]="f.fullName" name="fullName" required />
             </asta-field>
@@ -100,9 +111,16 @@ type Form = Pick<
         </section>
 
         <!-- Learning profile -->
-        <section class="card mb-4 p-5 md:p-6">
-          <h2 class="t-h-card mb-1">Learning profile</h2>
-          <p class="t-small text-txt-mute mb-4">These shape every roadmap, quiz and tutor reply.</p>
+        <section class="card mb-4 p-5 md:p-6 motion-card-reveal motion-row-2" style="--motion-card-index:0">
+          <div class="sec-head mb-4">
+            <div>
+              <h2 class="t-h-card mb-0.5">Learning profile</h2>
+              <p class="t-small text-txt-mute">These shape every roadmap, quiz and tutor reply.</p>
+            </div>
+            <span class="panel-ico" aria-hidden="true">
+              <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19c0-8 7-14 16-14M4 19h.01M20 5h.01"/></svg>
+            </span>
+          </div>
 
           <asta-field label="Main goal">
             <input class="input" [(ngModel)]="f.mainGoal" name="mainGoal" list="goal-suggestions" placeholder="e.g. Become a MERN Stack Developer" />
@@ -160,9 +178,16 @@ type Form = Pick<
         </section>
 
         <!-- Preferences -->
-        <section class="card mb-4 p-5 md:p-6">
-          <h2 class="t-h-card mb-1">Preferences</h2>
-          <p class="t-small text-txt-mute mb-4">Appearance and language.</p>
+        <section class="card mb-4 p-5 md:p-6 motion-card-reveal motion-row-2" style="--motion-card-index:1">
+          <div class="sec-head mb-4">
+            <div>
+              <h2 class="t-h-card mb-0.5">Preferences</h2>
+              <p class="t-small text-txt-mute">Appearance and language.</p>
+            </div>
+            <span class="panel-ico peri" aria-hidden="true">
+              <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1Z"/></svg>
+            </span>
+          </div>
 
           <asta-field label="Appearance">
             <div class="flex flex-wrap gap-2">
@@ -187,9 +212,16 @@ type Form = Pick<
         </section>
 
         <!-- Voice -->
-        <section class="card mb-4 p-5 md:p-6">
-          <h2 class="t-h-card mb-1">Voice</h2>
-          <p class="t-small text-txt-mute mb-4">Hands-free “Hey Asta” activation and spoken replies.</p>
+        <section class="card mb-4 p-5 md:p-6 motion-card-reveal motion-row-3" style="--motion-card-index:0">
+          <div class="sec-head mb-4">
+            <div>
+              <h2 class="t-h-card mb-0.5">Voice</h2>
+              <p class="t-small text-txt-mute">Hands-free “Hey Asta” activation and spoken replies.</p>
+            </div>
+            <span class="panel-ico coral" aria-hidden="true">
+              <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a3 3 0 0 0-3 3v6a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>
+            </span>
+          </div>
 
           @if (!voice.supported) {
             <p class="t-small text-txt-mute">Voice isn’t supported in this browser. Try Chrome or Edge to enable “Hey Asta”.</p>
@@ -211,7 +243,7 @@ type Form = Pick<
 
         <div class="flex items-center justify-end gap-3 pb-2">
           @if (savedAt()) { <span class="t-small text-txt-mute">Saved.</span> }
-          <button type="submit" class="btn-primary" [disabled]="saving() || !f.fullName.trim()">
+          <button type="submit" class="btn-primary" astaMagnetic [disabled]="saving() || !f.fullName.trim()">
             {{ saving() ? 'Saving…' : 'Save changes' }}
           </button>
         </div>
@@ -221,6 +253,13 @@ type Form = Pick<
   `,
   styles: [
     `
+      .sec-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+      .pf-avatar {
+        display: grid; place-items: center; width: 46px; height: 46px; border-radius: 14px;
+        background: linear-gradient(135deg, var(--green-deep), var(--green));
+        color: var(--ink); font-size: 20px; font-weight: 700; flex-shrink: 0;
+        box-shadow: 0 8px 24px var(--asta-accent-glow);
+      }
       .acct-meta {
         display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px;
         margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--paper-3);
@@ -277,6 +316,12 @@ export class ProfileComponent implements OnInit {
   readonly form = signal<Form | null>(null);
   /** Read-only account metadata surfaced in the Account section (from the loaded profile). */
   readonly meta = signal<{ createdAt: string; onboardingCompleted: boolean } | null>(null);
+
+  /** Avatar initial — prefers the edited form name, falls back to the session user. */
+  initial(): string {
+    const n = this.form()?.fullName?.trim() || this.auth.user()?.name?.trim() || 'A';
+    return n[0].toUpperCase();
+  }
 
   memberDays(): number {
     const c = this.meta()?.createdAt;

@@ -61,12 +61,12 @@ const DRAFT_KEY = 'asta.onboarding-draft';
       <div class="w-full" style="max-width:600px">
         <div class="flex gap-1.5 mb-8">
           @for (s of stepArray; track s) {
-            <span class="h-1.5 flex-1 rounded-full transition-colors"
+            <span class="h-1.5 flex-1 rounded-full transition-all" [class.ob-seg-on]="s <= step()"
               [style.background]="s <= step() ? 'var(--green)' : 'var(--paper-3)'"></span>
           }
         </div>
 
-        <div class="card" style="padding:28px">
+        <div class="card ob-card" style="padding:28px">
           <p class="kicker mb-3">Step {{ step() }} of {{ totalSteps }}</p>
 
           @switch (step()) {
@@ -204,6 +204,23 @@ const DRAFT_KEY = 'asta.onboarding-draft';
       }
       .seg:hover { border-color: var(--green-deep); }
       .seg-on { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+
+      /* Filled progress segments glow softly so momentum is felt. */
+      .ob-seg-on { box-shadow: 0 0 10px var(--asta-accent-glow); }
+
+      /* Step-enter cascade: the @switch re-creates each case's nodes on step
+         change, so this insertion animation replays per step — heading first,
+         fields following. The static footer/kicker animate once on load. */
+      .ob-card > * { animation: astaRevealUp 0.4s var(--ease) both; }
+      .ob-card > *:nth-child(3) { animation-delay: 0.05s; }
+      .ob-card > *:nth-child(4) { animation-delay: 0.1s; }
+      .ob-card > *:nth-child(5) { animation-delay: 0.15s; }
+      .ob-card > *:nth-child(6) { animation-delay: 0.2s; }
+
+      @media (prefers-reduced-motion: reduce) {
+        .ob-card > * { animation: none; }
+        .ob-seg-on { box-shadow: none; }
+      }
     `,
   ],
 })

@@ -61,6 +61,8 @@ import {
         border-color: var(--peri);
         box-shadow: 0 0 0 3px color-mix(in oklch, var(--peri) 16%, transparent);
       }
+      .search > svg { transition: color 0.2s var(--ease), transform 0.25s var(--ease-spring); }
+      .search:focus-within > svg { color: var(--peri-deep); transform: scale(1.08); }
       input {
         flex: 1;
         min-width: 0;

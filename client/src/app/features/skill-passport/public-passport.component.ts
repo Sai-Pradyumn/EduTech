@@ -21,9 +21,10 @@ import { LEDGER_KIND_META, LedgerKind } from '../../core/services/ledger.service
   template: `
     <div class="wrap" [class.standalone]="!preview">
       @if (!preview) {
+        <div class="pp-bloom" aria-hidden="true"></div>
         <header class="pub-top">
           <a routerLink="/"><asta-logo /></a>
-          <span class="verify">Verified by Asta</span>
+          <span class="verify"><span class="v-dot" aria-hidden="true"></span>Verified by Asta</span>
         </header>
       } @else {
         <div class="preview-banner">Preview of your public profile — this is what visitors see. <a routerLink="/app/skill-passport">Back to passport</a></div>
@@ -36,7 +37,7 @@ import { LEDGER_KIND_META, LedgerKind } from '../../core/services/ledger.service
         <asta-card><asta-empty-state title="This profile is private or unavailable" description="The learner may not have published their Skill Passport, or the link is incorrect."></asta-empty-state></asta-card>
       } @else if (p()) {
         @if (p(); as pp) {
-        <asta-card class="block identity">
+        <asta-card class="block identity motion-fade-up">
           <div class="flex items-start gap-4 flex-wrap">
             <span class="avatar">{{ initial(pp.identity.name) }}</span>
             <div class="min-w-0 flex-1">
@@ -51,13 +52,13 @@ import { LEDGER_KIND_META, LedgerKind } from '../../core/services/ledger.service
           </div>
         </asta-card>
 
-        <div class="grid gap-3 grid-cols-3 sm:grid-cols-6 my-3">
+        <div class="grid gap-3 grid-cols-3 sm:grid-cols-6 my-3 motion-stagger">
           @for (m of tiles(pp); track m.label) {
             <asta-card class="stat"><p class="num">{{ m.value }}</p><p class="lbl">{{ m.label }}</p></asta-card>
           }
         </div>
 
-        <div class="grid gap-3 lg:grid-cols-2 items-start">
+        <div class="grid gap-3 lg:grid-cols-2 items-start motion-stagger">
           @if (pp.skills.length) {
             <asta-card class="block">
               <p class="kicker mb-3">Verified skills</p>
@@ -114,13 +115,16 @@ import { LEDGER_KIND_META, LedgerKind } from '../../core/services/ledger.service
   `,
   styles: [`
     :host { display: block; }
+    .wrap { position: relative; }
     .wrap.standalone { max-width: 920px; margin: 0 auto; padding: 24px 18px 60px; min-height: 100dvh; }
-    .pub-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 18px; }
-    .verify { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--green-deep); padding: 4px 10px; border-radius: 999px; border: 1px solid color-mix(in oklab, var(--green) 40%, var(--paper-3)); }
+    .pp-bloom { position: absolute; top: -200px; left: 50%; transform: translateX(-50%); width: 760px; height: 480px; border-radius: 50%; filter: blur(110px); opacity: .35; pointer-events: none; background: radial-gradient(circle, color-mix(in oklch, var(--green) 24%, transparent), transparent 70%); }
+    .pub-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 18px; position: relative; }
+    .verify { display: inline-flex; align-items: center; gap: 7px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--green-deep); padding: 4px 10px; border-radius: 999px; border: 1px solid color-mix(in oklab, var(--green) 40%, var(--paper-3)); }
+    .v-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--green); animation: astaPulse 2.4s ease-in-out infinite; }
     .preview-banner { font-size: 12.5px; padding: 8px 12px; border-radius: 10px; background: color-mix(in oklab, var(--peri, #8aa6ff) 12%, transparent); border: 1px solid color-mix(in oklab, var(--peri, #8aa6ff) 30%, transparent); margin-bottom: 14px; }
     .preview-banner a, .footer a, .lnk { color: var(--peri, #8aa6ff); }
     .identity { border: 1px solid color-mix(in oklab, var(--green) 22%, var(--paper-3)); }
-    .avatar { display: grid; place-items: center; width: 58px; height: 58px; border-radius: 16px; background: linear-gradient(135deg, var(--green-deep), var(--green)); color: var(--ink); font-size: 25px; font-weight: 700; flex-shrink: 0; }
+    .avatar { display: grid; place-items: center; width: 58px; height: 58px; border-radius: 16px; background: linear-gradient(135deg, var(--green-deep), var(--green)); color: var(--ink); font-size: 25px; font-weight: 700; flex-shrink: 0; box-shadow: 0 10px 30px var(--asta-accent-glow); animation: astaSoftPop .45s var(--ease-spring) .15s both; }
     .ident-name { font-size: 24px; font-weight: 700; line-height: 1.1; }
     .ident-head { font-size: 14px; color: var(--text-soft); margin-top: 2px; }
     .top-chip { font-size: 11.5px; padding: 2px 8px; border-radius: 999px; border: 1px solid color-mix(in oklab, var(--green) 40%, var(--paper-3)); color: var(--green-deep); }
@@ -131,7 +135,8 @@ import { LEDGER_KIND_META, LedgerKind } from '../../core/services/ledger.service
     .skill-row { display: grid; grid-template-columns: 130px 1fr auto; align-items: center; gap: 10px; }
     .s-label { font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .s-track { height: 8px; border-radius: 999px; background: var(--paper-3); }
-    .s-fill { display: block; height: 100%; border-radius: 999px; background: linear-gradient(90deg, var(--green-deep), var(--green)); }
+    .s-fill { display: block; height: 100%; border-radius: 999px; background: linear-gradient(90deg, var(--green-deep), var(--green)); transform-origin: left; animation: ppFill .9s var(--ease) .35s both; }
+    @keyframes ppFill { from { transform: scaleX(0); } }
     .s-meta { font-size: 10.5px; color: var(--text-mute); white-space: nowrap; }
     .proj { padding: 9px 11px; border: 1px solid var(--paper-3); border-radius: 11px; background: var(--paper-2); }
     .proj-title { font-size: 13px; font-weight: 600; }

@@ -45,10 +45,14 @@ import {
         min-width: 200px;
         z-index: 60;
         padding: 6px;
-        background: var(--paper);
-        border: 1px solid var(--paper-3);
+        background:
+          radial-gradient(120% 80% at 0% 0%, color-mix(in oklch, var(--paper-2) 55%, transparent), transparent 60%),
+          color-mix(in oklch, var(--paper) 90%, transparent);
+        border: 1px solid color-mix(in oklch, var(--paper-3) 85%, transparent);
         border-radius: var(--r-sm);
         box-shadow: var(--shadow-lg);
+        backdrop-filter: blur(14px);
+        -webkit-backdrop-filter: blur(14px);
         animation: ddIn 0.18s var(--ease-spring);
       }
       .dd-panel.right { left: auto; right: 0; }
@@ -70,7 +74,12 @@ import {
         text-align: left;
         transition: background 0.15s var(--ease), color 0.15s var(--ease);
       }
-      ::ng-deep .dd-item:hover { background: var(--paper-2); color: var(--text); }
+      ::ng-deep .dd-item:hover {
+        background: color-mix(in oklch, var(--green) 9%, var(--paper-2));
+        color: var(--text);
+        transform: translateX(2px);
+      }
+      ::ng-deep .dd-item { transition: background 0.15s var(--ease), color 0.15s var(--ease), transform 0.15s var(--ease); }
       ::ng-deep .dd-sep { height: 1px; background: var(--paper-3); margin: 6px 4px; }
     `,
   ],

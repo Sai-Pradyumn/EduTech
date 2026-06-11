@@ -53,18 +53,25 @@ import {
         display: grid;
         place-items: center;
         padding: 20px;
-        background: color-mix(in oklch, var(--ink) 45%, transparent);
-        backdrop-filter: blur(6px);
+        background: color-mix(in oklch, var(--ink) 48%, transparent);
+        backdrop-filter: blur(8px);
+        -webkit-backdrop-filter: blur(8px);
         animation: fade 0.2s var(--ease);
       }
       .backdrop.top { place-items: start center; padding-top: 12vh; }
+      /* Glass sheet: corner light-bloom + translucent paper + blur — same surface
+         language as the auth form card and toasts. */
       .panel {
         width: 100%;
         max-width: 520px;
-        background: var(--paper);
-        border: 1px solid var(--paper-3);
+        background:
+          radial-gradient(140% 90% at 0% 0%, color-mix(in oklch, var(--paper-2) 65%, transparent), transparent 56%),
+          color-mix(in oklch, var(--paper) 92%, transparent);
+        border: 1px solid color-mix(in oklch, var(--paper-3) 85%, transparent);
         border-radius: var(--r-lg);
         box-shadow: var(--shadow-lg);
+        backdrop-filter: blur(16px);
+        -webkit-backdrop-filter: blur(16px);
         padding: 28px;
         max-height: 86vh;
         overflow: auto;
