@@ -34,6 +34,9 @@ async function bootstrap(): Promise<void> {
     ],
     rateLimit({ windowMs: 60_000, max: 20 }),
   );
+  // Client-error ingestion is public (errors happen on public pages too) — give it
+  // its own tiny per-IP budget so it can't be used to flood the error collection.
+  app.use('/api/ops/client-errors', rateLimit({ windowMs: 60_000, max: 10 }));
 
   app.setGlobalPrefix('api');
   app.enableCors({

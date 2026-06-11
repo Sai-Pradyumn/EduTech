@@ -18,7 +18,8 @@ export type ProductEventName =
   | 'subscription_started'
   | 'trial_started'
   | 'trial_converted'
-  | 'user_returned';
+  | 'user_returned'
+  | 'web_vital';
 
 /**
  * Product analytics emitter (Phase 10 · M8). Fire-and-forget `track()` from key user

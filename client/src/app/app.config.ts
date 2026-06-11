@@ -12,6 +12,7 @@ import { routes } from './app.routes';
 import { authTokenInterceptor } from './core/interceptors/auth-token.interceptor';
 import { errorInterceptor } from './core/interceptors/error.interceptor';
 import { AuthService } from './core/services/auth.service';
+import { WebVitalsService } from './core/services/web-vitals.service';
 
 /** Restore the session from a stored token before the app renders. */
 function sessionInitializer(auth: AuthService): () => Promise<void> {
@@ -39,6 +40,12 @@ export const appConfig: ApplicationConfig = {
       multi: true,
       deps: [AuthService],
       useFactory: sessionInitializer,
+    },
+    {
+      provide: APP_INITIALIZER,
+      multi: true,
+      deps: [WebVitalsService],
+      useFactory: (vitals: WebVitalsService) => () => vitals.start(),
     },
     { provide: ErrorHandler, useClass: GlobalErrorHandler },
   ],

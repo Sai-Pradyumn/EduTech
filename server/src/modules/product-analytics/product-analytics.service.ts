@@ -27,6 +27,7 @@ export const PRODUCT_EVENTS = [
   'trial_converted',
   'user_returned',
   'user_churn_risk_detected',
+  'web_vital',
 ] as const;
 
 export type ProductEventName = (typeof PRODUCT_EVENTS)[number];
