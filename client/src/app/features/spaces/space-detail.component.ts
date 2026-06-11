@@ -23,7 +23,7 @@ import { SpaceService, StudySpace } from '../../core/services/space.service';
       </div>
       <div class="flex gap-2.5 shrink-0">
         <asta-btn variant="ghost" size="sm" (click)="back()">All spaces</asta-btn>
-        @if (space()) { <asta-btn variant="ghost" size="sm" (click)="remove()">Delete</asta-btn> }
+        @if (space()) { <asta-btn variant="ghost" size="sm" (click)="remove()">{{ armedDelete() ? 'Confirm delete?' : 'Delete' }}</asta-btn> }
       </div>
     </header>
 
@@ -66,7 +66,7 @@ import { SpaceService, StudySpace } from '../../core/services/space.service';
             @for (src of space()!.sources; track src.id) {
               <div class="src-row">
                 <span class="min-w-0"><span class="src-title">{{ src.title }}</span><span class="src-type">{{ src.type }}@if (src.url) { · <a class="src-link" [href]="src.url" target="_blank" rel="noopener">open ↗</a> }</span></span>
-                <button class="x" (click)="removeSource(src.id)" aria-label="Remove">✕</button>
+                <button class="x" [class.x-armed]="armedSource() === src.id" (click)="removeSource(src.id)" [attr.aria-label]="armedSource() === src.id ? 'Confirm remove source' : 'Remove source'">{{ armedSource() === src.id ? 'Sure?' : '✕' }}</button>
               </div>
             }
             <div class="add-src mt-2">
@@ -121,8 +121,9 @@ import { SpaceService, StudySpace } from '../../core/services/space.service';
       .src-title { display: block; font-size: 13px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
       .src-type { display: block; font-size: 10px; color: var(--text-mute); text-transform: uppercase; }
       .src-link { color: var(--green-deep); text-transform: none; }
-      .x { border: none; background: transparent; color: var(--text-mute); cursor: pointer; }
+      .x { border: none; background: transparent; color: var(--text-mute); cursor: pointer; font-size: 12px; white-space: nowrap; }
       .x:hover { color: var(--danger, #ff5d5d); }
+      .x-armed { color: var(--danger, #ff5d5d); font-weight: 600; }
       .link-chips { display: flex; flex-wrap: wrap; gap: 6px; }
       .link-chip { font-size: 12px; padding: 5px 11px; border-radius: 999px; border: 1px solid var(--paper-3); background: var(--paper-2); color: var(--text-soft); cursor: pointer; transition: border-color .15s, color .15s; }
       .link-chip:hover { border-color: var(--green); color: var(--green-deep); }
@@ -141,6 +142,9 @@ export class SpaceDetailComponent {
   readonly loadError = signal(false);
   readonly asking = signal(false);
   readonly busy = signal<string | null>(null);
+  /** Two-step delete confirmation state (auto-disarms after 4s). */
+  readonly armedDelete = signal(false);
+  readonly armedSource = signal<string | null>(null);
   readonly answer = signal('');
   readonly usedSources = signal<string[]>([]);
   question = '';
@@ -175,6 +179,13 @@ export class SpaceDetailComponent {
     });
   }
   removeSource(sourceId: string): void {
+    // Two-step confirm (backlog §8): first click arms, second click deletes.
+    if (this.armedSource() !== sourceId) {
+      this.armedSource.set(sourceId);
+      setTimeout(() => { if (this.armedSource() === sourceId) this.armedSource.set(null); }, 4000);
+      return;
+    }
+    this.armedSource.set(null);
     this.api.removeSource(this.id(), sourceId).subscribe({ next: (s) => this.space.set(s), error: () => this.toast.error('Could not remove') });
   }
 
@@ -218,6 +229,12 @@ export class SpaceDetailComponent {
   jumpQuiz(quizId: string): void { this.router.navigate(['/app/quizzes'], { queryParams: { quizId } }); }
 
   remove(): void {
+    // Deleting a whole space is irreversible — require an explicit second click.
+    if (!this.armedDelete()) {
+      this.armedDelete.set(true);
+      setTimeout(() => this.armedDelete.set(false), 4000);
+      return;
+    }
     this.api.remove(this.id()).subscribe({ next: () => { this.toast.success('Space deleted'); this.router.navigate(['/app/spaces']); }, error: () => this.toast.error('Could not delete') });
   }
   back(): void { this.router.navigate(['/app/spaces']); }

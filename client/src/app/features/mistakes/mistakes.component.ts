@@ -127,7 +127,7 @@ type Filter = 'all' | 'due' | MistakeStatus;
             <span class="bb-count">{{ selected().size }} selected</span>
             <button class="bb-btn" [disabled]="bulkBusy()" (click)="bulkSetStatus('resolved')">Mark resolved</button>
             <button class="bb-btn" [disabled]="bulkBusy()" (click)="bulkSetStatus('open')">Reopen</button>
-            <button class="bb-btn danger" [disabled]="bulkBusy()" (click)="bulkDelete()">Delete</button>
+            <button class="bb-btn danger" [disabled]="bulkBusy()" (click)="bulkDelete()">{{ armedBulk() ? 'Confirm delete?' : 'Delete' }}</button>
             <button class="bb-btn" (click)="clearSel()">Clear</button>
           </div>
         }
@@ -383,6 +383,8 @@ export class MistakesComponent {
   // ── bulk selection ──
   readonly selected = signal<Set<string>>(new Set());
   readonly bulkBusy = signal(false);
+  /** Two-step bulk-delete confirmation (auto-disarms after 4s). */
+  readonly armedBulk = signal(false);
   toggleSel(id: string): void {
     this.selected.update((s) => { const n = new Set(s); if (n.has(id)) n.delete(id); else n.add(id); return n; });
   }
@@ -408,6 +410,13 @@ export class MistakesComponent {
   bulkDelete(): void {
     const ids = [...this.selected()];
     if (!ids.length) return;
+    // First click arms; second click executes (backlog §8 — deletes are immediate otherwise).
+    if (!this.armedBulk()) {
+      this.armedBulk.set(true);
+      setTimeout(() => this.armedBulk.set(false), 4000);
+      return;
+    }
+    this.armedBulk.set(false);
     this.bulkBusy.set(true);
     forkJoin(ids.map((id) => this.api.remove(id))).subscribe({
       next: () => {

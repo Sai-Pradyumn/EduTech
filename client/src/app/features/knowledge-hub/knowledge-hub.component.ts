@@ -519,7 +519,17 @@ export class KnowledgeHubComponent implements OnInit, OnDestroy {
     });
   }
 
+  /** Two-step confirm (backlog §8): the shard's delete button must be clicked
+   *  twice within 5s — removing a document also removes its chunks/embeddings. */
+  private armedDocId: string | null = null;
   remove(d: KnowledgeDoc): void {
+    if (this.armedDocId !== d.id) {
+      this.armedDocId = d.id;
+      setTimeout(() => { if (this.armedDocId === d.id) this.armedDocId = null; }, 5000);
+      this.toast.warning(`Delete "${d.title}"? Click delete again to confirm.`);
+      return;
+    }
+    this.armedDocId = null;
     this.knowledge.remove(d.id).subscribe({
       next: () => {
         this.toast.success('Deleted');

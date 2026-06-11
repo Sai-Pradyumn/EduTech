@@ -103,7 +103,7 @@ import { Application, ApplicationService, JdMatch } from '../../core/services/re
                 <option value="">Set status…</option>
                 @for (s of statuses; track s) { <option [value]="s">{{ s }}</option> }
               </select>
-              <button class="bb-btn danger" [disabled]="bulkBusy()" (click)="bulkDelete()">Delete</button>
+              <button class="bb-btn danger" [disabled]="bulkBusy()" (click)="bulkDelete()">{{ armedBulk() ? 'Confirm delete?' : 'Delete' }}</button>
               <button class="bb-btn" (click)="clearSel()">Clear</button>
             </div>
           }
@@ -123,7 +123,7 @@ import { Application, ApplicationService, JdMatch } from '../../core/services/re
                       @for (s of statuses; track s) { <option [value]="s">{{ s }}</option> }
                     </select>
                     <button class="exp" (click)="toggle(a.id)">{{ expandedId() === a.id ? 'Hide' : 'Details' }}</button>
-                    <button class="rm" (click)="remove(a.id)" [attr.aria-label]="'Remove application: ' + a.role + ' at ' + a.company">✕</button>
+                    <button class="rm" [class.rm-armed]="armedRemove() === a.id" (click)="remove(a.id)" [attr.aria-label]="(armedRemove() === a.id ? 'Confirm remove application: ' : 'Remove application: ') + a.role + ' at ' + a.company">{{ armedRemove() === a.id ? 'Sure?' : '✕' }}</button>
                   </div>
 
                   @if (expandedId() === a.id) {
@@ -197,8 +197,9 @@ import { Application, ApplicationService, JdMatch } from '../../core/services/re
     .a-score { font-size: 16px; font-weight: 700; }
     .status { background: var(--paper); border: 1px solid var(--paper-3); color: var(--text); border-radius: 8px; padding: 4px 8px; font-size: 12px; text-transform: capitalize; }
     .exp { font-size: 11px; color: var(--peri, #8aa6ff); background: transparent; border: none; cursor: pointer; }
-    .rm { background: transparent; border: none; color: var(--text-mute); cursor: pointer; margin-left: auto; }
+    .rm { background: transparent; border: none; color: var(--text-mute); cursor: pointer; margin-left: auto; font-size: 12px; white-space: nowrap; }
     .rm:hover { color: var(--danger, #ff5d5d); }
+    .rm-armed { color: var(--danger, #ff5d5d); font-weight: 600; }
     .detail { margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--paper-3); }
     .dline { font-size: 12px; line-height: 1.5; margin-bottom: 6px; }
     .sub { margin-top: 10px; }
@@ -276,6 +277,9 @@ export class ApplicationsComponent {
   // ── bulk selection ──
   readonly selected = signal<Set<string>>(new Set());
   readonly bulkBusy = signal(false);
+  /** Two-step delete confirmation state (auto-disarms after 4s). */
+  readonly armedRemove = signal<string | null>(null);
+  readonly armedBulk = signal(false);
   toggleSel(id: string): void {
     this.selected.update((s) => { const n = new Set(s); if (n.has(id)) n.delete(id); else n.add(id); return n; });
   }
@@ -300,10 +304,16 @@ export class ApplicationsComponent {
     });
   }
 
-  /** Delete every selected application. */
+  /** Delete every selected application. First click arms; second click executes. */
   bulkDelete(): void {
     const ids = [...this.selected()];
     if (!ids.length) return;
+    if (!this.armedBulk()) {
+      this.armedBulk.set(true);
+      setTimeout(() => this.armedBulk.set(false), 4000);
+      return;
+    }
+    this.armedBulk.set(false);
     this.bulkBusy.set(true);
     forkJoin(ids.map((id) => this.api.remove(id))).subscribe({
       next: () => {
@@ -352,7 +362,16 @@ export class ApplicationsComponent {
     const status = (ev.target as HTMLSelectElement).value;
     this.api.update(a.id, { status }).subscribe({ next: (u) => this.apps.set(this.apps().map((x) => (x.id === u.id ? u : x))), error: () => this.toast.error('Could not update') });
   }
-  remove(id: string): void { this.api.remove(id).subscribe({ next: () => this.apps.set(this.apps().filter((a) => a.id !== id)), error: () => this.toast.error('Could not remove') }); }
+  remove(id: string): void {
+    // Two-step confirm (backlog §8): first click arms, second click deletes.
+    if (this.armedRemove() !== id) {
+      this.armedRemove.set(id);
+      setTimeout(() => { if (this.armedRemove() === id) this.armedRemove.set(null); }, 4000);
+      return;
+    }
+    this.armedRemove.set(null);
+    this.api.remove(id).subscribe({ next: () => this.apps.set(this.apps().filter((a) => a.id !== id)), error: () => this.toast.error('Could not remove') });
+  }
   copy(text: string): void { navigator.clipboard?.writeText(text).then(() => this.toast.success('Copied'), () => this.toast.error('Copy failed')); }
   exportCsv(): void {
     const apps = this.apps();
