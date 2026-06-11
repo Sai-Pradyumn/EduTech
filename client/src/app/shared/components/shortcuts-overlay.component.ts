@@ -30,8 +30,13 @@ interface Shortcut { keys: string[]; label: string; }
   `,
   styles: [`
     .sc-list { display: flex; flex-direction: column; gap: 2px; }
-    .sc-row { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 9px 4px; border-bottom: 1px solid var(--paper-2); }
+    .sc-row { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 9px 4px; border-bottom: 1px solid var(--paper-2); animation: astaRevealUp 0.35s var(--ease) both; }
+    .sc-row:nth-child(2) { animation-delay: 0.05s; }
+    .sc-row:nth-child(3) { animation-delay: 0.1s; }
+    .sc-row:nth-child(4) { animation-delay: 0.15s; }
+    .sc-row:nth-child(5) { animation-delay: 0.2s; }
     .sc-row:last-child { border-bottom: 0; }
+    @media (prefers-reduced-motion: reduce) { .sc-row { animation: none; } }
     .sc-label { font-size: 14px; color: var(--text); }
     .sc-keys { display: flex; gap: 4px; flex-shrink: 0; }
     kbd { font-family: var(--mono); font-size: 11px; padding: 2px 7px; border: 1px solid var(--paper-3); border-radius: 6px; background: var(--paper-2); color: var(--text-soft); }

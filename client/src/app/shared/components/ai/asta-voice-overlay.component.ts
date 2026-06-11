@@ -91,7 +91,13 @@ import { VoiceCommandConfirmComponent } from './voice-command-confirm.component'
         position: fixed; z-index: 91;
         left: 50%; top: 50%; transform: translate(-50%, -50%);
         width: min(440px, calc(100vw - 32px));
-        background: var(--paper); border: 1px solid var(--paper-3);
+        /* Glass sheet — same surface family as the modal / AI dock. */
+        background:
+          radial-gradient(120% 70% at 0% 0%, color-mix(in oklch, var(--paper-2) 55%, transparent), transparent 58%),
+          color-mix(in oklch, var(--paper) 92%, transparent);
+        border: 1px solid color-mix(in oklch, var(--paper-3) 85%, transparent);
+        backdrop-filter: blur(16px);
+        -webkit-backdrop-filter: blur(16px);
         border-radius: var(--r-lg); box-shadow: var(--shadow-lg);
         overflow: hidden; animation: pop 0.3s var(--ease-spring);
       }

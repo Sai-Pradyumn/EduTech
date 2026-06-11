@@ -110,9 +110,14 @@ interface DockMsg {
         padding: 11px 18px 11px 12px; border-radius: 100px;
         background: var(--ink); color: var(--on-ink); border: 1px solid var(--ink-3);
         box-shadow: var(--shadow-lg); cursor: pointer;
-        transition: transform 0.3s var(--ease-spring), box-shadow 0.3s var(--ease);
+        transition: transform 0.3s var(--ease-spring), box-shadow 0.3s var(--ease), border-color 0.3s var(--ease);
       }
-      .launcher:hover { transform: translateY(-2px); }
+      .launcher:hover {
+        transform: translateY(-2px);
+        border-color: color-mix(in oklch, var(--green) 45%, var(--ink-3));
+        box-shadow: var(--shadow-lg), 0 0 24px var(--asta-accent-glow);
+      }
+      .launcher:active { transform: scale(0.97); }
       .launcher-label { font-weight: 600; font-size: 14.5px; }
 
       .panel {
@@ -121,7 +126,13 @@ interface DockMsg {
            grows upward — cap height so it never runs off the top of the viewport. */
         height: min(560px, calc(100dvh - 120px - env(safe-area-inset-bottom)));
         display: flex; flex-direction: column;
-        background: var(--paper); border: 1px solid var(--paper-3);
+        /* Glass sheet — same surface family as the modal / toasts / auth card. */
+        background:
+          radial-gradient(120% 70% at 0% 0%, color-mix(in oklch, var(--paper-2) 55%, transparent), transparent 58%),
+          color-mix(in oklch, var(--paper) 92%, transparent);
+        border: 1px solid color-mix(in oklch, var(--paper-3) 85%, transparent);
+        backdrop-filter: blur(16px);
+        -webkit-backdrop-filter: blur(16px);
         border-radius: var(--r-lg); box-shadow: var(--shadow-lg); overflow: hidden;
         animation: dockIn 0.3s var(--ease-spring);
       }
@@ -139,11 +150,13 @@ interface DockMsg {
       .intro-h { font-family: var(--display); font-size: 19px; margin-bottom: 4px; }
       .intro-p { font-size: 13.5px; color: var(--text-soft); margin-bottom: 16px; }
       .starters { display: flex; flex-direction: column; gap: 8px; }
-      .starter { font-size: 13px; text-align: left; padding: 9px 12px; border-radius: var(--r-sm); border: 1px solid var(--paper-3); background: var(--paper-2); color: var(--text-soft); cursor: pointer; transition: border-color 0.2s, color 0.2s; }
-      .starter:hover { border-color: var(--green); color: var(--text); }
+      .starter { font-size: 13px; text-align: left; padding: 9px 12px; border-radius: var(--r-sm); border: 1px solid var(--paper-3); background: var(--paper-2); color: var(--text-soft); cursor: pointer; transition: border-color 0.2s, color 0.2s, transform 0.18s var(--ease-spring); animation: astaRevealUp 0.4s var(--ease) both; }
+      .starter:nth-child(2) { animation-delay: 0.06s; }
+      .starter:nth-child(3) { animation-delay: 0.12s; }
+      .starter:hover { border-color: var(--green); color: var(--text); transform: translateX(3px); }
 
-      .msg { font-size: 14px; line-height: 1.55; max-width: 88%; }
-      .msg.user { align-self: flex-end; background: var(--green); color: var(--ink); padding: 9px 13px; border-radius: 14px 14px 4px 14px; font-weight: 500; }
+      .msg { font-size: 14px; line-height: 1.55; max-width: 88%; animation: astaRevealUp 0.3s var(--ease) both; }
+      .msg.user { align-self: flex-end; background: linear-gradient(135deg, var(--green-deep), var(--green)); color: var(--ink); padding: 9px 13px; border-radius: 14px 14px 4px 14px; font-weight: 500; box-shadow: 0 4px 16px var(--asta-accent-glow); }
       .msg.ai { align-self: flex-start; color: var(--text-soft); }
       .msg.ai :is(p) { margin: 5px 0; }
       .msg.ai :is(ul, ol) { margin: 5px 0; padding-left: 18px; }
@@ -151,7 +164,7 @@ interface DockMsg {
       .msg.ai :is(strong) { font-weight: 600; color: var(--text); }
 
       .foot { padding: 10px 12px 12px; border-top: 1px solid var(--paper-3); }
-      @media (prefers-reduced-motion: reduce) { .orb, .panel, .launcher { animation: none; } }
+      @media (prefers-reduced-motion: reduce) { .orb, .panel, .launcher, .starter, .msg { animation: none; } .starter:hover { transform: none; } }
     `,
   ],
 })
