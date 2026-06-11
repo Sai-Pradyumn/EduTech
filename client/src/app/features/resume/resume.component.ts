@@ -90,7 +90,14 @@ import { downloadPdf } from '../../shared/util/pdf';
     .bullets { list-style: disc; padding-left: 18px; font-size: 13px; color: var(--text-soft); display: flex; flex-direction: column; gap: 4px; }
     .proj { margin-bottom: 12px; }
     .proj-title { font-size: 13.5px; font-weight: 600; margin-bottom: 3px; }
-    .chip { font-size: 11.5px; padding: 2px 8px; border-radius: 999px; border: 1px solid color-mix(in oklab, var(--green) 40%, var(--paper-3)); color: var(--green-deep); }
+    .chip { font-size: 11.5px; padding: 2px 8px; border-radius: 999px; border: 1px solid color-mix(in oklab, var(--green) 40%, var(--paper-3)); color: var(--green-deep); animation: astaSoftPop .3s var(--ease-spring) both; }
+    .chip:nth-child(2) { animation-delay: .04s; }
+    .chip:nth-child(3) { animation-delay: .08s; }
+    .chip:nth-child(4) { animation-delay: .12s; }
+    .chip:nth-child(5) { animation-delay: .16s; }
+    .proj { margin-bottom: 12px; border-radius: 10px; padding: 4px 6px; transition: background .15s var(--ease); }
+    .proj:hover { background: color-mix(in oklch, var(--green) 4%, transparent); }
+    @media (prefers-reduced-motion: reduce) { .chip { animation: none; } }
   `],
 })
 export class ResumeComponent {

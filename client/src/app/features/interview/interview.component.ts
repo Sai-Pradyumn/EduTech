@@ -212,9 +212,11 @@ import { downloadPdf } from '../../shared/util/pdf';
     .bt-row { display: grid; grid-template-columns: 130px 1fr auto; align-items: center; gap: 10px; }
     .bt-label { font-size: 12px; color: var(--text-soft); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .bt-bar { height: 7px; border-radius: 999px; background: var(--paper-2); overflow: hidden; }
-    .bt-fill { display: block; height: 100%; border-radius: 999px; transition: width .3s; }
+    .bt-fill { display: block; height: 100%; border-radius: 999px; transition: width .3s; transform-origin: left; animation: ivFill .8s var(--ease) .25s both; }
+    @keyframes ivFill { from { transform: scaleX(0); } }
     .bt-val { font-size: 12px; font-weight: 700; font-variant-numeric: tabular-nums; }
     .bt-n { font-size: 10.5px; font-weight: 500; color: var(--text-mute); }
+    @media (prefers-reduced-motion: reduce) { .bt-fill { animation: none; } }
   `],
 })
 export class InterviewComponent {

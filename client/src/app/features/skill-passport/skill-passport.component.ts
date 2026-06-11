@@ -222,7 +222,9 @@ import { LEDGER_KIND_META, LedgerKind } from '../../core/services/ledger.service
     .s-label { font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: flex; align-items: center; gap: 6px; }
     .risk-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
     .s-track { position: relative; height: 8px; border-radius: 999px; background: var(--paper-3); }
-    .s-fill { display: block; height: 100%; border-radius: 999px; background: linear-gradient(90deg, var(--green-deep), var(--green)); }
+    .s-fill { display: block; height: 100%; border-radius: 999px; background: linear-gradient(90deg, var(--green-deep), var(--green)); transform-origin: left; animation: spFill .9s var(--ease) .3s both; }
+    @keyframes spFill { from { transform: scaleX(0); } }
+    @media (prefers-reduced-motion: reduce) { .s-fill { animation: none; } }
     .s-conf { position: absolute; top: -2px; width: 2px; height: 12px; background: var(--peri, #8aa6ff); }
     .s-meta { font-size: 10.5px; color: var(--text-mute); font-variant-numeric: tabular-nums; white-space: nowrap; }
     .proj { padding: 10px 12px; border: 1px solid var(--paper-3); border-radius: 12px; background: var(--paper-2); }

@@ -128,7 +128,9 @@ import { SIM_TYPE_LIST, SIM_TYPE_META, Simulation, SimulationService, Simulation
       .bt-row { display: grid; grid-template-columns: 150px 1fr auto; align-items: center; gap: 10px; }
       .bt-label { font-size: 12px; color: var(--text-soft); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
       .bt-bar { height: 7px; border-radius: 999px; background: var(--paper-2); overflow: hidden; }
-      .bt-fill { display: block; height: 100%; border-radius: 999px; transition: width .3s; }
+      .bt-fill { display: block; height: 100%; border-radius: 999px; transition: width .3s; transform-origin: left; animation: smFill .8s var(--ease) .25s both; }
+      @keyframes smFill { from { transform: scaleX(0); } }
+      @media (prefers-reduced-motion: reduce) { .bt-fill { animation: none; } }
       .bt-val { font-size: 12px; font-weight: 700; font-variant-numeric: tabular-nums; }
       .bt-n { font-size: 10.5px; font-weight: 500; color: var(--text-mute); }
       .fchip { font-size: 11.5px; padding: 3px 10px; border-radius: 999px; border: 1px solid var(--paper-3); background: var(--paper-2); color: var(--text-mute); cursor: pointer; transition: all .12s; }

@@ -228,7 +228,9 @@ import { MODALITY_META, SkillTwin, SkillTwinService, TwinAction } from '../../co
       .skill-row { display: grid; grid-template-columns: 130px 1fr auto; align-items: center; gap: 10px; }
       .s-label { font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
       .s-track { position: relative; height: 8px; border-radius: 999px; background: var(--paper-3); overflow: visible; }
-      .s-fill { display: block; height: 100%; border-radius: 999px; background: linear-gradient(90deg, var(--green-deep), var(--green)); }
+      .s-fill { display: block; height: 100%; border-radius: 999px; background: linear-gradient(90deg, var(--green-deep), var(--green)); transform-origin: left; animation: stFill .9s var(--ease) .3s both; }
+      @keyframes stFill { from { transform: scaleX(0); } }
+      @media (prefers-reduced-motion: reduce) { .s-fill { animation: none; } }
       .s-target { position: absolute; top: -2px; width: 2px; height: 12px; background: var(--peri, #8aa6ff); }
       .s-val { font-size: 11px; color: var(--text-mute); font-variant-numeric: tabular-nums; }
       .skill-wrap { border-radius: 10px; padding: 4px 6px; transition: background .12s; }

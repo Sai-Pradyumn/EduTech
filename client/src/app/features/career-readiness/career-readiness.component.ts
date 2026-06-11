@@ -159,8 +159,11 @@ import { downloadPdf } from '../../shared/util/pdf';
     .explain { font-size: 13.5px; color: var(--text-soft); margin-top: 8px; line-height: 1.5; }
     .dim-head { display: grid; grid-template-columns: 130px 1fr auto auto auto; align-items: center; gap: 10px; cursor: pointer; }
     .d-label { font-size: 12.5px; font-weight: 500; }
-    .d-track { height: 8px; border-radius: 999px; background: var(--paper-3); }
-    .d-fill { display: block; height: 100%; border-radius: 999px; }
+    .d-track { height: 8px; border-radius: 999px; background: var(--paper-3); overflow: hidden; }
+    /* Dimension scores fill from zero — the weighted story reads as motion. */
+    .d-fill { display: block; height: 100%; border-radius: 999px; transform-origin: left; animation: crFill .9s var(--ease) .25s both; }
+    @keyframes crFill { from { transform: scaleX(0); } }
+    @media (prefers-reduced-motion: reduce) { .d-fill { animation: none; } }
     .d-score { font-size: 12px; font-weight: 700; font-variant-numeric: tabular-nums; }
     .d-weight { font-size: 10.5px; color: var(--text-mute); }
     .why-btn { font-size: 10.5px; padding: 2px 8px; border-radius: 999px; border: 1px solid var(--paper-3); background: transparent; color: var(--peri, #8aa6ff); cursor: pointer; }
