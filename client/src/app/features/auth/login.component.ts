@@ -21,28 +21,75 @@ import { OtpVerifyComponent } from './otp-verify.component';
         <button type="button" class="font-semibold" style="color:var(--green-deep)" (click)="otpEmail.set(null)">Back to log in</button>
       </p>
     } @else {
-      <h1 class="text-[30px] mb-1">Welcome back</h1>
-      <p class="text-txt-soft mb-7">Log in to continue your path.</p>
+      <p class="kicker st st-0 mb-3">WELCOME BACK</p>
+      <h1 class="st st-0 grad-flow text-[31px] mb-1">Pick up your path.</h1>
+      <p class="st st-1 text-txt-soft mb-7">Your roadmap, streak and agents are right where you left them.</p>
 
       <form [formGroup]="form" (ngSubmit)="submit()">
-        <asta-field label="Email" [error]="errorFor('email')">
-          <input class="input" type="email" formControlName="email" autocomplete="email" placeholder="you@example.com" />
-        </asta-field>
-        <asta-field label="Password" [error]="errorFor('password')">
-          <input class="input" type="password" formControlName="password" autocomplete="current-password" placeholder="••••••••" />
-        </asta-field>
+        <div class="st st-1">
+          <asta-field label="Email" [error]="errorFor('email')">
+            <input class="input" type="email" formControlName="email" autocomplete="email" placeholder="you@example.com" />
+          </asta-field>
+        </div>
+        <div class="st st-2">
+          <asta-field label="Password" [error]="errorFor('password')">
+            <div class="pw-wrap">
+              <input class="input pw-input" [type]="showPw() ? 'text' : 'password'" formControlName="password" autocomplete="current-password" placeholder="••••••••" />
+              <button type="button" class="pw-toggle" (click)="showPw.set(!showPw())" [attr.aria-label]="showPw() ? 'Hide password' : 'Show password'" [attr.aria-pressed]="showPw()">
+                {{ showPw() ? 'Hide' : 'Show' }}
+              </button>
+            </div>
+          </asta-field>
+        </div>
 
-        <asta-btn type="submit" astaMagnetic [full]="true" [loading]="loading()" variant="accent">Log in</asta-btn>
+        <div class="st st-3">
+          <asta-btn type="submit" astaMagnetic [full]="true" [loading]="loading()" variant="accent">Log in <span class="arr">→</span></asta-btn>
+        </div>
       </form>
 
-      <asta-google-signin />
+      <div class="st st-3"><asta-google-signin /></div>
 
-      <p class="text-sm text-txt-soft mt-6 text-center">
+      <p class="st st-4 text-sm text-txt-soft mt-6 text-center">
         New here?
         <a routerLink="/register" class="font-semibold" style="color:var(--green-deep)">Create an account</a>
       </p>
     }
   `,
+  styles: [
+    `
+      /* Staggered entrance — composes with the layout's form-card rise. */
+      .st { animation: astaRevealUp 0.5s var(--ease) both; }
+      .st-0 { animation-delay: 0.16s; }
+      .st-1 { animation-delay: 0.24s; }
+      .st-2 { animation-delay: 0.32s; }
+      .st-3 { animation-delay: 0.4s; }
+      .st-4 { animation-delay: 0.48s; }
+      .kicker { display: inline-flex; }
+
+      .pw-wrap { position: relative; }
+      .pw-input { padding-right: 64px; }
+      .pw-toggle {
+        position: absolute;
+        right: 10px;
+        top: 50%;
+        transform: translateY(-50%);
+        border: 0;
+        background: transparent;
+        cursor: pointer;
+        font-size: 12.5px;
+        font-weight: 600;
+        color: var(--text-mute);
+        padding: 4px 6px;
+        border-radius: 6px;
+        transition: color 0.15s var(--ease);
+      }
+      .pw-toggle:hover { color: var(--green-deep); }
+
+      @media (prefers-reduced-motion: reduce) {
+        .st { animation: none; }
+      }
+    `,
+  ],
 })
 export class LoginComponent {
   private readonly fb = inject(FormBuilder);
@@ -52,6 +99,7 @@ export class LoginComponent {
 
   readonly loading = signal(false);
   readonly otpEmail = signal<string | null>(null);
+  readonly showPw = signal(false);
   readonly form = this.fb.nonNullable.group({
     email: ['', [Validators.required, Validators.email]],
     password: ['', [Validators.required]],

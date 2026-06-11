@@ -70,7 +70,11 @@ import { TranslationKey } from '../core/i18n/translations';
   `,
   styles: [
     `
+      .nav-item { transition: background 0.18s var(--ease), color 0.18s var(--ease), transform 0.12s var(--ease-spring); }
       .nav-item:hover { background: var(--ink-2); color: var(--on-ink); }
+      .nav-item:active { transform: scale(0.98); }
+      .nav-item svg { transition: transform 0.25s var(--ease-spring); }
+      .nav-item:hover svg { transform: translateX(2px) scale(1.08); }
       .nav-active {
         background: var(--ink-2);
         color: var(--on-ink);

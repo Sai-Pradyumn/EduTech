@@ -17,9 +17,11 @@ import { AstaOsModeToggleComponent } from '../features/asta-os/asta-os-mode-togg
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [RouterLink, ThemeToggleComponent, DropdownComponent, TranslatePipe, AstaOsModeToggleComponent],
   template: `
+    <!-- Glass surface: content scrolls UNDER the bar with a soft blur, giving the
+         shell real depth instead of a flat opaque strip. -->
     <header
       class="sticky top-0 z-30 flex items-center gap-3 px-5 md:px-8"
-      style="height:64px;background:var(--paper);border-bottom:1px solid var(--paper-3)"
+      style="height:64px;background:color-mix(in oklch, var(--paper) 78%, transparent);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-bottom:1px solid color-mix(in oklch, var(--paper-3) 80%, transparent)"
     >
       <button class="lg:hidden text-txt-soft" (click)="toggleMenu.emit()" aria-label="Open menu">
         <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor"

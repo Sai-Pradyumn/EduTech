@@ -565,6 +565,27 @@
   animation-delay: calc(var(--motion-row-delay, 0ms) + var(--motion-card-index, 0) * var(--motion-stagger-step));
 }
 
+/* ---------- Page-transition layer ----------
+   EVERY routed screen enters with the same soft rise+fade, so navigation feels
+   like one continuous product instead of hard cuts. Angular inserts the routed
+   component directly after its <router-outlet>, so the sibling selector catches
+   every navigation (shell, auth, public, admin) with zero JS. Screens' own
+   per-card reveal cascades then stagger INSIDE this page rise — same keyframe
+   family, so the two motions compose. Neutralized by the global reduced-motion
+   rule (animation-duration .01ms). */
+router-outlet + * {
+  display: block;
+  animation: astaPageIn 0.4s var(--ease) both;
+}
+/* The classic shell's main container already replays `.route-enter` via the
+   astaRouteTransition directive (covers param-only navigations too) — skip the
+   CSS layer there so the two systems never double up. */
+[astaroutetransition] router-outlet + * { animation: none; }
+@keyframes astaPageIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: none; }
+}
+
 /* Card families — semantic markers that guarantee identical hover within a family.
    The actual lift comes from `.hover-lift` (uniform translateY(-3px) + green glow);
    these keep the cursor/glyph micro-interactions consistent across same-kind cards. */
