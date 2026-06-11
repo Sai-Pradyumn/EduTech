@@ -186,10 +186,13 @@ import { CommunityChannel, CommunityReply, CommunityThread, Project, ThreadKind 
       .btn-go:disabled { opacity: .6; }
       .btn-soft { border-radius: 100px; padding: 7px 14px; font-size: 12px; font-weight: 600; color: var(--text-soft); background: var(--paper-2); border: 1px solid var(--paper-3); }
       .btn-soft:hover { border-color: var(--green); color: var(--green-deep); }
-      .vote, .vote-sm { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; border-radius: 10px; border: 1px solid var(--paper-3); background: var(--paper); color: var(--text-soft); flex-shrink: 0; }
+      .vote, .vote-sm { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; border-radius: 10px; border: 1px solid var(--paper-3); background: var(--paper); color: var(--text-soft); flex-shrink: 0; cursor: pointer; transition: transform .15s var(--ease-spring), border-color .15s var(--ease), color .15s var(--ease), background .15s var(--ease); }
       .vote { width: 46px; padding: 8px 0; font-size: 13px; }
       .vote-sm { width: 38px; padding: 5px 0; font-size: 11px; }
-      .vote-on { border-color: var(--green); color: var(--green-deep); background: oklch(0.80 0.16 150 / .12); }
+      .vote:hover, .vote-sm:hover { border-color: var(--green); color: var(--green-deep); transform: translateY(-1px); }
+      .vote:active, .vote-sm:active { transform: scale(0.9); }
+      .vote-on { border-color: var(--green); color: var(--green-deep); background: oklch(0.80 0.16 150 / .12); animation: astaSoftPop 0.3s var(--ease-spring); }
+      @media (prefers-reduced-motion: reduce) { .vote-on { animation: none; } .vote:hover, .vote-sm:hover, .vote:active, .vote-sm:active { transform: none; } }
       .vote-mini { font-family: var(--mono); font-size: 10px; color: var(--text-mute); flex-shrink: 0; padding-top: 2px; }
     `,
   ],

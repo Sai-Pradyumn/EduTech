@@ -45,8 +45,12 @@ import { CertificateView } from '../../core/models';
       } @else {
       <div class="grid gap-4 md:grid-cols-2 motion-row-primary">
         @for (c of certs(); track c.id; let i = $index) {
-          <div class="card motion-card-reveal relative overflow-hidden" style="padding:22px" [style.--motion-card-index]="i">
+          <div class="card cert-card motion-card-reveal relative overflow-hidden" style="padding:22px" [style.--motion-card-index]="i">
             <div class="absolute inset-0 pointer-events-none" style="background:radial-gradient(120% 80% at 100% 0%, oklch(0.8 0.16 150 / .10), transparent 60%)"></div>
+            <div class="cert-shine" aria-hidden="true"></div>
+            <span class="cert-medal" aria-hidden="true">
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="6"/><path d="M15.5 13 17 22l-5-3-5 3 1.5-9"/></svg>
+            </span>
             <div class="relative">
               <p class="kicker mb-2" style="color:var(--green-deep)">Certificate</p>
               <h3 class="font-display text-2xl">{{ c.title }}</h3>
@@ -64,6 +68,33 @@ import { CertificateView } from '../../core/models';
       }
     </div>
   `,
+  styles: [
+    `
+      .cert-card { transition: transform .22s var(--ease), box-shadow .22s var(--ease), border-color .22s var(--ease); }
+      .cert-card:hover { transform: translateY(-3px); box-shadow: var(--shadow-md), 0 0 0 1px color-mix(in oklch, var(--green) 26%, transparent); }
+      .cert-medal {
+        position: absolute; top: 18px; right: 18px; z-index: 1;
+        width: 36px; height: 36px; display: grid; place-items: center; border-radius: 12px;
+        color: var(--green-deep); background: color-mix(in oklch, var(--green) 14%, transparent);
+        animation: astaSoftPop .45s var(--ease-spring) .2s both;
+        transition: transform .35s var(--ease-spring);
+      }
+      .cert-card:hover .cert-medal { transform: scale(1.15) rotate(8deg); }
+      /* shine sweeps across the credential on hover — an achievement, not a list item */
+      .cert-shine {
+        position: absolute; inset: 0; pointer-events: none; z-index: 1;
+        background: linear-gradient(105deg, transparent 40%, oklch(1 0 0 / .1) 50%, transparent 60%);
+        transform: translateX(-120%);
+      }
+      .cert-card:hover .cert-shine { animation: certShine 0.9s var(--ease) forwards; }
+      @keyframes certShine { to { transform: translateX(120%); } }
+      @media (prefers-reduced-motion: reduce) {
+        .cert-medal { animation: none; }
+        .cert-card:hover { transform: none; }
+        .cert-card:hover .cert-shine { animation: none; }
+      }
+    `,
+  ],
 })
 export class CertificatesComponent implements OnInit {
   private readonly certApi = inject(CertificateService);

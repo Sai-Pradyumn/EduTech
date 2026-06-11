@@ -25,7 +25,7 @@ import { ToastService } from '../../core/services/toast.service';
       </div>
     </header>
 
-    <div class="max-w-app mx-auto space-y-5">
+    <div class="max-w-app mx-auto space-y-5 motion-stagger">
       <!-- What works offline -->
       <div class="card" style="padding:18px">
         <p class="kicker mb-2">What you can do offline</p>

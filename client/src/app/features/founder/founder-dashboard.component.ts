@@ -144,7 +144,12 @@ import { CountDirective } from '../../shared/directives/count.directive';
       .bar-fill { height: 100%; border-radius: 100px; transition: width .5s var(--ease); }
       .badge { font-family: var(--mono); font-size: 12px; padding: 2px 9px; border-radius: 100px; }
       .kpi-row { display: flex; flex-wrap: wrap; gap: 8px; }
-      .kpi { display: inline-flex; align-items: baseline; gap: 6px; font-size: 12px; color: var(--text-mute); padding: 6px 12px; border-radius: 999px; border: 1px solid var(--paper-3); background: var(--paper-2); }
+      .kpi { display: inline-flex; align-items: baseline; gap: 6px; font-size: 12px; color: var(--text-mute); padding: 6px 12px; border-radius: 999px; border: 1px solid var(--paper-3); background: var(--paper-2); animation: astaSoftPop .35s var(--ease-spring) both; transition: border-color .18s var(--ease), transform .18s var(--ease); }
+      .kpi:hover { border-color: color-mix(in oklch, var(--green) 40%, var(--paper-3)); transform: translateY(-1px); }
+      .kpi:nth-child(2) { animation-delay: .06s; }
+      .kpi:nth-child(3) { animation-delay: .12s; }
+      .kpi:nth-child(4) { animation-delay: .18s; }
+      @media (prefers-reduced-motion: reduce) { .kpi { animation: none; } .kpi:hover { transform: none; } }
       .kpi b { font-size: 14px; color: var(--text); font-variant-numeric: tabular-nums; }
       .kpi-u { font-size: 10px; color: var(--text-mute); }
       .plan-mix { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }

@@ -62,7 +62,7 @@ import { CohortView, LiveSessionStatus, SessionDetail, SessionView } from '../..
                   [style.borderColor]="selected()?.id === s.id ? 'var(--green)' : null" (click)="select(s.id)">
                   <div class="flex items-center justify-between gap-2">
                     <b class="font-display truncate">{{ s.title }}</b>
-                    <span class="pill" [style.color]="statusColor(s.status)">{{ s.status }}</span>
+                    <span class="pill" [class.ls-live]="s.status === 'live'" [style.color]="statusColor(s.status)">@if (s.status === 'live') { <span class="ls-live-dot" aria-hidden="true"></span> }{{ s.status }}</span>
                   </div>
                   <p class="text-xs text-txt-mute mt-1">{{ s.scheduledStart | date: 'MMM d, h:mm a' }} · {{ s.attendeeCount }} joined</p>
                 </button>
@@ -81,7 +81,7 @@ import { CohortView, LiveSessionStatus, SessionDetail, SessionView } from '../..
                 [style.borderColor]="selected()?.id === s.id ? 'var(--green)' : null" (click)="select(s.id)">
                 <div class="flex items-center justify-between gap-2">
                   <b class="font-display truncate">{{ s.title }}</b>
-                  <span class="pill" [style.color]="statusColor(s.status)">{{ s.status }}</span>
+                  <span class="pill" [class.ls-live]="s.status === 'live'" [style.color]="statusColor(s.status)">@if (s.status === 'live') { <span class="ls-live-dot" aria-hidden="true"></span> }{{ s.status }}</span>
                 </div>
                 <p class="text-xs text-txt-mute mt-1">{{ s.scheduledStart | date: 'MMM d, h:mm a' }} · {{ s.hostName }}</p>
               </button>
@@ -183,6 +183,11 @@ import { CohortView, LiveSessionStatus, SessionDetail, SessionView } from '../..
       .btn-soft:hover { border-color: var(--green); color: var(--green-deep); }
       .btn-soft.danger:hover { border-color: var(--coral-deep); color: var(--coral-deep); }
       .ls-search { width: 220px; max-width: 100%; padding: 8px 12px; font-size: 13px; color: var(--text); background: var(--paper-2); border: 1px solid var(--paper-3); border-radius: 11px; }
+      /* A live session announces itself: red-tinted pill + pulsing on-air dot. */
+      .ls-live { border-color: color-mix(in oklch, var(--danger) 45%, var(--paper-3)); background: color-mix(in oklch, var(--danger) 9%, transparent); }
+      .ls-live-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--danger); display: inline-block; animation: lsOnAir 1.4s ease-in-out infinite; }
+      @keyframes lsOnAir { 0%, 100% { opacity: 1; box-shadow: 0 0 0 0 color-mix(in oklch, var(--danger) 45%, transparent); } 50% { opacity: .6; box-shadow: 0 0 0 5px transparent; } }
+      @media (prefers-reduced-motion: reduce) { .ls-live-dot { animation: none; } }
       .ls-search:focus { outline: none; border-color: var(--green); }
     `,
   ],

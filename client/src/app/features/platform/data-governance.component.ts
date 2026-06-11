@@ -19,16 +19,16 @@ import { ToastService } from '../../core/services/toast.service';
     </header>
 
     <div class="max-w-app mx-auto space-y-5">
-      <div class="grid gap-5 md:grid-cols-2">
-        <div class="card" style="padding:18px">
+      <div class="grid gap-5 md:grid-cols-2 motion-stagger">
+        <div class="card dg-card" style="padding:18px">
           <p class="kicker mb-2">Export my data</p>
           <p class="text-sm text-txt-soft mb-3">Download a machine-readable copy of your account: profile, roadmaps, progress, proofs.</p>
           <button class="rounded-full px-4 py-2 text-sm font-semibold" style="background:var(--green);color:var(--ink)" [disabled]="busy()" (click)="exportMe()">
             Request export
           </button>
         </div>
-        <div class="card" style="padding:18px">
-          <p class="kicker mb-2">Delete my account</p>
+        <div class="card dg-card dg-danger" style="padding:18px">
+          <p class="kicker mb-2" style="color:var(--danger)">Delete my account</p>
           <p class="text-sm text-txt-soft mb-3">Submit a deletion request. We confirm and process it within the retention window; this can’t be undone.</p>
           <button class="rounded-full px-4 py-2 text-sm font-semibold" style="background:var(--paper-2);color:var(--danger)" [disabled]="busy()" (click)="requestDeletion()">
             Request deletion
@@ -36,7 +36,7 @@ import { ToastService } from '../../core/services/toast.service';
         </div>
       </div>
 
-      <div class="card" style="padding:18px">
+      <div class="card motion-card-reveal motion-row-2" style="padding:18px">
         <p class="kicker mb-3">Requests</p>
         @if (jobs().length) {
           <div class="space-y-1">
@@ -62,6 +62,16 @@ import { ToastService } from '../../core/services/toast.service';
       </div>
     </div>
   `,
+  styles: [
+    `
+      .dg-card { transition: transform .22s var(--ease), box-shadow .22s var(--ease), border-color .22s var(--ease); }
+      .dg-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); }
+      /* The destructive card carries a faint danger tint so it can't be misread. */
+      .dg-danger { border-color: color-mix(in oklch, var(--danger) 22%, var(--paper-3)); }
+      .dg-danger:hover { border-color: color-mix(in oklch, var(--danger) 40%, var(--paper-3)); }
+      @media (prefers-reduced-motion: reduce) { .dg-card:hover { transform: none; } }
+    `,
+  ],
 })
 export class DataGovernanceComponent implements OnInit {
   private readonly enterprise = inject(EnterpriseService);

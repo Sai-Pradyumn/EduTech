@@ -19,9 +19,9 @@ import { ModalComponent } from '../../shared/ui/modal.component';
       </div>
     </header>
 
-    <div class="max-w-app mx-auto grid gap-4 sm:grid-cols-2">
+    <div class="max-w-app mx-auto grid gap-4 sm:grid-cols-2 motion-stagger">
       @for (i of items(); track i.provider) {
-        <div class="card" style="padding:18px">
+        <div class="card int-card" [class.int-on]="i.connected" style="padding:18px">
           <div class="flex items-start justify-between gap-3 mb-2">
             <div class="min-w-0">
               <p class="font-semibold">{{ i.name }} <span class="pill text-[10px]">{{ i.category }}</span></p>
@@ -82,7 +82,18 @@ import { ModalComponent } from '../../shared/ui/modal.component';
 
     <input #csvInput type="file" accept=".csv,text/csv" hidden (change)="onCsv($event)" />
   `,
-  styles: [`.skel{background:linear-gradient(90deg,var(--paper-2) 25%,var(--paper-3) 50%,var(--paper-2) 75%);background-size:200% 100%;animation:s 1.4s ease infinite}@keyframes s{0%{background-position:200% 0}100%{background-position:-200% 0}}@media (prefers-reduced-motion:reduce){.skel{animation:none}}`],
+  styles: [
+    `
+      .skel{background:linear-gradient(90deg,var(--paper-2) 25%,var(--paper-3) 50%,var(--paper-2) 75%);background-size:200% 100%;animation:s 1.4s ease infinite}
+      @keyframes s{0%{background-position:200% 0}100%{background-position:-200% 0}}
+      .int-card { transition: transform .22s var(--ease), box-shadow .22s var(--ease), border-color .22s var(--ease); }
+      .int-card:hover { transform: translateY(-3px); box-shadow: var(--shadow-md); border-color: color-mix(in oklch, var(--green) 26%, transparent); }
+      /* Connected connectors carry a faint live tint so state reads at a glance. */
+      .int-on { border-color: color-mix(in oklch, var(--green) 28%, var(--paper-3)); background: radial-gradient(140% 100% at 100% 0%, color-mix(in oklch, var(--green) 7%, transparent), transparent 55%), var(--paper); }
+      :host-context([data-theme='dark']) .int-on { background: radial-gradient(140% 100% at 100% 0%, color-mix(in oklch, var(--green) 8%, transparent), transparent 55%), var(--paper-2); }
+      @media (prefers-reduced-motion:reduce){.skel{animation:none}.int-card:hover{transform:none}}
+    `,
+  ],
 })
 export class IntegrationsComponent implements OnInit {
   private readonly svc = inject(IntegrationService);

@@ -20,7 +20,7 @@ import { ToastService } from '../../core/services/toast.service';
     </header>
 
     <div class="max-w-app mx-auto space-y-5">
-      <div class="card" style="padding:18px">
+      <div class="card motion-card-reveal motion-row-primary" style="padding:18px">
         <div class="flex items-center justify-between mb-3">
           <p class="kicker">Active sessions</p>
           @if (sessions().length > 1) {
@@ -32,8 +32,8 @@ import { ToastService } from '../../core/services/toast.service';
         @if (sessions().length) {
           <div class="space-y-1">
             @for (s of sessions(); track s.id) {
-              <div class="flex items-center gap-3 text-sm py-2" style="border-bottom:1px solid var(--paper-3)">
-                <span class="grid place-items-center w-8 h-8 rounded-[9px] shrink-0" style="background:var(--paper-3)">
+              <div class="sec-row flex items-center gap-3 text-sm py-2" style="border-bottom:1px solid var(--paper-3)">
+                <span class="sec-ico grid place-items-center w-8 h-8 rounded-[9px] shrink-0" [class.sec-ico-on]="s.current">
                   <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
                 </span>
                 <div class="min-w-0 flex-1">
@@ -51,7 +51,7 @@ import { ToastService } from '../../core/services/toast.service';
         }
       </div>
 
-      <div class="card" style="padding:18px">
+      <div class="card motion-card-reveal motion-row-2" style="padding:18px">
         <p class="kicker mb-2">Account protection</p>
         <ul class="text-sm text-txt-soft space-y-1.5">
           <li>✓ Passwords hashed with bcrypt</li>
@@ -62,6 +62,19 @@ import { ToastService } from '../../core/services/toast.service';
       </div>
     </div>
   `,
+  styles: [
+    `
+      .sec-row { animation: astaRevealUp 0.4s var(--ease) both; transition: background 0.15s var(--ease); }
+      .sec-row:nth-child(2) { animation-delay: 0.05s; }
+      .sec-row:nth-child(3) { animation-delay: 0.1s; }
+      .sec-row:nth-child(4) { animation-delay: 0.15s; }
+      .sec-row:hover { background: color-mix(in oklch, var(--green) 4%, transparent); }
+      .sec-ico { background: var(--paper-3); transition: transform 0.3s var(--ease-spring); }
+      .sec-row:hover .sec-ico { transform: scale(1.1); }
+      .sec-ico-on { background: color-mix(in oklch, var(--green) 14%, transparent); color: var(--green-deep); box-shadow: 0 0 12px var(--asta-accent-glow); }
+      @media (prefers-reduced-motion: reduce) { .sec-row { animation: none; } .sec-row:hover .sec-ico { transform: none; } }
+    `,
+  ],
 })
 export class SecurityComponent implements OnInit {
   private readonly enterprise = inject(EnterpriseService);

@@ -68,8 +68,10 @@ const TYPES = ['', 'flow', 'roadmap', 'quiz', 'project', 'simulation', 'intervie
     .chip { font-size: 12px; padding: 5px 11px; border-radius: 999px; border: 1px solid var(--paper-3); background: var(--paper-2); color: var(--text-soft); cursor: pointer; text-transform: capitalize; }
     .chip.active { border-color: color-mix(in oklab, var(--green) 50%, var(--paper-3)); color: var(--green-deep); background: color-mix(in oklab, var(--green) 12%, transparent); }
     .chip.sm { font-size: 11px; padding: 4px 9px; }
-    .tpl { display: flex; flex-direction: column; }
+    .tpl { display: flex; flex-direction: column; transition: transform .22s var(--ease), box-shadow .22s var(--ease); }
+    .tpl:hover { transform: translateY(-3px); box-shadow: var(--shadow-md), 0 0 0 1px color-mix(in oklch, var(--green) 22%, transparent); }
     .type { font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: var(--peri, #8aa6ff); }
+    @media (prefers-reduced-motion: reduce) { .tpl:hover { transform: none; } }
     .uses { font-size: 10.5px; color: var(--text-mute); }
     .lvl { font-size: 10px; text-transform: capitalize; padding: 1px 7px; border-radius: 999px; border: 1px solid var(--paper-3); color: var(--text-soft); }
     .rate { font-size: 11px; color: var(--coral, #ffb454); font-weight: 600; }

@@ -126,8 +126,8 @@ import { ProgressComponent } from '../../shared/ui/progress.component';
               }
               <div class="space-y-2.5">
                 @for (r of leaderboard(); track r.userId) {
-                  <div class="flex items-center gap-3">
-                    <span class="font-display text-lg w-7 text-center" [style.color]="r.rank <= 3 ? 'var(--green-deep)' : 'var(--text-mute)'">{{ r.rank }}</span>
+                  <div class="flex items-center gap-3 lb-row">
+                    <span class="lb-rank" [class.lb-top]="r.rank <= 3" [class.lb-gold]="r.rank === 1">{{ r.rank }}</span>
                     <div class="flex-1 min-w-0">
                       <div class="flex justify-between text-sm mb-1"><span class="truncate">{{ r.name }}</span><span class="font-mono text-txt-mute">{{ r.health }}%</span></div>
                       <asta-progress [value]="r.health" />
@@ -208,6 +208,28 @@ import { ProgressComponent } from '../../shared/ui/progress.component';
       </div>
     </div>
   `,
+  styles: [
+    `
+      .lb-row { animation: astaRevealUp 0.4s var(--ease) both; }
+      .lb-row:nth-child(2) { animation-delay: 0.05s; }
+      .lb-row:nth-child(3) { animation-delay: 0.1s; }
+      .lb-row:nth-child(4) { animation-delay: 0.15s; }
+      .lb-row:nth-child(5) { animation-delay: 0.2s; }
+      .lb-rank {
+        width: 28px; height: 28px; flex-shrink: 0;
+        display: grid; place-items: center; border-radius: 9px;
+        font-family: var(--display); font-weight: 600; font-size: 14px;
+        color: var(--text-mute); background: var(--paper-2);
+      }
+      .lb-top { color: var(--green-deep); background: color-mix(in oklch, var(--green) 14%, transparent); }
+      .lb-gold {
+        color: var(--ink);
+        background: linear-gradient(135deg, var(--green), var(--green-deep));
+        box-shadow: 0 4px 14px var(--asta-accent-glow);
+      }
+      @media (prefers-reduced-motion: reduce) { .lb-row { animation: none; } }
+    `,
+  ],
 })
 export class CohortsComponent implements OnInit {
   private readonly cohorts = inject(CohortService);

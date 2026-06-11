@@ -79,13 +79,20 @@ import { NotificationService, NotificationView } from '../../core/services/notif
     .nt-chip .ct { font-weight: 700; opacity: .75; }
     .nt-sep { width: 1px; height: 18px; background: var(--paper-3); margin: 0 4px; }
     .nt-list { display: flex; flex-direction: column; }
-    .nt-row { display: flex; gap: 12px; align-items: flex-start; text-align: left; width: 100%; padding: 12px 16px; border-bottom: 1px solid var(--paper-2); background: transparent; cursor: pointer; transition: background .15s; }
+    .nt-row { display: flex; gap: 12px; align-items: flex-start; text-align: left; width: 100%; padding: 12px 16px; border-bottom: 1px solid var(--paper-2); background: transparent; cursor: pointer; transition: background .15s, transform .15s var(--ease); animation: astaRevealUp .4s var(--ease) both; }
+    .nt-row:nth-child(2) { animation-delay: .04s; }
+    .nt-row:nth-child(3) { animation-delay: .08s; }
+    .nt-row:nth-child(4) { animation-delay: .12s; }
+    .nt-row:nth-child(5) { animation-delay: .16s; }
+    .nt-row:nth-child(6) { animation-delay: .2s; }
     .nt-row:last-child { border-bottom: none; }
-    .nt-row:hover { background: color-mix(in oklab, var(--green) 5%, transparent); }
+    .nt-row:hover { background: color-mix(in oklab, var(--green) 5%, transparent); transform: translateX(3px); }
     .nt-row.unread { background: color-mix(in oklab, var(--green) 6%, transparent); }
-    .nt-glyph { font-size: 16px; flex-shrink: 0; margin-top: 1px; }
+    .nt-glyph { font-size: 14px; flex-shrink: 0; width: 30px; height: 30px; display: grid; place-items: center; border-radius: 9px; background: color-mix(in oklch, var(--green) 11%, transparent); transition: transform .3s var(--ease-spring); }
+    .nt-row:hover .nt-glyph { transform: scale(1.12) rotate(-6deg); }
     .nt-title { display: flex; align-items: center; gap: 7px; font-size: 13.5px; font-weight: 600; color: var(--text); }
-    .nt-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--green); flex-shrink: 0; }
+    .nt-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--green); flex-shrink: 0; box-shadow: 0 0 8px var(--asta-accent-glow); animation: astaPulse 2.4s ease-in-out infinite; }
+    @media (prefers-reduced-motion: reduce) { .nt-row, .nt-dot { animation: none; } .nt-row:hover { transform: none; } }
     .nt-body { display: block; font-size: 12.5px; color: var(--text-mute); margin-top: 2px; }
     .nt-open { display: inline-block; font-size: 11.5px; font-weight: 600; color: var(--green-deep); margin-top: 3px; }
     .nt-time { font-size: 11px; font-family: var(--mono); color: var(--text-mute); flex-shrink: 0; }

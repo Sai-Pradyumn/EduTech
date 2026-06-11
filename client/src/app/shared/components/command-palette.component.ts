@@ -67,12 +67,17 @@ interface Command {
         padding: 11px 12px;
         border-radius: var(--r-xs);
         border: 0;
+        border-left: 2px solid transparent;
         background: transparent;
         text-align: left;
         cursor: pointer;
-        transition: background 0.12s var(--ease);
+        transition: background 0.12s var(--ease), border-color 0.12s var(--ease), transform 0.12s var(--ease);
       }
-      .res.active { background: color-mix(in oklch, var(--green) 14%, transparent); }
+      .res.active {
+        background: color-mix(in oklch, var(--green) 14%, transparent);
+        border-left-color: var(--green);
+        transform: translateX(2px);
+      }
       .res-label { font-size: 15px; color: var(--text); font-weight: 500; }
       .res-hint { margin-left: auto; font-size: 11.5px; color: var(--text-mute); }
       .res-group { font-size: 10.5px; color: var(--green-deep); text-transform: uppercase; letter-spacing: 0.08em; }

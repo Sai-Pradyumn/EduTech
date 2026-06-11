@@ -108,9 +108,9 @@ import { GaugeComponent } from '../../shared/charts';
                     }
                   </div>
                   <div class="h-1.5 rounded-full overflow-hidden" style="background:var(--paper-3)">
-                    <div class="h-full rounded-full" style="transition:width .4s var(--ease-spring)"
+                    <div class="h-full rounded-full bl-fill" style="transition:width .4s var(--ease-spring)"
                       [style.width.%]="m.blocked ? 0 : (m.unlimited ? 8 : m.pct)"
-                      [style.background]="m.over ? 'var(--danger)' : 'var(--green)'"></div>
+                      [style.background]="m.over ? 'var(--danger)' : 'linear-gradient(90deg, var(--green-deep), var(--green))'"></div>
                   </div>
                 </div>
               }
@@ -211,6 +211,10 @@ import { GaugeComponent } from '../../shared/charts';
     `
       .inv-export { font-size: 11.5px; color: var(--peri, #8aa6ff); background: transparent; border: none; cursor: pointer; }
       .inv-export:hover { color: var(--green-deep); }
+      /* Plan-limit meters fill from zero on load with a soft glowing lead edge. */
+      .bl-fill { transform-origin: left; animation: blFill .8s var(--ease) .2s both; box-shadow: 0 0 8px var(--asta-accent-glow); }
+      @keyframes blFill { from { transform: scaleX(0); } }
+      @media (prefers-reduced-motion: reduce) { .bl-fill { animation: none; } }
       .skel { display: block; border-radius: 8px; background: linear-gradient(90deg, var(--paper-2) 25%, var(--paper-3) 50%, var(--paper-2) 75%); background-size: 200% 100%; animation: skel-shimmer 1.4s ease infinite; }
       @keyframes skel-shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
       @media (prefers-reduced-motion: reduce) { .skel { animation: none; } }

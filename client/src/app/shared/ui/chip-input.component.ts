@@ -8,7 +8,7 @@ import { ChangeDetectionStrategy, Component, EventEmitter, Input, Output } from 
   template: `
     <div class="flex flex-wrap gap-2 mb-3">
       @for (item of items; track item) {
-        <span class="pill" [style.borderColor]="accentVar">
+        <span class="pill chip-in" [style.borderColor]="accentVar">
           {{ item }}
           <button type="button" class="ml-1 text-txt-mute hover:text-txt" (click)="remove(item)" [attr.aria-label]="'Remove ' + item">✕</button>
         </span>
@@ -29,12 +29,24 @@ import { ChangeDetectionStrategy, Component, EventEmitter, Input, Output } from 
       <div class="flex flex-wrap gap-2 mt-3">
         @for (s of suggestions; track s) {
           @if (!items.includes(s)) {
-            <button type="button" class="pill" (click)="add(s)" style="cursor:pointer">+ {{ s }}</button>
+            <button type="button" class="pill sug" (click)="add(s)" style="cursor:pointer">+ {{ s }}</button>
           }
         }
       </div>
     }
   `,
+  styles: [
+    `
+      /* New chips pop in; suggestion chips lift toward the accent on hover. */
+      .chip-in { animation: astaSoftPop 0.28s var(--ease-spring) both; }
+      .sug { transition: transform 0.15s var(--ease-spring), border-color 0.15s var(--ease), color 0.15s var(--ease); }
+      .sug:hover { transform: translateY(-1px); border-color: var(--green); color: var(--green-deep); }
+      @media (prefers-reduced-motion: reduce) {
+        .chip-in { animation: none; }
+        .sug:hover { transform: none; }
+      }
+    `,
+  ],
 })
 export class ChipInputComponent {
   @Input() items: string[] = [];

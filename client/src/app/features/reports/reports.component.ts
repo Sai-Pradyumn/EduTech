@@ -165,6 +165,10 @@ type Tab = 'students' | 'weak-topics' | 'ai-usage';
       th { text-align: left; font-family: var(--mono); font-size: 10px; text-transform: uppercase; letter-spacing: .04em; color: var(--text-mute); padding: 12px 14px; border-bottom: 1px solid var(--paper-3); }
       td { padding: 11px 14px; border-bottom: 1px solid var(--paper-2); vertical-align: top; }
       tr:last-child td { border-bottom: none; }
+      /* Data rows respond: green-tinted highlight + slight indent on hover. */
+      tbody tr { transition: background .15s var(--ease), transform .15s var(--ease); }
+      tbody tr:hover { background: color-mix(in oklch, var(--green) 5%, transparent); transform: translateX(2px); }
+      @media (prefers-reduced-motion: reduce) { tbody tr:hover { transform: none; } }
       .sub { font-size: 11px; color: var(--text-mute); }
       .empty { text-align: center; color: var(--text-mute); padding: 28px; }
       .bar { width: 90px; height: 6px; border-radius: 100px; background: var(--paper-3); overflow: hidden; }

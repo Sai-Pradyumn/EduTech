@@ -113,7 +113,8 @@ import { Mentor, MentorMarketplaceService, MentorProfileInput, MentorSession } f
   `,
   styles: [`
     :host { display: block; }
-    .avatar { display: grid; place-items: center; width: 42px; height: 42px; border-radius: 12px; background: linear-gradient(135deg, var(--green-deep), var(--green)); color: var(--ink); font-size: 18px; font-weight: 700; flex-shrink: 0; }
+    .avatar { display: grid; place-items: center; width: 42px; height: 42px; border-radius: 12px; background: linear-gradient(135deg, var(--green-deep), var(--green)); color: var(--ink); font-size: 18px; font-weight: 700; flex-shrink: 0; box-shadow: 0 6px 18px var(--asta-accent-glow); transition: transform .35s var(--ease-spring); }
+    asta-card:hover .avatar { transform: scale(1.1) rotate(-4deg); }
     .m-name { font-size: 14.5px; font-weight: 600; }
     .m-head { font-size: 12.5px; color: var(--text-soft); }
     .m-bio { font-size: 12.5px; color: var(--text-soft); margin-top: 8px; }

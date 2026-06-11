@@ -27,10 +27,10 @@ import { ToastService } from '../../core/services/toast.service';
 
     <div class="max-w-app mx-auto space-y-5">
       <!-- API keys -->
-      <div class="card" style="padding:18px">
+      <div class="card motion-card-reveal motion-row-primary" style="padding:18px">
         <p class="kicker mb-3">API keys</p>
         @if (newKey(); as k) {
-          <div class="rounded-[12px] p-3 mb-3" style="background:color-mix(in oklch, var(--green) 12%, var(--paper));border:1px solid var(--green)">
+          <div class="dev-newkey rounded-[12px] p-3 mb-3" style="background:color-mix(in oklch, var(--green) 12%, var(--paper));border:1px solid var(--green)">
             <div class="flex items-center justify-between gap-2 mb-1">
               <p class="text-xs text-txt-soft">Copy your key now — it won’t be shown again.</p>
               <button class="rounded-full px-3 py-1 text-xs font-semibold shrink-0" style="background:var(--green);color:var(--ink)" (click)="copyKey(k.key)">Copy key</button>
@@ -59,7 +59,7 @@ import { ToastService } from '../../core/services/toast.service';
       </div>
 
       <!-- Webhooks -->
-      <div class="card" style="padding:18px">
+      <div class="card motion-card-reveal motion-row-2" style="padding:18px">
         <p class="kicker mb-3">Webhooks</p>
         <div class="flex gap-2 mb-3">
           <input class="asta-input flex-1" [(ngModel)]="hookUrl" placeholder="https://example.com/webhooks/asta" />
@@ -107,6 +107,9 @@ import { ToastService } from '../../core/services/toast.service';
     .scope-tag.muted{color:var(--text-mute);background:color-mix(in oklch,var(--paper-3) 70%,transparent)}
     .filter-pill{font-size:11px;text-transform:capitalize;padding:4px 11px;border-radius:999px;color:var(--text-soft);background:color-mix(in oklch,var(--paper-2) 55%,transparent);border:1px solid var(--paper-3);cursor:pointer;transition:color .18s,border-color .18s,background .18s}
     .filter-pill.on{color:var(--green-deep);border-color:color-mix(in oklch,var(--green) 55%,transparent);background:color-mix(in oklch,var(--green) 12%,transparent)}
+    /* The one-time key reveal is THE moment on this screen — pop + glow pulse. */
+    .dev-newkey{animation:astaSoftPop .4s var(--ease-spring) both;box-shadow:0 0 0 0 var(--asta-accent-glow);}
+    @media (prefers-reduced-motion:reduce){.dev-newkey{animation:none}}
   `],
 })
 export class DeveloperComponent implements OnInit {
