@@ -6,7 +6,7 @@ import { CardComponent } from '../../shared/ui/card.component';
 import { EmptyStateComponent } from '../../shared/ui/empty-state.component';
 import { SkeletonComponent } from '../../shared/ui/skeleton.component';
 import { ToastService } from '../../core/services/toast.service';
-import { Difficulty, Flow, FlowService } from '../../core/services/flow.service';
+import { Difficulty, Flow, FlowService, FlowStatus } from '../../core/services/flow.service';
 import { FLOW_NODE_META } from './flow-node-meta';
 
 interface FlowIdea {
@@ -89,17 +89,34 @@ interface FlowIdea {
         </asta-empty-state>
       </asta-card>
     } @else {
+      @if (summary(); as sm) {
+        <div class="fl-summary mb-4">
+          <span class="fl-stat"><span class="fl-n">{{ sm.active }}</span> active</span>
+          <span class="fl-sep">·</span>
+          <span class="fl-stat"><span class="fl-n">{{ sm.avgProgress }}%</span> avg progress</span>
+          <span class="fl-sep">·</span>
+          <span class="fl-stat"><span class="fl-n">{{ sm.completed }}</span> completed</span>
+        </div>
+      }
       @if (flows().length > 2) {
         <div class="fl-toolbar mb-4">
           <div class="fl-search">
             <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
             <input [ngModel]="q()" (ngModelChange)="q.set($event)" placeholder="Search flows…" aria-label="Search flows" />
           </div>
-          <div class="fl-chips">
-            @for (d of diffOptions; track d) {
-              <button class="fl-chip" [class.on]="diffFilter() === d" (click)="diffFilter.set(d)">{{ d }}</button>
-            }
-          </div>
+          <select class="fl-sort" [ngModel]="sort()" (ngModelChange)="sort.set($event)" aria-label="Sort flows">
+            @for (s of sorts; track s.id) { <option [value]="s.id">{{ s.label }}</option> }
+          </select>
+        </div>
+        <div class="fl-chips mb-4">
+          <span class="fl-chip-lbl">Level</span>
+          @for (d of diffOptions; track d) {
+            <button class="fl-chip" [class.on]="diffFilter() === d" (click)="diffFilter.set(d)">{{ d }}</button>
+          }
+          <span class="fl-chip-lbl ml">Status</span>
+          @for (st of statusOptions; track st) {
+            <button class="fl-chip" [class.on]="statusFilter() === st" (click)="statusFilter.set(st)">{{ st }}</button>
+          }
         </div>
       }
       @if (filteredFlows().length) {
@@ -136,6 +153,9 @@ interface FlowIdea {
                 <span>{{ f.progressPercentage }}%</span>
               </div>
             </div>
+            @if (f.status === 'active' && f.progressPercentage < 100 && f.progressPercentage > 0) {
+              <button class="resume-btn" (click)="resume(f); $event.stopPropagation()">Resume next step <span class="arr">→</span></button>
+            }
           </asta-card>
         }
       </div>
@@ -189,13 +209,22 @@ interface FlowIdea {
       .st-draft, .st-archived { color: var(--text-mute); }
       .prog-track { height: 6px; border-radius: 999px; background: var(--paper-3); overflow: hidden; }
       .prog-fill { display: block; height: 100%; background: linear-gradient(90deg, var(--green-deep), var(--green)); transition: width 0.4s var(--ease); }
+      .resume-btn { margin-top: 12px; width: 100%; padding: 8px 12px; border-radius: 10px; border: 1px solid color-mix(in oklab, var(--green) 35%, var(--paper-3)); background: color-mix(in oklab, var(--green) 10%, transparent); color: var(--green-deep); font-size: 12.5px; font-weight: 600; cursor: pointer; transition: background .15s; }
+      .resume-btn:hover { background: color-mix(in oklab, var(--green) 20%, transparent); }
       .line-clamp-2 { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
       .fl-toolbar { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
       .fl-search { position: relative; display: flex; align-items: center; flex: 1; min-width: 200px; }
       .fl-search svg { position: absolute; left: 11px; color: var(--text-mute); pointer-events: none; }
       .fl-search input { width: 100%; padding: 8px 12px 8px 32px; font-size: 13px; color: var(--text); background: var(--paper-2); border: 1px solid var(--paper-3); border-radius: 11px; }
       .fl-search input:focus { outline: none; border-color: var(--green); }
-      .fl-chips { display: flex; gap: 6px; flex-wrap: wrap; }
+      .fl-summary { display: flex; align-items: center; gap: 8px; font-size: 12.5px; color: var(--text-soft); }
+      .fl-summary .fl-n { font-weight: 700; color: var(--text); font-variant-numeric: tabular-nums; }
+      .fl-summary .fl-sep { color: var(--text-mute); opacity: .5; }
+      .fl-sort { padding: 8px 10px; font-size: 12.5px; color: var(--text); background: var(--paper-2); border: 1px solid var(--paper-3); border-radius: 11px; cursor: pointer; }
+      .fl-sort:focus { outline: none; border-color: var(--green); }
+      .fl-chips { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+      .fl-chip-lbl { font-size: 10px; text-transform: uppercase; letter-spacing: .06em; color: var(--text-mute); font-weight: 700; }
+      .fl-chip-lbl.ml { margin-left: 8px; }
       .fl-chip { font-size: 12px; text-transform: capitalize; padding: 6px 12px; border-radius: 999px; border: 1px solid var(--paper-3); background: var(--paper-2); color: var(--text-soft); cursor: pointer; transition: color .15s, border-color .15s, background .15s; }
       .fl-chip:hover { border-color: var(--green); }
       .fl-chip.on { color: var(--green-deep); border-color: color-mix(in oklab, var(--green) 50%, var(--paper-3)); background: color-mix(in oklab, var(--green) 12%, transparent); }
@@ -218,15 +247,42 @@ export class FlowsListComponent {
   readonly q = signal('');
   readonly diffFilter = signal<'all' | Difficulty>('all');
   readonly diffOptions: ('all' | Difficulty)[] = ['all', 'beginner', 'intermediate', 'advanced'];
+  readonly statusFilter = signal<'all' | FlowStatus>('all');
+  readonly statusOptions: ('all' | FlowStatus)[] = ['all', 'active', 'completed', 'draft', 'archived'];
+  readonly sort = signal<'recent' | 'progress' | 'title'>('recent');
+  readonly sorts: { id: 'recent' | 'progress' | 'title'; label: string }[] = [
+    { id: 'recent', label: 'Recently updated' },
+    { id: 'progress', label: 'Progress' },
+    { id: 'title', label: 'Title A–Z' },
+  ];
+
+  /** Portfolio summary across all flows — active count + avg progress of in-flight flows. */
+  readonly summary = computed(() => {
+    const all = this.flows();
+    const active = all.filter((f) => f.status === 'active');
+    const completed = all.filter((f) => f.status === 'completed').length;
+    const avg = active.length
+      ? Math.round(active.reduce((s, f) => s + f.progressPercentage, 0) / active.length)
+      : 0;
+    return { total: all.length, active: active.length, completed, avgProgress: avg };
+  });
 
   readonly filteredFlows = computed(() => {
     const needle = this.q().trim().toLowerCase();
     const diff = this.diffFilter();
-    return this.flows().filter((f) => {
+    const status = this.statusFilter();
+    const list = this.flows().filter((f) => {
       if (diff !== 'all' && f.difficulty !== diff) return false;
+      if (status !== 'all' && f.status !== status) return false;
       if (needle && !`${f.title} ${f.goal}`.toLowerCase().includes(needle)) return false;
       return true;
     });
+    const s = this.sort();
+    const sorted = [...list];
+    if (s === 'progress') sorted.sort((a, b) => b.progressPercentage - a.progressPercentage);
+    else if (s === 'title') sorted.sort((a, b) => a.title.localeCompare(b.title));
+    else sorted.sort((a, b) => +new Date(b.updatedAt) - +new Date(a.updatedAt));
+    return sorted;
   });
 
   readonly ideas: FlowIdea[] = [
@@ -287,6 +343,11 @@ export class FlowsListComponent {
 
   open(f: Flow): void {
     this.router.navigate(['/app/flows', f.id]);
+  }
+
+  /** Jump straight into the first incomplete node of this flow. */
+  resume(f: Flow): void {
+    this.router.navigate(['/app/flows', f.id], { queryParams: { node: 'next' } });
   }
 
   completedCount(f: Flow): number {

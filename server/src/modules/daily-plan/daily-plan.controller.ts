@@ -3,7 +3,13 @@ import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { AuthUser } from '../../common/interfaces';
 import { DailyPlanService } from './daily-plan.service';
 import { DailyPlanDocument } from './schemas/daily-plan.schema';
-import { CompleteItemDto, GeneratePlanDto } from './dto/daily-plan.dto';
+import {
+  CompleteItemDto,
+  GeneratePlanDto,
+  ReorderItemsDto,
+  SetItemNoteDto,
+  SetReflectionDto,
+} from './dto/daily-plan.dto';
 
 function toView(p: DailyPlanDocument) {
   return {
@@ -20,8 +26,11 @@ function toView(p: DailyPlanDocument) {
       estimateMinutes: i.estimateMinutes,
       done: i.done,
       sourceId: i.sourceId ?? null,
+      note: i.note ?? '',
     })),
     completed: p.items.filter((i) => i.done).length,
+    mood: p.mood ?? null,
+    reflection: p.reflection ?? '',
   };
 }
 
@@ -42,6 +51,31 @@ export class DailyPlanController {
   @Post('complete-item')
   async complete(@CurrentUser() user: AuthUser, @Body() dto: CompleteItemDto) {
     return toView(await this.plan.completeItem(user.id, dto.itemId));
+  }
+
+  @Post('item-note')
+  async setNote(@CurrentUser() user: AuthUser, @Body() dto: SetItemNoteDto) {
+    return toView(await this.plan.setItemNote(user.id, dto.itemId, dto.note));
+  }
+
+  @Post('reflection')
+  async reflection(
+    @CurrentUser() user: AuthUser,
+    @Body() dto: SetReflectionDto,
+  ) {
+    return toView(
+      await this.plan.setReflection(user.id, dto.mood, dto.reflection),
+    );
+  }
+
+  @Post('carry-over')
+  async carryOver(@CurrentUser() user: AuthUser) {
+    return toView(await this.plan.carryOver(user.id));
+  }
+
+  @Post('reorder')
+  async reorder(@CurrentUser() user: AuthUser, @Body() dto: ReorderItemsDto) {
+    return toView(await this.plan.reorder(user.id, dto.itemIds));
   }
 
   @Post('recalculate')

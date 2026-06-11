@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { UsersModule } from '../users/users.module';
+import { LedgerModule } from '../ledger/ledger.module';
 import { Certificate, CertificateSchema } from './schemas/certificate.schema';
 import { CertificatesController } from './certificates.controller';
 import { CertificatesService } from './services/certificates.service';
@@ -12,6 +13,7 @@ import { CertificatesService } from './services/certificates.service';
       { name: Certificate.name, schema: CertificateSchema },
     ]),
     UsersModule,
+    LedgerModule,
   ],
   controllers: [CertificatesController],
   providers: [CertificatesService],

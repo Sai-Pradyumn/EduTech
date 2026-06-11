@@ -16,7 +16,7 @@ import { MarkdownPipe } from '../../shared/pipes/markdown.pipe';
 import { ButtonComponent } from '../../shared/ui/button.component';
 import { CardComponent } from '../../shared/ui/card.component';
 import { ComposerComponent, ComposerSubmit } from '../../shared/ui/composer.component';
-import { AiAgentActivityFeedComponent } from '../../shared/components/ai/ai-agent-activity-feed.component';
+import { AiAgentActivityFeedComponent } from '../../shared/components/ai/asta-ai-agent-activity-feed.component';
 import { VisualBlockRendererComponent } from '../../shared/components/ai/visual-block-renderer.component';
 import { MagneticDirective } from '../../shared/directives/magnetic.directive';
 import { CountDirective } from '../../shared/directives/count.directive';
@@ -59,6 +59,9 @@ const STARTERS = [
         <asta-btn variant="ghost" size="sm" (click)="refresh()">Refresh</asta-btn>
       </div>
     </header>
+
+    <!-- Screen-reader-only status for streaming grounded answers (a11y). -->
+    <span class="sr-only" aria-live="polite" role="status">{{ liveStatus() }}</span>
 
     <div class="grid gap-5 lg:grid-cols-[minmax(300px,360px)_1fr]" style="min-height:calc(100dvh - 230px)">
       <!-- LEFT: upload + library -->
@@ -127,7 +130,19 @@ const STARTERS = [
                 </select>
               </div>
             </div>
-            <p class="lib-count">{{ filteredDocs().length }} of {{ docs().length }} shown</p>
+            <div class="lib-meta">
+              <span class="lib-count">{{ filteredDocs().length }} of {{ docs().length }} shown</span>
+              @if (readyCount() > 0) {
+                <span class="lib-scope">
+                  @if (selected().size < readyCount()) {
+                    <button class="lib-link" (click)="selectAllReady()">Scope: all ready</button>
+                  }
+                  @if (selected().size > 0) {
+                    <button class="lib-link" (click)="clearSelection()">Clear ({{ selected().size }})</button>
+                  }
+                </span>
+              }
+            </div>
           }
           <div class="space-y-2.5 mt-3 motion-row-2">
             @for (d of filteredDocs(); track d.id; let i = $index) {
@@ -248,13 +263,13 @@ const STARTERS = [
                     </div>
                   }
                   @for (block of msg.visualBlocks; track $index) {
-                    <div class="mt-3"><ai-visual-block [block_]="block" /></div>
+                    <div class="mt-3"><asta-ai-visual-block [block_]="block" /></div>
                   }
                 </div>
               </div>
             }
           }
-          @if (busy()) { <ai-agent-activity-feed [steps]="steps()" [running]="busy()" /> }
+          @if (busy()) { <asta-ai-agent-activity-feed [steps]="steps()" [running]="busy()" /> }
         </div>
 
         <div class="px-4 py-3" style="border-top:1px solid color-mix(in oklch, var(--paper-3) 60%, transparent)">
@@ -292,7 +307,11 @@ const STARTERS = [
       .lib-selects { display: flex; gap: 8px; }
       .lib-sel { flex: 1; font-size: 12px; padding: 6px 8px; border-radius: 9px; border: 1px solid var(--paper-3); background: var(--paper-2); color: var(--text-soft); cursor: pointer; }
       .lib-sel:focus { outline: none; border-color: var(--green); }
-      .lib-count { font-size: 11px; color: var(--text-mute); margin-top: 7px; font-variant-numeric: tabular-nums; }
+      .lib-meta { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 7px; flex-wrap: wrap; }
+      .lib-count { font-size: 11px; color: var(--text-mute); font-variant-numeric: tabular-nums; }
+      .lib-scope { display: flex; gap: 10px; }
+      .lib-link { font-size: 11px; font-weight: 600; color: var(--green-deep); background: transparent; border: none; cursor: pointer; padding: 0; }
+      .lib-link:hover { text-decoration: underline; }
     `,
   ],
 })
@@ -307,6 +326,8 @@ export class KnowledgeHubComponent implements OnInit, OnDestroy {
   readonly messages = signal<ChatMsg[]>([]);
   readonly steps = signal<WorkflowStepView[]>([]);
   readonly busy = signal(false);
+  /** Polite screen-reader status for streaming grounded answers (no visual footprint). */
+  readonly liveStatus = signal('');
   readonly uploading = signal(false);
   readonly dragOver = signal(false);
   readonly pasteMode = signal(false);
@@ -541,9 +562,17 @@ export class KnowledgeHubComponent implements OnInit, OnDestroy {
   toggleSelect(id: string): void {
     this.selected.update((s) => {
       const next = new Set(s);
-      next.has(id) ? next.delete(id) : next.add(id);
+      if (next.has(id)) next.delete(id); else next.add(id);
       return next;
     });
+  }
+  /** Scope the grounded chat to every ready document at once. */
+  selectAllReady(): void {
+    const ids = this.docs().filter((d) => d.status === 'ready').map((d) => d.id);
+    this.selected.set(new Set(ids));
+  }
+  clearSelection(): void {
+    this.selected.set(new Set());
   }
 
   // ── summary / flashcards ──────────────────────────────────────────────────
@@ -596,6 +625,7 @@ export class KnowledgeHubComponent implements OnInit, OnDestroy {
     if (!message || this.busy() || !this.canAsk()) return;
     this.draft = '';
     this.busy.set(true);
+    this.liveStatus.set('Asta is retrieving an answer…');
     this.steps.set([]);
 
     this.push({ role: 'user', content: message, sources: [], visualBlocks: [], followUps: [], confidence: 1, streaming: false });
@@ -612,6 +642,7 @@ export class KnowledgeHubComponent implements OnInit, OnDestroy {
           assistant.content = assistant.content || 'Something went wrong. Please try again.';
           this.bump();
           this.busy.set(false);
+          this.liveStatus.set('The answer failed to load.');
         },
       });
   }
@@ -655,12 +686,14 @@ export class KnowledgeHubComponent implements OnInit, OnDestroy {
         this.persistChat();
         this.saveTurnToServer(assistant);
         this.busy.set(false);
+        this.liveStatus.set('Answer ready.');
         break;
       case 'error':
         assistant.streaming = false;
         assistant.content = assistant.content || e.message;
         this.bump();
         this.busy.set(false);
+        this.liveStatus.set('The answer failed to load.');
         break;
     }
   }

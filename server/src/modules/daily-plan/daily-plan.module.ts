@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { FlowsModule } from '../flows/flows.module';
+import { LedgerModule } from '../ledger/ledger.module';
 import { MistakesModule } from '../mistakes/mistakes.module';
 import { Roadmap, RoadmapSchema } from '../roadmap/schemas/roadmap.schema';
 import { DailyPlan, DailyPlanSchema } from './schemas/daily-plan.schema';
@@ -20,6 +21,7 @@ import { DailyPlanService } from './daily-plan.service';
     ]),
     FlowsModule,
     MistakesModule,
+    LedgerModule,
   ],
   controllers: [DailyPlanController],
   providers: [DailyPlanService],

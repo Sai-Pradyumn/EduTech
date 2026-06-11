@@ -3,6 +3,7 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { RoadmapStatus } from '../../common/enums';
 import { FlowsService } from '../flows/flows.service';
+import { LedgerService } from '../ledger/ledger.service';
 import { MistakesService } from '../mistakes/mistakes.service';
 import { Roadmap, RoadmapDocument } from '../roadmap/schemas/roadmap.schema';
 import {
@@ -21,6 +22,7 @@ export class DailyPlanService {
     private readonly roadmaps: Model<RoadmapDocument>,
     private readonly flows: FlowsService,
     private readonly mistakes: MistakesService,
+    private readonly ledger: LedgerService,
   ) {}
 
   private today(): string {
@@ -174,7 +176,104 @@ export class DailyPlanService {
     if (!item) throw new NotFoundException('Plan item not found');
     item.done = !item.done;
     plan.markModified('items');
+
+    // First time the whole plan is finished, record a verified proof event.
+    const allDone = plan.items.length > 0 && plan.items.every((i) => i.done);
+    if (allDone && !plan.completedLoggedAt) {
+      plan.completedLoggedAt = new Date();
+      await this.ledger.record(userId, {
+        kind: 'daily_plan_completed',
+        title: `Completed daily plan (${plan.items.length} items)`,
+        detail: `${plan.mode} mode · ${plan.totalMinutes} min of focused learning.`,
+        evidenceRef: String(plan._id),
+        verificationLevel: 'system',
+      });
+    }
     return plan.save();
+  }
+
+  /** Persist a learner-chosen item order (drag-to-reorder on the Today screen). */
+  async reorder(userId: string, itemIds: string[]): Promise<DailyPlanDocument> {
+    const plan = await this.getToday(userId);
+    const byId = new Map(plan.items.map((i) => [i.id, i]));
+    const reordered = itemIds
+      .map((id) => byId.get(id))
+      .filter((i): i is DailyItem => !!i);
+    // Append any items the client didn't mention so nothing is silently dropped.
+    for (const it of plan.items)
+      if (!itemIds.includes(it.id)) reordered.push(it);
+    plan.items = reordered;
+    plan.markModified('items');
+    return plan.save();
+  }
+
+  /** Attach (or clear) a short note on a single plan item. */
+  async setItemNote(
+    userId: string,
+    itemId: string,
+    note: string,
+  ): Promise<DailyPlanDocument> {
+    const plan = await this.getToday(userId);
+    const item = plan.items.find((i) => i.id === itemId);
+    if (!item) throw new NotFoundException('Plan item not found');
+    item.note = note.slice(0, 500);
+    plan.markModified('items');
+    return plan.save();
+  }
+
+  /** Save the end-of-day reflection (mood 1–5 and/or a one-line note) on today's plan. */
+  async setReflection(
+    userId: string,
+    mood: number | undefined,
+    reflection: string | undefined,
+  ): Promise<DailyPlanDocument> {
+    const plan = await this.getToday(userId);
+    if (mood !== undefined)
+      plan.mood = Math.min(5, Math.max(1, Math.round(mood)));
+    if (reflection !== undefined) plan.reflection = reflection.slice(0, 280);
+    return plan.save();
+  }
+
+  /**
+   * Pull yesterday's unfinished items into today's plan so nothing silently
+   * drops off. Skips items already present today (matched on sourceId/title)
+   * and is safe to run more than once.
+   */
+  async carryOver(userId: string): Promise<DailyPlanDocument> {
+    const today = await this.getToday(userId);
+    const dayMs = 86_400_000;
+    const yStr = new Date(
+      new Date(`${today.date}T00:00:00.000Z`).getTime() - dayMs,
+    )
+      .toISOString()
+      .slice(0, 10);
+    const yesterday = await this.model
+      .findOne({ user: new Types.ObjectId(userId), date: yStr })
+      .exec();
+    if (!yesterday) return today;
+
+    const existingKeys = new Set(today.items.map((i) => i.sourceId ?? i.title));
+    const carried = yesterday.items.filter(
+      (i) => !i.done && !existingKeys.has(i.sourceId ?? i.title),
+    );
+    if (!carried.length) return today;
+
+    for (const it of carried) {
+      today.items.push({
+        id: `carry_${it.id}`,
+        kind: it.kind,
+        title: it.title,
+        reason: `Carried over from yesterday · ${it.reason}`,
+        route: it.route,
+        estimateMinutes: it.estimateMinutes,
+        done: false,
+        sourceId: it.sourceId,
+        note: it.note,
+      });
+    }
+    today.totalMinutes = today.items.reduce((s, i) => s + i.estimateMinutes, 0);
+    today.markModified('items');
+    return today.save();
   }
 
   recalculate(userId: string): Promise<DailyPlanDocument> {
@@ -246,7 +345,13 @@ export class DailyPlanService {
     userId: string,
     days = 7,
   ): Promise<
-    { date: string; completed: number; total: number; active: boolean }[]
+    {
+      date: string;
+      completed: number;
+      total: number;
+      active: boolean;
+      mood: number | null;
+    }[]
   > {
     const span = Math.min(Math.max(days, 1), 31);
     const dayMs = 86_400_000;
@@ -258,7 +363,7 @@ export class DailyPlanService {
     const plans = await this.model
       .find(
         { user: new Types.ObjectId(userId), date: { $gte: fromStr } },
-        { date: 1, items: 1 },
+        { date: 1, items: 1, mood: 1 },
       )
       .exec();
 
@@ -268,6 +373,7 @@ export class DailyPlanService {
       completed: number;
       total: number;
       active: boolean;
+      mood: number | null;
     }[] = [];
     for (let i = span - 1; i >= 0; i--) {
       const date = new Date(todayStart - i * dayMs).toISOString().slice(0, 10);
@@ -278,6 +384,7 @@ export class DailyPlanService {
         completed,
         total: p ? p.items.length : 0,
         active: completed > 0,
+        mood: p?.mood ?? null,
       });
     }
     return out;

@@ -4,6 +4,7 @@ import { MongooseModule } from '@nestjs/mongoose';
 import { AgentsModule } from '../agents/agents.module';
 import { FlowsModule } from '../flows/flows.module';
 import { AssessmentModule } from '../assessment/assessment.module';
+import { LedgerModule } from '../ledger/ledger.module';
 import { VoiceController } from './voice.controller';
 import { VoiceService } from './voice.service';
 import {
@@ -28,6 +29,7 @@ import {
     AgentsModule,
     FlowsModule,
     AssessmentModule,
+    LedgerModule,
     MongooseModule.forFeature([
       { name: VoiceSession.name, schema: VoiceSessionSchema },
     ]),

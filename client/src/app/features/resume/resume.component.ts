@@ -47,8 +47,9 @@ import { downloadPdf } from '../../shared/util/pdf';
             <div class="min-w-0 space-y-4">
               <asta-card class="block motion-card-reveal motion-row-primary">
                 <p class="kicker mb-1">{{ rr.headline }}</p>
-                <label class="lbl">Professional summary</label>
-                <textarea class="inp" rows="3" [ngModel]="rr.summary" (ngModelChange)="editSummary($event)"></textarea>
+                @if (rr.generatedAt) { <p class="text-[11px] text-txt-mute mb-2">Generated {{ fmtDate(rr.generatedAt) }}</p> }
+                <label for="rs-summary" class="lbl">Professional summary</label>
+                <textarea id="rs-summary" class="inp" rows="3" [ngModel]="rr.summary" (ngModelChange)="editSummary($event)"></textarea>
                 <div class="mt-2"><asta-btn variant="ghost" size="sm" (click)="saveSummary()" [disabled]="busy()">Save summary</asta-btn></div>
               </asta-card>
 
@@ -103,6 +104,11 @@ export class ResumeComponent {
   private summaryBuf = '';
 
   constructor() { this.refresh(); }
+  /** Human-friendly "Generated …" date for the resume header. */
+  fmtDate(iso: string): string {
+    const d = new Date(iso);
+    return isNaN(d.getTime()) ? '' : d.toLocaleDateString([], { year: 'numeric', month: 'short', day: 'numeric' });
+  }
   refresh(): void {
     this.loading.set(true); this.loadError.set(false);
     this.api.me().subscribe({ next: (r) => { this.r.set(r); this.summaryBuf = r.summary; this.loading.set(false); }, error: () => { this.loadError.set(true); this.loading.set(false); } });

@@ -1,5 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
-import { Router } from '@angular/router';
+import { forkJoin } from 'rxjs';
+import { FormsModule } from '@angular/forms';
+import { ActivatedRoute, Router } from '@angular/router';
 import { ButtonComponent } from '../../shared/ui/button.component';
 import { CardComponent } from '../../shared/ui/card.component';
 import { EmptyStateComponent } from '../../shared/ui/empty-state.component';
@@ -20,7 +22,7 @@ type Filter = 'all' | 'due' | MistakeStatus;
   selector: 'asta-mistakes',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ButtonComponent, CardComponent, EmptyStateComponent, SkeletonComponent],
+  imports: [FormsModule, ButtonComponent, CardComponent, EmptyStateComponent, SkeletonComponent],
   template: `
     <header class="asta-page-command-header">
       <div class="min-w-0">
@@ -90,24 +92,50 @@ type Filter = 'all' | 'due' | MistakeStatus;
       }
 
       <!-- filters -->
-      <div class="view-tabs mb-3">
-        @for (f of filters; track f.id) {
-          <button class="view-tab" [class.active]="filter() === f.id" (click)="setFilter(f.id)">{{ f.label }}</button>
+      <div class="mk-toolbar mb-3">
+        <div class="view-tabs">
+          @for (f of filters; track f.id) {
+            <button class="view-tab" [class.active]="filter() === f.id" (click)="setFilter(f.id)">{{ f.label }}</button>
+          }
+        </div>
+        @if (mistakes().length > 3) {
+          <div class="mk-tools">
+            <input class="mk-search" type="search" placeholder="Search concepts…" [ngModel]="search()" (ngModelChange)="search.set($event)" aria-label="Search mistakes" />
+            @if (filter() !== 'due') {
+              <select class="mk-sort" [ngModel]="sort()" (ngModelChange)="sort.set($event)" aria-label="Sort mistakes">
+                @for (s of sorts; track s.id) { <option [value]="s.id">{{ s.label }}</option> }
+              </select>
+            }
+          </div>
         }
       </div>
 
       <!-- list -->
       @if (filtered().length === 0) {
-        <asta-card class="block">
-          <asta-empty-state title="Nothing here" description="As you take quizzes, Asta logs the concepts you miss here and builds repair loops. Resolve them to strengthen your Skill Twin.">
-            <asta-btn variant="accent" (click)="goQuiz()">Take a quiz</asta-btn>
-          </asta-empty-state>
-        </asta-card>
+        @if (search().trim()) {
+          <asta-card class="block"><p class="text-sm text-txt-mute py-4 text-center">No concepts match “{{ search() }}”.</p></asta-card>
+        } @else {
+          <asta-card class="block">
+            <asta-empty-state title="Nothing here" description="As you take quizzes, Asta logs the concepts you miss here and builds repair loops. Resolve them to strengthen your Skill Twin.">
+              <asta-btn variant="accent" (click)="goQuiz()">Take a quiz</asta-btn>
+            </asta-empty-state>
+          </asta-card>
+        }
       } @else {
+        @if (selected().size > 0) {
+          <div class="bulk-bar mb-3">
+            <span class="bb-count">{{ selected().size }} selected</span>
+            <button class="bb-btn" [disabled]="bulkBusy()" (click)="bulkSetStatus('resolved')">Mark resolved</button>
+            <button class="bb-btn" [disabled]="bulkBusy()" (click)="bulkSetStatus('open')">Reopen</button>
+            <button class="bb-btn danger" [disabled]="bulkBusy()" (click)="bulkDelete()">Delete</button>
+            <button class="bb-btn" (click)="clearSel()">Clear</button>
+          </div>
+        }
         <div class="space-y-3 motion-row-3">
           @for (m of filtered(); track m.id; let i = $index) {
-            <asta-card class="block motion-card-reveal" [style.--motion-card-index]="i % 4">
-              <div class="flex items-start gap-3 cursor-pointer" (click)="toggle(m.id)">
+            <asta-card class="block motion-card-reveal" [class.picked]="selected().has(m.id)" [style.--motion-card-index]="i % 4">
+              <div class="flex items-start gap-3 cursor-pointer" role="button" tabindex="0" [attr.aria-expanded]="expanded() === m.id" (click)="toggle(m.id)" (keyup.enter)="toggle(m.id)">
+                <input type="checkbox" class="sel" [checked]="selected().has(m.id)" (click)="$event.stopPropagation()" (change)="toggleSel(m.id)" [attr.aria-label]="'Select ' + m.concept" />
                 <span class="sev-dot" [style.background]="sevColor(m.severity)" [title]="'severity ' + m.severity"></span>
                 <div class="min-w-0 flex-1">
                   <div class="flex items-center gap-2 flex-wrap">
@@ -121,6 +149,7 @@ type Filter = 'all' | 'due' | MistakeStatus;
               </div>
 
               @if (filter() === 'due' && m.status !== 'resolved') {
+                <!-- eslint-disable-next-line @angular-eslint/template/click-events-have-key-events, @angular-eslint/template/interactive-supports-focus -- not interactive; only stops the review buttons' clicks from toggling the row -->
                 <div class="review-mini mt-2.5" (click)="$event.stopPropagation()">
                   <span class="rm-q">Did you recall this?</span>
                   <button class="rm-btn yes" [disabled]="busyId() === m.id" (click)="review(m, true)">Recalled</button>
@@ -206,9 +235,22 @@ type Filter = 'all' | 'due' | MistakeStatus;
       .hm-track { height: 8px; border-radius: 999px; background: var(--paper-3); overflow: hidden; }
       .hm-fill { display: block; height: 100%; border-radius: 999px; transition: width .4s var(--ease); }
       .hm-meta { font-size: 11px; color: var(--text-mute); font-variant-numeric: tabular-nums; white-space: nowrap; }
+      .mk-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+      .mk-tools { display: flex; gap: 6px; align-items: center; }
+      .mk-search { padding: 6px 11px; border-radius: 999px; border: 1px solid var(--paper-3); background: var(--paper-2); color: var(--text); font-size: 12.5px; font-family: inherit; min-width: 160px; }
+      .mk-search:focus { outline: none; border-color: var(--green); }
+      .mk-sort { padding: 6px 9px; border-radius: 999px; border: 1px solid var(--paper-3); background: var(--paper-2); color: var(--text); font-size: 12px; cursor: pointer; }
       .view-tabs { display: inline-flex; gap: 2px; background: var(--paper-2); border: 1px solid var(--paper-3); border-radius: 999px; padding: 3px; }
       .view-tab { font-size: 12px; padding: 5px 12px; border-radius: 999px; border: none; background: transparent; color: var(--text-soft); cursor: pointer; }
       .view-tab.active { background: color-mix(in oklab, var(--green) 22%, transparent); color: var(--text); }
+      .sel { width: 15px; height: 15px; margin-top: 3px; flex-shrink: 0; cursor: pointer; accent-color: var(--green); }
+      asta-card.picked { border-color: color-mix(in oklab, var(--green) 45%, var(--paper-3)); }
+      .bulk-bar { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding: 8px 11px; border-radius: 11px; border: 1px solid color-mix(in oklab, var(--green) 35%, var(--paper-3)); background: color-mix(in oklab, var(--green) 8%, transparent); }
+      .bb-count { font-size: 12px; font-weight: 600; color: var(--green-deep); }
+      .bb-btn { font-size: 12px; padding: 5px 11px; border-radius: 999px; border: 1px solid var(--paper-3); background: var(--paper); color: var(--text-soft); cursor: pointer; }
+      .bb-btn:hover { border-color: var(--green); }
+      .bb-btn.danger:hover { border-color: var(--danger, #ff5d5d); color: var(--danger, #ff5d5d); }
+      .bb-btn:disabled { opacity: .5; cursor: default; }
       .sev-dot { width: 12px; height: 12px; border-radius: 50%; margin-top: 4px; flex-shrink: 0; }
       .type-badge { font-size: 10px; padding: 2px 8px; border-radius: 999px; border: 1px solid var(--paper-3); color: var(--text-mute); text-transform: uppercase; letter-spacing: .04em; }
       .status-badge { font-size: 10px; padding: 2px 8px; border-radius: 999px; text-transform: uppercase; letter-spacing: .04em; border: 1px solid var(--paper-3); }
@@ -243,6 +285,7 @@ export class MistakesComponent {
   private readonly api = inject(MistakeService);
   private readonly toast = inject(ToastService);
   private readonly router = inject(Router);
+  private readonly route = inject(ActivatedRoute);
 
   readonly mistakes = signal<Mistake[]>([]);
   readonly dueList = signal<Mistake[]>([]);
@@ -252,6 +295,13 @@ export class MistakesComponent {
   readonly filter = signal<Filter>('all');
   readonly expanded = signal<string | null>(null);
   readonly busyId = signal<string | null>(null);
+  readonly search = signal('');
+  readonly sort = signal<'severity' | 'frequency' | 'recent'>('severity');
+  readonly sorts: { id: 'severity' | 'frequency' | 'recent'; label: string }[] = [
+    { id: 'severity', label: 'Severity' },
+    { id: 'frequency', label: 'Most seen' },
+    { id: 'recent', label: 'Recent' },
+  ];
 
   readonly filters: { id: Filter; label: string }[] = [
     { id: 'all', label: 'All' },
@@ -263,12 +313,25 @@ export class MistakesComponent {
 
   readonly filtered = computed(() => {
     const f = this.filter();
-    if (f === 'due') return this.dueList();
-    const list = this.mistakes();
-    return f === 'all' ? list : list.filter((m) => m.status === f);
+    const base = f === 'due' ? this.dueList() : f === 'all' ? this.mistakes() : this.mistakes().filter((m) => m.status === f);
+    const q = this.search().trim().toLowerCase();
+    const list = q
+      ? base.filter((m) => `${m.concept} ${m.source}`.toLowerCase().includes(q))
+      : base;
+    // The "due" queue keeps its review-priority order; everything else is sortable.
+    if (f === 'due') return list;
+    const s = this.sort();
+    const sorted = [...list];
+    if (s === 'frequency') sorted.sort((a, b) => b.frequency - a.frequency);
+    else if (s === 'recent') sorted.sort((a, b) => +new Date(b.lastSeenAt || 0) - +new Date(a.lastSeenAt || 0));
+    else sorted.sort((a, b) => b.severity - a.severity);
+    return sorted;
   });
 
   constructor() {
+    // Deep-link support: /app/mistakes?filter=due (or open/repairing/resolved).
+    const f = this.route.snapshot.queryParamMap.get('filter');
+    if (f && this.filters.some((x) => x.id === f)) this.filter.set(f as Filter);
     this.refresh();
   }
 
@@ -314,6 +377,49 @@ export class MistakesComponent {
         this.toast.success(recalled ? 'Nice — spaced out further' : 'Resurfacing sooner');
       },
       error: () => { this.busyId.set(null); this.toast.error('Could not save review'); },
+    });
+  }
+
+  // ── bulk selection ──
+  readonly selected = signal<Set<string>>(new Set());
+  readonly bulkBusy = signal(false);
+  toggleSel(id: string): void {
+    this.selected.update((s) => { const n = new Set(s); if (n.has(id)) n.delete(id); else n.add(id); return n; });
+  }
+  clearSel(): void { this.selected.set(new Set()); }
+
+  bulkSetStatus(status: MistakeStatus): void {
+    const ids = [...this.selected()];
+    if (!ids.length) return;
+    this.bulkBusy.set(true);
+    forkJoin(ids.map((id) => this.api.setStatus(id, status))).subscribe({
+      next: (updated) => {
+        const byId = new Map(updated.map((u) => [u.id, u]));
+        this.mistakes.update((l) => l.map((m) => byId.get(m.id) ?? m));
+        this.bulkBusy.set(false);
+        this.clearSel();
+        this.refreshStats();
+        this.toast.success(`Updated ${updated.length} concept${updated.length === 1 ? '' : 's'}`);
+      },
+      error: () => { this.bulkBusy.set(false); this.toast.error('Bulk update failed'); },
+    });
+  }
+
+  bulkDelete(): void {
+    const ids = [...this.selected()];
+    if (!ids.length) return;
+    this.bulkBusy.set(true);
+    forkJoin(ids.map((id) => this.api.remove(id))).subscribe({
+      next: () => {
+        const gone = new Set(ids);
+        this.mistakes.update((l) => l.filter((m) => !gone.has(m.id)));
+        this.dueList.update((l) => l.filter((m) => !gone.has(m.id)));
+        this.bulkBusy.set(false);
+        this.clearSel();
+        this.refreshStats();
+        this.toast.success(`Deleted ${ids.length} concept${ids.length === 1 ? '' : 's'}`);
+      },
+      error: () => { this.bulkBusy.set(false); this.toast.error('Bulk delete failed'); },
     });
   }
 

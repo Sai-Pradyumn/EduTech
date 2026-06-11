@@ -94,7 +94,7 @@ const DIFFS: Difficulty[] = ['beginner', 'intermediate', 'advanced'];
             }
             <div class="grid gap-3 sm:grid-cols-2">
               @for (p of visibleProjects(); track p.id) {
-                <div class="proj" [class.archived]="p.archived" (click)="openBoard(p.id)" role="button" tabindex="0">
+                <div class="proj" [class.archived]="p.archived" (click)="openBoard(p.id)" (keyup.enter)="openBoard(p.id)" role="button" tabindex="0">
                   <div class="flex items-start justify-between gap-2">
                     <p class="text-sm font-semibold">{{ p.title }}</p>
                     <span class="status" [attr.data-s]="p.status">{{ p.status }}</span>
@@ -179,11 +179,11 @@ const DIFFS: Difficulty[] = ['beginner', 'intermediate', 'advanced'];
                       <div class="flex items-center justify-between">
                         <span class="phase">{{ t.phase }}</span>
                         <div class="flex gap-1">
-                          <button class="mv" title="Move up" [disabled]="ti === 0" (click)="reorder(t, 'up')">▲</button>
-                          <button class="mv" title="Move down" [disabled]="last" (click)="reorder(t, 'down')">▼</button>
-                          @if (col.key !== 'todo') { <button class="mv" title="Move left" (click)="move(t, -1)">◀</button> }
-                          @if (col.key !== 'done') { <button class="mv" title="Move right" (click)="move(t, 1)">▶</button> }
-                          <button class="mv del" title="Delete task" (click)="removeTask(t)">✕</button>
+                          <button class="mv" title="Move up" aria-label="Move task up" [disabled]="ti === 0" (click)="reorder(t, 'up')">▲</button>
+                          <button class="mv" title="Move down" aria-label="Move task down" [disabled]="last" (click)="reorder(t, 'down')">▼</button>
+                          @if (col.key !== 'todo') { <button class="mv" title="Move left" aria-label="Move task to previous column" (click)="move(t, -1)">◀</button> }
+                          @if (col.key !== 'done') { <button class="mv" title="Move right" aria-label="Move task to next column" (click)="move(t, 1)">▶</button> }
+                          <button class="mv del" title="Delete task" aria-label="Delete task" (click)="removeTask(t)">✕</button>
                         </div>
                       </div>
                     </div>
@@ -310,7 +310,7 @@ const DIFFS: Difficulty[] = ['beginner', 'intermediate', 'advanced'];
               </div>
               <div class="flex items-center gap-2 mb-2">
                 <span class="status" [attr.data-s]="mr.decision === 'approved' ? 'completed' : 'in_progress'">{{ mr.decision === 'approved' ? 'Approved' : 'Changes requested' }}</span>
-                @if (mr.score != null) { <span class="text-[12px] text-txt-mute">{{ mr.score }}/100</span> }
+                @if (mr.score !== null) { <span class="text-[12px] text-txt-mute">{{ mr.score }}/100</span> }
                 <span class="text-[11px] text-txt-mute">— {{ mr.reviewerName }}</span>
               </div>
               <p class="text-sm text-txt-soft">{{ mr.feedback }}</p>

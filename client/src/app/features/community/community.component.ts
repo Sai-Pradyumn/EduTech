@@ -76,8 +76,18 @@ import { CommunityChannel, CommunityReply, CommunityThread, Project, ThreadKind 
             }
 
             @if (threads().length === 0) { <p class="text-sm text-txt-mute">No threads yet — start one.</p> }
+            @else if (threads().length > 3) {
+              <div class="th-toolbar mb-2">
+                <input class="th-search" type="search" placeholder="Search threads…" [ngModel]="threadQuery()" (ngModelChange)="threadQuery.set($event)" aria-label="Search threads" />
+                <select class="th-sort" [ngModel]="threadSort()" (ngModelChange)="threadSort.set($event)" aria-label="Sort threads">
+                  <option value="recent">Recent</option>
+                  <option value="top">Top voted</option>
+                  <option value="replies">Most replies</option>
+                </select>
+              </div>
+            }
             <div class="space-y-1.5 motion-row-2">
-              @for (t of threads(); track t.id; let i = $index) {
+              @for (t of visibleThreads(); track t.id; let i = $index) {
                 <button class="w-full text-left card hover-lift motion-card-reveal" style="padding:10px 13px"
                   [style.--motion-card-index]="i"
                   [style.borderColor]="activeThread()?.id === t.id ? 'var(--green)' : null" (click)="selectThread(t.id)">
@@ -92,6 +102,8 @@ import { CommunityChannel, CommunityReply, CommunityThread, Project, ThreadKind 
                     </div>
                   </div>
                 </button>
+              } @empty {
+                <p class="text-sm text-txt-mute py-2">No threads match “{{ threadQuery() }}”.</p>
               }
             </div>
           </div>
@@ -166,6 +178,10 @@ import { CommunityChannel, CommunityReply, CommunityThread, Project, ThreadKind 
       .chip { font-family: var(--mono); font-size: 11px; text-transform: uppercase; padding: 3px 9px; border-radius: 100px; border: 1px solid var(--paper-3); background: var(--paper); color: var(--text-soft); }
       .chip-on { background: var(--ink); color: var(--paper); border-color: var(--ink); }
       .tag { font-size: 11px; padding: 1px 7px; border-radius: 6px; background: var(--paper-2); color: var(--text-mute); }
+      .th-toolbar { display: flex; gap: 6px; }
+      .th-search { flex: 1; min-width: 0; padding: 6px 10px; border-radius: 9px; border: 1px solid var(--paper-3); background: var(--paper); color: var(--text); font-size: 12.5px; font-family: inherit; }
+      .th-search:focus { outline: none; border-color: var(--green); }
+      .th-sort { padding: 6px 7px; border-radius: 9px; border: 1px solid var(--paper-3); background: var(--paper); color: var(--text); font-size: 12px; cursor: pointer; }
       .btn-go { display: inline-flex; align-items: center; gap: 6px; border-radius: 100px; padding: 8px 16px; font-size: 13px; font-weight: 600; color: var(--ink); background: var(--green); }
       .btn-go:disabled { opacity: .6; }
       .btn-soft { border-radius: 100px; padding: 7px 14px; font-size: 12px; font-weight: 600; color: var(--text-soft); background: var(--paper-2); border: 1px solid var(--paper-3); }
@@ -195,6 +211,20 @@ export class CommunityComponent implements OnInit {
   readonly posting = signal(false);
   readonly replying = signal(false);
   readonly ntKind = signal<ThreadKind>('discussion');
+
+  readonly threadQuery = signal('');
+  readonly threadSort = signal<'recent' | 'top' | 'replies'>('recent');
+  readonly visibleThreads = computed(() => {
+    const q = this.threadQuery().trim().toLowerCase();
+    let list = this.threads();
+    if (q) list = list.filter((t) => t.title.toLowerCase().includes(q));
+    const s = this.threadSort();
+    const sorted = [...list];
+    if (s === 'top') sorted.sort((a, b) => b.upvotes - a.upvotes);
+    else if (s === 'replies') sorted.sort((a, b) => b.replyCount - a.replyCount);
+    else sorted.sort((a, b) => +new Date(b.createdAt) - +new Date(a.createdAt));
+    return sorted;
+  });
 
   readonly threadKinds: ThreadKind[] = ['discussion', 'question', 'showcase'];
   private readonly meId = computed(() => this.auth.user()?.id ?? '');

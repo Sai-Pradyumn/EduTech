@@ -29,6 +29,8 @@ export class DailyItem {
   @Prop({ default: 20 }) estimateMinutes!: number;
   @Prop({ default: false }) done!: boolean;
   @Prop() sourceId?: string;
+  /** Optional learner note — a reminder or reflection attached to this item. */
+  @Prop({ default: '' }) note?: string;
 }
 const DailyItemSchema = SchemaFactory.createForClass(DailyItem);
 
@@ -47,6 +49,14 @@ export class DailyPlan {
 
   @Prop({ type: [DailyItemSchema], default: [] }) items!: DailyItem[];
   @Prop({ default: 0 }) totalMinutes!: number;
+
+  /** Optional end-of-day reflection: mood (1–5) + a one-line note. */
+  @Prop({ min: 1, max: 5 }) mood?: number;
+  @Prop({ default: '' }) reflection?: string;
+
+  /** Set once, the first time every item in the plan is complete — guards the
+   *  one-per-day `daily_plan_completed` Proof-Ledger event from double-firing. */
+  @Prop({ type: Date }) completedLoggedAt?: Date;
 }
 
 export const DailyPlanSchema = SchemaFactory.createForClass(DailyPlan);

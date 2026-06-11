@@ -1,4 +1,5 @@
 import {
+  AfterViewInit,
   ChangeDetectionStrategy,
   Component,
   ElementRef,
@@ -83,7 +84,7 @@ import {
     `,
   ],
 })
-export class SearchComponent {
+export class SearchComponent implements AfterViewInit {
   @Input() placeholder = 'Search…';
   @Input() debounceMs = 180;
   @Input() autofocus = false;

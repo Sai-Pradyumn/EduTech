@@ -36,6 +36,7 @@ export class InterviewService {
   types(): Observable<InterviewTypeMeta[]> { return this.api.get<InterviewTypeMeta[]>('/interview/types'); }
   start(type: string, roleId?: string): Observable<InterviewSession> { return this.api.post<InterviewSession>('/interview/start', { type, roleId }); }
   respond(id: string, answer: string): Observable<InterviewSession> { return this.api.post<InterviewSession>(`/interview/${id}/respond`, { answer }); }
+  skip(id: string): Observable<InterviewSession> { return this.api.post<InterviewSession>(`/interview/${id}/skip`, {}); }
   finish(id: string): Observable<InterviewSession> { return this.api.post<InterviewSession>(`/interview/${id}/finish`); }
   sessions(): Observable<InterviewSession[]> { return this.api.get<InterviewSession[]>('/interview/sessions'); }
   session(id: string): Observable<InterviewSession> { return this.api.get<InterviewSession>(`/interview/sessions/${id}`); }

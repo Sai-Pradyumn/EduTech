@@ -24,7 +24,10 @@ import {
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <div class="dd-trigger" (click)="toggle()"><ng-content select="[ddTrigger]" /></div>
+    <!-- Keyboard is provided by the projected <button ddTrigger>; its Enter/Space fires a
+         click that bubbles here, so a keydown handler on the wrapper would double-toggle. -->
+    <!-- eslint-disable-next-line @angular-eslint/template/click-events-have-key-events, @angular-eslint/template/interactive-supports-focus -->
+    <div class="dd-trigger" [attr.aria-expanded]="open()" (click)="toggle()"><ng-content select="[ddTrigger]" /></div>
     @if (open()) {
       <div class="dd-panel" [class.right]="align === 'right'">
         <ng-content />

@@ -50,6 +50,8 @@ export interface AstaDropdownOption {
     @if (open()) {
       <ul class="panel" role="listbox" [attr.aria-activedescendant]="'opt-' + active()" [class.up]="dropUp()">
         @for (o of options(); track o.value; let i = $index) {
+          <!-- Keyboard selection is handled on the trigger via onTriggerKey (arrow keys + Enter, aria-activedescendant); option click is a mouse convenience. -->
+          <!-- eslint-disable-next-line @angular-eslint/template/click-events-have-key-events, @angular-eslint/template/interactive-supports-focus -->
           <li
             [id]="'opt-' + i"
             role="option"

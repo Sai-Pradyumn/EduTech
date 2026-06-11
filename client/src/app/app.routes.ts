@@ -471,6 +471,12 @@ export const routes: Routes = [
         loadComponent: () => import('./features/privacy/privacy.component').then((m) => m.PrivacyComponent),
       },
       {
+        path: 'notifications',
+        title: 'Notifications',
+        data: { title: 'Notifications' },
+        loadComponent: () => import('./features/notifications/notifications.component').then((m) => m.NotificationsComponent),
+      },
+      {
         path: 'profile',
         title: 'Profile',
         data: { title: 'Profile & Settings' },

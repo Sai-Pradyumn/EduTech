@@ -42,12 +42,12 @@ import { Portfolio, PortfolioService } from '../../core/services/portfolio.servi
           <div class="min-w-0 space-y-4">
             <asta-card class="block motion-card-reveal motion-row-primary">
               <p class="kicker mb-2">Profile</p>
-              <label class="lbl">Title</label>
-              <input class="inp" [ngModel]="pp.title" (ngModelChange)="edit('title', $event)" />
-              <label class="lbl">Tagline</label>
-              <input class="inp" [ngModel]="pp.tagline" (ngModelChange)="edit('tagline', $event)" />
-              <label class="lbl">About</label>
-              <textarea class="inp" rows="4" [ngModel]="pp.about" (ngModelChange)="edit('about', $event)"></textarea>
+              <label for="pf-title" class="lbl">Title</label>
+              <input id="pf-title" class="inp" [ngModel]="pp.title" (ngModelChange)="edit('title', $event)" />
+              <label for="pf-tagline" class="lbl">Tagline</label>
+              <input id="pf-tagline" class="inp" [ngModel]="pp.tagline" (ngModelChange)="edit('tagline', $event)" />
+              <label for="pf-about" class="lbl">About</label>
+              <textarea id="pf-about" class="inp" rows="4" [ngModel]="pp.about" (ngModelChange)="edit('about', $event)"></textarea>
               <div class="flex flex-wrap gap-1.5 mt-2">@for (s of pp.skills; track s) { <span class="chip">{{ s }}</span> }</div>
               <div class="mt-3"><asta-btn variant="ghost" size="sm" (click)="save()" [disabled]="busy()">Save changes</asta-btn></div>
             </asta-card>

@@ -65,7 +65,7 @@ import { SpaceService, StudySpace } from '../../core/services/space.service';
             <p class="kicker mb-2">Sources</p>
             @for (src of space()!.sources; track src.id) {
               <div class="src-row">
-                <span class="min-w-0"><span class="src-title">{{ src.title }}</span><span class="src-type">{{ src.type }}</span></span>
+                <span class="min-w-0"><span class="src-title">{{ src.title }}</span><span class="src-type">{{ src.type }}@if (src.url) { · <a class="src-link" [href]="src.url" target="_blank" rel="noopener">open ↗</a> }</span></span>
                 <button class="x" (click)="removeSource(src.id)" aria-label="Remove">✕</button>
               </div>
             }
@@ -88,6 +88,9 @@ import { SpaceService, StudySpace } from '../../core/services/space.service';
                 }
                 @for (id of space()!.linkedVisualIds; track id; let i = $index) {
                   <button class="link-chip" (click)="jump(['/app/visuals', id])">◈ Map {{ i + 1 }}</button>
+                }
+                @for (id of space()!.linkedVoiceSessionIds; track id; let i = $index) {
+                  <button class="link-chip" (click)="jump(['/app/voice-room/session', id])">🎙 Voice {{ i + 1 }}</button>
                 }
               </div>
             </asta-card>
@@ -117,6 +120,7 @@ import { SpaceService, StudySpace } from '../../core/services/space.service';
       .src-row { display: flex; align-items: center; gap: 8px; justify-content: space-between; padding: 7px 0; border-bottom: 1px solid var(--paper-3); }
       .src-title { display: block; font-size: 13px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
       .src-type { display: block; font-size: 10px; color: var(--text-mute); text-transform: uppercase; }
+      .src-link { color: var(--green-deep); text-transform: none; }
       .x { border: none; background: transparent; color: var(--text-mute); cursor: pointer; }
       .x:hover { color: var(--danger, #ff5d5d); }
       .link-chips { display: flex; flex-wrap: wrap; gap: 6px; }
@@ -208,7 +212,7 @@ export class SpaceDetailComponent {
 
   hasLinks(): boolean {
     const s = this.space();
-    return !!s && (s.linkedFlowIds.length + s.linkedQuizIds.length + s.linkedVisualIds.length) > 0;
+    return !!s && (s.linkedFlowIds.length + s.linkedQuizIds.length + s.linkedVisualIds.length + s.linkedVoiceSessionIds.length) > 0;
   }
   jump(commands: string[]): void { this.router.navigate(commands); }
   jumpQuiz(quizId: string): void { this.router.navigate(['/app/quizzes'], { queryParams: { quizId } }); }

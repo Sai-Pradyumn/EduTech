@@ -20,6 +20,20 @@ async function bootstrap(): Promise<void> {
   // Security hardening (B12): headers + per-IP rate limiting.
   app.use(securityHeaders);
   app.use(rateLimit({ windowMs: 60_000, max: 300 }));
+  // Brute-force hardening: a much tighter per-IP budget on the credential/OTP
+  // endpoints (the global 300/min is far too generous for guessing a 6-digit code
+  // or a password). Frequently-polled routes (auth/me, auth/refresh) keep the
+  // global limit. This limiter owns its own bucket map, so it counts independently.
+  app.use(
+    [
+      '/api/auth/login',
+      '/api/auth/register',
+      '/api/auth/verify-otp',
+      '/api/auth/resend-otp',
+      '/api/auth/google',
+    ],
+    rateLimit({ windowMs: 60_000, max: 20 }),
+  );
 
   app.setGlobalPrefix('api');
   app.enableCors({

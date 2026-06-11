@@ -2,7 +2,7 @@ import { ChangeDetectionStrategy, Component, OnInit, inject, signal } from '@ang
 import { FormsModule } from '@angular/forms';
 import { MentorService } from '../../core/services/mentor.service';
 import { ToastService } from '../../core/services/toast.service';
-import { MentorDashboard, MentorProfile, PendingReview, Risk, StudentDetail, StudentSummary } from '../../core/models';
+import { MentorDashboard, MentorProfile, PendingReview, StudentDetail, StudentSummary } from '../../core/models';
 import { ButtonComponent } from '../../shared/ui/button.component';
 import { CardComponent } from '../../shared/ui/card.component';
 import { RingComponent } from '../../shared/ui/ring.component';

@@ -21,6 +21,7 @@ import { KnowledgeDoc } from '../../../core/models';
     @if (doc; as d) {
       <div class="shard" [class.shard-on]="selected" [attr.data-s]="d.status">
         @if (editing()) {
+          <!-- eslint-disable-next-line @angular-eslint/template/click-events-have-key-events, @angular-eslint/template/interactive-supports-focus -- not interactive; only stops clicks inside the editor from bubbling to the shard -->
           <div class="edit" (click)="$event.stopPropagation()">
             <p class="kicker mb-1.5">Edit document</p>
             <input class="ed-in" [(ngModel)]="draftTitle" placeholder="Title" aria-label="Document title" />

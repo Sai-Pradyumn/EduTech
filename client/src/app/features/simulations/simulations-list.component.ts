@@ -78,12 +78,19 @@ import { SIM_TYPE_LIST, SIM_TYPE_META, Simulation, SimulationService, Simulation
         </asta-card>
       }
 
-      <div class="flex flex-wrap gap-1.5 mb-3">
+      <div class="flex flex-wrap gap-1.5 mb-2">
         <button class="fchip" [class.on]="typeFilter() === 'all'" (click)="typeFilter.set('all')">All <span class="ct">{{ sims().length }}</span></button>
         @for (t of typesPresent(); track t) {
           <button class="fchip" [class.on]="typeFilter() === t" (click)="typeFilter.set(t)">{{ meta(t).label }} <span class="ct">{{ typeCount(t) }}</span></button>
         }
       </div>
+      @if (inProgressCount() > 0 && finishedCount() > 0) {
+        <div class="flex flex-wrap gap-1.5 mb-3">
+          <button class="fchip" [class.on]="statusFilter() === 'all'" (click)="statusFilter.set('all')">Any status</button>
+          <button class="fchip" [class.on]="statusFilter() === 'active'" (click)="statusFilter.set('active')">In progress <span class="ct">{{ inProgressCount() }}</span></button>
+          <button class="fchip" [class.on]="statusFilter() === 'finished'" (click)="statusFilter.set('finished')">Finished <span class="ct">{{ finishedCount() }}</span></button>
+        </div>
+      }
 
       <div class="space-y-2 motion-row-2">
         @for (s of visibleSims(); track s.id; let i = $index) {
@@ -145,7 +152,10 @@ export class SimulationsListComponent {
   topic = '';
 
   readonly typeFilter = signal<'all' | SimulationType>('all');
+  readonly statusFilter = signal<'all' | 'active' | 'finished'>('all');
   readonly abs = Math.abs;
+  readonly inProgressCount = computed(() => this.sims().filter((s) => s.status !== 'finished').length);
+  readonly finishedCount = computed(() => this.sims().filter((s) => s.status === 'finished').length);
 
   /** Finished sims oldest→newest (server returns newest-first). */
   private readonly finished = computed(() =>
@@ -187,7 +197,13 @@ export class SimulationsListComponent {
   });
   readonly visibleSims = computed(() => {
     const f = this.typeFilter();
-    return f === 'all' ? this.sims() : this.sims().filter((s) => s.type === f);
+    const st = this.statusFilter();
+    return this.sims().filter((s) => {
+      if (f !== 'all' && s.type !== f) return false;
+      if (st === 'active' && s.status === 'finished') return false;
+      if (st === 'finished' && s.status !== 'finished') return false;
+      return true;
+    });
   });
 
   constructor() { this.refresh(); }

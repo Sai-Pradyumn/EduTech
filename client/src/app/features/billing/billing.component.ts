@@ -189,7 +189,10 @@ import { GaugeComponent } from '../../shared/charts';
       <!-- Invoices -->
       @if (txns().length) {
         <div class="card motion-card-reveal motion-lower" style="padding:18px;--motion-card-index:0">
-          <p class="kicker mb-3">Invoices</p>
+          <div class="flex items-center justify-between mb-3">
+            <p class="kicker !mb-0">Invoices</p>
+            <button class="inv-export" (click)="exportInvoices()">⬇ Export CSV</button>
+          </div>
           <div class="space-y-1.5">
             @for (t of txns(); track t.id) {
               <div class="flex items-center justify-between text-sm py-1.5" style="border-bottom:1px solid var(--paper-3)">
@@ -206,6 +209,8 @@ import { GaugeComponent } from '../../shared/charts';
   `,
   styles: [
     `
+      .inv-export { font-size: 11.5px; color: var(--peri, #8aa6ff); background: transparent; border: none; cursor: pointer; }
+      .inv-export:hover { color: var(--green-deep); }
       .skel { display: block; border-radius: 8px; background: linear-gradient(90deg, var(--paper-2) 25%, var(--paper-3) 50%, var(--paper-2) 75%); background-size: 200% 100%; animation: skel-shimmer 1.4s ease infinite; }
       @keyframes skel-shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
       @media (prefers-reduced-motion: reduce) { .skel { animation: none; } }
@@ -327,6 +332,30 @@ export class BillingComponent implements OnInit {
       },
       error: () => this.busy.set(false),
     });
+  }
+
+  /** Export the invoice history as CSV — handy for expense reports / accounting. */
+  exportInvoices(): void {
+    const rows = this.txns();
+    if (!rows.length) return;
+    const esc = (v: unknown): string => {
+      const s = String(v ?? '').replace(/"/g, '""');
+      return /[",\n]/.test(s) ? `"${s}"` : s;
+    };
+    const header = ['Date', 'Plan', 'Amount (INR)', 'Status', 'Provider', 'Reference'];
+    const body = rows.map((t) => [
+      t.createdAt ? new Date(t.createdAt).toISOString().slice(0, 10) : '',
+      t.planId, t.amountInr, t.status, t.provider, t.reference,
+    ]);
+    const csv = [header, ...body].map((r) => r.map(esc).join(',')).join('\r\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `asta-invoices-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+    this.toast.success('Invoices exported');
   }
 
   private onPlanChanged(subscription: SubscriptionView, id: PlanId): void {

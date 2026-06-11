@@ -1,5 +1,7 @@
 import { ChangeDetectionStrategy, Component, OnInit, inject, signal } from '@angular/core';
 import { DatePipe } from '@angular/common';
+import { ButtonComponent } from '../../shared/ui/button.component';
+import { SkeletonComponent } from '../../shared/ui/skeleton.component';
 import { CertificateService } from '../../core/services/certificate.service';
 import { ToastService } from '../../core/services/toast.service';
 import { CertificateView } from '../../core/models';
@@ -9,7 +11,7 @@ import { CertificateView } from '../../core/models';
   selector: 'asta-certificates',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [DatePipe],
+  imports: [DatePipe, ButtonComponent, SkeletonComponent],
   template: `
     <!-- Command header -->
     <header class="asta-page-command-header">
@@ -20,14 +22,27 @@ import { CertificateView } from '../../core/models';
     </header>
 
     <div class="max-w-app mx-auto">
-      @if (loaded() && certs().length === 0) {
+      @if (loading()) {
+        <div class="grid gap-4 md:grid-cols-2">
+          <div class="card"><asta-skeleton h="150px" /></div>
+          <div class="card"><asta-skeleton h="150px" /></div>
+        </div>
+      } @else if (loadError()) {
+        <div class="card grid place-items-center text-center" style="padding:48px 24px">
+          <div>
+            <p class="font-display text-xl mb-1">Couldn't load your certificates</p>
+            <p class="text-sm text-txt-soft mb-3">Check your connection and try again.</p>
+            <asta-btn variant="accent" (click)="load()">Retry</asta-btn>
+          </div>
+        </div>
+      } @else if (certs().length === 0) {
         <div class="card grid place-items-center text-center" style="padding:60px 24px">
           <div>
             <p class="font-display text-xl mb-1">No certificates yet</p>
             <p class="text-sm text-txt-soft">Complete projects and skills — your mentor or college can issue verifiable credentials you can share.</p>
           </div>
         </div>
-      }
+      } @else {
       <div class="grid gap-4 md:grid-cols-2 motion-row-primary">
         @for (c of certs(); track c.id; let i = $index) {
           <div class="card motion-card-reveal relative overflow-hidden" style="padding:22px" [style.--motion-card-index]="i">
@@ -46,6 +61,7 @@ import { CertificateView } from '../../core/models';
           </div>
         }
       </div>
+      }
     </div>
   `,
 })
@@ -54,15 +70,17 @@ export class CertificatesComponent implements OnInit {
   private readonly toast = inject(ToastService);
 
   readonly certs = signal<CertificateView[]>([]);
-  readonly loaded = signal(false);
+  readonly loading = signal(true);
+  readonly loadError = signal(false);
 
-  ngOnInit(): void {
+  ngOnInit(): void { this.load(); }
+
+  load(): void {
+    this.loading.set(true);
+    this.loadError.set(false);
     this.certApi.mine().subscribe({
-      next: (c) => {
-        this.certs.set(c);
-        this.loaded.set(true);
-      },
-      error: () => this.loaded.set(true),
+      next: (c) => { this.certs.set(c); this.loading.set(false); },
+      error: () => { this.loadError.set(true); this.loading.set(false); },
     });
   }
 

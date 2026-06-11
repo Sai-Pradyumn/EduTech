@@ -26,7 +26,10 @@ import {
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @if (open) {
+      <!-- Backdrop click is a mouse convenience; keyboard users close via ESC (document:keydown.escape below). -->
+      <!-- eslint-disable-next-line @angular-eslint/template/click-events-have-key-events, @angular-eslint/template/interactive-supports-focus -->
       <div class="backdrop" [class.top]="align === 'top'" (click)="backdropClose()">
+        <!-- eslint-disable-next-line @angular-eslint/template/click-events-have-key-events -->
         <div
           #panel
           class="panel"

@@ -18,8 +18,9 @@ import { ButtonComponent } from '../../shared/ui/button.component';
     <h1 class="text-[30px] mb-1">Check your email</h1>
     <p class="text-txt-soft mb-7">We sent a 6-digit code to <span class="font-semibold">{{ email() }}</span>.</p>
 
-    <label class="block mb-2 text-sm text-txt-soft">Verification code</label>
+    <label for="otp-code" class="block mb-2 text-sm text-txt-soft">Verification code</label>
     <input
+      id="otp-code"
       class="input text-center"
       style="font-size:28px;letter-spacing:14px;font-family:var(--font-mono,monospace)"
       inputmode="numeric"

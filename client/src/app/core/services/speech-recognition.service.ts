@@ -1,6 +1,10 @@
 import { Injectable } from '@angular/core';
-
-/* eslint-disable @typescript-eslint/no-explicit-any */
+import {
+  SpeechRecognition,
+  SpeechRecognitionEvent,
+  SpeechRecognitionErrorEvent,
+  getSpeechRecognitionCtor,
+} from '../types/web-speech';
 
 export interface RecognitionHandlers {
   /** Fired on every result; `isFinal` marks a settled phrase. */
@@ -23,21 +27,19 @@ export interface RecognitionOptions extends RecognitionHandlers {
  * Thin wrapper over the Web Speech API (`SpeechRecognition` / vendor-prefixed
  * `webkitSpeechRecognition`). Only one recognition runs at a time — `start()`
  * tears down any previous instance first — so the wake-word listener and the
- * one-shot command capture never fight over the microphone. Loosely typed for
- * portability across browsers that don't ship lib.dom types for this API.
+ * one-shot command capture never fight over the microphone. Typed against the
+ * minimal Web Speech API surface in `core/types/web-speech` (lib.dom omits it).
  */
 @Injectable({ providedIn: 'root' })
 export class SpeechRecognitionService {
-  readonly supported =
-    typeof window !== 'undefined' &&
-    !!((window as any).SpeechRecognition || (window as any).webkitSpeechRecognition);
+  readonly supported = getSpeechRecognitionCtor() !== null;
 
-  private rec: any;
+  private rec: SpeechRecognition | null = null;
   /** True while a session is live — guards against double starts. */
   private active = false;
 
   start(opts: RecognitionOptions): void {
-    const Ctor = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    const Ctor = getSpeechRecognitionCtor();
     if (!Ctor) {
       opts.onError?.('unsupported');
       return;
@@ -55,8 +57,8 @@ export class SpeechRecognitionService {
       this.active = true;
       opts.onStart?.();
     };
-    rec.onresult = (ev: any) => {
-      const results = ev.results as ArrayLike<any>;
+    rec.onresult = (ev: SpeechRecognitionEvent) => {
+      const results = ev.results;
       // Walk only the results from this event's resultIndex forward.
       for (let i = ev.resultIndex; i < results.length; i++) {
         const r = results[i];
@@ -64,7 +66,7 @@ export class SpeechRecognitionService {
         if (text) opts.onResult(text, !!r.isFinal);
       }
     };
-    rec.onerror = (ev: any) => opts.onError?.(ev?.error ?? 'error');
+    rec.onerror = (ev: SpeechRecognitionErrorEvent) => opts.onError?.(ev?.error ?? 'error');
     rec.onend = () => {
       this.active = false;
       opts.onEnd?.();

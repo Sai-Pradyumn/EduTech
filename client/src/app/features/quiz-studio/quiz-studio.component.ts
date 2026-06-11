@@ -254,13 +254,22 @@ const DIFFS: Difficulty[] = ['beginner', 'intermediate', 'advanced'];
             <p class="text-xs text-txt-mute mb-3">{{ qz.difficulty }} · {{ qz.questions.length }} questions · answer all, then submit</p>
 
             <!-- progress -->
-            <div class="take-progress mb-5" role="progressbar" [attr.aria-valuenow]="answeredCount()" aria-valuemin="0" [attr.aria-valuemax]="qz.questions.length">
+            <div class="take-progress mb-3" role="progressbar" [attr.aria-valuenow]="answeredCount()" aria-valuemin="0" [attr.aria-valuemax]="qz.questions.length">
               <span class="take-progress-bar" [style.width.%]="qz.questions.length ? (answeredCount() / qz.questions.length) * 100 : 0"></span>
             </div>
 
+            <!-- question navigator — jump to any question; filled = answered -->
+            @if (qz.questions.length > 4) {
+              <div class="q-nav mb-5">
+                @for (item of orderedQuestions(); track item.oi; let pos = $index) {
+                  <button class="q-nav-dot" [class.done]="isAnswered(item.oi)" (click)="scrollToQuestion(pos)" [attr.aria-label]="'Go to question ' + (pos + 1) + (isAnswered(item.oi) ? ' (answered)' : ' (unanswered)')">{{ pos + 1 }}</button>
+                }
+              </div>
+            }
+
             <div class="space-y-6 q-flow motion-row-2">
               @for (item of orderedQuestions(); track item.oi; let pos = $index) {
-                <div class="motion-card-reveal" [style.--motion-card-index]="pos">
+                <div class="motion-card-reveal" [id]="'qz-q-' + pos" [style.--motion-card-index]="pos">
                   <p class="text-sm font-medium mb-2"><span class="qnum">{{ pos + 1 }}</span> {{ item.q.prompt }}</p>
                   @if (item.q.type === 'mcq') {
                     <div class="space-y-1.5">
@@ -305,21 +314,25 @@ const DIFFS: Difficulty[] = ['beginner', 'intermediate', 'advanced'];
               </div>
             </asta-card>
 
-            @if (weaknessBlock(); as wb) { <ai-visual-block [block_]="wb" /> }
+            @if (weaknessBlock(); as wb) { <asta-ai-visual-block [block_]="wb" /> }
 
             <asta-card class="block motion-card-reveal" style="--motion-card-index:1">
               <div class="panel-head mb-3">
                 <p class="kicker">Review</p>
-                <span class="panel-ico" aria-hidden="true">
-                  <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4z"/></svg>
-                </span>
+                @if (incorrectCount() > 0) {
+                  <div class="rev-tabs">
+                    <button class="rev-tab" [class.on]="reviewFilter() === 'all'" (click)="reviewFilter.set('all')">All {{ r.review.length }}</button>
+                    <button class="rev-tab" [class.on]="reviewFilter() === 'incorrect'" (click)="reviewFilter.set('incorrect')">Incorrect {{ incorrectCount() }}</button>
+                  </div>
+                }
               </div>
               <div class="space-y-4">
-                @for (rev of r.review; track $index) {
-                  <div class="rev-block" [class.rev-block-ok]="rev.correct" [class.rev-block-no]="!rev.correct">
+                @for (p of reviewList(); track p.n) {
+                  <div class="rev-block" [class.rev-block-ok]="p.rev.correct" [class.rev-block-no]="!p.rev.correct">
+                    @let rev = p.rev;
                     <p class="text-sm font-medium mb-1">
                       <span [style.color]="rev.correct ? 'var(--green-deep)' : 'var(--coral-deep)'">{{ rev.correct ? '✓' : '✗' }}</span>
-                      <span class="text-txt-mute font-mono mx-1">{{ $index + 1 }}.</span>{{ rev.prompt }}
+                      <span class="text-txt-mute font-mono mx-1">{{ p.n }}.</span>{{ rev.prompt }}
                     </p>
                     @if (rev.type === 'mcq') {
                       <div class="space-y-1 ml-5">
@@ -380,6 +393,13 @@ const DIFFS: Difficulty[] = ['beginner', 'intermediate', 'advanced'];
       .timer-chip { font-family: var(--mono); font-size: 12px; font-variant-numeric: tabular-nums; padding: 4px 10px; border-radius: 100px; border: 1px solid var(--paper-3); background: var(--paper-2); color: var(--text-soft); }
       .timer-chip.danger { color: var(--coral-deep); border-color: color-mix(in oklch, var(--coral) 45%, var(--paper-3)); background: oklch(0.72 0.17 25 / .10); }
       .score-pill { font-family: var(--mono); font-size: 13px; font-weight: 700; font-variant-numeric: tabular-nums; padding: 3px 10px; border-radius: 100px; border: 1px solid var(--paper-3); background: var(--paper-2); flex-shrink: 0; }
+      .q-nav { display: flex; flex-wrap: wrap; gap: 6px; }
+      .q-nav-dot { width: 30px; height: 30px; border-radius: 9px; border: 1px solid var(--paper-3); background: var(--paper-2); color: var(--text-mute); font-size: 12px; font-variant-numeric: tabular-nums; cursor: pointer; transition: border-color .15s, color .15s, background .15s; }
+      .q-nav-dot:hover { border-color: var(--green); color: var(--text); }
+      .q-nav-dot.done { color: var(--green-deep); border-color: color-mix(in oklch, var(--green) 45%, var(--paper-3)); background: oklch(0.80 0.16 150 / .08); }
+      .rev-tabs { display: inline-flex; gap: 2px; background: var(--paper-2); border: 1px solid var(--paper-3); border-radius: 999px; padding: 3px; }
+      .rev-tab { font-size: 11.5px; padding: 4px 11px; border-radius: 999px; border: none; background: transparent; color: var(--text-soft); cursor: pointer; font-variant-numeric: tabular-nums; }
+      .rev-tab.on { background: color-mix(in oklch, var(--green) 20%, transparent); color: var(--text); }
     `,
   ],
 })
@@ -416,6 +436,15 @@ export class QuizStudioComponent implements OnInit, OnDestroy {
   readonly historyLoading = signal(false);
   readonly quiz = signal<TakeQuiz | null>(null);
   readonly result = signal<SubmitResult | null>(null);
+  /** Result review filter — all questions or only the ones answered incorrectly. */
+  readonly reviewFilter = signal<'all' | 'incorrect'>('all');
+  readonly reviewList = computed(() => {
+    const r = this.result();
+    if (!r) return [] as { rev: SubmitResult['review'][number]; n: number }[];
+    const paired = r.review.map((rev, i) => ({ rev, n: i + 1 }));
+    return this.reviewFilter() === 'incorrect' ? paired.filter((p) => !p.rev.correct) : paired;
+  });
+  readonly incorrectCount = computed(() => this.result()?.review.filter((rev) => !rev.correct).length ?? 0);
   readonly generating = signal(false);
   readonly submitting = signal(false);
   readonly loading = signal(true);
@@ -655,6 +684,15 @@ export class QuizStudioComponent implements OnInit, OnDestroy {
   }
   answeredCount(): number {
     return [...this.answers().values()].filter((a) => a.answerIndex !== undefined || (a.text ?? '').trim()).length;
+  }
+  /** Whether the question with the given ORIGINAL index has an answer recorded. */
+  isAnswered(oi: number): boolean {
+    const a = this.answers().get(oi);
+    return !!a && (a.answerIndex !== undefined || (a.text ?? '').trim().length > 0);
+  }
+  /** Scroll a question into view from the navigator strip. */
+  scrollToQuestion(pos: number): void {
+    document.getElementById('qz-q-' + pos)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
   }
   allAnswered(): boolean {
     const q = this.quiz();

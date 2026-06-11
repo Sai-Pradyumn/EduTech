@@ -35,6 +35,9 @@ import { CountDirective } from '../../shared/directives/count.directive';
           <option value="readiness">Highest readiness</option>
           <option value="quizzes">Most quizzes</option>
         </select>
+        @if (filtered().length) {
+          <button class="sort-select" style="cursor:pointer" (click)="exportCsv()" aria-label="Export roster as CSV">⬇ CSV</button>
+        }
       </div>
     </header>
 
@@ -291,5 +294,29 @@ export class AdminStudentsComponent implements OnInit {
 
   healthTone(health: number): 'good' | 'warn' | 'risk' {
     return health >= 60 ? 'good' : health >= 40 ? 'warn' : 'risk';
+  }
+
+  /** Export the currently-filtered roster as CSV (respects search/sort/filters). */
+  exportCsv(): void {
+    const rows = this.filtered();
+    if (!rows.length) return;
+    const esc = (v: unknown): string => {
+      const s = String(v ?? '').replace(/"/g, '""');
+      return /[",\n]/.test(s) ? `"${s}"` : s;
+    };
+    const header = ['Name', 'Email', 'Goal', 'Level', 'Health', 'Readiness', 'Quizzes', 'Last active', 'Onboarded'];
+    const body = rows.map((s) => [
+      s.name, s.email, s.goal, s.skillLevel, s.health, s.readiness, s.quizzes,
+      s.lastActiveAt ? new Date(s.lastActiveAt).toISOString().slice(0, 10) : 'never',
+      s.onboarded ? 'yes' : 'no',
+    ]);
+    const csv = [header, ...body].map((r) => r.map(esc).join(',')).join('\r\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `asta-students-${new Date().toISOString().slice(0, 10)}.csv`;
+    link.click();
+    URL.revokeObjectURL(url);
   }
 }

@@ -15,7 +15,7 @@ import { AstaTrustBadge, AstaTurn } from './asta-os.types';
 
 /**
  * The living session thread. Renders each turn — markdown answer + any
- * structured VisualBlocks (delegated to the shared ai-visual-block renderer) —
+ * structured VisualBlocks (delegated to the shared asta-ai-visual-block renderer) —
  * plus follow-up chips, quick actions and recommended next steps. Emits the
  * prompt/action the learner taps; the shell owns sending it.
  */
@@ -49,7 +49,7 @@ import { AstaTrustBadge, AstaTurn } from './asta-os.types';
               }
 
               @for (block of turn.blocks; track $index) {
-                <div class="block"><ai-visual-block [block_]="block" /></div>
+                <div class="block"><asta-ai-visual-block [block_]="block" /></div>
               }
 
               @if (turn.sources.length) {

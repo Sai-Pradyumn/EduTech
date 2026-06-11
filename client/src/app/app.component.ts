@@ -5,14 +5,15 @@ import { filter, map } from 'rxjs';
 import { ToastContainerComponent } from './shared/ui/toast-container.component';
 import { ThemeService } from './core/services/theme.service';
 import { CommandPaletteComponent } from './shared/components/command-palette.component';
+import { ShortcutsOverlayComponent } from './shared/components/shortcuts-overlay.component';
 import { AiDockComponent } from './shared/components/ai-dock.component';
 import { AstaVoiceOverlayComponent } from './shared/components/ai/asta-voice-overlay.component';
 
 @Component({
-  selector: 'app-root',
+  selector: 'asta-root',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterOutlet, ToastContainerComponent, CommandPaletteComponent, AiDockComponent, AstaVoiceOverlayComponent],
+  imports: [RouterOutlet, ToastContainerComponent, CommandPaletteComponent, ShortcutsOverlayComponent, AiDockComponent, AstaVoiceOverlayComponent],
   template: `
     <router-outlet />
     <asta-toast-container />
@@ -20,6 +21,7 @@ import { AstaVoiceOverlayComponent } from './shared/components/ai/asta-voice-ove
          so the floating dock / command palette / legacy voice overlay are hidden there. -->
     @if (!isAstaOs()) {
       <asta-command-palette />
+      <asta-shortcuts-overlay />
       <asta-ai-dock />
       <asta-voice-overlay />
     }

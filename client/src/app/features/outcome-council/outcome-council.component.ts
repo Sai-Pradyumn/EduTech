@@ -45,6 +45,7 @@ import { CouncilAction, CouncilResult, OutcomeCouncilService } from '../../core/
             <div class="min-w-0 flex-1">
               <p class="kicker mb-1">Council verdict · {{ r.context.role }} · {{ r.context.readinessScore }}% ready</p>
               <h2 class="best-action">{{ b.action }}</h2>
+              @if (b.why) { <p class="best-why">{{ b.why }}</p> }
               <p class="verdict-text">{{ r.verdict }}</p>
               <div class="flex flex-wrap items-center gap-2 mt-3">
                 <span class="meta-chip">⏱ {{ b.timeRequired }}</span>
@@ -88,6 +89,7 @@ import { CouncilAction, CouncilResult, OutcomeCouncilService } from '../../core/
     .verdict { border: 1px solid color-mix(in oklab, var(--green) 24%, var(--paper-3)); }
     .g-lbl { font-size: 10.5px; color: var(--text-mute); text-transform: uppercase; letter-spacing: .05em; margin-top: 2px; text-align: center; }
     .best-action { font-size: 19px; font-weight: 700; line-height: 1.2; }
+    .best-why { font-size: 12.5px; color: var(--text-soft); margin-top: 4px; line-height: 1.5; }
     .verdict-text { font-size: 13.5px; color: var(--text-soft); margin-top: 6px; line-height: 1.55; }
     .meta-chip { font-size: 11px; padding: 3px 9px; border-radius: 999px; background: var(--paper-2); border: 1px solid var(--paper-3); color: var(--text-mute); }
     .alt { display: flex; flex-direction: column; }
@@ -149,6 +151,7 @@ export class OutcomeCouncilComponent {
     lines.push(`\n_${r.context.role} · ${r.context.readinessScore}% ready · convened ${this.when(r.generatedAt)}_\n`);
     if (r.best) {
       lines.push(`## ✓ Best next move: ${r.best.action}`);
+      if (r.best.why) lines.push(`- Why: ${r.best.why}`);
       lines.push(`- Expected impact: ${r.best.expectedImpact} · ⏱ ${r.best.timeRequired} · proposed by ${r.best.agent}`);
     }
     lines.push(`\n${r.verdict}\n`);

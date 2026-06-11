@@ -37,6 +37,8 @@ import { AstaTool } from './asta-os-tools';
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
+    <!-- Scrim click is a mouse convenience; keyboard users close via ESC (document:keydown.escape) or the Close button. -->
+    <!-- eslint-disable-next-line @angular-eslint/template/click-events-have-key-events, @angular-eslint/template/interactive-supports-focus -->
     <div class="scrim" (click)="close.emit()"></div>
     <section class="dialog" role="dialog" aria-modal="true" [attr.aria-label]="tool().label">
       <header class="bar">

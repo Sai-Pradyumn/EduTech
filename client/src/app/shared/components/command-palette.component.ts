@@ -5,12 +5,15 @@ import { SearchComponent } from '../ui/search.component';
 import { ADMIN_NAV, STUDENT_NAV } from '../../core/constants/nav';
 import { AGENTS } from '../../core/constants/agents';
 import { AuthService } from '../../core/services/auth.service';
+import { ThemeService } from '../../core/services/theme.service';
 
 interface Command {
   label: string;
   hint: string;
   route: string;
   group: string;
+  /** When set, run this instead of navigating to `route`. */
+  action?: () => void;
 }
 
 /**
@@ -90,6 +93,7 @@ interface Command {
 export class CommandPaletteComponent {
   private readonly router = inject(Router);
   private readonly auth = inject(AuthService);
+  private readonly theme = inject(ThemeService);
 
   readonly open = signal(false);
   readonly query = signal('');
@@ -107,9 +111,14 @@ export class CommandPaletteComponent {
       { label: 'Career Coach', hint: 'career', route: '/app/career-coach', group: 'Agents' },
       { label: 'Study Notes', hint: AGENTS.content_creator.id, route: '/app/content-studio', group: 'Agents' },
     ];
+    const actionCmds: Command[] = [
+      { label: 'New learning flow', hint: 'create', route: '/app/flows/new', group: 'Actions' },
+      { label: 'Toggle theme (light / dark)', hint: 'theme', route: '#theme', group: 'Actions', action: () => this.theme.cycle() },
+      { label: 'Sign out', hint: 'logout', route: '#signout', group: 'Actions', action: () => this.auth.logout() },
+    ];
     // de-dup by route
     const seen = new Set<string>();
-    return [...navCmds, ...agentCmds].filter((c) => (seen.has(c.route) ? false : seen.add(c.route)));
+    return [...navCmds, ...agentCmds, ...actionCmds].filter((c) => (seen.has(c.route) ? false : seen.add(c.route)));
   });
 
   readonly results = computed<Command[]>(() => {
@@ -155,6 +164,7 @@ export class CommandPaletteComponent {
 
   run(c: Command): void {
     this.close();
+    if (c.action) { c.action(); return; }
     void this.router.navigateByUrl(c.route);
   }
 }

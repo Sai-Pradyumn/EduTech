@@ -7,7 +7,7 @@ export type LedgerKind =
   | 'project_submitted' | 'week_completed' | 'flow_generated' | 'certificate_earned'
   | 'quiz_failed' | 'project_ai_reviewed' | 'project_mentor_approved' | 'voice_viva_passed'
   | 'mentor_feedback_added' | 'skill_mastery_increased' | 'daily_plan_completed'
-  | 'interview_completed' | 'interview_passed' | 'evidence_added';
+  | 'interview_completed' | 'interview_passed' | 'evidence_added' | 'practice_solved';
 
 export type VerificationLevel = 'self' | 'ai' | 'system' | 'mentor' | 'certificate';
 
@@ -66,4 +66,10 @@ export const LEDGER_KIND_META: Record<LedgerKind, { label: string; glyph: string
   interview_completed: { label: 'Interview', glyph: '🧩' },
   interview_passed: { label: 'Interview passed', glyph: '🏆' },
   evidence_added: { label: 'Evidence added', glyph: '➕' },
+  practice_solved: { label: 'Practice solved', glyph: '⌨' },
 };
+
+/** Safe lookup — falls back gracefully if the server adds a kind the client doesn't know yet. */
+export function ledgerKindMeta(kind: string): { label: string; glyph: string } {
+  return LEDGER_KIND_META[kind as LedgerKind] ?? { label: kind.replace(/_/g, ' '), glyph: '•' };
+}

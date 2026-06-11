@@ -4,7 +4,7 @@ import { CardComponent } from '../../ui/card.component';
 
 /** Compact AI insight card: kicker + headline + body, accent-tinted. */
 @Component({
-  selector: 'ai-insight-card',
+  selector: 'asta-ai-insight-card',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [CardComponent],

@@ -44,7 +44,7 @@ import { CohortOutcomes, InstitutionOverview, InstitutionService } from '../../c
               <div class="space-y-2">
                 @for (c of ov.cohorts; track c.id) {
                   <div class="cohort" [class.sel]="selectedId() === c.id">
-                    <div class="flex items-center gap-3 cursor-pointer" (click)="selectCohort(c.id)">
+                    <div class="flex items-center gap-3 cursor-pointer" role="button" tabindex="0" [attr.aria-expanded]="selectedId() === c.id" (click)="selectCohort(c.id)" (keyup.enter)="selectCohort(c.id)">
                       <asta-ring [value]="c.avgReadiness" [size]="48" />
                       <span class="min-w-0 flex-1"><span class="c-name">{{ c.name }}</span><span class="c-meta">{{ c.students }} students · {{ c.atRisk }} at risk</span></span>
                       <span class="drill">{{ selectedId() === c.id ? '▾' : 'View students ›' }}</span>

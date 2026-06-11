@@ -681,6 +681,14 @@ async function run(): Promise<void> {
     const day = 24 * 60 * 60 * 1000;
     const entries = [
       {
+        kind: 'flow_generated',
+        title: 'Generated learning flow: Learn the MERN stack',
+        detail:
+          '22 steps toward "Learn the MERN stack and land an internship".',
+        verificationLevel: 'system',
+        at: new Date(now - 10 * day),
+      },
+      {
         kind: 'node_completed',
         title: 'Completed: JavaScript & ES2023 foundations',
         detail: 'In flow "Learn the MERN stack and land an internship".',
@@ -762,6 +770,22 @@ async function run(): Promise<void> {
         title: 'Completed week 1',
         detail: 'MERN Stack Developer — next: React fundamentals.',
         verificationLevel: 'system',
+        at: new Date(now - 1 * day),
+      },
+      {
+        kind: 'daily_plan_completed',
+        title: 'Completed daily plan (4 items)',
+        detail: 'normal mode · 90 min of focused learning.',
+        verificationLevel: 'system',
+        at: new Date(now - 1 * day),
+      },
+      {
+        kind: 'certificate_earned',
+        title: 'Earned certificate: JavaScript Fundamentals',
+        detail: 'Issued by Asta · JavaScript.',
+        score: 80,
+        skills: ['JavaScript'],
+        verificationLevel: 'certificate',
         at: new Date(now - 1 * day),
       },
     ] as const;

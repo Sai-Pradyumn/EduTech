@@ -91,7 +91,22 @@ export class FlowsService {
       metadata: generated.metadata,
       progressPercentage: 0,
     });
+    await this.recordGenerated(userId, created);
     return created;
+  }
+
+  /** Append a flow_generated proof event (best-effort, never throws into the caller). */
+  private async recordGenerated(
+    userId: string,
+    flow: FlowDocument,
+  ): Promise<void> {
+    await this.ledger.record(userId, {
+      kind: 'flow_generated',
+      title: `Generated learning flow: ${flow.title}`,
+      detail: `${flow.nodes.length} steps toward "${flow.goal}".`,
+      evidenceRef: String(flow._id),
+      verificationLevel: 'system',
+    });
   }
 
   async fromRoadmap(userId: string, roadmapId: string): Promise<FlowDocument> {
@@ -121,7 +136,7 @@ export class FlowsService {
       })),
     };
     const generated = await this.architect.generate(userId, input);
-    return this.model.create({
+    const created = await this.model.create({
       user: new Types.ObjectId(userId),
       title: generated.title,
       goal: generated.goal,
@@ -136,6 +151,8 @@ export class FlowsService {
       metadata: generated.metadata,
       progressPercentage: 0,
     });
+    await this.recordGenerated(userId, created);
+    return created;
   }
 
   // ───────────────────────── reads ─────────────────────────

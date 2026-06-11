@@ -7,7 +7,7 @@ import { RichContentComponent } from '../../shared/components/ai/rich-content.co
 import { ButtonComponent } from '../../shared/ui/button.component';
 import { CardComponent } from '../../shared/ui/card.component';
 import { ComposerComponent, ComposerSubmit } from '../../shared/ui/composer.component';
-import { AiAgentActivityFeedComponent } from '../../shared/components/ai/ai-agent-activity-feed.component';
+import { AiAgentActivityFeedComponent } from '../../shared/components/ai/asta-ai-agent-activity-feed.component';
 import { VisualBlockRendererComponent } from '../../shared/components/ai/visual-block-renderer.component';
 
 interface ChatMsg {
@@ -49,6 +49,9 @@ const STARTERS = [
         @if (messages().length) { <asta-btn variant="ghost" size="sm" (click)="newChat()">New chat</asta-btn> }
       </div>
     </header>
+
+    <!-- Screen-reader-only status for streaming AI replies (a11y). -->
+    <span class="sr-only" aria-live="polite" role="status">{{ liveStatus() }}</span>
 
     <div class="grid gap-5 lg:grid-cols-[1fr_minmax(320px,400px)]" style="min-height:calc(100dvh - 230px)">
       <!-- LEFT: chat -->
@@ -134,7 +137,7 @@ const STARTERS = [
 
       <!-- RIGHT: agent rail — one reveal family (.motion-row-panel) -->
       <div class="space-y-5 motion-row-panel">
-        <div class="motion-card-reveal" style="--motion-card-index:0"><ai-agent-activity-feed [steps]="steps()" [running]="busy()" /></div>
+        <div class="motion-card-reveal" style="--motion-card-index:0"><asta-ai-agent-activity-feed [steps]="steps()" [running]="busy()" /></div>
 
         @if (latestActions().length) {
           <asta-card class="motion-card-reveal" style="--motion-card-index:1" pad="16px 18px">
@@ -149,7 +152,7 @@ const STARTERS = [
         }
 
         @for (block of latestBlocks(); track $index) {
-          <div class="motion-card-reveal" style="--motion-card-index:2"><ai-visual-block [block_]="block" /></div>
+          <div class="motion-card-reveal" style="--motion-card-index:2"><asta-ai-visual-block [block_]="block" /></div>
         }
 
         @if (latestRecommended().length) {
@@ -159,7 +162,7 @@ const STARTERS = [
               <span class="panel-ico green" aria-hidden="true"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
             </div>
             <ul class="space-y-2 text-sm text-txt-soft mt-3">
-              @for (r of latestRecommended(); track r) { <li class="rec-item" (click)="send(r)"><span class="arr" style="color:var(--green-deep)">→</span><span>{{ r }}</span></li> }
+              @for (r of latestRecommended(); track r) { <li class="rec-item" role="button" tabindex="0" (click)="send(r)" (keyup.enter)="send(r)"><span class="arr" style="color:var(--green-deep)">→</span><span>{{ r }}</span></li> }
             </ul>
           </asta-card>
         }
@@ -235,6 +238,8 @@ export class TutorWorkspaceComponent {
   readonly messages = signal<ChatMsg[]>([]);
   readonly steps = signal<WorkflowStepView[]>([]);
   readonly busy = signal(false);
+  /** Polite screen-reader status for streaming tutor replies (no visual footprint). */
+  readonly liveStatus = signal('');
 
   draft = '';
   private sessionId?: string;
@@ -277,6 +282,7 @@ export class TutorWorkspaceComponent {
     this.lastTopic = message;
     this.draft = '';
     this.busy.set(true);
+    this.liveStatus.set('Asta is responding…');
     this.steps.set([]);
 
     this.push({ role: 'user', content: message, visualBlocks: [], actions: [], followUps: [], recommended: [], streaming: false });
@@ -290,6 +296,7 @@ export class TutorWorkspaceComponent {
         assistant.failed = true;
         this.bump();
         this.busy.set(false);
+        this.liveStatus.set('The response failed.');
       },
     });
   }
@@ -365,12 +372,14 @@ export class TutorWorkspaceComponent {
         this.steps.update((s) => [...s, { kind: 'done', label: 'Done' }]);
         this.bump();
         this.busy.set(false);
+        this.liveStatus.set('Response ready.');
         break;
       case 'error':
         assistant.streaming = false;
         if (!assistant.content) assistant.failed = true;
         this.bump();
         this.busy.set(false);
+        this.liveStatus.set('The response failed.');
         break;
     }
   }

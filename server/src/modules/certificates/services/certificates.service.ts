@@ -3,6 +3,7 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { randomUUID } from 'crypto';
 import { UsersService } from '../../users/users.service';
+import { LedgerService } from '../../ledger/ledger.service';
 import {
   Certificate,
   CertificateDocument,
@@ -36,6 +37,7 @@ export class CertificatesService {
     @InjectModel(Certificate.name)
     private readonly certs: Model<CertificateDocument>,
     private readonly users: UsersService,
+    private readonly ledger: LedgerService,
   ) {}
 
   async issue(
@@ -64,6 +66,16 @@ export class CertificatesService {
       issuerName: issuer.name,
       verificationId: `ASTA-${randomUUID().slice(0, 8).toUpperCase()}`,
       revoked: false,
+    });
+    // Verified credential → certificate-level Proof-Ledger event (feeds Career Readiness).
+    await this.ledger.record(input.userId, {
+      kind: 'certificate_earned',
+      title: `Earned certificate: ${input.title}`,
+      detail: `Issued by ${issuer.name}${input.skill ? ` · ${input.skill}` : ''}.`,
+      score: input.score,
+      evidenceRef: cert.verificationId,
+      skills: input.skill ? [input.skill] : [],
+      verificationLevel: 'certificate',
     });
     return this.toView(cert);
   }

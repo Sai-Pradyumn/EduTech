@@ -11,7 +11,7 @@ interface PlacedNode {
 
 /** Radial concept map — root in the centre, pillars around it (lightweight SVG). */
 @Component({
-  selector: 'ai-concept-map',
+  selector: 'asta-ai-concept-map',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
