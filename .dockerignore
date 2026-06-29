@@ -1,0 +1,35 @@
+# Keep the Docker build context small and secret-free. Both server/Dockerfile and
+# client/Dockerfile build from the repo root, so this governs what they can see.
+
+# Dependencies — reinstalled inside the image via `npm ci`.
+**/node_modules
+
+# Build outputs — rebuilt inside the image.
+**/dist
+client/.angular
+coverage
+**/*.tsbuildinfo
+
+# Secrets / local env — MUST never enter an image layer.
+**/.env
+**/.env.*
+!**/.env.example
+
+# VCS / CI / editor / OS noise.
+.git
+.github
+.gitignore
+.vscode
+.idea
+**/*.log
+**/.DS_Store
+
+# Tests, e2e artifacts, docs — not needed at runtime.
+e2e
+test-results
+playwright-report
+**/*.spec.ts
+**/*.e2e-spec.ts
+
+# Local infra / compose (not part of an app image).
+docker-compose*.yml

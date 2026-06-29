@@ -31,9 +31,23 @@ services:
       JWT_SECRET: ${JWT_SECRET}
       JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET}
       AI_PROVIDER: ${AI_PROVIDER:-mock}
+    # Wait for the Mongo replica set to be initialised before booting the API.
     depends_on:
-      - mongo
-      - redis
+      mongo:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    # node:20-alpine ships node (with global fetch) — no curl/wget needed.
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - -e
+        - "fetch('http://localhost:3000/api/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 25s
     restart: unless-stopped
 
   web:
@@ -42,8 +56,10 @@ services:
       dockerfile: client/Dockerfile
     ports:
       - "80:80"
+    # Only start serving once the API is actually healthy (proxy targets are up).
     depends_on:
-      - api
+      api:
+        condition: service_healthy
     restart: unless-stopped
 
 volumes:
