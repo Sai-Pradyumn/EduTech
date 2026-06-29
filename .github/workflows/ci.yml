@@ -27,6 +27,37 @@ jobs:
       - name: Test (server unit tests)
         run: npm test --if-present
 
+  server-e2e:
+    runs-on: ubuntu-latest
+    services:
+      mongo:
+        image: mongo:7
+        ports:
+          - 27017:27017
+        options: >-
+          --health-cmd "mongosh --quiet --eval 'db.runCommand({ ping: 1 })'"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      # Throwaway test config — never real secrets.
+      MONGO_URI: mongodb://127.0.0.1:27017/asta
+      JWT_SECRET: ci-e2e-not-a-secret
+      JWT_REFRESH_SECRET: ci-e2e-not-a-secret
+      # No live LLM keys in CI on purpose: the AI e2e asserts the honest mock fallback.
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+      - name: Install (single hoisted workspace tree)
+        run: npm ci
+      - name: Seed the test database (demo users + fixtures)
+        run: npm run seed --workspace server
+      - name: Backend API e2e (real Mongo — health, auth, RBAC, validation, AI fallback)
+        run: npm run test:e2e --workspace server
+
   e2e:
     runs-on: ubuntu-latest
     steps:
