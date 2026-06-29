@@ -16,7 +16,9 @@ import { IAIProvider } from '../interfaces/ai-provider.interface';
  */
 type ReqHandler = (body: string) => { status?: number; json: unknown };
 
-function startStub(handler: ReqHandler): Promise<{ server: Server; url: string }> {
+function startStub(
+  handler: ReqHandler,
+): Promise<{ server: Server; url: string }> {
   return new Promise((resolve) => {
     const server = createServer((req, res) => {
       let body = '';
@@ -41,7 +43,11 @@ function chatCompletion(content: string) {
     created: 0,
     model: 'llama3.2',
     choices: [
-      { index: 0, message: { role: 'assistant', content }, finish_reason: 'stop' },
+      {
+        index: 0,
+        message: { role: 'assistant', content },
+        finish_reason: 'stop',
+      },
     ],
     usage: { prompt_tokens: 5, completion_tokens: 7, total_tokens: 12 },
   };
@@ -63,7 +69,12 @@ function aiConfig(baseURL: string, ollamaEnabled = true) {
       openrouter: { apiKey: '', model: 'm', baseURL: 'https://x', headers: {} },
       deepseek: { apiKey: '', model: 'm', baseURL: 'https://x' },
       gemini: { apiKey: '', model: 'm' },
-      ollama: { enabled: ollamaEnabled, apiKey: 'ollama', model: 'llama3.2', baseURL },
+      ollama: {
+        enabled: ollamaEnabled,
+        apiKey: 'ollama',
+        model: 'llama3.2',
+        baseURL,
+      },
     },
   };
 }
@@ -105,7 +116,11 @@ describe('Ollama local provider (zero-key real AI)', () => {
     // 400 is non-retryable, so the gateway fails over immediately (deterministic, fast).
     const { server, url } = await startStub(() => ({
       status: 400,
-      json: { error: { message: 'model "llama3.2" not found, run: ollama pull llama3.2' } },
+      json: {
+        error: {
+          message: 'model "llama3.2" not found, run: ollama pull llama3.2',
+        },
+      },
     }));
     try {
       const gateway = buildGateway(url);

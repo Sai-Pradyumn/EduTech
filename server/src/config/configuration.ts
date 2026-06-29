@@ -34,7 +34,12 @@ export interface AppConfig {
       deepseek: { apiKey: string; model: string; baseURL: string };
       gemini: { apiKey: string; model: string };
       /** Local, free, zero-key provider (Ollama's OpenAI-compatible API). Opt-in. */
-      ollama: { enabled: boolean; apiKey: string; model: string; baseURL: string };
+      ollama: {
+        enabled: boolean;
+        apiKey: string;
+        model: string;
+        baseURL: string;
+      };
     };
   };
   flags: {
