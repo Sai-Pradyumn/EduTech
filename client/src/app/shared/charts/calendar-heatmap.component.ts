@@ -25,7 +25,8 @@ export interface CalDatum {
         }
         @for (cell of cells(); track cell.k) {
           <rect [attr.x]="cell.x" [attr.y]="cell.y" [attr.width]="sz" [attr.height]="sz" rx="2.5"
-            [attr.fill]="cell.col" (pointerenter)="tip.set(cell)" class="day" />
+            [attr.fill]="cell.col" (pointerenter)="tip.set(cell)" class="day"
+            [style.animation-delay]="(cell.x / vw * 0.5) + 's'" />
         }
       </svg>
       @if (tip(); as tp) {
@@ -37,8 +38,10 @@ export interface CalDatum {
     `
       .cal { position: relative; width: 100%; }
       .ml { fill: var(--text-mute); font-family: var(--mono); font-size: 7px; text-transform: uppercase; }
-      .day { transition: transform .1s; }
+      .day { transition: transform .1s; animation: calDayIn .45s var(--ease) backwards; }
+      @keyframes calDayIn { from { opacity: 0; } }
       .day:hover { transform: scale(1.15); transform-box: fill-box; transform-origin: center; }
+      @media (prefers-reduced-motion: reduce) { .day { animation: none; } }
       .tt { position: absolute; top: -6px; left: 0; transform: translateY(-100%); background: var(--ink); color: var(--on-ink);
         padding: 4px 8px; border-radius: 7px; font-size: 11px; box-shadow: var(--shadow-md); pointer-events: none; white-space: nowrap; }
       .tv { font-weight: 600; }

@@ -15,6 +15,12 @@ import { CardComponent } from '../../ui/card.component';
       <p class="text-sm text-txt-soft"><ng-content /></p>
     </asta-card>
   `,
+  styles: [
+    `
+      :host { display: block; animation: astaRevealUp 0.5s var(--ease) both; }
+      @media (prefers-reduced-motion: reduce) { :host { animation: none; } }
+    `,
+  ],
 })
 export class AiInsightCardComponent {
   @Input() kicker = 'Insight';

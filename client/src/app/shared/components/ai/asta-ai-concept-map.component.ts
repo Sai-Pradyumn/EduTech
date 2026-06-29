@@ -21,7 +21,7 @@ interface PlacedNode {
         @for (n of nodes(); track n.id) {
           @if (!n.root) {
             <line [attr.x1]="W / 2" [attr.y1]="H / 2" [attr.x2]="n.x" [attr.y2]="n.y"
-              stroke="var(--paper-3)" stroke-width="1.5" />
+              stroke="var(--paper-3)" stroke-width="1.5" pathLength="1" class="cm-spoke" />
           }
         }
         @for (n of nodes(); track n.id) {
@@ -37,6 +37,27 @@ interface PlacedNode {
       </svg>
     </div>
   `,
+  styles: [
+    `
+      :host { display: block; }
+      /* The concept radiates: root settles, spokes draw outward, pillars arrive. */
+      .cm-spoke { stroke-dasharray: 1; stroke-dashoffset: 1; animation: cmSpoke 0.5s var(--ease) 0.25s forwards; }
+      @keyframes cmSpoke { to { stroke-dashoffset: 0; } }
+      svg g { animation: cmNode 0.4s var(--ease-spring) both; transform-box: fill-box; transform-origin: center; }
+      @keyframes cmNode { from { opacity: 0; transform: scale(0.5); } }
+      svg g:nth-of-type(2) { animation-delay: 0.45s; }
+      svg g:nth-of-type(3) { animation-delay: 0.52s; }
+      svg g:nth-of-type(4) { animation-delay: 0.59s; }
+      svg g:nth-of-type(5) { animation-delay: 0.66s; }
+      svg g:nth-of-type(6) { animation-delay: 0.73s; }
+      svg g:nth-of-type(7) { animation-delay: 0.8s; }
+      svg g:nth-of-type(8) { animation-delay: 0.87s; }
+      @media (prefers-reduced-motion: reduce) {
+        .cm-spoke { animation: none; stroke-dashoffset: 0; }
+        svg g { animation: none; }
+      }
+    `,
+  ],
 })
 export class AiConceptMapComponent {
   @Input({ required: true }) set data(v: ConceptMapBlock) {

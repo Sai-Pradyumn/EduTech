@@ -15,7 +15,7 @@ import { WorkflowStepView } from '../../../core/models';
             <span class="grid place-items-center rounded-full shrink-0" style="width:18px;height:18px"
               [style.background]="dotBg(s)" [style.border]="'2px solid ' + dotBorder(s)">
               @if (s.kind === 'done') {
-                <svg viewBox="0 0 24 24" width="10" height="10" fill="none" stroke="var(--ink)" stroke-width="4" stroke-linecap="round"><path d="M5 13l4 4L19 7"/></svg>
+                <svg viewBox="0 0 24 24" width="10" height="10" fill="none" stroke="var(--ink)" stroke-width="4" stroke-linecap="round"><path class="afi-check" d="M5 13l4 4L19 7"/></svg>
               }
             </span>
             <span [class.text-txt-mute]="s.kind === 'tool_result'">{{ s.label }}</span>
@@ -32,6 +32,24 @@ import { WorkflowStepView } from '../../../core/models';
       </ol>
     </div>
   `,
+  styles: [
+    `
+      :host { display: block; }
+      /* Each reasoning step slides in as the agent works; the done-check draws itself. */
+      ol li { animation: astaRevealUp 0.35s var(--ease) backwards; }
+      ol li:nth-child(2) { animation-delay: 0.05s; }
+      ol li:nth-child(3) { animation-delay: 0.1s; }
+      ol li:nth-child(4) { animation-delay: 0.15s; }
+      ol li:nth-child(5) { animation-delay: 0.2s; }
+      ol li:nth-child(n+6) { animation-delay: 0.25s; }
+      .afi-check { stroke-dasharray: 24; stroke-dashoffset: 24; animation: afiCheck 0.4s var(--ease) 0.1s forwards; }
+      @keyframes afiCheck { to { stroke-dashoffset: 0; } }
+      @media (prefers-reduced-motion: reduce) {
+        ol li { animation: none; }
+        .afi-check { animation: none; stroke-dashoffset: 0; }
+      }
+    `,
+  ],
 })
 export class AiAgentActivityFeedComponent {
   @Input() steps: WorkflowStepView[] = [];

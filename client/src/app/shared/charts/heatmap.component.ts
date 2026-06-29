@@ -51,6 +51,18 @@ export interface HeatRow {
       .rh { font-size: 12.5px; color: var(--text-soft); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding-right: 4px; }
       .cell { aspect-ratio: 1; min-height: 22px; border-radius: 6px; border: 1px solid var(--paper-3); transition: transform .12s; }
       .cell:hover { transform: scale(1.08); }
+      /* Cells wave in left-to-right across each row (backwards fill keeps :hover scale intact). */
+      .cell { animation: hmCellIn .4s var(--ease) backwards; }
+      @keyframes hmCellIn { from { opacity: 0; transform: scale(.55); } }
+      .rw .cell:nth-child(2) { animation-delay: 0s; }
+      .rw .cell:nth-child(3) { animation-delay: .04s; }
+      .rw .cell:nth-child(4) { animation-delay: .08s; }
+      .rw .cell:nth-child(5) { animation-delay: .12s; }
+      .rw .cell:nth-child(6) { animation-delay: .16s; }
+      .rw .cell:nth-child(7) { animation-delay: .2s; }
+      .rw .cell:nth-child(8) { animation-delay: .24s; }
+      .rw .cell:nth-child(n+9) { animation-delay: .28s; }
+      @media (prefers-reduced-motion: reduce) { .cell { animation: none; } }
       .tt { position: absolute; top: -4px; right: 0; transform: translateY(-100%); background: var(--ink); color: var(--on-ink);
         padding: 5px 9px; border-radius: 8px; box-shadow: var(--shadow-md); display: flex; gap: 8px; align-items: baseline; pointer-events: none; }
       .tl { font-family: var(--mono); font-size: 9.5px; text-transform: uppercase; color: var(--on-ink-mute); }

@@ -15,7 +15,7 @@ export interface RadarAxis {
     <svg [attr.viewBox]="'0 0 ' + S + ' ' + S" class="w-full" [style.maxWidth.px]="S">
       <!-- rings -->
       @for (r of rings; track r) {
-        <polygon [attr.points]="ringPoints(r)" fill="none" stroke="var(--paper-3)" stroke-width="1" />
+        <polygon [attr.points]="ringPoints(r)" fill="none" stroke="var(--paper-3)" stroke-width="1" class="radar-ring" />
       }
       <!-- axes -->
       @for (a of axes(); track a.label; let i = $index) {
@@ -27,7 +27,7 @@ export interface RadarAxis {
         <polygon [attr.points]="targetPoints()" fill="oklch(0.78 0.15 268 / .08)" stroke="var(--peri)" stroke-width="1" stroke-dasharray="4 4" />
       }
       <!-- value polygon -->
-      <polygon [attr.points]="valuePoints()" fill="oklch(0.80 0.16 150 / .22)" stroke="var(--green-deep)" stroke-width="2" />
+      <polygon [attr.points]="valuePoints()" fill="oklch(0.80 0.16 150 / .22)" stroke="var(--green-deep)" stroke-width="2" class="radar-val" />
       <!-- labels -->
       @for (a of axes(); track a.label; let i = $index) {
         <text [attr.x]="axisPoint(i, 1.18).x" [attr.y]="axisPoint(i, 1.18).y" text-anchor="middle"
@@ -35,6 +35,22 @@ export interface RadarAxis {
       }
     </svg>
   `,
+  styles: [
+    `
+      :host { display: block; }
+      /* Your skill profile materializes: rings settle, then the shape grows from the centre. */
+      .radar-ring { animation: radarRing 0.5s var(--ease) both; }
+      @keyframes radarRing { from { opacity: 0; } }
+      .radar-ring:nth-of-type(2) { animation-delay: 0.06s; }
+      .radar-ring:nth-of-type(3) { animation-delay: 0.12s; }
+      .radar-ring:nth-of-type(4) { animation-delay: 0.18s; }
+      .radar-val { animation: radarGrow 0.7s var(--ease-spring) 0.25s both; transform-box: fill-box; transform-origin: center; }
+      @keyframes radarGrow { from { opacity: 0; transform: scale(0.05); } }
+      @media (prefers-reduced-motion: reduce) {
+        .radar-ring, .radar-val { animation: none; }
+      }
+    `,
+  ],
 })
 export class AiSkillRadarComponent {
   @Input({ required: true }) set data(v: RadarAxis[]) {
