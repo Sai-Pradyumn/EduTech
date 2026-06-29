@@ -14,12 +14,13 @@ export interface TaskToggle {
   template: `
     <div class="relative pl-8">
       <!-- timeline node -->
-      <span class="absolute left-0 top-1.5 grid place-items-center rounded-full"
+      <span class="wk-node absolute left-0 top-1.5 grid place-items-center rounded-full"
+        [class.wk-node-done]="completed" [class.wk-node-current]="isCurrent && !completed"
         style="width:18px;height:18px"
         [style.background]="completed ? 'var(--green)' : 'var(--paper)'"
         [style.border]="'2px solid ' + (completed ? 'var(--green)' : isCurrent ? 'var(--peri)' : 'var(--paper-3)')">
         @if (completed) {
-          <svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="var(--ink)" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg>
+          <svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="var(--ink)" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path class="wk-check" d="M5 13l4 4L19 7"/></svg>
         }
       </span>
 
@@ -48,7 +49,7 @@ export interface TaskToggle {
         </button>
 
         @if (open()) {
-          <div class="mt-4 grid gap-4 sm:grid-cols-2">
+          <div class="wk-expand mt-4 grid gap-4 sm:grid-cols-2">
             <div>
               <p class="text-[12px] font-mono uppercase tracking-wider text-txt-mute mb-1.5">Topics</p>
               <div class="flex flex-wrap gap-1.5">
@@ -90,6 +91,26 @@ export interface TaskToggle {
         background: color-mix(in oklch, var(--peri) 18%, transparent); color: var(--peri-deep);
       }
       .wk-tag-done { background: color-mix(in oklch, var(--green) 18%, transparent); color: var(--green-deep); }
+      /* The timeline node: completed pops with a drawn check; the current week's node breathes. */
+      .wk-node { transition: background 0.2s var(--ease), border-color 0.2s var(--ease); }
+      .wk-node-done { animation: astaSoftPop 0.4s var(--ease-spring); }
+      .wk-node-current { animation: wkNodePulse 2.4s ease-in-out infinite; }
+      @keyframes wkNodePulse {
+        0%, 100% { box-shadow: 0 0 0 0 color-mix(in oklch, var(--peri) 40%, transparent); }
+        50% { box-shadow: 0 0 0 5px color-mix(in oklch, var(--peri) 0%, transparent); }
+      }
+      .wk-check { stroke-dasharray: 24; stroke-dashoffset: 24; animation: wkCheck 0.4s var(--ease) 0.12s forwards; }
+      @keyframes wkCheck { to { stroke-dashoffset: 0; } }
+      .wk-current { box-shadow: 0 0 18px color-mix(in oklch, var(--peri) 14%, transparent); }
+      /* Expanding a week cascades its sections in. */
+      .wk-expand > * { animation: astaRevealUp 0.4s var(--ease) both; }
+      .wk-expand > *:nth-child(2) { animation-delay: 0.06s; }
+      .wk-expand > *:nth-child(3) { animation-delay: 0.12s; }
+      .wk-expand > *:nth-child(4) { animation-delay: 0.18s; }
+      .wk-tag { animation: astaSoftPop 0.35s var(--ease-spring) both; }
+      @media (prefers-reduced-motion: reduce) {
+        .wk-node-done, .wk-node-current, .wk-check, .wk-expand > *, .wk-tag { animation: none; stroke-dashoffset: 0; }
+      }
     `,
   ],
 })

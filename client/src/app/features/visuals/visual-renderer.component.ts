@@ -35,7 +35,7 @@ const GAP_X = 56;
         @if (graph(); as g) {
           <svg class="vgraph" [attr.viewBox]="viewBox()" preserveAspectRatio="xMidYMid meet" role="img" [attr.aria-label]="visual.title">
             @for (e of edges(); track $index) {
-              <path class="ve" [attr.d]="e.d" />
+              <path class="ve" [attr.d]="e.d" pathLength="1" />
               @if (e.label) { <text class="vel" [attr.x]="e.lx" [attr.y]="e.ly">{{ e.label }}</text> }
             }
             @for (n of nodes(); track n.id) {
@@ -92,6 +92,24 @@ const GAP_X = 56;
       .vhint { font-size: 12px; color: var(--text-mute); margin-bottom: 8px; }
       .vcode { background: var(--ink-2, var(--paper-2)); border: 1px solid var(--paper-3); border-radius: 12px; padding: 14px; font-size: 12.5px; white-space: pre; overflow: auto; color: var(--text-soft); }
       .vfail { color: var(--text-mute); font-size: 13px; }
+
+      /* The diagram assembles itself: nodes pop in, then the connections draw between them. */
+      .vgraph g { animation: vnPop .4s var(--ease-spring) both; transform-box: fill-box; }
+      @keyframes vnPop { from { opacity: 0; transform: scale(.8); } }
+      .vgraph g:nth-of-type(2) { animation-delay: .04s; }
+      .vgraph g:nth-of-type(3) { animation-delay: .08s; }
+      .vgraph g:nth-of-type(4) { animation-delay: .12s; }
+      .vgraph g:nth-of-type(5) { animation-delay: .16s; }
+      .vgraph g:nth-of-type(6) { animation-delay: .2s; }
+      .vgraph g:nth-of-type(7) { animation-delay: .24s; }
+      .vgraph g:nth-of-type(8) { animation-delay: .28s; }
+      .ve { stroke-dasharray: 1; stroke-dashoffset: 1; animation: veDraw .7s var(--ease) .25s forwards; }
+      @keyframes veDraw { to { stroke-dashoffset: 0; } }
+      .vel { animation: astaRevealUp .4s var(--ease) .7s both; }
+      .vimg, .vsvg, .vhtml, .vmermaid, .vmd { animation: astaRevealUp .5s var(--ease) both; }
+      @media (prefers-reduced-motion: reduce) {
+        .vgraph g, .ve, .vel, .vimg, .vsvg, .vhtml, .vmermaid, .vmd { animation: none; stroke-dashoffset: 0; }
+      }
     `,
   ],
 })

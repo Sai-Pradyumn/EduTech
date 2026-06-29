@@ -28,11 +28,19 @@ import { ProgressComponent } from '../../../shared/ui/progress.component';
         <span class="font-mono text-sm text-txt-soft">{{ roadmap.progressPercentage }}%</span>
       </div>
       <a [routerLink]="['/app/roadmap', roadmap.id]"
-        class="inline-flex items-center gap-1.5 text-sm font-semibold" style="color:var(--green-deep)">
+        class="inline-flex items-center gap-1.5 text-sm font-semibold rm-link" style="color:var(--green-deep)">
         View roadmap <span class="arr">→</span>
       </a>
     </asta-card>
   `,
+  styles: [
+    `
+      :host { display: block; }
+      .arr { display: inline-block; transition: transform 0.2s var(--ease-spring); }
+      .rm-link:hover .arr { transform: translateX(4px); }
+      @media (prefers-reduced-motion: reduce) { .rm-link:hover .arr { transform: none; } }
+    `,
+  ],
 })
 export class RoadmapCardComponent {
   @Input({ required: true }) roadmap!: RoadmapSummary;
