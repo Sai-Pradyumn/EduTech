@@ -400,6 +400,27 @@ const FREE_FILENAME: Record<SupportedLanguage, string> = {
       .r-title { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--asta-muted); }
       .r-res { margin-left: auto; font-size: 11.5px; color: var(--asta-muted); }
       .r-sim { font-size: 10px; color: var(--asta-gold); border: 1px solid color-mix(in srgb, var(--asta-gold) 35%, transparent); border-radius: 6px; padding: 0 5px; }
+
+      /* Entrance: the studio assembles — prompt first, then output panels in sequence. */
+      .prompt, .left .files, .left .term { animation: astaRevealUp .45s var(--ease) both; }
+      .right .panel { animation: astaRevealUp .45s var(--ease) both; }
+      .right .panel:nth-child(2) { animation-delay: .08s; }
+      .right .panel:nth-child(3) { animation-delay: .16s; }
+      .right .panel:nth-child(4) { animation-delay: .24s; }
+      /* Test results cascade in; a full pass earns the glow and the trophy pops. */
+      .tests li { animation: astaRevealUp .35s var(--ease) both; }
+      .tests li:nth-child(2) { animation-delay: .05s; }
+      .tests li:nth-child(3) { animation-delay: .1s; }
+      .tests li:nth-child(4) { animation-delay: .15s; }
+      .tests li:nth-child(5) { animation-delay: .2s; }
+      .score.win { text-shadow: 0 0 18px color-mix(in srgb, var(--asta-green) 55%, transparent); }
+      .trophy { display: inline-block; animation: astaSoftPop .45s var(--ease-spring) .2s both; }
+      .console, .t-cmd, .t-out { animation: astaRevealUp .25s var(--ease) both; }
+      .runs li:first-child .r-dot { animation: astaPulse 2.4s ease-in-out infinite; }
+      .btn.run:not(:disabled):hover { box-shadow: 0 0 18px color-mix(in srgb, var(--asta-green) 45%, transparent); }
+      @media (prefers-reduced-motion: reduce) {
+        .prompt, .left .files, .left .term, .right .panel, .tests li, .trophy, .console, .t-cmd, .t-out, .runs li:first-child .r-dot { animation: none; }
+      }
     `,
   ],
 })

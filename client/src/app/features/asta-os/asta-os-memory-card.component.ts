@@ -52,6 +52,15 @@ import { AstaMemorySuggestion } from '../../core/models';
       .btn:disabled { opacity: .5; cursor: default; }
       .btn.primary { color: #06100a; background: linear-gradient(135deg, var(--asta-green), var(--asta-green-deep)); border-color: transparent; }
       .btn.ghost:not(:disabled):hover { color: var(--asta-text); transform: translateY(-1px); }
+
+      /* The card arrives like a thought forming; the bulb warms while it waits. */
+      .card { animation: astaSoftPop .45s var(--ease-spring) both; }
+      .ico { animation: memGlow 2.6s ease-in-out infinite; }
+      @keyframes memGlow {
+        0%, 100% { box-shadow: 0 0 0 transparent; }
+        50% { box-shadow: 0 0 14px color-mix(in srgb, var(--asta-gold) 35%, transparent); }
+      }
+      @media (prefers-reduced-motion: reduce) { .card, .ico { animation: none; } }
     `,
   ],
 })

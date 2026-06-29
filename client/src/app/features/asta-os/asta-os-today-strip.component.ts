@@ -46,6 +46,16 @@ import { NextAction } from '../../core/models';
       .quick { display: flex; flex-wrap: wrap; gap: 8px; }
       .q { font-size: 12.5px; padding: 6px 12px; border-radius: 999px; border: 1px solid var(--asta-border); background: transparent; color: var(--asta-muted); transition: color .16s ease, border-color .16s ease, transform .14s ease; }
       .q:hover { color: var(--asta-text); border-color: color-mix(in srgb, var(--asta-green) 45%, transparent); transform: translateY(-1px); }
+
+      /* The best-move dot pulses — Asta has something for you. */
+      .dot { animation: astaPulse 2.4s ease-in-out infinite; }
+      .lead svg { transition: transform .2s var(--ease-spring); }
+      .lead:hover svg { transform: translateX(3px); }
+      .q { animation: astaRevealUp .4s var(--ease) both; }
+      .q:nth-child(2) { animation-delay: .06s; }
+      .q:nth-child(3) { animation-delay: .12s; }
+      .q:nth-child(4) { animation-delay: .18s; }
+      @media (prefers-reduced-motion: reduce) { .dot, .q { animation: none; } .lead:hover svg { transform: none; } }
     `,
   ],
 })

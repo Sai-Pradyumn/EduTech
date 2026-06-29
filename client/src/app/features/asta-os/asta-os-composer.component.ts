@@ -146,6 +146,30 @@ const SLASH_COMMANDS: SlashCommand[] = [
       .mic.live { color: #06100a; background: var(--asta-green); box-shadow: 0 0 16px color-mix(in srgb, var(--asta-green) 55%, transparent); }
       .go { color: #06100a; background: linear-gradient(135deg, var(--asta-green), var(--asta-green-deep)); }
       .go:disabled { opacity: .4; cursor: default; background: var(--asta-panel); color: var(--asta-subtle); }
+
+      /* Slash menu surfaces like a thought; items cascade. */
+      .slash { animation: astaRevealUp .25s var(--ease) both; }
+      .slash-item { animation: astaRevealUp .25s var(--ease) both; }
+      .slash-item:nth-child(2) { animation-delay: .03s; }
+      .slash-item:nth-child(3) { animation-delay: .06s; }
+      .slash-item:nth-child(4) { animation-delay: .09s; }
+      .slash-item:nth-child(5) { animation-delay: .12s; }
+      /* Quick chips drift in once on load. */
+      .chip { animation: astaRevealUp .4s var(--ease) both; }
+      .chip:nth-child(2) { animation-delay: .05s; }
+      .chip:nth-child(3) { animation-delay: .1s; }
+      .chip:nth-child(4) { animation-delay: .15s; }
+      .chip:nth-child(5) { animation-delay: .2s; }
+      .chip:nth-child(6) { animation-delay: .25s; }
+      .file { animation: astaSoftPop .3s var(--ease-spring) both; }
+      /* The live mic breathes while listening. */
+      .mic.live { animation: astaOsMicBreathe 1.6s ease-in-out infinite; }
+      @keyframes astaOsMicBreathe {
+        0%, 100% { box-shadow: 0 0 16px color-mix(in srgb, var(--asta-green) 55%, transparent); }
+        50% { box-shadow: 0 0 28px color-mix(in srgb, var(--asta-green) 80%, transparent); }
+      }
+      .go:not(:disabled):hover { transform: scale(1.06); }
+      @media (prefers-reduced-motion: reduce) { .slash, .slash-item, .chip, .file, .mic.live { animation: none; } .go:not(:disabled):hover { transform: none; } }
     `,
   ],
 })

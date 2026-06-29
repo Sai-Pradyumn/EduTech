@@ -42,6 +42,14 @@ import { AstaTrustBadge } from './asta-os.types';
       .badge[data-tone='weak'] { color: var(--asta-coral); border-color: color-mix(in srgb, var(--asta-coral) 40%, transparent); }
       .badge[data-tone='roadmap'] { color: var(--asta-violet); border-color: color-mix(in srgb, var(--asta-violet) 40%, transparent); }
       .badge[data-tone='guiding'] { color: var(--asta-gold); border-color: color-mix(in srgb, var(--asta-gold) 40%, transparent); }
+
+      /* Verification stamps land one by one as the turn completes. */
+      .badge { animation: astaSoftPop .35s var(--ease-spring) both; }
+      .badge:nth-child(2) { animation-delay: .08s; }
+      .badge:nth-child(3) { animation-delay: .16s; }
+      .badge:nth-child(4) { animation-delay: .24s; }
+      .badge:nth-child(5) { animation-delay: .32s; }
+      @media (prefers-reduced-motion: reduce) { .badge { animation: none; } }
     `,
   ],
 })

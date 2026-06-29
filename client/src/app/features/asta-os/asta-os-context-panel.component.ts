@@ -44,6 +44,15 @@ interface ContextRow {
       dd { font-size: 14px; color: var(--asta-text); line-height: 1.45; }
       dd.accent { color: var(--asta-green); font-weight: 600; }
       .empty { font-size: 13px; color: var(--asta-muted); line-height: 1.55; }
+
+      /* Context facts settle in one by one; the weak area carries a soft warning glow. */
+      .row { animation: astaRevealUp .4s var(--ease) both; }
+      .row:nth-child(2) { animation-delay: .06s; }
+      .row:nth-child(3) { animation-delay: .12s; }
+      .row:nth-child(4) { animation-delay: .18s; }
+      .row:nth-child(5) { animation-delay: .24s; }
+      dd.accent { text-shadow: 0 0 14px color-mix(in srgb, var(--asta-green) 45%, transparent); }
+      @media (prefers-reduced-motion: reduce) { .row { animation: none; } }
     `,
   ],
 })

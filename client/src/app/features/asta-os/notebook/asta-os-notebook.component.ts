@@ -149,6 +149,22 @@ interface CellState {
       .prose :is(h1, h2, h3) { font-family: var(--display); margin: 6px 0 8px; }
       .prose :is(code) { font-family: var(--mono); background: var(--asta-panel-strong); padding: 1px 5px; border-radius: 5px; font-size: 12.5px; }
       .prose :is(pre) { background: var(--asta-bg); padding: 10px 12px; border-radius: 10px; overflow: auto; border: 1px solid var(--asta-border); }
+
+      /* The notebook unrolls: dataset first, then guidance and cells in order. */
+      .dataset, .md, .cell, .asta { animation: astaRevealUp .45s var(--ease) both; }
+      .md:nth-child(2), .cell:nth-child(2) { animation-delay: .06s; }
+      .md:nth-child(3), .cell:nth-child(3) { animation-delay: .12s; }
+      .md:nth-child(4), .cell:nth-child(4) { animation-delay: .18s; }
+      .md:nth-child(5), .cell:nth-child(5) { animation-delay: .24s; }
+      /* Scatter points land one after another — the data arrives. */
+      .chart circle { animation: nbPoint .4s var(--ease-spring) both; transform-origin: center; transform-box: fill-box; }
+      @keyframes nbPoint { from { transform: scale(0); } }
+      .chart circle:nth-child(odd) { animation-delay: .25s; }
+      .chart circle:nth-child(even) { animation-delay: .45s; }
+      .chart circle:nth-child(3n) { animation-delay: .6s; }
+      .out { animation: astaRevealUp .25s var(--ease) both; }
+      .btn.run:not(:disabled):hover { box-shadow: 0 0 16px color-mix(in srgb, var(--asta-green) 45%, transparent); }
+      @media (prefers-reduced-motion: reduce) { .dataset, .md, .cell, .asta, .chart circle, .out { animation: none; } }
     `,
   ],
 })

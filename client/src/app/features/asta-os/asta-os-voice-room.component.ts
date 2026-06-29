@@ -81,6 +81,19 @@ import { AstaOsOrbComponent } from './asta-os-orb.component';
       .toggle.on { color: var(--asta-green); border-color: color-mix(in srgb, var(--asta-green) 40%, transparent); }
       .toggle.on .dot { background: var(--asta-green); box-shadow: 0 0 8px var(--asta-green); }
       .privacy { font-size: 11.5px; color: var(--asta-subtle); max-width: 460px; text-align: center; line-height: 1.5; }
+
+      /* The room fades up; words arrive as they're spoken. */
+      .room { animation: voiceRoomIn .5s var(--ease) both; }
+      @keyframes voiceRoomIn { from { opacity: 0; } }
+      .stage, .controls { animation: astaRevealUp .55s var(--ease) .1s both; }
+      .you, .asta, .hint { animation: astaRevealUp .4s var(--ease) both; }
+      .mic.live { animation: voiceMicBreathe 1.6s ease-in-out infinite; }
+      @keyframes voiceMicBreathe {
+        0%, 100% { box-shadow: 0 0 30px color-mix(in srgb, var(--asta-green) 55%, transparent); }
+        50% { box-shadow: 0 0 48px color-mix(in srgb, var(--asta-green) 85%, transparent); }
+      }
+      .toggle.on .dot { animation: astaPulse 2.2s ease-in-out infinite; }
+      @media (prefers-reduced-motion: reduce) { .room, .stage, .controls, .you, .asta, .hint, .mic.live, .toggle.on .dot { animation: none; } }
     `,
   ],
 })

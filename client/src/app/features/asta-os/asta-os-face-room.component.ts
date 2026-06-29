@@ -87,6 +87,19 @@ import { AstaOsFaceModeComponent } from './asta-os-face-mode.component';
       .mic:disabled { opacity: .4; cursor: default; }
       .mic.live { color: #06100a; background: linear-gradient(135deg, var(--asta-green), var(--asta-green-deep)); box-shadow: 0 0 30px color-mix(in srgb, var(--asta-green) 55%, transparent); }
       .privacy { font-size: 11.5px; color: var(--asta-subtle); max-width: 460px; text-align: center; }
+
+      /* The room fades up; the live mic breathes like held attention. */
+      .room { animation: faceRoomIn .5s var(--ease) both; }
+      @keyframes faceRoomIn { from { opacity: 0; } }
+      .stage, .controls { animation: astaRevealUp .55s var(--ease) .1s both; }
+      .cam-tile.show { animation: camIn .35s var(--ease-spring) both; }
+      @keyframes camIn { from { transform: scaleX(-1) scale(.85); } to { transform: scaleX(-1) scale(1); } }
+      .mic.live { animation: faceMicBreathe 1.6s ease-in-out infinite; }
+      @keyframes faceMicBreathe {
+        0%, 100% { box-shadow: 0 0 30px color-mix(in srgb, var(--asta-green) 55%, transparent); }
+        50% { box-shadow: 0 0 48px color-mix(in srgb, var(--asta-green) 85%, transparent); }
+      }
+      @media (prefers-reduced-motion: reduce) { .room, .stage, .controls, .cam-tile.show, .mic.live { animation: none; } }
     `,
   ],
 })

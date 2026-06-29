@@ -61,6 +61,19 @@ interface DockRoute {
       .item.active { color: #06100a; background: linear-gradient(135deg, var(--asta-green), var(--asta-green-deep)); }
       .tip { position: absolute; left: calc(100% + 10px); white-space: nowrap; font-size: 12px; padding: 4px 9px; border-radius: 8px; background: var(--asta-bg-elevated); border: 1px solid var(--asta-border); color: var(--asta-text); opacity: 0; transform: translateX(-4px); pointer-events: none; transition: opacity .16s ease, transform .16s ease; z-index: 20; }
       .item:hover .tip, .item:focus-visible .tip { opacity: 1; transform: translateX(0); }
+
+      /* The rail assembles top-down; the active tool carries a live glow. */
+      .item { animation: astaRevealUp .35s var(--ease) both; }
+      .items .item:nth-child(2) { animation-delay: .04s; }
+      .items .item:nth-child(3) { animation-delay: .08s; }
+      .items .item:nth-child(5) { animation-delay: .12s; }
+      .items .item:nth-child(6) { animation-delay: .16s; }
+      .items .item:nth-child(7) { animation-delay: .2s; }
+      .items .item:nth-child(8) { animation-delay: .24s; }
+      .item.active { box-shadow: 0 0 14px color-mix(in srgb, var(--asta-green) 45%, transparent); }
+      .item:hover svg { transform: scale(1.12); }
+      .item svg { transition: transform .2s var(--ease-spring); }
+      @media (prefers-reduced-motion: reduce) { .item { animation: none; } .item:hover svg { transform: none; } }
     `,
   ],
 })
