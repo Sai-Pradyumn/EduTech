@@ -66,31 +66,30 @@ interface CockpitTab {
  * and surfaces the learner's real context (intelligence snapshot + next action).
  */
 @Component({
-  selector: 'asta-os',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  host: { class: 'asta-os-root' },
-  imports: [
-    FormsModule,
-    AstaOsOrbComponent,
-    AstaOsModeToggleComponent,
-    AstaOsSessionModeToggleComponent,
-    AstaOsLearningModeComponent,
-    AstaOsComposerComponent,
-    AstaOsAgentActivityComponent,
-    AstaOsContextPanelComponent,
-    AstaOsTodayStripComponent,
-    AstaOsSideDockComponent,
-    AstaOsVoiceRoomComponent,
-    AstaOsFaceRoomComponent,
-    AstaOsLearningCanvasComponent,
-    AstaOsMemoryCardComponent,
-    AstaOsToolModuleComponent,
-    AstaOsOnboardingComponent,
-    AstaOsIntroComponent,
-    AstaOsHistoryComponent,
-  ],
-  template: `
+    selector: 'asta-os',
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    host: { class: 'asta-os-root' },
+    imports: [
+        FormsModule,
+        AstaOsOrbComponent,
+        AstaOsModeToggleComponent,
+        AstaOsSessionModeToggleComponent,
+        AstaOsLearningModeComponent,
+        AstaOsComposerComponent,
+        AstaOsAgentActivityComponent,
+        AstaOsContextPanelComponent,
+        AstaOsTodayStripComponent,
+        AstaOsSideDockComponent,
+        AstaOsVoiceRoomComponent,
+        AstaOsFaceRoomComponent,
+        AstaOsLearningCanvasComponent,
+        AstaOsMemoryCardComponent,
+        AstaOsToolModuleComponent,
+        AstaOsOnboardingComponent,
+        AstaOsIntroComponent,
+        AstaOsHistoryComponent,
+    ],
+    template: `
     <div class="os">
       <!-- ambient aurora + constellation -->
       <div class="ambient" aria-hidden="true"><span class="a1"></span><span class="a2"></span><span class="grid"></span></div>
@@ -247,8 +246,8 @@ interface CockpitTab {
       <asta-os-intro (done)="playIntro.set(false)" />
     }
   `,
-  styles: [
-    `
+    styles: [
+        `
       :host { display: block; min-height: 100%; color: var(--asta-text); background: var(--asta-bg); }
       .os {
         position: relative;
@@ -322,7 +321,7 @@ interface CockpitTab {
         .mnav-b:active { color: var(--asta-green); }
       }
     `,
-  ],
+    ]
 })
 export class AstaOsComponent {
   protected readonly agent = inject(AgentService);

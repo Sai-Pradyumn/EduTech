@@ -43,11 +43,10 @@ const STARTERS = [
 ];
 
 @Component({
-  selector: 'asta-knowledge-hub',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormsModule, MarkdownPipe, ButtonComponent, CardComponent, ComposerComponent, AiAgentActivityFeedComponent, VisualBlockRendererComponent, MagneticDirective, CountDirective, KnowledgeShardComponent],
-  template: `
+    selector: 'asta-knowledge-hub',
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    imports: [FormsModule, MarkdownPipe, ButtonComponent, CardComponent, ComposerComponent, AiAgentActivityFeedComponent, VisualBlockRendererComponent, MagneticDirective, CountDirective, KnowledgeShardComponent],
+    template: `
     <!-- Compact command header -->
     <header class="asta-page-command-header">
       <div class="min-w-0">
@@ -278,8 +277,8 @@ const STARTERS = [
       </div>
     </div>
   `,
-  styles: [
-    `
+    styles: [
+        `
       .drop { border: 1.5px dashed var(--paper-3); border-radius: 14px; padding: 20px; text-align: center; transition: all .15s; }
       .drop-over { border-color: var(--green); background: oklch(0.80 0.16 150 / .08); }
       .hidden { display: none; }
@@ -313,7 +312,7 @@ const STARTERS = [
       .lib-link { font-size: 11px; font-weight: 600; color: var(--green-deep); background: transparent; border: none; cursor: pointer; padding: 0; }
       .lib-link:hover { text-decoration: underline; }
     `,
-  ],
+    ]
 })
 export class KnowledgeHubComponent implements OnInit, OnDestroy {
   private readonly knowledge = inject(KnowledgeService);

@@ -17,11 +17,10 @@ interface ReviewDraft {
 }
 
 @Component({
-  selector: 'asta-mentor-workspace',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormsModule, ButtonComponent, CardComponent, RingComponent, EmptyStateComponent, MagneticDirective, CountDirective],
-  template: `
+    selector: 'asta-mentor-workspace',
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    imports: [FormsModule, ButtonComponent, CardComponent, RingComponent, EmptyStateComponent, MagneticDirective, CountDirective],
+    template: `
     @if (loading()) {
       <header class="asta-page-command-header">
         <div class="min-w-0">
@@ -200,8 +199,8 @@ interface ReviewDraft {
       }
     }
   `,
-  styles: [
-    `
+    styles: [
+        `
       .stat { padding: 10px 12px; }
       .lbl { font-size: 10px; color: var(--text-mute); text-transform: uppercase; letter-spacing: .04em; }
       .stu { width: 100%; text-align: left; border: 1px solid var(--paper-3); border-radius: 12px; padding: 10px 12px; background: var(--paper); transition: border-color .15s; }
@@ -217,7 +216,7 @@ interface ReviewDraft {
       .note { border-left: 2px solid var(--paper-3); padding: 4px 0 4px 10px; }
       .lnk { color: var(--green-deep); font-weight: 600; }
     `,
-  ],
+    ]
 })
 export class MentorWorkspaceComponent implements OnInit {
   private readonly api = inject(MentorService);

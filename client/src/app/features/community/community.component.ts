@@ -15,11 +15,10 @@ import { CommunityChannel, CommunityReply, CommunityThread, Project, ThreadKind 
  * Question threads can be resolved; showcase threads link a Project Studio project.
  */
 @Component({
-  selector: 'asta-community',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormsModule, DatePipe, RouterLink],
-  template: `
+    selector: 'asta-community',
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    imports: [FormsModule, DatePipe, RouterLink],
+    template: `
     <!-- Command header -->
     <header class="asta-page-command-header">
       <div class="min-w-0">
@@ -173,8 +172,8 @@ import { CommunityChannel, CommunityReply, CommunityThread, Project, ThreadKind 
       </div>
     </div>
   `,
-  styles: [
-    `
+    styles: [
+        `
       .chip { font-family: var(--mono); font-size: 11px; text-transform: uppercase; padding: 3px 9px; border-radius: 100px; border: 1px solid var(--paper-3); background: var(--paper); color: var(--text-soft); }
       .chip-on { background: var(--ink); color: var(--paper); border-color: var(--ink); }
       .tag { font-size: 11px; padding: 1px 7px; border-radius: 6px; background: var(--paper-2); color: var(--text-mute); }
@@ -195,7 +194,7 @@ import { CommunityChannel, CommunityReply, CommunityThread, Project, ThreadKind 
       @media (prefers-reduced-motion: reduce) { .vote-on { animation: none; } .vote:hover, .vote-sm:hover, .vote:active, .vote-sm:active { transform: none; } }
       .vote-mini { font-family: var(--mono); font-size: 10px; color: var(--text-mute); flex-shrink: 0; padding-top: 2px; }
     `,
-  ],
+    ]
 })
 export class CommunityComponent implements OnInit {
   private readonly api = inject(CommunityService);

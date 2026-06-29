@@ -6,11 +6,10 @@ import { AuditView, OpsService } from '../../core/services/ops.service';
 /** Audit log viewer (Phase 10 · M6). Role.Admin. Immutable trail of security-relevant
  *  actions with actor, target and metadata. */
 @Component({
-  selector: 'asta-admin-audit-logs',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [DatePipe, JsonPipe, FormsModule],
-  template: `
+    selector: 'asta-admin-audit-logs',
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    imports: [DatePipe, JsonPipe, FormsModule],
+    template: `
     <header class="asta-page-command-header">
       <div class="min-w-0">
         <h1 class="text-[26px] leading-tight mb-2 grad-flow">Audit logs</h1>
@@ -54,7 +53,7 @@ import { AuditView, OpsService } from '../../core/services/ops.service';
       </div>
     </div>
   `,
-  styles: [`
+    styles: [`
     .al-search { position: relative; display: flex; align-items: center; }
     .al-search svg { position: absolute; left: 11px; color: var(--text-mute); pointer-events: none; }
     .al-search input { width: 240px; max-width: 100%; padding: 8px 12px 8px 32px; font-size: 13px; color: var(--text); background: var(--paper-2); border: 1px solid var(--paper-3); border-radius: 11px; }
@@ -72,7 +71,7 @@ import { AuditView, OpsService } from '../../core/services/ops.service';
     .al-row:nth-child(4) { animation-delay: .12s; }
     .al-row:hover { background: color-mix(in oklch, var(--green) 4%, transparent); }
     @media (prefers-reduced-motion: reduce) { .al-row { animation: none; } }
-  `],
+  `]
 })
 export class AdminAuditLogsComponent implements OnInit {
   private readonly ops = inject(OpsService);

@@ -14,11 +14,10 @@ import { LEDGER_KIND_META, LedgerKind } from '../../core/services/ledger.service
  *  - /app/skill-passport/public-preview (the owner's preview, pulled from /me)
  */
 @Component({
-  selector: 'asta-public-passport',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink, CardComponent, EmptyStateComponent, RingComponent, SkeletonComponent, LogoComponent],
-  template: `
+    selector: 'asta-public-passport',
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    imports: [RouterLink, CardComponent, EmptyStateComponent, RingComponent, SkeletonComponent, LogoComponent],
+    template: `
     <div class="wrap" [class.standalone]="!preview">
       @if (!preview) {
         <div class="pp-bloom" aria-hidden="true"></div>
@@ -113,7 +112,7 @@ import { LEDGER_KIND_META, LedgerKind } from '../../core/services/ledger.service
       }
     </div>
   `,
-  styles: [`
+    styles: [`
     :host { display: block; }
     .wrap { position: relative; }
     .wrap.standalone { max-width: 920px; margin: 0 auto; padding: 24px 18px 60px; min-height: 100dvh; }
@@ -152,7 +151,7 @@ import { LEDGER_KIND_META, LedgerKind } from '../../core/services/ledger.service
     .t-title { display: block; font-size: 13px; font-weight: 600; }
     .t-meta { display: block; font-size: 10.5px; color: var(--text-mute); }
     .footer { text-align: center; font-size: 12px; color: var(--text-mute); margin-top: 24px; }
-  `],
+  `]
 })
 export class PublicPassportComponent {
   private readonly api = inject(SkillPassportService);

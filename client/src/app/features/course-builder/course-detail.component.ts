@@ -9,11 +9,10 @@ import { ToastService } from '../../core/services/toast.service';
 import { Course, CourseModule, CourseService, CourseVisibility } from '../../core/services/course.service';
 
 @Component({
-  selector: 'asta-course-detail',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormsModule, ButtonComponent, CardComponent, EmptyStateComponent, SkeletonComponent],
-  template: `
+    selector: 'asta-course-detail',
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    imports: [FormsModule, ButtonComponent, CardComponent, EmptyStateComponent, SkeletonComponent],
+    template: `
     <header class="asta-page-command-header">
       <div class="min-w-0">
         <h1 class="text-[24px] leading-tight mb-2 grad-flow truncate">{{ course()?.title || 'Course' }}</h1>
@@ -99,8 +98,8 @@ import { Course, CourseModule, CourseService, CourseVisibility } from '../../cor
       </div>
     }
   `,
-  styles: [
-    `
+    styles: [
+        `
       :host { display: block; }
       .m-title { width: 100%; background: transparent; border: none; color: var(--text); font-size: 16px; font-weight: 600; font-family: inherit; }
       .m-title:focus { outline: none; border-bottom: 1px solid var(--green); }
@@ -114,7 +113,7 @@ import { Course, CourseModule, CourseService, CourseVisibility } from '../../cor
       .vs p { margin-top: 6px; line-height: 1.55; white-space: pre-wrap; }
       .link { font-size: 10px; padding: 2px 7px; border-radius: 999px; border: 1px solid color-mix(in oklab, var(--green) 40%, var(--paper-3)); color: var(--green-deep); }
     `,
-  ],
+    ]
 })
 export class CourseDetailComponent {
   private readonly api = inject(CourseService);

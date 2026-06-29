@@ -5,11 +5,10 @@ import { RingComponent } from '../../../shared/ui/ring.component';
 
 /** Progress summary: ring + week/milestone counts for the detail header. */
 @Component({
-  selector: 'asta-progress-widget',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CardComponent, RingComponent],
-  template: `
+    selector: 'asta-progress-widget',
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    imports: [CardComponent, RingComponent],
+    template: `
     <asta-card>
       <div class="flex items-center gap-5">
         <asta-ring [value]="roadmap.progressPercentage" [size]="92" />
@@ -24,7 +23,7 @@ import { RingComponent } from '../../../shared/ui/ring.component';
         </div>
       </div>
     </asta-card>
-  `,
+  `
 })
 export class ProgressWidgetComponent {
   @Input({ required: true }) roadmap!: Roadmap;

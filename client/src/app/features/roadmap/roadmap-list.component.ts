@@ -11,11 +11,10 @@ import { MagneticDirective } from '../../shared/directives/magnetic.directive';
 import { RoadmapCardComponent } from './components/roadmap-card.component';
 
 @Component({
-  selector: 'asta-roadmap-list',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormsModule, RouterLink, ButtonComponent, CardComponent, EmptyStateComponent, SkeletonComponent, MagneticDirective, RoadmapCardComponent],
-  template: `
+    selector: 'asta-roadmap-list',
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    imports: [FormsModule, RouterLink, ButtonComponent, CardComponent, EmptyStateComponent, SkeletonComponent, MagneticDirective, RoadmapCardComponent],
+    template: `
     <!-- Command header -->
     <header class="asta-page-command-header">
       <div class="min-w-0">
@@ -75,7 +74,7 @@ import { RoadmapCardComponent } from './components/roadmap-card.component';
       }
     }
   `,
-  styles: [`
+    styles: [`
     .rl-toolbar { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin-bottom: 18px; }
     .rl-search { position: relative; display: flex; align-items: center; flex: 1; min-width: 200px; }
     .rl-search svg { position: absolute; left: 11px; color: var(--text-mute); pointer-events: none; }
@@ -83,7 +82,7 @@ import { RoadmapCardComponent } from './components/roadmap-card.component';
     .rl-search input:focus { outline: none; border-color: var(--green); }
     .rl-toolbar select { padding: 8px 12px; font-size: 13px; color: var(--text-soft); background: var(--paper-2); border: 1px solid var(--paper-3); border-radius: 11px; cursor: pointer; }
     .rl-toolbar select:focus { outline: none; border-color: var(--green); }
-  `],
+  `]
 })
 export class RoadmapListComponent {
   private readonly service = inject(RoadmapService);

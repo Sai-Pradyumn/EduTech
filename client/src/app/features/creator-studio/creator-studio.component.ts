@@ -8,11 +8,10 @@ import { AuthService } from '../../core/services/auth.service';
 import { MarketplaceService, Template } from '../../core/services/marketplace.service';
 
 @Component({
-  selector: 'asta-creator-studio',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormsModule, ButtonComponent, CardComponent, EmptyStateComponent],
-  template: `
+    selector: 'asta-creator-studio',
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    imports: [FormsModule, ButtonComponent, CardComponent, EmptyStateComponent],
+    template: `
     <header class="asta-page-command-header">
       <div class="min-w-0">
         <h1 class="text-[26px] leading-tight mb-2 grad-flow">Creator Studio</h1>
@@ -80,7 +79,7 @@ import { MarketplaceService, Template } from '../../core/services/marketplace.se
       </div>
     </div>
   `,
-  styles: [`
+    styles: [`
     :host { display: block; }
     .inp { width: 100%; padding: 8px 11px; border-radius: 9px; border: 1px solid var(--paper-3); background: var(--paper-2); color: var(--text); font-size: 13px; font-family: inherit; }
     .row, .mod { padding: 9px 11px; border: 1px solid var(--paper-3); border-radius: 11px; background: var(--paper-2); }
@@ -92,7 +91,7 @@ import { MarketplaceService, Template } from '../../core/services/marketplace.se
     .status[data-s="published"] { background: color-mix(in oklab, var(--green) 20%, transparent); color: var(--green-deep); }
     .status[data-s="pending_review"] { background: color-mix(in oklab, var(--peri, #8aa6ff) 20%, transparent); color: var(--peri, #8aa6ff); }
     .status[data-s="rejected"] { background: color-mix(in oklab, var(--danger, #ff5d5d) 18%, transparent); color: var(--danger, #ff5d5d); }
-  `],
+  `]
 })
 export class CreatorStudioComponent {
   private readonly api = inject(MarketplaceService);

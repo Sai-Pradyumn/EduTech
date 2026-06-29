@@ -15,17 +15,16 @@ import { ParallaxDirective } from '../directives/parallax.directive';
  *   </div>
  */
 @Component({
-  selector: 'asta-aurora',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ParallaxDirective],
-  template: `
+    selector: 'asta-aurora',
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    imports: [ParallaxDirective],
+    template: `
     <div class="blob b1" [astaParallax]="0.06" [astaParallaxScroll]="scrollSelector"></div>
     <div class="blob b2" [astaParallax]="0.11" [astaParallaxScroll]="scrollSelector"></div>
     <div class="blob b3" [astaParallax]="0.04" [astaParallaxScroll]="scrollSelector"></div>
   `,
-  styles: [
-    `
+    styles: [
+        `
       :host {
         position: absolute;
         inset: 0;
@@ -80,7 +79,7 @@ import { ParallaxDirective } from '../directives/parallax.directive';
         .blob { animation: none; }
       }
     `,
-  ],
+    ]
 })
 export class AuroraComponent {
   /** Overall intensity 0–1 (drives blob opacity). */

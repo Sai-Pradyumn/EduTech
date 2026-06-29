@@ -9,11 +9,10 @@ import { ToastService } from '../../core/services/toast.service';
 import { MODALITY_META, SkillTwin, SkillTwinService, TwinAction } from '../../core/services/skill-twin.service';
 
 @Component({
-  selector: 'asta-skill-twin',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ButtonComponent, CardComponent, EmptyStateComponent, RingComponent, SkeletonComponent],
-  template: `
+    selector: 'asta-skill-twin',
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    imports: [ButtonComponent, CardComponent, EmptyStateComponent, RingComponent, SkeletonComponent],
+    template: `
     <header class="asta-page-command-header">
       <div class="min-w-0">
         <h1 class="text-[26px] leading-tight mb-2 grad-flow">Skill Twin</h1>
@@ -207,8 +206,8 @@ import { MODALITY_META, SkillTwin, SkillTwinService, TwinAction } from '../../co
       }
     }
   `,
-  styles: [
-    `
+    styles: [
+        `
       :host { display: block; }
       .headline { font-size: 15px; color: var(--text-soft); margin-bottom: 16px; }
       .gauge { display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; gap: 6px; }
@@ -265,7 +264,7 @@ import { MODALITY_META, SkillTwin, SkillTwinService, TwinAction } from '../../co
       .lg-read { color: var(--green-deep); }
       .lg-health { color: var(--peri-deep, #8aa6ff); }
     `,
-  ],
+    ]
 })
 export class SkillTwinComponent {
   private readonly api = inject(SkillTwinService);

@@ -15,11 +15,10 @@ import {
 } from '../../core/services/visual.service';
 
 @Component({
-  selector: 'asta-visuals-list',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormsModule, ButtonComponent, CardComponent, EmptyStateComponent, SkeletonComponent],
-  template: `
+    selector: 'asta-visuals-list',
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    imports: [FormsModule, ButtonComponent, CardComponent, EmptyStateComponent, SkeletonComponent],
+    template: `
     <header class="asta-page-command-header">
       <div class="min-w-0">
         <h1 class="text-[26px] leading-tight mb-2 grad-flow">Visual Studio</h1>
@@ -113,8 +112,8 @@ import {
       }
     }
   `,
-  styles: [
-    `
+    styles: [
+        `
       :host { display: block; }
       .v-input { width: 100%; background: var(--ink-2, var(--paper-2)); border: 1px solid var(--paper-3); border-radius: 12px; padding: 10px 12px; color: var(--text); font-size: 14px; }
       .v-input:focus { outline: none; border-color: var(--green); }
@@ -136,7 +135,7 @@ import {
       .tb-sel { flex: 0 0 auto; }
       .tb-count { font-size: 12px; color: var(--text-mute); margin-left: auto; white-space: nowrap; }
     `,
-  ],
+    ]
 })
 export class VisualsListComponent {
   private readonly api = inject(VisualService);

@@ -7,11 +7,10 @@ import { RingComponent } from '../../ui/ring.component';
 
 /** Renders a single AgentResponse visual block by type. */
 @Component({
-  selector: 'asta-ai-visual-block',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [AiConceptMapComponent, AiSkillRadarComponent, CardComponent, RingComponent],
-  template: `
+    selector: 'asta-ai-visual-block',
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    imports: [AiConceptMapComponent, AiSkillRadarComponent, CardComponent, RingComponent],
+    template: `
     @switch (block().type) {
       @case ('concept_map') {
         <asta-ai-concept-map [data]="$any(block())" />
@@ -118,7 +117,7 @@ import { RingComponent } from '../../ui/ring.component';
         </asta-card>
       }
     }
-  `,
+  `
 })
 export class VisualBlockRendererComponent {
   @Input({ required: true }) set block_(v: VisualBlock) {

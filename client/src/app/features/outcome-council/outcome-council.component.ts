@@ -9,11 +9,10 @@ import { ToastService } from '../../core/services/toast.service';
 import { CouncilAction, CouncilResult, OutcomeCouncilService } from '../../core/services/outcome-council.service';
 
 @Component({
-  selector: 'asta-outcome-council',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ButtonComponent, CardComponent, EmptyStateComponent, RingComponent, SkeletonComponent],
-  template: `
+    selector: 'asta-outcome-council',
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    imports: [ButtonComponent, CardComponent, EmptyStateComponent, RingComponent, SkeletonComponent],
+    template: `
     <header class="asta-page-command-header">
       <div class="min-w-0">
         <h1 class="text-[26px] leading-tight mb-2 grad-flow">AI Outcome Council</h1>
@@ -84,7 +83,7 @@ import { CouncilAction, CouncilResult, OutcomeCouncilService } from '../../core/
       }
     }
   `,
-  styles: [`
+    styles: [`
     :host { display: block; }
     /* The ranked verdict carries the room — accent ring + glow; the action rises in. */
     .verdict { border: 1px solid color-mix(in oklab, var(--green) 24%, var(--paper-3)); box-shadow: 0 0 24px var(--asta-accent-glow); }
@@ -103,7 +102,7 @@ import { CouncilAction, CouncilResult, OutcomeCouncilService } from '../../core/
     .risk-tag { font-size: 9.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: var(--coral, #ffb454); margin-right: 5px; }
     .dismiss { font-size: 12px; color: var(--text-mute); background: transparent; border: none; cursor: pointer; }
     .dismiss:hover { color: var(--text); }
-  `],
+  `]
 })
 export class OutcomeCouncilComponent {
   private readonly api = inject(OutcomeCouncilService);

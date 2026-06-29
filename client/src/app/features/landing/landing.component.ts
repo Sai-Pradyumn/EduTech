@@ -27,11 +27,10 @@ import { TiltDirective } from '../../shared/directives/tilt.directive';
  * stats, CTA glow, footer. Honors prefers-reduced-motion.
  */
 @Component({
-  selector: 'asta-landing',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink, LogoComponent, DotGridComponent, CountUpDirective, MagneticDirective, ThemeToggleComponent, TiltDirective],
-  template: `
+    selector: 'asta-landing',
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    imports: [RouterLink, LogoComponent, DotGridComponent, CountUpDirective, MagneticDirective, ThemeToggleComponent, TiltDirective],
+    template: `
     <!-- ===================== NAV ===================== -->
     <header class="nav" [class.scrolled]="scrolled()">
       <div class="wrap nav-inner">
@@ -329,7 +328,7 @@ import { TiltDirective } from '../../shared/directives/tilt.directive';
       </div>
     </footer>
   `,
-  styles: [landingStyles],
+    styles: [landingStyles]
 })
 export class LandingComponent implements AfterViewInit, OnDestroy {
   private readonly auth = inject(AuthService);

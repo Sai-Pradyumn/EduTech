@@ -34,11 +34,10 @@ const STARTERS = [
 ];
 
 @Component({
-  selector: 'asta-tutor-workspace',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormsModule, RichContentComponent, ButtonComponent, CardComponent, ComposerComponent, AiAgentActivityFeedComponent, VisualBlockRendererComponent],
-  template: `
+    selector: 'asta-tutor-workspace',
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    imports: [FormsModule, RichContentComponent, ButtonComponent, CardComponent, ComposerComponent, AiAgentActivityFeedComponent, VisualBlockRendererComponent],
+    template: `
     <!-- Command header -->
     <header class="asta-page-command-header">
       <div class="min-w-0">
@@ -169,8 +168,8 @@ const STARTERS = [
       </div>
     </div>
   `,
-  styles: [
-    `
+    styles: [
+        `
       /* Agent orb — calm conic gradient; spins + glows while the tutor thinks. */
       .tutor-orb, .msg-orb {
         border-radius: 999px;
@@ -226,7 +225,7 @@ const STARTERS = [
       .prose-asta :is(pre) { background: var(--ink); color: var(--on-ink); padding: 12px 14px; border-radius: 12px; overflow:auto; }
       .prose-asta :is(strong) { font-weight: 600; }
     `,
-  ],
+    ]
 })
 export class TutorWorkspaceComponent {
   private readonly agent = inject(AgentService);

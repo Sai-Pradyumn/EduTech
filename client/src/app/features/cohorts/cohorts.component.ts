@@ -14,11 +14,10 @@ import { ProgressComponent } from '../../shared/ui/progress.component';
  * an LI-powered leaderboard. Master-detail; tenant-scoped via the active org.
  */
 @Component({
-  selector: 'asta-cohorts',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormsModule, DatePipe, ProgressComponent],
-  template: `
+    selector: 'asta-cohorts',
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    imports: [FormsModule, DatePipe, ProgressComponent],
+    template: `
     <!-- Command header -->
     <header class="asta-page-command-header">
       <div class="min-w-0">
@@ -208,8 +207,8 @@ import { ProgressComponent } from '../../shared/ui/progress.component';
       </div>
     </div>
   `,
-  styles: [
-    `
+    styles: [
+        `
       .lb-row { animation: astaRevealUp 0.4s var(--ease) both; }
       .lb-row:nth-child(2) { animation-delay: 0.05s; }
       .lb-row:nth-child(3) { animation-delay: 0.1s; }
@@ -229,7 +228,7 @@ import { ProgressComponent } from '../../shared/ui/progress.component';
       }
       @media (prefers-reduced-motion: reduce) { .lb-row { animation: none; } }
     `,
-  ],
+    ]
 })
 export class CohortsComponent implements OnInit {
   private readonly cohorts = inject(CohortService);

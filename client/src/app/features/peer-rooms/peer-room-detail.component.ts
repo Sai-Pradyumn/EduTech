@@ -9,11 +9,10 @@ import { ToastService } from '../../core/services/toast.service';
 import { PeerRoom, PeerRoomService } from '../../core/services/peer-room.service';
 
 @Component({
-  selector: 'asta-peer-room-detail',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormsModule, ButtonComponent, CardComponent, EmptyStateComponent, SkeletonComponent],
-  template: `
+    selector: 'asta-peer-room-detail',
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    imports: [FormsModule, ButtonComponent, CardComponent, EmptyStateComponent, SkeletonComponent],
+    template: `
     <header class="asta-page-command-header">
       <div class="min-w-0">
         <h1 class="text-[24px] leading-tight mb-2 grad-flow truncate">{{ room()?.title || 'Peer Room' }}</h1>
@@ -85,8 +84,8 @@ import { PeerRoom, PeerRoomService } from '../../core/services/peer-room.service
       </div>
     }
   `,
-  styles: [
-    `
+    styles: [
+        `
       :host { display: block; }
       .pr-input { flex: 1; background: var(--ink-2, var(--paper-2)); border: 1px solid var(--paper-3); border-radius: 12px; padding: 9px 12px; color: var(--text); font-size: 14px; }
       .pr-input:focus { outline: none; border-color: var(--green); }
@@ -101,7 +100,7 @@ import { PeerRoom, PeerRoomService } from '../../core/services/peer-room.service
       .mem { display: flex; justify-content: space-between; padding: 5px 0; font-size: 13px; border-bottom: 1px solid var(--paper-3); }
       .role { font-size: 10px; text-transform: uppercase; color: var(--text-mute); }
     `,
-  ],
+    ]
 })
 export class PeerRoomDetailComponent {
   private readonly api = inject(PeerRoomService);

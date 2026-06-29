@@ -6,11 +6,10 @@ import { ToastService } from '../../core/services/toast.service';
 /** Personal data controls (Phase 10 · M14). Export your data + request account deletion;
  *  jobs are tracked with status. */
 @Component({
-  selector: 'asta-data-governance',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [DatePipe],
-  template: `
+    selector: 'asta-data-governance',
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    imports: [DatePipe],
+    template: `
     <header class="asta-page-command-header max-w-app mx-auto">
       <div class="min-w-0">
         <h1 class="text-[26px] leading-tight mb-2 grad-flow">Your data</h1>
@@ -62,8 +61,8 @@ import { ToastService } from '../../core/services/toast.service';
       </div>
     </div>
   `,
-  styles: [
-    `
+    styles: [
+        `
       .dg-card { transition: transform .22s var(--ease), box-shadow .22s var(--ease), border-color .22s var(--ease); }
       .dg-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); }
       /* The destructive card carries a faint danger tint so it can't be misread. */
@@ -71,7 +70,7 @@ import { ToastService } from '../../core/services/toast.service';
       .dg-danger:hover { border-color: color-mix(in oklch, var(--danger) 40%, var(--paper-3)); }
       @media (prefers-reduced-motion: reduce) { .dg-card:hover { transform: none; } }
     `,
-  ],
+    ]
 })
 export class DataGovernanceComponent implements OnInit {
   private readonly enterprise = inject(EnterpriseService);

@@ -11,11 +11,10 @@ import { printDocument, PrintSection } from '../../shared/util/print';
 import { downloadPdf } from '../../shared/util/pdf';
 
 @Component({
-  selector: 'asta-resume',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormsModule, ButtonComponent, CardComponent, EmptyStateComponent, SkeletonComponent],
-  template: `
+    selector: 'asta-resume',
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    imports: [FormsModule, ButtonComponent, CardComponent, EmptyStateComponent, SkeletonComponent],
+    template: `
     <header class="asta-page-command-header">
       <div class="min-w-0">
         <h1 class="text-[26px] leading-tight mb-2 grad-flow">Resume</h1>
@@ -83,7 +82,7 @@ import { downloadPdf } from '../../shared/util/pdf';
       }
     }
   `,
-  styles: [`
+    styles: [`
     :host { display: block; }
     .lbl { display: block; font-size: 11px; color: var(--text-mute); text-transform: uppercase; letter-spacing: .04em; margin: 4px 0; }
     .inp { width: 100%; padding: 9px 12px; border-radius: 10px; border: 1px solid var(--paper-3); background: var(--paper-2); color: var(--text); font-size: 14px; font-family: inherit; }
@@ -98,7 +97,7 @@ import { downloadPdf } from '../../shared/util/pdf';
     .proj { margin-bottom: 12px; border-radius: 10px; padding: 4px 6px; transition: background .15s var(--ease); }
     .proj:hover { background: color-mix(in oklch, var(--green) 4%, transparent); }
     @media (prefers-reduced-motion: reduce) { .chip { animation: none; } }
-  `],
+  `]
 })
 export class ResumeComponent {
   private readonly api = inject(ResumeService);

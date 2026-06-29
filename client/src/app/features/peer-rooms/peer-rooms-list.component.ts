@@ -9,11 +9,10 @@ import { ToastService } from '../../core/services/toast.service';
 import { PeerRoom, PeerRoomService } from '../../core/services/peer-room.service';
 
 @Component({
-  selector: 'asta-peer-rooms-list',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormsModule, ButtonComponent, CardComponent, EmptyStateComponent, SkeletonComponent],
-  template: `
+    selector: 'asta-peer-rooms-list',
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    imports: [FormsModule, ButtonComponent, CardComponent, EmptyStateComponent, SkeletonComponent],
+    template: `
     <header class="asta-page-command-header">
       <div class="min-w-0">
         <h1 class="text-[26px] leading-tight mb-2 grad-flow">Peer Rooms</h1>
@@ -81,8 +80,8 @@ import { PeerRoom, PeerRoomService } from '../../core/services/peer-room.service
       }
     }
   `,
-  styles: [
-    `
+    styles: [
+        `
       :host { display: block; }
       .pr-input { width: 100%; background: var(--ink-2, var(--paper-2)); border: 1px solid var(--paper-3); border-radius: 12px; padding: 9px 12px; color: var(--text); font-size: 14px; }
       .pr-input:focus { outline: none; border-color: var(--green); }
@@ -104,7 +103,7 @@ import { PeerRoom, PeerRoomService } from '../../core/services/peer-room.service
       .chip-ok { color: var(--green-deep); border-color: color-mix(in oklab, var(--green) 40%, var(--paper-3)); }
       .chip-act { color: var(--peri-deep, #6f86e0); border-color: color-mix(in oklab, var(--peri, #8aa6ff) 40%, var(--paper-3)); }
     `,
-  ],
+    ]
 })
 export class PeerRoomsListComponent {
   private readonly api = inject(PeerRoomService);

@@ -11,11 +11,10 @@ import { CountDirective } from '../../shared/directives/count.directive';
  * and learning health, with a quick search. Read-only; Role.Admin. Noir cockpit pass.
  */
 @Component({
-  selector: 'asta-admin-students',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [DatePipe, FormsModule, CardComponent, CountDirective],
-  template: `
+    selector: 'asta-admin-students',
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    imports: [DatePipe, FormsModule, CardComponent, CountDirective],
+    template: `
    <div class="asta-observatory">
     <!-- Compact command header -->
     <header class="asta-page-command-header">
@@ -102,8 +101,8 @@ import { CountDirective } from '../../shared/directives/count.directive';
     </p>
    </div>
   `,
-  styles: [
-    `
+    styles: [
+        `
       .panel-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
       .panel-ico {
         width: 32px; height: 32px; flex-shrink: 0;
@@ -232,7 +231,7 @@ import { CountDirective } from '../../shared/directives/count.directive';
       }
       @media (prefers-reduced-motion: reduce) { .sk { animation: none; } }
     `,
-  ],
+    ]
 })
 export class AdminStudentsComponent implements OnInit {
   private readonly api = inject(AdminService);

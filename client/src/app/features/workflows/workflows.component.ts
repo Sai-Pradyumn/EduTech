@@ -10,11 +10,10 @@ import { GraphRun, GraphTemplate } from '../../core/models';
  * ENABLE_LANGGRAPH (notice shown when disabled).
  */
 @Component({
-  selector: 'asta-workflows',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormsModule],
-  template: `
+    selector: 'asta-workflows',
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    imports: [FormsModule],
+    template: `
     <!-- Command header -->
     <header class="asta-page-command-header">
       <div class="min-w-0">
@@ -86,15 +85,15 @@ import { GraphRun, GraphTemplate } from '../../core/models';
       </div>
     }
   `,
-  styles: [
-    `
+    styles: [
+        `
       .tag { font-size: 10px; padding: 1px 7px; border-radius: 6px; background: var(--paper-2); color: var(--text-mute); }
       .btn-go { border-radius: 100px; padding: 8px 16px; font-size: 13px; font-weight: 600; color: var(--ink); background: var(--green); }
       .btn-go:disabled { opacity: .6; }
       .step { display: flex; gap: 12px; }
       .num { flex-shrink: 0; width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center; background: var(--green); color: var(--ink); font-family: var(--display); font-size: 13px; }
     `,
-  ],
+    ]
 })
 export class WorkflowsComponent implements OnInit {
   private readonly api = inject(AgentGraphApiService);

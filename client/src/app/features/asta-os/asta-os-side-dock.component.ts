@@ -16,11 +16,10 @@ interface DockRoute {
  * deliberate way out is the Classic switch at the bottom.
  */
 @Component({
-  selector: 'asta-os-side-dock',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink, RouterLinkActive, AstaOsOrbComponent],
-  template: `
+    selector: 'asta-os-side-dock',
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    imports: [RouterLink, RouterLinkActive, AstaOsOrbComponent],
+    template: `
     <nav class="dock" aria-label="Asta OS">
       <div class="brand"><asta-os-orb size="sm" /></div>
 
@@ -48,8 +47,8 @@ interface DockRoute {
       </div>
     </nav>
   `,
-  styles: [
-    `
+    styles: [
+        `
       .dock { display: flex; flex-direction: column; align-items: center; gap: 14px; height: 100%; padding: 16px 10px; }
       .brand { padding: 4px 0 4px; }
       .items, .foot { display: flex; flex-direction: column; gap: 6px; width: 100%; align-items: center; }
@@ -75,7 +74,7 @@ interface DockRoute {
       .item svg { transition: transform .2s var(--ease-spring); }
       @media (prefers-reduced-motion: reduce) { .item { animation: none; } .item:hover svg { transform: none; } }
     `,
-  ],
+    ]
 })
 export class AstaOsSideDockComponent {
   private readonly mode = inject(AstaModeService);

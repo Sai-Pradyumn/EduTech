@@ -8,11 +8,10 @@ import { ToastService } from '../../core/services/toast.service';
 import { Portfolio, PortfolioService } from '../../core/services/portfolio.service';
 
 @Component({
-  selector: 'asta-portfolio',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormsModule, ButtonComponent, CardComponent, EmptyStateComponent, SkeletonComponent],
-  template: `
+    selector: 'asta-portfolio',
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    imports: [FormsModule, ButtonComponent, CardComponent, EmptyStateComponent, SkeletonComponent],
+    template: `
     <header class="asta-page-command-header">
       <div class="min-w-0">
         <h1 class="text-[26px] leading-tight mb-2 grad-flow">Portfolio</h1>
@@ -108,7 +107,7 @@ import { Portfolio, PortfolioService } from '../../core/services/portfolio.servi
       }
     }
   `,
-  styles: [`
+    styles: [`
     :host { display: block; }
     .lbl { display: block; font-size: 11px; color: var(--text-mute); text-transform: uppercase; letter-spacing: .04em; margin: 8px 0 4px; }
     .inp { width: 100%; padding: 8px 11px; border-radius: 9px; border: 1px solid var(--paper-3); background: var(--paper-2); color: var(--text); font-size: 13.5px; font-family: inherit; }
@@ -126,7 +125,7 @@ import { Portfolio, PortfolioService } from '../../core/services/portfolio.servi
     .link-url { display: block; font-size: 11px; color: var(--peri, #8aa6ff); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .x { border: none; background: transparent; color: var(--text-mute); cursor: pointer; }
     .x:hover { color: var(--danger, #ff5d5d); }
-  `],
+  `]
 })
 export class PortfolioComponent {
   private readonly api = inject(PortfolioService);

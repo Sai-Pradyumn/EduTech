@@ -9,11 +9,10 @@ import { ToastService } from '../../core/services/toast.service';
 import { SIM_TYPE_META, Simulation, SimulationService, SimulationType } from '../../core/services/simulation.service';
 
 @Component({
-  selector: 'asta-simulation-detail',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormsModule, ButtonComponent, CardComponent, EmptyStateComponent, SkeletonComponent],
-  template: `
+    selector: 'asta-simulation-detail',
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    imports: [FormsModule, ButtonComponent, CardComponent, EmptyStateComponent, SkeletonComponent],
+    template: `
     <header class="asta-page-command-header">
       <div class="min-w-0">
         <h1 class="text-[24px] leading-tight mb-2 grad-flow truncate">{{ sim() ? meta(sim()!.type).label + ' · ' + sim()!.topic : 'Simulation' }}</h1>
@@ -90,8 +89,8 @@ import { SIM_TYPE_META, Simulation, SimulationService, SimulationType } from '..
       </div>
     }
   `,
-  styles: [
-    `
+    styles: [
+        `
       :host { display: block; }
       .sim-input { width: 100%; background: var(--ink-2, var(--paper-2)); border: 1px solid var(--paper-3); border-radius: 12px; padding: 9px 12px; color: var(--text); font-size: 14px; font-family: inherit; }
       .sim-input:focus { outline: none; border-color: var(--green); }
@@ -109,7 +108,7 @@ import { SIM_TYPE_META, Simulation, SimulationService, SimulationType } from '..
       .skill-tags { display: flex; flex-wrap: wrap; gap: 6px; }
       .skill-tag { font-size: 11.5px; padding: 2px 9px; border-radius: 999px; border: 1px solid color-mix(in oklab, var(--peri, #8aa6ff) 35%, var(--paper-3)); color: var(--peri, #8aa6ff); }
     `,
-  ],
+    ]
 })
 export class SimulationDetailComponent {
   private readonly api = inject(SimulationService);

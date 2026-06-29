@@ -10,11 +10,10 @@ import { GoogleSigninComponent } from './google-signin.component';
 import { OtpVerifyComponent } from './otp-verify.component';
 
 @Component({
-  selector: 'asta-login',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ReactiveFormsModule, RouterLink, ButtonComponent, FieldComponent, MagneticDirective, GoogleSigninComponent, OtpVerifyComponent],
-  template: `
+    selector: 'asta-login',
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    imports: [ReactiveFormsModule, RouterLink, ButtonComponent, FieldComponent, MagneticDirective, GoogleSigninComponent, OtpVerifyComponent],
+    template: `
     @if (otpEmail(); as email) {
       <asta-otp-verify [email]="email" />
       <p class="text-sm text-txt-soft mt-6 text-center">
@@ -55,8 +54,8 @@ import { OtpVerifyComponent } from './otp-verify.component';
       </p>
     }
   `,
-  styles: [
-    `
+    styles: [
+        `
       /* Staggered entrance — composes with the layout's form-card rise. */
       .st { animation: astaRevealUp 0.5s var(--ease) both; }
       .st-0 { animation-delay: 0.16s; }
@@ -89,7 +88,7 @@ import { OtpVerifyComponent } from './otp-verify.component';
         .st { animation: none; }
       }
     `,
-  ],
+    ]
 })
 export class LoginComponent {
   private readonly fb = inject(FormBuilder);

@@ -12,11 +12,10 @@ import { SkeletonComponent } from '../../shared/ui/skeleton.component';
 import { MagneticDirective } from '../../shared/directives/magnetic.directive';
 
 @Component({
-  selector: 'asta-roadmap-generate',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormsModule, RouterLink, UpperCasePipe, ButtonComponent, CardComponent, SkeletonComponent, MagneticDirective],
-  template: `
+    selector: 'asta-roadmap-generate',
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    imports: [FormsModule, RouterLink, UpperCasePipe, ButtonComponent, CardComponent, SkeletonComponent, MagneticDirective],
+    template: `
     <div class="mx-auto" style="max-width:var(--max-w-app,720px)">
       @if (generating()) {
         <asta-card>
@@ -108,8 +107,8 @@ import { MagneticDirective } from '../../shared/directives/magnetic.directive';
       }
     </div>
   `,
-  styles: [
-    `
+    styles: [
+        `
       .seg { padding: 9px 16px; border-radius: 100px; font-size: 14px; font-weight: 500; border: 1px solid var(--paper-3); background: var(--paper); color: var(--text); cursor: pointer; transition: all .2s var(--ease); }
       .seg:hover { border-color: var(--green-deep); }
       .seg-on { background: var(--ink); color: var(--paper); border-color: var(--ink); }
@@ -139,7 +138,7 @@ import { MagneticDirective } from '../../shared/directives/magnetic.directive';
         .orb span { animation: none; } .stages li.active .mk { animation: none; }
       }
     `,
-  ],
+    ]
 })
 export class RoadmapGenerateComponent {
   private readonly profiles = inject(StudentProfileService);

@@ -10,11 +10,10 @@ import { LogoComponent } from '../../shared/ui/logo.component';
  * Pure CSS motion; the global reduced-motion rule neutralizes all of it.
  */
 @Component({
-  selector: 'asta-auth-layout',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterOutlet, LogoComponent],
-  template: `
+    selector: 'asta-auth-layout',
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    imports: [RouterOutlet, LogoComponent],
+    template: `
     <div class="min-h-screen grid lg:grid-cols-[1.06fr_1fr]">
       <!-- Ink panel — the living scene -->
       <div class="scene relative hidden lg:flex flex-col justify-between p-10 overflow-hidden" style="background:var(--ink)">
@@ -74,8 +73,8 @@ import { LogoComponent } from '../../shared/ui/logo.component';
       </div>
     </div>
   `,
-  styles: [
-    `
+    styles: [
+        `
       /* ── living scene layers ─────────────────────────────────────────── */
       .bloom {
         position: absolute;
@@ -202,7 +201,7 @@ import { LogoComponent } from '../../shared/ui/logo.component';
         .path-spark { display: none; }
       }
     `,
-  ],
+    ]
 })
 export class AuthLayoutComponent {
   /** The agent cast — storytelling, not data. */

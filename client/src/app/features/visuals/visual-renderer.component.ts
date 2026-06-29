@@ -25,11 +25,10 @@ const GAP_X = 56;
 
 /** Renders a Visual in whatever format it was generated in — jsonGraph→SVG, markdown, image, mermaid, svg. */
 @Component({
-  selector: 'asta-visual-renderer',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [MarkdownPipe],
-  template: `
+    selector: 'asta-visual-renderer',
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    imports: [MarkdownPipe],
+    template: `
     @switch (visual.contentFormat) {
       @case ('jsonGraph') {
         @if (graph(); as g) {
@@ -73,8 +72,8 @@ const GAP_X = 56;
       }
     }
   `,
-  styles: [
-    `
+    styles: [
+        `
       :host { display: block; }
       .vgraph { width: 100%; height: auto; max-height: 62vh; display: block; }
       .ve { fill: none; stroke: color-mix(in oklab, var(--text-mute) 65%, transparent); stroke-width: 1.4; }
@@ -111,7 +110,7 @@ const GAP_X = 56;
         .vgraph g, .ve, .vel, .vimg, .vsvg, .vhtml, .vmermaid, .vmd { animation: none; stroke-dashoffset: 0; }
       }
     `,
-  ],
+    ]
 })
 export class VisualRendererComponent {
   private readonly sanitizer = inject(DomSanitizer);

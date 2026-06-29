@@ -14,11 +14,10 @@ import { CohortView, LiveSessionStatus, SessionDetail, SessionView } from '../..
  * recap (summary + key points + assignment + quiz topic) is generated from their notes.
  */
 @Component({
-  selector: 'asta-live-sessions',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormsModule, DatePipe, RouterLink],
-  template: `
+    selector: 'asta-live-sessions',
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    imports: [FormsModule, DatePipe, RouterLink],
+    template: `
     <!-- Command header -->
     <header class="asta-page-command-header">
       <div class="min-w-0">
@@ -175,8 +174,8 @@ import { CohortView, LiveSessionStatus, SessionDetail, SessionView } from '../..
       </div>
     </div>
   `,
-  styles: [
-    `
+    styles: [
+        `
       .btn-go { display: inline-flex; align-items: center; gap: 6px; border-radius: 100px; padding: 8px 16px; font-size: 13px; font-weight: 600; color: var(--ink); background: var(--green); }
       .btn-go:disabled { opacity: .6; }
       .btn-soft { border-radius: 100px; padding: 8px 16px; font-size: 13px; font-weight: 600; color: var(--text-soft); background: var(--paper-2); border: 1px solid var(--paper-3); }
@@ -190,7 +189,7 @@ import { CohortView, LiveSessionStatus, SessionDetail, SessionView } from '../..
       @media (prefers-reduced-motion: reduce) { .ls-live-dot { animation: none; } }
       .ls-search:focus { outline: none; border-color: var(--green); }
     `,
-  ],
+    ]
 })
 export class LiveSessionsComponent implements OnInit {
   private readonly api = inject(LiveSessionService);

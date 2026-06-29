@@ -1,5 +1,5 @@
-import { DOCUMENT } from '@angular/common';
-import { Injectable, effect, inject, signal } from '@angular/core';
+
+import { Injectable, effect, inject, signal, DOCUMENT } from '@angular/core';
 
 /** The two top-level product experiences. */
 export type AstaMode = 'classic' | 'os';

@@ -10,11 +10,10 @@ import { MarketplaceService, Template } from '../../core/services/marketplace.se
 const TYPES = ['', 'flow', 'roadmap', 'quiz', 'project', 'simulation', 'interview', 'course', 'study_space', 'visual'];
 
 @Component({
-  selector: 'asta-marketplace',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ButtonComponent, CardComponent, EmptyStateComponent, SkeletonComponent],
-  template: `
+    selector: 'asta-marketplace',
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    imports: [ButtonComponent, CardComponent, EmptyStateComponent, SkeletonComponent],
+    template: `
     <header class="asta-page-command-header">
       <div class="min-w-0">
         <h1 class="text-[26px] leading-tight mb-2 grad-flow">Marketplace</h1>
@@ -62,7 +61,7 @@ const TYPES = ['', 'flow', 'roadmap', 'quiz', 'project', 'simulation', 'intervie
       <asta-card><asta-empty-state title="No templates at this level" description="Try a different level or type filter."></asta-empty-state></asta-card>
     } @else { <asta-card><asta-empty-state title="No templates yet" description="Published templates appear here. Create one in the Creator Studio and submit it for review."><asta-btn variant="accent" (click)="go('/app/creator-studio')">Open Creator Studio</asta-btn></asta-empty-state></asta-card> }
   `,
-  styles: [`
+    styles: [`
     :host { display: block; }
     .chips { display: flex; flex-wrap: wrap; gap: 6px; }
     .chip { font-size: 12px; padding: 5px 11px; border-radius: 999px; border: 1px solid var(--paper-3); background: var(--paper-2); color: var(--text-soft); cursor: pointer; text-transform: capitalize; }
@@ -81,7 +80,7 @@ const TYPES = ['', 'flow', 'roadmap', 'quiz', 'project', 'simulation', 'intervie
     .t-desc { font-size: 12.5px; color: var(--text-soft); margin-top: 3px; }
     .tag { font-size: 10.5px; padding: 1px 7px; border-radius: 999px; background: var(--paper-3); color: var(--text-soft); }
     .creator { font-size: 11.5px; color: var(--text-mute); }
-  `],
+  `]
 })
 export class MarketplaceComponent {
   private readonly api = inject(MarketplaceService);

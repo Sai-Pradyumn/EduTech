@@ -8,11 +8,10 @@ import { RouterLink } from '@angular/router';
  * and authed visitors; offers the two useful exits instead of guessing.
  */
 @Component({
-  selector: 'asta-not-found',
-  standalone: true,
-  imports: [RouterLink],
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  template: `
+    selector: 'asta-not-found',
+    imports: [RouterLink],
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    template: `
     <main class="nf-root">
       <div class="nf-card card" role="alert" aria-labelledby="nf-title">
         <p class="kicker">PAGE NOT FOUND</p>
@@ -29,8 +28,8 @@ import { RouterLink } from '@angular/router';
       </div>
     </main>
   `,
-  styles: [
-    `
+    styles: [
+        `
       .nf-root {
         min-height: 100dvh;
         display: grid;
@@ -98,6 +97,6 @@ import { RouterLink } from '@angular/router';
         border: 1px solid var(--border, rgba(255, 255, 255, 0.12));
       }
     `,
-  ],
+    ]
 })
 export class NotFoundComponent {}

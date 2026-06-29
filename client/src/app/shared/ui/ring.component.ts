@@ -7,11 +7,10 @@ let ringSeq = 0;
 /** Progress ring — gradient arc with a draw-in animation, soft glow, and a
  *  counting-up centre number. Flat centre (no embossed 3D inset). */
 @Component({
-  selector: 'asta-ring',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CountDirective],
-  template: `
+    selector: 'asta-ring',
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    imports: [CountDirective],
+    template: `
     <span class="relative inline-grid place-items-center" [style.width.px]="size" [style.height.px]="size">
       <svg [attr.width]="size" [attr.height]="size" [attr.viewBox]="'0 0 ' + size + ' ' + size">
         <defs>
@@ -33,8 +32,8 @@ let ringSeq = 0;
       <span class="num font-display font-semibold" [style.fontSize.px]="size * 0.27" [astaCount]="clamped" suffix="%"></span>
     </span>
   `,
-  styles: [
-    `
+    styles: [
+        `
       .track { stroke: color-mix(in oklch, var(--text-mute) 16%, transparent); }
       .prog {
         filter: drop-shadow(0 0 4px var(--asta-accent-glow));
@@ -42,7 +41,7 @@ let ringSeq = 0;
       }
       .num { position: absolute; color: var(--text); letter-spacing: -0.02em; }
     `,
-  ],
+    ]
 })
 export class RingComponent {
   @Input() value = 0;

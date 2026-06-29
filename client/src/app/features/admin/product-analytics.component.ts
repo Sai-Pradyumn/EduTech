@@ -16,11 +16,10 @@ interface Overview {
 /** Product analytics dashboard (Phase 10 · M8). Role.Admin. Active users, funnels and
  *  event volume — privacy-respecting (event names + counts only). */
 @Component({
-  selector: 'asta-admin-product-analytics',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormsModule],
-  template: `
+    selector: 'asta-admin-product-analytics',
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    imports: [FormsModule],
+    template: `
     <header class="asta-page-command-header">
       <div class="min-w-0">
         <h1 class="text-[26px] leading-tight mb-2 grad-flow">Product analytics</h1>
@@ -102,7 +101,7 @@ interface Overview {
       }
     </div>
   `,
-  styles: [`
+    styles: [`
     .skel{background:linear-gradient(90deg,var(--paper-2) 25%,var(--paper-3) 50%,var(--paper-2) 75%);background-size:200% 100%;animation:s 1.4s ease infinite}@keyframes s{0%{background-position:200% 0}100%{background-position:-200% 0}}@media (prefers-reduced-motion:reduce){.skel{animation:none}}
     .ret-chart{display:flex;align-items:flex-end;gap:2px;height:84px}
     .ret-col{flex:1;height:100%;display:flex;align-items:flex-end;min-width:2px}
@@ -115,7 +114,7 @@ interface Overview {
     @media (prefers-reduced-motion:reduce){.ret-bar,.pa-fill{animation:none}}
     .ev-search{padding:6px 11px;border-radius:9px;border:1px solid var(--paper-3);background:var(--paper-2);color:var(--text);font-size:12.5px;font-family:inherit;min-width:180px}
     .ev-search:focus{outline:none;border-color:var(--green)}
-  `],
+  `]
 })
 export class AdminProductAnalyticsComponent implements OnInit {
   private readonly ops = inject(OpsService);

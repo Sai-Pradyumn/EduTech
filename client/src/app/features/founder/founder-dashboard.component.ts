@@ -12,11 +12,10 @@ import { CountDirective } from '../../shared/directives/count.directive';
  * Platform-admin only (PlatformManage on the API).
  */
 @Component({
-  selector: 'asta-founder-dashboard',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [DatePipe, SkeletonComponent, LineChartComponent, BarChartComponent, CountDirective],
-  template: `
+    selector: 'asta-founder-dashboard',
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    imports: [DatePipe, SkeletonComponent, LineChartComponent, BarChartComponent, CountDirective],
+    template: `
     <!-- Command header -->
     <header class="asta-page-command-header">
       <div class="min-w-0">
@@ -134,8 +133,8 @@ import { CountDirective } from '../../shared/directives/count.directive';
       </div>
     }
   `,
-  styles: [
-    `
+    styles: [
+        `
       .metric { padding: 16px; display: flex; flex-direction: column; gap: 2px; }
       .num { font-family: var(--display); font-size: 30px; line-height: 1; }
       .num2 { font-family: var(--display); font-size: 20px; line-height: 1; }
@@ -157,7 +156,7 @@ import { CountDirective } from '../../shared/directives/count.directive';
       .plan-chip b { color: var(--text); font-variant-numeric: tabular-nums; }
       .gen { font-size: 11px; font-family: var(--mono); color: var(--text-mute); margin-top: 14px; }
     `,
-  ],
+    ]
 })
 export class FounderDashboardComponent implements OnInit {
   private readonly api = inject(FounderService);

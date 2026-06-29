@@ -37,14 +37,13 @@ const SOURCES: { key: QuizSource; label: string; hint: string }[] = [
 const DIFFS: Difficulty[] = ['beginner', 'intermediate', 'advanced'];
 
 @Component({
-  selector: 'asta-quiz-studio',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [
-    FormsModule, ButtonComponent, RingComponent, CardComponent, EmptyStateComponent,
-    SkeletonComponent, VisualBlockRendererComponent, MagneticDirective, CountDirective,
-  ],
-  template: `
+    selector: 'asta-quiz-studio',
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    imports: [
+        FormsModule, ButtonComponent, RingComponent, CardComponent, EmptyStateComponent,
+        SkeletonComponent, VisualBlockRendererComponent, MagneticDirective, CountDirective,
+    ],
+    template: `
     <!-- Compact command header -->
     <header class="asta-page-command-header">
       <div class="min-w-0">
@@ -360,8 +359,8 @@ const DIFFS: Difficulty[] = ['beginner', 'intermediate', 'advanced'];
       }
     }
   `,
-  styles: [
-    `
+    styles: [
+        `
       .stat { padding: 14px 16px; }
       .lbl { font-size: 11px; color: var(--text-mute); text-transform: uppercase; letter-spacing: .04em; }
       .mt-chips { display: flex; flex-wrap: wrap; gap: 6px; }
@@ -401,7 +400,7 @@ const DIFFS: Difficulty[] = ['beginner', 'intermediate', 'advanced'];
       .rev-tab { font-size: 11.5px; padding: 4px 11px; border-radius: 999px; border: none; background: transparent; color: var(--text-soft); cursor: pointer; font-variant-numeric: tabular-nums; }
       .rev-tab.on { background: color-mix(in oklch, var(--green) 20%, transparent); color: var(--text); }
     `,
-  ],
+    ]
 })
 export class QuizStudioComponent implements OnInit, OnDestroy {
   private readonly quizApi = inject(QuizService);

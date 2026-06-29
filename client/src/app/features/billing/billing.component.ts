@@ -9,11 +9,10 @@ import { GaugeComponent } from '../../shared/charts';
 
 /** Billing & usage (B5/B6): current plan, AI usage meter, plan upgrade (mock checkout), invoices. */
 @Component({
-  selector: 'asta-billing',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [DatePipe, GaugeComponent],
-  template: `
+    selector: 'asta-billing',
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    imports: [DatePipe, GaugeComponent],
+    template: `
     <!-- Command header -->
     <header class="asta-page-command-header max-w-app mx-auto">
       <div class="min-w-0">
@@ -207,8 +206,8 @@ import { GaugeComponent } from '../../shared/charts';
       }
     </div>
   `,
-  styles: [
-    `
+    styles: [
+        `
       .inv-export { font-size: 11.5px; color: var(--peri, #8aa6ff); background: transparent; border: none; cursor: pointer; }
       .inv-export:hover { color: var(--green-deep); }
       /* Plan-limit meters fill from zero on load with a soft glowing lead edge. */
@@ -219,7 +218,7 @@ import { GaugeComponent } from '../../shared/charts';
       @keyframes skel-shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
       @media (prefers-reduced-motion: reduce) { .skel { animation: none; } }
     `,
-  ],
+    ]
 })
 export class BillingComponent implements OnInit {
   private readonly billing = inject(BillingService);

@@ -1,4 +1,4 @@
-import { Injectable, NgZone, signal } from '@angular/core';
+import { Injectable, NgZone, inject, signal } from '@angular/core';
 
 /**
  * Network status (Phase 10 · M4). A reactive `online` signal driven by the browser's
@@ -12,7 +12,9 @@ export class NetworkStatusService {
   );
   readonly online = this._online.asReadonly();
 
-  constructor(private readonly zone: NgZone) {
+  private readonly zone = inject(NgZone);
+
+  constructor() {
     if (typeof window !== 'undefined') {
       window.addEventListener('online', () =>
         this.zone.run(() => this._online.set(true)),

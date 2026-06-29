@@ -9,11 +9,10 @@ import { ToastService } from '../../core/services/toast.service';
 import { Course, CourseService, Difficulty } from '../../core/services/course.service';
 
 @Component({
-  selector: 'asta-course-list',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormsModule, ButtonComponent, CardComponent, EmptyStateComponent, SkeletonComponent],
-  template: `
+    selector: 'asta-course-list',
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    imports: [FormsModule, ButtonComponent, CardComponent, EmptyStateComponent, SkeletonComponent],
+    template: `
     <header class="asta-page-command-header">
       <div class="min-w-0">
         <h1 class="text-[26px] leading-tight mb-2 grad-flow">Course Builder</h1>
@@ -71,8 +70,8 @@ import { Course, CourseService, Difficulty } from '../../core/services/course.se
       </div>
     }
   `,
-  styles: [
-    `
+    styles: [
+        `
       :host { display: block; }
       .cb-input { width: 100%; background: var(--ink-2, var(--paper-2)); border: 1px solid var(--paper-3); border-radius: 12px; padding: 10px 12px; color: var(--text); font-size: 14px; }
       .cb-input:focus { outline: none; border-color: var(--green); }
@@ -89,7 +88,7 @@ import { Course, CourseService, Difficulty } from '../../core/services/course.se
       .cb-stat .num { font-size: 26px; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--green-deep); }
       .cb-stat .lbl { font-size: 10.5px; color: var(--text-mute); text-transform: uppercase; letter-spacing: .04em; margin-top: 2px; }
     `,
-  ],
+    ]
 })
 export class CourseListComponent {
   private readonly api = inject(CourseService);

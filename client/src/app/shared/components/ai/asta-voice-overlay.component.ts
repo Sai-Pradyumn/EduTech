@@ -13,11 +13,10 @@ import { VoiceCommandConfirmComponent } from './voice-command-confirm.component'
  * Escape dismisses. All animation is reduced-motion-safe.
  */
 @Component({
-  selector: 'asta-voice-overlay',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [MarkdownPipe, AstaVoiceOrbComponent, VoiceCommandConfirmComponent],
-  template: `
+    selector: 'asta-voice-overlay',
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    imports: [MarkdownPipe, AstaVoiceOrbComponent, VoiceCommandConfirmComponent],
+    template: `
     @if (auth.user() && voice.open()) {
       <div class="scrim" (click)="voice.dismiss()" aria-hidden="true"></div>
       <section class="sheet" role="dialog" aria-modal="true" aria-label="Asta voice assistant">
@@ -79,8 +78,8 @@ import { VoiceCommandConfirmComponent } from './voice-command-confirm.component'
       </section>
     }
   `,
-  styles: [
-    `
+    styles: [
+        `
       .scrim {
         position: fixed; inset: 0; z-index: 90;
         background: oklch(0.19 0.035 264 / 0.42);
@@ -160,7 +159,7 @@ import { VoiceCommandConfirmComponent } from './voice-command-confirm.component'
         .vtoggle.on .dot { animation: none; }
       }
     `,
-  ],
+    ]
 })
 export class AstaVoiceOverlayComponent {
   readonly auth = inject(AuthService);

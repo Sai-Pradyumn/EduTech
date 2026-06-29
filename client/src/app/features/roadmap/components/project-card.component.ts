@@ -3,11 +3,10 @@ import { RoadmapProject } from '../../../core/models';
 import { CardComponent } from '../../../shared/ui/card.component';
 
 @Component({
-  selector: 'asta-project-card',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CardComponent],
-  template: `
+    selector: 'asta-project-card',
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    imports: [CardComponent],
+    template: `
     <asta-card accentVar="var(--coral)">
       <div class="flex items-center justify-between mb-1.5">
         <h4 class="text-[17px]">{{ project.title }}</h4>
@@ -19,8 +18,8 @@ import { CardComponent } from '../../../shared/ui/card.component';
       </div>
     </asta-card>
   `,
-  styles: [
-    `
+    styles: [
+        `
       :host { display: block; }
       /* Skills the project covers pop in as a set. */
       .ms-skills .pill { animation: astaSoftPop 0.35s var(--ease-spring) both; }
@@ -31,7 +30,7 @@ import { CardComponent } from '../../../shared/ui/card.component';
       .ms-skills .pill:nth-child(6) { animation-delay: 0.2s; }
       @media (prefers-reduced-motion: reduce) { .ms-skills .pill { animation: none; } }
     `,
-  ],
+    ]
 })
 export class ProjectCardComponent {
   @Input({ required: true }) project!: RoadmapProject;

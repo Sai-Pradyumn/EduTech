@@ -20,12 +20,11 @@ import { AstaOsFaceModeComponent } from './asta-os-face-mode.component';
  * a corner tile) — a clean seam for future realtime avatar/video providers.
  */
 @Component({
-  selector: 'asta-os-face-room',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  host: { class: 'asta-os-root' },
-  imports: [AstaOsFaceModeComponent],
-  template: `
+    selector: 'asta-os-face-room',
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    host: { class: 'asta-os-root' },
+    imports: [AstaOsFaceModeComponent],
+    template: `
     <div class="room">
       <header class="bar">
         <span class="brand">Asta · Face</span>
@@ -63,8 +62,8 @@ import { AstaOsFaceModeComponent } from './asta-os-face-mode.component';
       </footer>
     </div>
   `,
-  styles: [
-    `
+    styles: [
+        `
       :host { position: fixed; inset: 0; z-index: 85; display: block; }
       .room { position: absolute; inset: 0; display: flex; flex-direction: column; background: radial-gradient(ellipse at 50% 35%, var(--asta-bg-soft), var(--asta-bg)); }
       .bar { display: flex; align-items: center; justify-content: space-between; padding: 16px 22px; }
@@ -101,7 +100,7 @@ import { AstaOsFaceModeComponent } from './asta-os-face-mode.component';
       }
       @media (prefers-reduced-motion: reduce) { .room, .stage, .controls, .cam-tile.show, .mic.live { animation: none; } }
     `,
-  ],
+    ]
 })
 export class AstaOsFaceRoomComponent {
   protected readonly voice = inject(VoiceActivationService);

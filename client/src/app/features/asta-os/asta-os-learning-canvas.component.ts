@@ -20,11 +20,10 @@ import { AstaTrustBadge, AstaTurn } from './asta-os.types';
  * prompt/action the learner taps; the shell owns sending it.
  */
 @Component({
-  selector: 'asta-os-learning-canvas',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RichContentComponent, VisualBlockRendererComponent, AstaOsOrbComponent, AstaOsTrustBadgesComponent, AstaOsToolSuggestionsComponent],
-  template: `
+    selector: 'asta-os-learning-canvas',
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    imports: [RichContentComponent, VisualBlockRendererComponent, AstaOsOrbComponent, AstaOsTrustBadgesComponent, AstaOsToolSuggestionsComponent],
+    template: `
     <div class="thread">
       @for (turn of turns(); track $index) {
         @if (turn.role === 'user') {
@@ -150,8 +149,8 @@ import { AstaTrustBadge, AstaTurn } from './asta-os.types';
       }
     </div>
   `,
-  styles: [
-    `
+    styles: [
+        `
       .thread { display: flex; flex-direction: column; gap: 22px; }
       .row { display: flex; gap: 12px; animation: turnIn .3s cubic-bezier(.2,.7,.2,1) both; }
       @keyframes turnIn { from { opacity: 0; transform: translateY(8px); } }
@@ -228,7 +227,7 @@ import { AstaTrustBadge, AstaTurn } from './asta-os.types';
       .g-concerns li { font-size: 12.5px; color: var(--asta-muted); }
       .g-sug { margin-top: 8px; font-size: 13px; color: var(--asta-text); }
     `,
-  ],
+    ]
 })
 export class AstaOsLearningCanvasComponent {
   readonly turns = input.required<readonly AstaTurn[]>();

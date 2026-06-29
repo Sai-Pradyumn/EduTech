@@ -10,11 +10,10 @@ import { ButtonComponent } from '../../shared/ui/button.component';
  * session → routes onward. Includes a resend button with a 60s cooldown.
  */
 @Component({
-  selector: 'asta-otp-verify',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormsModule, ButtonComponent],
-  template: `
+    selector: 'asta-otp-verify',
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    imports: [FormsModule, ButtonComponent],
+    template: `
     <span class="otp-glyph st st-0" aria-hidden="true">
       <span class="otp-halo"></span>
       <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="var(--green-deep)" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
@@ -53,8 +52,8 @@ import { ButtonComponent } from '../../shared/ui/button.component';
       }
     </div>
   `,
-  styles: [
-    `
+    styles: [
+        `
       .st { animation: astaRevealUp 0.5s var(--ease) both; }
       .st-0 { animation-delay: 0.12s; }
       .st-1 { animation-delay: 0.2s; }
@@ -110,7 +109,7 @@ import { ButtonComponent } from '../../shared/ui/button.component';
         .st, .otp-halo, .otp-tick { animation: none; }
       }
     `,
-  ],
+    ]
 })
 export class OtpVerifyComponent implements OnInit, OnDestroy {
   private readonly auth = inject(AuthService);

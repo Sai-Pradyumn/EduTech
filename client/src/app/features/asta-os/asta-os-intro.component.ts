@@ -8,11 +8,10 @@ import { AstaOsOrbComponent } from './asta-os-orb.component';
  * motion (collapses to a brief hold).
  */
 @Component({
-  selector: 'asta-os-intro',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [AstaOsOrbComponent],
-  template: `
+    selector: 'asta-os-intro',
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    imports: [AstaOsOrbComponent],
+    template: `
     <div class="intro" [class.out]="leaving()">
       <div class="rings" aria-hidden="true"><span></span><span></span><span></span></div>
       <div class="stage">
@@ -22,8 +21,8 @@ import { AstaOsOrbComponent } from './asta-os-orb.component';
       </div>
     </div>
   `,
-  styles: [
-    `
+    styles: [
+        `
       :host { position: fixed; inset: 0; z-index: 100; display: block; }
       .intro { position: absolute; inset: 0; display: grid; place-items: center; overflow: hidden;
         background: radial-gradient(ellipse at 50% 42%, var(--asta-bg-soft), var(--asta-bg) 70%);
@@ -54,7 +53,7 @@ import { AstaOsOrbComponent } from './asta-os-orb.component';
         .intro.out { opacity: 0; transition: opacity .2s; }
       }
     `,
-  ],
+    ]
 })
 export class AstaOsIntroComponent implements OnInit {
   private readonly destroyRef = inject(DestroyRef);

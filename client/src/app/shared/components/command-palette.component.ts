@@ -21,11 +21,10 @@ interface Command {
  * agent page; arrow keys to move, Enter to go. Mounted once in AppComponent.
  */
 @Component({
-  selector: 'asta-command-palette',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ModalComponent, SearchComponent],
-  template: `
+    selector: 'asta-command-palette',
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    imports: [ModalComponent, SearchComponent],
+    template: `
     <asta-modal [open]="open()" align="top" [maxWidth]="600" (closed)="close()">
       @if (open()) {
         <div class="cmdk">
@@ -56,8 +55,8 @@ interface Command {
       }
     </asta-modal>
   `,
-  styles: [
-    `
+    styles: [
+        `
       .cmdk { display: flex; flex-direction: column; gap: 12px; }
       .results { display: flex; flex-direction: column; gap: 2px; max-height: 46vh; overflow: auto; }
       .res {
@@ -93,7 +92,7 @@ interface Command {
         background: var(--paper-2);
       }
     `,
-  ],
+    ]
 })
 export class CommandPaletteComponent {
   private readonly router = inject(Router);

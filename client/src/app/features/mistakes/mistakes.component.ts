@@ -19,11 +19,10 @@ import {
 type Filter = 'all' | 'due' | MistakeStatus;
 
 @Component({
-  selector: 'asta-mistakes',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormsModule, ButtonComponent, CardComponent, EmptyStateComponent, SkeletonComponent],
-  template: `
+    selector: 'asta-mistakes',
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    imports: [FormsModule, ButtonComponent, CardComponent, EmptyStateComponent, SkeletonComponent],
+    template: `
     <header class="asta-page-command-header">
       <div class="min-w-0">
         <h1 class="text-[26px] leading-tight mb-2 grad-flow">Mistake OS</h1>
@@ -221,8 +220,8 @@ type Filter = 'all' | 'due' | MistakeStatus;
       }
     }
   `,
-  styles: [
-    `
+    styles: [
+        `
       :host { display: block; }
       .stat { text-align: center; }
       .stat .num { font-size: 26px; font-weight: 700; font-variant-numeric: tabular-nums; line-height: 1.1; }
@@ -284,7 +283,7 @@ type Filter = 'all' | 'due' | MistakeStatus;
       .rm-btn.no { color: var(--coral, #ffb454); }
       .rm-btn.no:not(:disabled):hover { border-color: var(--coral, #ffb454); }
     `,
-  ],
+    ]
 })
 export class MistakesComponent {
   private readonly api = inject(MistakeService);

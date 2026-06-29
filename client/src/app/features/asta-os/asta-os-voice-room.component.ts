@@ -10,12 +10,11 @@ import { AstaOsOrbComponent } from './asta-os-orb.component';
  * Closing returns to chat; nothing records audio until the learner taps the mic.
  */
 @Component({
-  selector: 'asta-os-voice-room',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  host: { class: 'asta-os-root' },
-  imports: [AstaOsOrbComponent],
-  template: `
+    selector: 'asta-os-voice-room',
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    host: { class: 'asta-os-root' },
+    imports: [AstaOsOrbComponent],
+    template: `
     <div class="room">
       <header class="bar">
         <span class="brand">Asta · Voice</span>
@@ -56,8 +55,8 @@ import { AstaOsOrbComponent } from './asta-os-orb.component';
       </footer>
     </div>
   `,
-  styles: [
-    `
+    styles: [
+        `
       :host { position: fixed; inset: 0; z-index: 85; display: block; }
       .room { position: absolute; inset: 0; display: flex; flex-direction: column; background: radial-gradient(ellipse at 50% 30%, var(--asta-bg-soft), var(--asta-bg)); }
       .bar { display: flex; align-items: center; justify-content: space-between; padding: 16px 22px; }
@@ -95,7 +94,7 @@ import { AstaOsOrbComponent } from './asta-os-orb.component';
       .toggle.on .dot { animation: astaPulse 2.2s ease-in-out infinite; }
       @media (prefers-reduced-motion: reduce) { .room, .stage, .controls, .you, .asta, .hint, .mic.live, .toggle.on .dot { animation: none; } }
     `,
-  ],
+    ]
 })
 export class AstaOsVoiceRoomComponent {
   protected readonly voice = inject(VoiceActivationService);

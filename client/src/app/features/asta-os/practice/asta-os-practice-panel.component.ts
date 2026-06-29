@@ -72,12 +72,11 @@ const FREE_FILENAME: Record<SupportedLanguage, string> = {
  * feeds the Proof Ledger; struggling feeds Mistake OS. Page under /app/os/practice.
  */
 @Component({
-  selector: 'asta-os-practice-panel',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  host: { class: 'asta-os-root' },
-  imports: [RouterLink, MarkdownPipe, AstaOsOrbComponent, AstaOsDropdownComponent, AstaCodeEditorComponent],
-  template: `
+    selector: 'asta-os-practice-panel',
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    host: { class: 'asta-os-root' },
+    imports: [RouterLink, MarkdownPipe, AstaOsOrbComponent, AstaOsDropdownComponent, AstaCodeEditorComponent],
+    template: `
     <div class="studio">
       <header class="bar">
         <a routerLink="/app/os" class="back" aria-label="Back to Asta">
@@ -295,8 +294,8 @@ const FREE_FILENAME: Record<SupportedLanguage, string> = {
       </div>
     </div>
   `,
-  styles: [
-    `
+    styles: [
+        `
       :host { display: block; min-height: 100%; background: var(--asta-bg); color: var(--asta-text); }
       .studio { max-width: 1320px; margin: 0 auto; padding: 16px; }
       .bar { display: flex; align-items: center; gap: 16px; margin-bottom: 16px; flex-wrap: wrap; }
@@ -422,7 +421,7 @@ const FREE_FILENAME: Record<SupportedLanguage, string> = {
         .prompt, .left .files, .left .term, .right .panel, .tests li, .trophy, .console, .t-cmd, .t-out, .runs li:first-child .r-dot { animation: none; }
       }
     `,
-  ],
+    ]
 })
 export class AstaOsPracticePanelComponent {
   private readonly practice = inject(PracticeService);

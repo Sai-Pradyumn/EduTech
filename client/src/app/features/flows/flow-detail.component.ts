@@ -23,11 +23,10 @@ const NODE_W = 184;
 const NODE_H = 70;
 
 @Component({
-  selector: 'asta-flow-detail',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ButtonComponent, CardComponent, EmptyStateComponent, SkeletonComponent],
-  template: `
+    selector: 'asta-flow-detail',
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    imports: [ButtonComponent, CardComponent, EmptyStateComponent, SkeletonComponent],
+    template: `
     <header class="asta-page-command-header">
       <div class="min-w-0">
         <h1 class="text-[24px] leading-tight mb-2 grad-flow truncate">{{ flow()?.title || 'Flow' }}</h1>
@@ -280,8 +279,8 @@ const NODE_H = 70;
       </div>
     }
   `,
-  styles: [
-    `
+    styles: [
+        `
       :host { display: block; }
       .view-tabs { display: inline-flex; gap: 2px; background: var(--paper-2); border: 1px solid var(--paper-3); border-radius: 999px; padding: 3px; }
       .view-tab {
@@ -346,7 +345,7 @@ const NODE_H = 70;
       @media (max-width: 1023.98px) { .inspector { position: static; max-height: none; } }
       @media (prefers-reduced-motion: reduce) { .node-box, .edge, .node { transition: none; } }
     `,
-  ],
+    ]
 })
 export class FlowDetailComponent {
   private readonly flowApi = inject(FlowService);

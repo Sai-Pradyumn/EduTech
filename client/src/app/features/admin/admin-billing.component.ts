@@ -18,11 +18,10 @@ interface AccountRow {
  * the account roster, derived from real subscription + transaction records. Read-only.
  */
 @Component({
-  selector: 'asta-admin-billing',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [DatePipe],
-  template: `
+    selector: 'asta-admin-billing',
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    imports: [DatePipe],
+    template: `
     <header class="asta-page-command-header">
       <div class="min-w-0">
         <h1 class="text-[26px] leading-tight mb-2 grad-flow">Billing overview</h1>
@@ -75,8 +74,8 @@ interface AccountRow {
       </div>
     </div>
   `,
-  styles: [
-    `
+    styles: [
+        `
       .skel{background:linear-gradient(90deg,var(--paper-2) 25%,var(--paper-3) 50%,var(--paper-2) 75%);background-size:200% 100%;animation:s 1.4s ease infinite}
       @keyframes s{0%{background-position:200% 0}100%{background-position:-200% 0}}
       .ab-fill{transform-origin:left;animation:abFill .8s var(--ease) .2s both;box-shadow:0 0 8px var(--asta-accent-glow)}
@@ -85,7 +84,7 @@ interface AccountRow {
       .ab-row:hover{background:color-mix(in oklch,var(--green) 4%,transparent)}
       @media (prefers-reduced-motion:reduce){.skel,.ab-fill{animation:none}}
     `,
-  ],
+    ]
 })
 export class AdminBillingComponent implements OnInit {
   private readonly billing = inject(BillingService);

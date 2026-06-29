@@ -11,11 +11,10 @@ import { printDocument, PrintSection } from '../../shared/util/print';
 import { downloadPdf } from '../../shared/util/pdf';
 
 @Component({
-  selector: 'asta-career-readiness',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ButtonComponent, CardComponent, EmptyStateComponent, RingComponent, SkeletonComponent],
-  template: `
+    selector: 'asta-career-readiness',
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    imports: [ButtonComponent, CardComponent, EmptyStateComponent, RingComponent, SkeletonComponent],
+    template: `
     <header class="asta-page-command-header">
       <div class="min-w-0">
         <h1 class="text-[26px] leading-tight mb-2 grad-flow">Career Readiness</h1>
@@ -151,7 +150,7 @@ import { downloadPdf } from '../../shared/util/pdf';
       }
     }
   `,
-  styles: [`
+    styles: [`
     :host { display: block; }
     .hero { border: 1px solid color-mix(in oklab, var(--green) 20%, var(--paper-3)); }
     .band { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; margin-top: 4px; }
@@ -193,7 +192,7 @@ import { downloadPdf } from '../../shared/util/pdf';
     .chk { font-size: 12.5px; color: var(--text-soft); display: flex; align-items: center; gap: 7px; }
     .chk.done { color: var(--green-deep); }
     .box { font-size: 13px; }
-  `],
+  `]
 })
 export class CareerReadinessComponent {
   private readonly api = inject(CareerReadinessService);

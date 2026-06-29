@@ -13,11 +13,10 @@ import { ToastService } from '../../core/services/toast.service';
 /** Ops Command Center (Phase 10 · M7). Role.Admin. System health, job ledger (retry failed)
  *  and the persisted error feed with request/error IDs. */
 @Component({
-  selector: 'asta-admin-ops',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [DatePipe],
-  template: `
+    selector: 'asta-admin-ops',
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    imports: [DatePipe],
+    template: `
     <header class="asta-page-command-header">
       <div class="min-w-0">
         <h1 class="text-[26px] leading-tight mb-2 grad-flow">Ops Command Center</h1>
@@ -113,7 +112,7 @@ import { ToastService } from '../../core/services/toast.service';
       </div>
     </div>
   `,
-  styles: [`
+    styles: [`
     .live-dot{display:inline-block;width:6px;height:6px;border-radius:999px;margin-right:5px;background:var(--text-mute)}
     .live-dot.up{background:var(--green);box-shadow:0 0 7px var(--green);animation:livePulse 1.8s ease-in-out infinite}
     @keyframes livePulse{0%,100%{opacity:1}50%{opacity:.45}}
@@ -123,7 +122,7 @@ import { ToastService } from '../../core/services/toast.service';
     /* Job + error rows respond on hover so dense ops lists stay scannable. */
     .card .space-y-1 > div{transition:background .15s var(--ease)}
     .card .space-y-1 > div:hover{background:color-mix(in oklch,var(--green) 4%,transparent)}
-  `],
+  `]
 })
 export class AdminOpsComponent implements OnInit {
   private readonly ops = inject(OpsService);

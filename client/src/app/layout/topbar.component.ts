@@ -12,11 +12,10 @@ import { AstaOsModeToggleComponent } from '../features/asta-os/asta-os-mode-togg
 
 /** Sticky topbar: page title + streak chip + notifications + Ask Asta (DESIGN_SPEC §5). */
 @Component({
-  selector: 'asta-topbar',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink, ThemeToggleComponent, DropdownComponent, TranslatePipe, AstaOsModeToggleComponent],
-  template: `
+    selector: 'asta-topbar',
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    imports: [RouterLink, ThemeToggleComponent, DropdownComponent, TranslatePipe, AstaOsModeToggleComponent],
+    template: `
     <!-- Glass surface: content scrolls UNDER the bar with a soft blur, giving the
          shell real depth instead of a flat opaque strip. -->
     <header
@@ -121,7 +120,7 @@ import { AstaOsModeToggleComponent } from '../features/asta-os/asta-os-mode-togg
         </div>
       </asta-dropdown>
     </header>
-  `,
+  `
 })
 export class TopbarComponent implements OnInit {
   @Input() title = '';

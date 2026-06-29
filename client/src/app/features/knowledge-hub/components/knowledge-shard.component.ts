@@ -13,11 +13,10 @@ import { KnowledgeDoc } from '../../../core/models';
  * parent (KnowledgeHubComponent) keeps owning the real handlers.
  */
 @Component({
-  selector: 'asta-knowledge-shard',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormsModule],
-  template: `
+    selector: 'asta-knowledge-shard',
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    imports: [FormsModule],
+    template: `
     @if (doc; as d) {
       <div class="shard" [class.shard-on]="selected" [attr.data-s]="d.status">
         @if (editing()) {
@@ -98,8 +97,8 @@ import { KnowledgeDoc } from '../../../core/models';
       </div>
     }
   `,
-  styles: [
-    `
+    styles: [
+        `
       .shard { border: 1px solid var(--paper-3); border-radius: 12px; padding: 10px 12px; transition: border-color .15s, background .15s; }
       .shard-on { border-color: var(--green); background: oklch(0.80 0.16 150 / .06); }
       .shard[data-s='failed'] { border-color: color-mix(in oklch, var(--coral) 45%, var(--paper-3)); }
@@ -129,7 +128,7 @@ import { KnowledgeDoc } from '../../../core/models';
       .arr { display: inline-block; transition: transform .15s; }
       .mini.retry:hover .arr { transform: translateX(3px); }
     `,
-  ],
+    ]
 })
 export class KnowledgeShardComponent {
   @Input({ required: true }) doc!: KnowledgeDoc;

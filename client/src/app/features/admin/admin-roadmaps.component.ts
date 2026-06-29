@@ -14,11 +14,10 @@ import { DonutChartComponent, ChartDatum } from '../../shared/charts';
  * and loading / empty / error states (Workstream E). Role.Admin.
  */
 @Component({
-  selector: 'asta-admin-roadmaps',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [DatePipe, FormsModule, SkeletonComponent, EmptyStateComponent, ProgressComponent, DonutChartComponent],
-  template: `
+    selector: 'asta-admin-roadmaps',
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    imports: [DatePipe, FormsModule, SkeletonComponent, EmptyStateComponent, ProgressComponent, DonutChartComponent],
+    template: `
    <div class="asta-observatory">
     <!-- Command header -->
     <header class="asta-page-command-header">
@@ -78,8 +77,8 @@ import { DonutChartComponent, ChartDatum } from '../../shared/charts';
     }
    </div>
   `,
-  styles: [
-    `
+    styles: [
+        `
       table { width: 100%; border-collapse: collapse; font-size: 13px; }
       th { text-align: left; font-family: var(--mono); font-size: 10px; text-transform: uppercase; letter-spacing: .04em; color: var(--text-mute); padding: 12px 14px; border-bottom: 1px solid var(--paper-3); white-space: nowrap; }
       td { padding: 11px 14px; border-bottom: 1px solid var(--paper-2); vertical-align: top; }
@@ -96,7 +95,7 @@ import { DonutChartComponent, ChartDatum } from '../../shared/charts';
       .lbl { font-size: 10px; font-family: var(--mono); text-transform: uppercase; color: var(--text-mute); }
       .retry { border-radius: 100px; padding: 9px 18px; font-weight: 600; background: var(--accent); color: var(--ink); min-height: 40px; }
     `,
-  ],
+    ]
 })
 export class AdminRoadmapsComponent implements OnInit {
   private readonly api = inject(AdminService);

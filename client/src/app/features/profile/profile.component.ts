@@ -49,11 +49,10 @@ type Form = Pick<
  * loading / empty / error / saving states are honest (Workstream E).
  */
 @Component({
-  selector: 'asta-profile',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormsModule, DatePipe, FieldComponent, ChipInputComponent, SkeletonComponent, EmptyStateComponent, MagneticDirective],
-  template: `
+    selector: 'asta-profile',
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    imports: [FormsModule, DatePipe, FieldComponent, ChipInputComponent, SkeletonComponent, EmptyStateComponent, MagneticDirective],
+    template: `
     @if (loading()) {
       <div class="mx-auto" style="max-width:var(--maxw-app)">
         @for (n of [1, 2, 3]; track n) {
@@ -251,8 +250,8 @@ type Form = Pick<
       }
     }
   `,
-  styles: [
-    `
+    styles: [
+        `
       .sec-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
       .pf-avatar {
         display: grid; place-items: center; width: 46px; height: 46px; border-radius: 14px;
@@ -282,7 +281,7 @@ type Form = Pick<
       .btn-primary:active:not(:disabled) { transform: scale(.97); }
       .btn-primary:disabled { opacity: .55; cursor: not-allowed; }
     `,
-  ],
+    ]
 })
 export class ProfileComponent implements OnInit {
   private readonly svc = inject(StudentProfileService);

@@ -11,11 +11,10 @@ import { EmptyStateComponent } from '../../shared/ui/empty-state.component';
 type Tab = 'overview' | 'members' | 'settings';
 
 @Component({
-  selector: 'asta-org-admin',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormsModule, ButtonComponent, CardComponent, EmptyStateComponent],
-  template: `
+    selector: 'asta-org-admin',
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    imports: [FormsModule, ButtonComponent, CardComponent, EmptyStateComponent],
+    template: `
     <!-- Command header -->
     <header class="asta-page-command-header">
       <div class="min-w-0">
@@ -130,15 +129,15 @@ type Tab = 'overview' | 'members' | 'settings';
       }
     }
   `,
-  styles: [
-    `
+    styles: [
+        `
       .tab { font-size: 13px; text-transform: capitalize; padding: 6px 14px; border-radius: 100px; border: 1px solid var(--paper-3); background: var(--paper); color: var(--text-soft); }
       .tab-on { background: var(--ink); color: var(--paper); border-color: var(--ink); }
       .row { display: flex; align-items: center; justify-content: space-between; gap: 10px; border: 1px solid var(--paper-3); border-radius: 12px; padding: 10px 14px; }
       .rm { width: 26px; height: 26px; border-radius: 8px; border: 1px solid var(--paper-3); color: var(--coral-deep); }
       .rm:hover { border-color: var(--coral); }
     `,
-  ],
+    ]
 })
 export class OrgAdminComponent implements OnInit {
   readonly ctx = inject(OrgContextService);

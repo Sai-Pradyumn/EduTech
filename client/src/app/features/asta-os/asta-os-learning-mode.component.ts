@@ -11,18 +11,17 @@ const BRAIN_ICON = 'M12 2a5 5 0 0 0-5 5c0 1.5.5 2.5 1.5 3.5M12 2a5 5 0 0 1 5 5c0
  * handing over answers. Uses the shared Asta OS dropdown.
  */
 @Component({
-  selector: 'asta-os-learning-mode',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [AstaOsDropdownComponent],
-  template: `
+    selector: 'asta-os-learning-mode',
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    imports: [AstaOsDropdownComponent],
+    template: `
     <asta-os-dropdown
       [options]="options()"
       [value]="active()"
       ariaLabel="How Asta teaches this session"
       (valueChange)="change.emit($any($event))"
     />
-  `,
+  `
 })
 export class AstaOsLearningModeComponent {
   readonly active = input.required<AstaLearningMode>();

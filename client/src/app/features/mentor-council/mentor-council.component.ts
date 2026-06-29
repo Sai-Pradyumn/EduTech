@@ -8,11 +8,10 @@ import { ToastService } from '../../core/services/toast.service';
 import { CouncilVerdict, MentorCouncilService } from '../../core/services/mentor-council.service';
 
 @Component({
-  selector: 'asta-mentor-council',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ButtonComponent, CardComponent, EmptyStateComponent, SkeletonComponent],
-  template: `
+    selector: 'asta-mentor-council',
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    imports: [ButtonComponent, CardComponent, EmptyStateComponent, SkeletonComponent],
+    template: `
     <header class="asta-page-command-header">
       <div class="min-w-0">
         <h1 class="text-[26px] leading-tight mb-2 grad-flow">AI Mentor Council</h1>
@@ -64,8 +63,8 @@ import { CouncilVerdict, MentorCouncilService } from '../../core/services/mentor
       }
     }
   `,
-  styles: [
-    `
+    styles: [
+        `
       :host { display: block; }
       /* The verdict is the moment — accent ring + soft glow. */
       .verdict { border: 1px solid color-mix(in oklab, var(--green) 40%, var(--paper-3)); box-shadow: 0 0 24px var(--asta-accent-glow); }
@@ -81,7 +80,7 @@ import { CouncilVerdict, MentorCouncilService } from '../../core/services/mentor
       .m-go { margin-top: 8px; font-size: 12px; padding: 4px 10px; border-radius: 999px; border: 1px solid var(--paper-3); background: transparent; color: var(--text-soft); cursor: pointer; }
       .m-go:hover { border-color: var(--green); color: var(--text); }
     `,
-  ],
+    ]
 })
 export class MentorCouncilComponent {
   private readonly api = inject(MentorCouncilService);

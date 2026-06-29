@@ -28,14 +28,13 @@ import { MistakeService } from '../../core/services/mistake.service';
  * learning river (lower). Data-dense and useful above the fold; NO marketing hero.
  */
 @Component({
-  selector: 'asta-dashboard',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [
-    RouterLink, ButtonComponent, CardComponent, EmptyStateComponent, SkeletonComponent,
-    RingComponent, ProgressComponent, AstaLearningRiverComponent, MagneticDirective, CountDirective,
-  ],
-  template: `
+    selector: 'asta-dashboard',
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    imports: [
+        RouterLink, ButtonComponent, CardComponent, EmptyStateComponent, SkeletonComponent,
+        RingComponent, ProgressComponent, AstaLearningRiverComponent, MagneticDirective, CountDirective,
+    ],
+    template: `
     @if (loading()) {
       <div class="flex flex-wrap items-center justify-between gap-4 mb-6">
         <asta-skeleton h="34px" w="240px" />
@@ -287,8 +286,8 @@ import { MistakeService } from '../../core/services/mistake.service';
       }
     }
   `,
-  styles: [
-    `
+    styles: [
+        `
       /* Reserves the learning-river's footprint while it's deferred (no layout shift). */
       .river-ph { height: 300px; border-radius: 12px; background: color-mix(in oklch, var(--paper-3) 40%, transparent); }
       @media (max-width: 720px) { .river-ph { height: 360px; } }
@@ -350,7 +349,7 @@ import { MistakeService } from '../../core/services/mistake.service';
       .mark-cur:active { transform: scale(0.96); }
       .mark-cur:disabled { opacity: 0.5; cursor: default; }
     `,
-  ],
+    ]
 })
 export class DashboardComponent {
   private readonly auth = inject(AuthService);

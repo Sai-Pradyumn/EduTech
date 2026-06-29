@@ -23,12 +23,11 @@ interface CellState {
  * concepts. Page under /app/os/notebook.
  */
 @Component({
-  selector: 'asta-os-notebook',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  host: { class: 'asta-os-root' },
-  imports: [RouterLink, MarkdownPipe, AstaOsOrbComponent, AstaCodeEditorComponent],
-  template: `
+    selector: 'asta-os-notebook',
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    host: { class: 'asta-os-root' },
+    imports: [RouterLink, MarkdownPipe, AstaOsOrbComponent, AstaCodeEditorComponent],
+    template: `
     <div class="nb">
       <header class="bar">
         <a routerLink="/app/os" class="back" aria-label="Back to Asta">
@@ -97,8 +96,8 @@ interface CellState {
       </div>
     </div>
   `,
-  styles: [
-    `
+    styles: [
+        `
       :host { display: block; min-height: 100%; background: var(--asta-bg); color: var(--asta-text); }
       .nb { max-width: 1320px; margin: 0 auto; padding: 16px; }
       .bar { display: flex; align-items: center; gap: 16px; margin-bottom: 16px; flex-wrap: wrap; }
@@ -166,7 +165,7 @@ interface CellState {
       .btn.run:not(:disabled):hover { box-shadow: 0 0 16px color-mix(in srgb, var(--asta-green) 45%, transparent); }
       @media (prefers-reduced-motion: reduce) { .dataset, .md, .cell, .asta, .chart circle, .out { animation: none; } }
     `,
-  ],
+    ]
 })
 export class AstaOsNotebookComponent {
   private readonly practice = inject(PracticeService);

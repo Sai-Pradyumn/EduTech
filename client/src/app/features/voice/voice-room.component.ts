@@ -20,11 +20,10 @@ import {
 type VState = 'idle' | 'listening' | 'thinking' | 'speaking';
 
 @Component({
-  selector: 'asta-voice-room',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormsModule, ButtonComponent, CardComponent, EmptyStateComponent, SkeletonComponent],
-  template: `
+    selector: 'asta-voice-room',
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    imports: [FormsModule, ButtonComponent, CardComponent, EmptyStateComponent, SkeletonComponent],
+    template: `
     <header class="asta-page-command-header">
       <div class="min-w-0">
         <h1 class="text-[24px] leading-tight mb-2 grad-flow truncate">{{ session() ? session()!.title : 'Voice Room' }}</h1>
@@ -193,8 +192,8 @@ type VState = 'idle' | 'listening' | 'thinking' | 'speaking';
       }
     }
   `,
-  styles: [
-    `
+    styles: [
+        `
       :host { display: block; }
       .mode-card { display: flex; flex-direction: column; align-items: flex-start; gap: 3px; padding: 12px 14px; border-radius: 14px; border: 1px solid var(--paper-3); background: var(--paper-2); cursor: pointer; text-align: left; transition: border-color .2s, transform .2s; }
       .mode-card:hover { border-color: var(--green); transform: translateY(-2px); }
@@ -238,7 +237,7 @@ type VState = 'idle' | 'listening' | 'thinking' | 'speaking';
       .rename-inp:focus { outline: none; }
       .notes { font-size: 12px; white-space: pre-wrap; color: var(--text-soft); max-height: 240px; overflow: auto; margin: 0; }
     `,
-  ],
+    ]
 })
 export class VoiceRoomComponent implements OnDestroy {
   private readonly api = inject(VoiceSessionService);

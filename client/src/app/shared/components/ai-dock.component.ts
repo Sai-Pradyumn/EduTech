@@ -19,11 +19,10 @@ interface DockMsg {
  * Mounted once in AppComponent; only renders for signed-in users.
  */
 @Component({
-  selector: 'asta-ai-dock',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [MarkdownPipe, ComposerComponent],
-  template: `
+    selector: 'asta-ai-dock',
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    imports: [MarkdownPipe, ComposerComponent],
+    template: `
     @if (auth.user()) {
       <!-- Launcher -->
       @if (!open()) {
@@ -81,8 +80,8 @@ interface DockMsg {
       }
     }
   `,
-  styles: [
-    `
+    styles: [
+        `
       /* Sits above the mobile bottom-nav (which is hidden ≥lg). The bottom offset
          clears the ~62px bar + its safe-area inset on phones/tablets, then drops
          back to a tight 22px on desktop where no bottom-nav exists. */
@@ -166,7 +165,7 @@ interface DockMsg {
       .foot { padding: 10px 12px 12px; border-top: 1px solid var(--paper-3); }
       @media (prefers-reduced-motion: reduce) { .orb, .panel, .launcher, .starter, .msg { animation: none; } .starter:hover { transform: none; } }
     `,
-  ],
+    ]
 })
 export class AiDockComponent {
   readonly auth = inject(AuthService);

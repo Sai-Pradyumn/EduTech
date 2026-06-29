@@ -3,18 +3,16 @@ import { forkJoin } from 'rxjs';
 import { FormsModule } from '@angular/forms';
 import { ButtonComponent } from '../../shared/ui/button.component';
 import { CardComponent } from '../../shared/ui/card.component';
-import { EmptyStateComponent } from '../../shared/ui/empty-state.component';
 import { RingComponent } from '../../shared/ui/ring.component';
 import { SkeletonComponent } from '../../shared/ui/skeleton.component';
 import { ToastService } from '../../core/services/toast.service';
 import { Application, ApplicationService, JdMatch } from '../../core/services/resume.service';
 
 @Component({
-  selector: 'asta-applications',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormsModule, ButtonComponent, CardComponent, EmptyStateComponent, RingComponent, SkeletonComponent],
-  template: `
+    selector: 'asta-applications',
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    imports: [FormsModule, ButtonComponent, CardComponent, RingComponent, SkeletonComponent],
+    template: `
     <header class="asta-page-command-header">
       <div class="min-w-0">
         <h1 class="text-[26px] leading-tight mb-2 grad-flow">Applications</h1>
@@ -151,7 +149,7 @@ import { Application, ApplicationService, JdMatch } from '../../core/services/re
       </asta-card>
     </div>
   `,
-  styles: [`
+    styles: [`
     :host { display: block; }
     .inp { width: 100%; padding: 9px 12px; border-radius: 10px; border: 1px solid var(--paper-3); background: var(--paper-2); color: var(--text); font-size: 13.5px; font-family: inherit; }
     .result { border-top: 1px solid var(--paper-3); padding-top: 14px; }
@@ -205,7 +203,7 @@ import { Application, ApplicationService, JdMatch } from '../../core/services/re
     .sub { margin-top: 10px; }
     .dlbl { font-size: 10px; text-transform: uppercase; letter-spacing: .05em; color: var(--text-mute); font-weight: 700; }
     .note { width: 100%; margin-top: 4px; padding: 7px 10px; border-radius: 9px; border: 1px solid var(--paper-3); background: var(--paper); color: var(--text); font-size: 12.5px; font-family: inherit; resize: vertical; }
-  `],
+  `]
 })
 export class ApplicationsComponent {
   private readonly api = inject(ApplicationService);

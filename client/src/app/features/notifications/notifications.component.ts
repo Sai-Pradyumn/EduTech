@@ -12,11 +12,10 @@ import { NotificationService, NotificationView } from '../../core/services/notif
  * mark-read / mark-all-read. Read-only data via NotificationService.
  */
 @Component({
-  selector: 'asta-notifications',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ButtonComponent, CardComponent, EmptyStateComponent, SkeletonComponent],
-  template: `
+    selector: 'asta-notifications',
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    imports: [ButtonComponent, CardComponent, EmptyStateComponent, SkeletonComponent],
+    template: `
     <header class="asta-page-command-header">
       <div class="min-w-0">
         <h1 class="text-[26px] leading-tight mb-2 grad-flow">Notifications</h1>
@@ -70,7 +69,7 @@ import { NotificationService, NotificationView } from '../../core/services/notif
       }
     }
   `,
-  styles: [`
+    styles: [`
     :host { display: block; }
     .nt-filters { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
     .nt-chip { font-size: 12px; padding: 5px 11px; border-radius: 999px; border: 1px solid var(--paper-3); background: var(--paper-2); color: var(--text-mute); cursor: pointer; transition: color .15s, border-color .15s, background .15s; }
@@ -97,7 +96,7 @@ import { NotificationService, NotificationView } from '../../core/services/notif
     .nt-open { display: inline-block; font-size: 11.5px; font-weight: 600; color: var(--green-deep); margin-top: 3px; }
     .nt-time { font-size: 11px; font-family: var(--mono); color: var(--text-mute); flex-shrink: 0; }
     .nt-count { font-size: 11px; font-family: var(--mono); color: var(--text-mute); margin-top: 10px; }
-  `],
+  `]
 })
 export class NotificationsComponent implements OnInit {
   private readonly notify = inject(NotificationService);

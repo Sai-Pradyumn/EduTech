@@ -21,14 +21,13 @@ const COLUMNS: { key: TaskStatus; label: string }[] = [
 const DIFFS: Difficulty[] = ['beginner', 'intermediate', 'advanced'];
 
 @Component({
-  selector: 'asta-project-studio',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [
-    FormsModule, ButtonComponent, CardComponent, RingComponent, ProgressComponent,
-    MagneticDirective, CountDirective,
-  ],
-  template: `
+    selector: 'asta-project-studio',
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    imports: [
+        FormsModule, ButtonComponent, CardComponent, RingComponent, ProgressComponent,
+        MagneticDirective, CountDirective,
+    ],
+    template: `
     @switch (view()) {
       @case ('home') {
         <!-- Compact command header -->
@@ -320,8 +319,8 @@ const DIFFS: Difficulty[] = ['beginner', 'intermediate', 'advanced'];
       }
     }
   `,
-  styles: [
-    `
+    styles: [
+        `
       .chip { font-family: var(--mono); font-size: 11px; text-transform: uppercase; padding: 5px 11px; border-radius: 100px; border: 1px solid color-mix(in oklch, var(--paper-3) 70%, transparent); background: color-mix(in oklch, var(--paper-2) 55%, transparent); color: var(--text-soft); cursor: pointer; transition: transform .15s var(--ease-spring), border-color .15s var(--ease), color .15s var(--ease); }
       .chip:hover { color: var(--text); border-color: color-mix(in oklch, var(--green) 38%, transparent); transform: translateY(-1px); }
       .chip-on { background: linear-gradient(135deg, var(--green), var(--green-deep)); color: #06100a; border-color: transparent; box-shadow: 0 4px 12px var(--asta-accent-glow); }
@@ -367,7 +366,7 @@ const DIFFS: Difficulty[] = ['beginner', 'intermediate', 'advanced'];
       .sev[data-s='high'] { background: oklch(0.72 0.17 28 / .16); color: oklch(0.55 0.18 28); }
       .sev[data-s='medium'] { background: oklch(0.82 0.14 70 / .18); color: oklch(0.52 0.12 70); }
     `,
-  ],
+    ]
 })
 export class ProjectStudioComponent implements OnInit {
   private readonly api = inject(ProjectService);

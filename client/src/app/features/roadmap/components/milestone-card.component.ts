@@ -3,11 +3,10 @@ import { RoadmapMilestone } from '../../../core/models';
 import { CardComponent } from '../../../shared/ui/card.component';
 
 @Component({
-  selector: 'asta-milestone-card',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CardComponent],
-  template: `
+    selector: 'asta-milestone-card',
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    imports: [CardComponent],
+    template: `
     <asta-card [accentVar]="reached ? 'var(--green)' : 'var(--paper-3)'">
       <div class="flex items-center justify-between mb-1.5">
         <p class="font-mono text-[11px] uppercase tracking-wider text-txt-mute">Week {{ milestone.targetWeek }}</p>
@@ -24,8 +23,8 @@ import { CardComponent } from '../../../shared/ui/card.component';
       </ul>
     </asta-card>
   `,
-  styles: [
-    `
+    styles: [
+        `
       :host { display: block; }
       /* Reached milestones earn a soft green glow; criteria settle in one by one. */
       :host(.reached) { display: block; filter: drop-shadow(0 0 16px color-mix(in oklch, var(--green) 14%, transparent)); }
@@ -36,8 +35,8 @@ import { CardComponent } from '../../../shared/ui/card.component';
       .ms-crit li:nth-child(5) { animation-delay: 0.2s; }
       @media (prefers-reduced-motion: reduce) { .ms-crit li { animation: none; } }
     `,
-  ],
-  host: { '[class.reached]': 'reached' },
+    ],
+    host: { '[class.reached]': 'reached' }
 })
 export class MilestoneCardComponent {
   @Input({ required: true }) milestone!: RoadmapMilestone;

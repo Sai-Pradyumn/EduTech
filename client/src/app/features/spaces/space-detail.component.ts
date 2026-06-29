@@ -11,11 +11,10 @@ import { TextToSpeechService } from '../../core/services/text-to-speech.service'
 import { SpaceService, StudySpace } from '../../core/services/space.service';
 
 @Component({
-  selector: 'asta-space-detail',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormsModule, ButtonComponent, CardComponent, EmptyStateComponent, SkeletonComponent, MarkdownPipe],
-  template: `
+    selector: 'asta-space-detail',
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    imports: [FormsModule, ButtonComponent, CardComponent, EmptyStateComponent, SkeletonComponent, MarkdownPipe],
+    template: `
     <header class="asta-page-command-header">
       <div class="min-w-0">
         <h1 class="text-[24px] leading-tight mb-2 grad-flow truncate">{{ space()?.title || 'Space' }}</h1>
@@ -111,8 +110,8 @@ import { SpaceService, StudySpace } from '../../core/services/space.service';
       </div>
     }
   `,
-  styles: [
-    `
+    styles: [
+        `
       :host { display: block; }
       .sp-input { width: 100%; background: var(--ink-2, var(--paper-2)); border: 1px solid var(--paper-3); border-radius: 12px; padding: 9px 12px; color: var(--text); font-size: 14px; font-family: inherit; }
       .sp-input:focus { outline: none; border-color: var(--green); }
@@ -128,7 +127,7 @@ import { SpaceService, StudySpace } from '../../core/services/space.service';
       .link-chip { font-size: 12px; padding: 5px 11px; border-radius: 999px; border: 1px solid var(--paper-3); background: var(--paper-2); color: var(--text-soft); cursor: pointer; transition: border-color .15s, color .15s; }
       .link-chip:hover { border-color: var(--green); color: var(--green-deep); }
     `,
-  ],
+    ]
 })
 export class SpaceDetailComponent {
   private readonly api = inject(SpaceService);

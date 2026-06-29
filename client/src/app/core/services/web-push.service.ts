@@ -57,11 +57,15 @@ export class WebPushService {
     return true;
   }
 
-  private urlBase64ToUint8Array(base64: string): Uint8Array {
+  // Returns an ArrayBuffer-backed view explicitly: TS 5.9 / lib.dom made `Uint8Array`
+  // generic over its buffer, and PushManager's `applicationServerKey` requires the
+  // backing buffer to be a real ArrayBuffer (not the widened ArrayBufferLike).
+  private urlBase64ToUint8Array(base64: string): Uint8Array<ArrayBuffer> {
     const padding = '='.repeat((4 - (base64.length % 4)) % 4);
     const b64 = (base64 + padding).replace(/-/g, '+').replace(/_/g, '/');
     const raw = atob(b64);
-    const out = new Uint8Array(raw.length);
+    const buffer = new ArrayBuffer(raw.length);
+    const out = new Uint8Array(buffer);
     for (let i = 0; i < raw.length; i++) out[i] = raw.charCodeAt(i);
     return out;
   }

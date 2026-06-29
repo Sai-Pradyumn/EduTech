@@ -14,11 +14,10 @@ type Tab = 'students' | 'weak-topics' | 'ai-usage';
  * AI-usage reports built on the Learning-Intelligence engine, each exportable to CSV.
  */
 @Component({
-  selector: 'asta-reports',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [DatePipe, FormsModule, BarChartComponent, DonutChartComponent, CountDirective],
-  template: `
+    selector: 'asta-reports',
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    imports: [DatePipe, FormsModule, BarChartComponent, DonutChartComponent, CountDirective],
+    template: `
     <!-- Command header -->
     <header class="asta-page-command-header">
       <div class="min-w-0">
@@ -152,8 +151,8 @@ type Tab = 'students' | 'weak-topics' | 'ai-usage';
     }
     }
   `,
-  styles: [
-    `
+    styles: [
+        `
       .chip { font-family: var(--mono); font-size: 11px; text-transform: uppercase; padding: 5px 12px; border-radius: 100px; border: 1px solid var(--paper-3); background: var(--paper); color: var(--text-soft); }
       .chip-on { background: var(--ink); color: var(--paper); border-color: var(--ink); }
       .btn-go { border-radius: 100px; padding: 7px 15px; font-size: 13px; font-weight: 600; color: var(--ink); background: var(--green); }
@@ -187,7 +186,7 @@ type Tab = 'students' | 'weak-topics' | 'ai-usage';
       @keyframes skel-shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
       @media (prefers-reduced-motion: reduce) { .skel { animation: none; } }
     `,
-  ],
+    ]
 })
 export class ReportsComponent implements OnInit {
   private readonly api = inject(ReportService);

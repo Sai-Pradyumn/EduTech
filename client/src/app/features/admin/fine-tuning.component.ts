@@ -10,11 +10,10 @@ import { FineTuningJob } from '../../core/models';
  * Role.Admin; gated by ENABLE_FINE_TUNING (notice shown when disabled). Polls running jobs.
  */
 @Component({
-  selector: 'asta-fine-tuning',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [DatePipe, FormsModule],
-  template: `
+    selector: 'asta-fine-tuning',
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    imports: [DatePipe, FormsModule],
+    template: `
    <div class="asta-observatory">
     <!-- Command header -->
     <header class="asta-page-command-header">
@@ -75,14 +74,14 @@ import { FineTuningJob } from '../../core/models';
     }
    </div>
   `,
-  styles: [
-    `
+    styles: [
+        `
       .btn-go { border-radius: 100px; padding: 9px 16px; font-size: 13px; font-weight: 600; color: var(--ink); background: var(--green); }
       .btn-go:disabled { opacity: .6; }
       .bar { height: 8px; border-radius: 100px; background: var(--paper-3); overflow: hidden; }
       .bar-fill { height: 100%; border-radius: 100px; transition: width .6s var(--ease); }
     `,
-  ],
+    ]
 })
 export class FineTuningComponent implements OnInit, OnDestroy {
   private readonly api = inject(FineTuningApiService);

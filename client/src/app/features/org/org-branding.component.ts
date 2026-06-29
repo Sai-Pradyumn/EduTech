@@ -6,11 +6,10 @@ import { ToastService } from '../../core/services/toast.service';
 /** Org white-label branding (Phase 10 · M15). Subtle, token-based — applies to certificates
  *  and public verification pages, never the in-app shell. */
 @Component({
-  selector: 'asta-org-branding',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormsModule],
-  template: `
+    selector: 'asta-org-branding',
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    imports: [FormsModule],
+    template: `
     <header class="asta-page-command-header max-w-app mx-auto">
       <div class="min-w-0">
         <h1 class="text-[26px] leading-tight mb-2 grad-flow">Branding</h1>
@@ -60,14 +59,14 @@ import { ToastService } from '../../core/services/toast.service';
       </div>
     </div>
   `,
-  styles: [`
+    styles: [`
     .asta-input{width:100%;margin-top:4px;padding:8px 12px;border-radius:10px;border:1px solid var(--paper-3);background:var(--paper);font-size:14px}
     .asta-input:focus{outline:none;border-color:var(--green)}
     /* The live preview breathes slightly when settings change focus — it IS the product here. */
     .ob-preview{transition:transform .25s var(--ease),box-shadow .25s var(--ease)}
     .ob-preview:hover{transform:translateY(-2px) scale(1.01);box-shadow:var(--shadow-md)}
     @media (prefers-reduced-motion:reduce){.ob-preview:hover{transform:none}}
-  `],
+  `]
 })
 export class OrgBrandingComponent implements OnInit {
   private readonly enterprise = inject(EnterpriseService);

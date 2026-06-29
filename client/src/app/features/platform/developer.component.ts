@@ -13,11 +13,10 @@ import { ToastService } from '../../core/services/toast.service';
 /** Developer platform (Phase 10 · M11). Org API keys (shown once) + webhooks with test
  *  delivery + delivery log. OrgManage. */
 @Component({
-  selector: 'asta-developer',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [DatePipe, FormsModule],
-  template: `
+    selector: 'asta-developer',
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    imports: [DatePipe, FormsModule],
+    template: `
     <header class="asta-page-command-header max-w-app mx-auto">
       <div class="min-w-0">
         <h1 class="text-[26px] leading-tight mb-2 grad-flow">Developer</h1>
@@ -100,7 +99,7 @@ import { ToastService } from '../../core/services/toast.service';
       </div>
     </div>
   `,
-  styles: [`
+    styles: [`
     .asta-input{padding:8px 12px;border-radius:10px;border:1px solid var(--paper-3);background:var(--paper);font-size:14px}
     .asta-input:focus{outline:none;border-color:var(--green)}
     .scope-tag{display:inline-block;margin-left:5px;font-family:var(--mono);font-size:10px;padding:1px 7px;border-radius:999px;color:var(--green-deep);background:color-mix(in oklch,var(--green) 13%,transparent)}
@@ -110,7 +109,7 @@ import { ToastService } from '../../core/services/toast.service';
     /* The one-time key reveal is THE moment on this screen — pop + glow pulse. */
     .dev-newkey{animation:astaSoftPop .4s var(--ease-spring) both;box-shadow:0 0 0 0 var(--asta-accent-glow);}
     @media (prefers-reduced-motion:reduce){.dev-newkey{animation:none}}
-  `],
+  `]
 })
 export class DeveloperComponent implements OnInit {
   private readonly dev = inject(DeveloperService);

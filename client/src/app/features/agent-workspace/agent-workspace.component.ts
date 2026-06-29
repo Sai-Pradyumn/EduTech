@@ -39,11 +39,10 @@ const DEFAULT: WorkspaceConfig = { agentType: 'tutor', title: 'AI Agent', subtit
  * chat surface and the shared visual-block renderer + activity feed.
  */
 @Component({
-  selector: 'asta-agent-workspace',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormsModule, RichContentComponent, CardComponent, AiAgentActivityFeedComponent, VisualBlockRendererComponent, ComposerComponent],
-  template: `
+    selector: 'asta-agent-workspace',
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    imports: [FormsModule, RichContentComponent, CardComponent, AiAgentActivityFeedComponent, VisualBlockRendererComponent, ComposerComponent],
+    template: `
     <!-- Command header -->
     <header class="asta-page-command-header">
       <div class="min-w-0">
@@ -168,8 +167,8 @@ const DEFAULT: WorkspaceConfig = { agentType: 'tutor', title: 'AI Agent', subtit
       </div>
     </div>
   `,
-  styles: [
-    `
+    styles: [
+        `
       /* Agent orb — calm conic gradient; spins + glows while the agent thinks. */
       .tutor-orb, .msg-orb {
         border-radius: 999px;
@@ -223,7 +222,7 @@ const DEFAULT: WorkspaceConfig = { agentType: 'tutor', title: 'AI Agent', subtit
       .prose-asta :is(pre) { background: var(--ink); color: var(--on-ink); padding: 12px 14px; border-radius: 12px; overflow:auto; }
       .prose-asta :is(strong) { font-weight: 600; }
     `,
-  ],
+    ]
 })
 export class AgentWorkspaceComponent implements OnInit {
   private readonly agent = inject(AgentService);

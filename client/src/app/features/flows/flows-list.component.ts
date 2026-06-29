@@ -15,11 +15,10 @@ interface FlowIdea {
 }
 
 @Component({
-  selector: 'asta-flows-list',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormsModule, ButtonComponent, CardComponent, EmptyStateComponent, SkeletonComponent],
-  template: `
+    selector: 'asta-flows-list',
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    imports: [FormsModule, ButtonComponent, CardComponent, EmptyStateComponent, SkeletonComponent],
+    template: `
     <header class="asta-page-command-header">
       <div class="min-w-0">
         <h1 class="text-[26px] leading-tight mb-2 grad-flow">Flow Studio</h1>
@@ -164,8 +163,8 @@ interface FlowIdea {
       }
     }
   `,
-  styles: [
-    `
+    styles: [
+        `
       :host { display: block; }
       .flow-input {
         width: 100%;
@@ -232,7 +231,7 @@ interface FlowIdea {
       .fl-chip:hover { border-color: var(--green); }
       .fl-chip.on { color: var(--green-deep); border-color: color-mix(in oklab, var(--green) 50%, var(--paper-3)); background: color-mix(in oklab, var(--green) 12%, transparent); }
     `,
-  ],
+    ]
 })
 export class FlowsListComponent {
   private readonly flowApi = inject(FlowService);

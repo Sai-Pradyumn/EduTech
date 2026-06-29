@@ -13,11 +13,10 @@ import { ProgressComponent } from '../../shared/ui/progress.component';
  * for the platform operator. Read-only; Role.Admin. Asta Noir Cockpit visual pass.
  */
 @Component({
-  selector: 'asta-admin-analytics',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [SkeletonComponent, DonutChartComponent, CountDirective, CardComponent, ProgressComponent],
-  template: `
+    selector: 'asta-admin-analytics',
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    imports: [SkeletonComponent, DonutChartComponent, CountDirective, CardComponent, ProgressComponent],
+    template: `
    <div class="asta-observatory">
     <!-- Compact command header -->
     <header class="asta-page-command-header">
@@ -131,8 +130,8 @@ import { ProgressComponent } from '../../shared/ui/progress.component';
     }
    </div>
   `,
-  styles: [
-    `
+    styles: [
+        `
       .num { font-family: var(--display); font-size: 28px; line-height: 1; display: block; }
       .lbl { display: block; margin-top: 4px; font-size: 10px; font-family: var(--mono); text-transform: uppercase; letter-spacing: 0.04em; color: var(--text-mute); }
 
@@ -169,7 +168,7 @@ import { ProgressComponent } from '../../shared/ui/progress.component';
       .prov .pname { font-weight: 600; font-size: 12.5px; text-transform: capitalize; }
       .prov .pstate { margin-left: auto; font-family: var(--mono); font-size: 10px; color: var(--text-mute); }
     `,
-  ],
+    ]
 })
 export class AdminAnalyticsComponent implements OnInit {
   private readonly api = inject(AdminService);

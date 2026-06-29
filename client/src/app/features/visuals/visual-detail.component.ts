@@ -10,11 +10,10 @@ import { VISUAL_TYPE_META, Visual, VisualService, VisualType } from '../../core/
 import { VisualRendererComponent } from './visual-renderer.component';
 
 @Component({
-  selector: 'asta-visual-detail',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormsModule, ButtonComponent, CardComponent, EmptyStateComponent, SkeletonComponent, VisualRendererComponent],
-  template: `
+    selector: 'asta-visual-detail',
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    imports: [FormsModule, ButtonComponent, CardComponent, EmptyStateComponent, SkeletonComponent, VisualRendererComponent],
+    template: `
     <header class="asta-page-command-header">
       <div class="min-w-0">
         <h1 class="text-[24px] leading-tight mb-2 grad-flow truncate">{{ visual()?.title || 'Visual' }}</h1>
@@ -81,8 +80,8 @@ import { VisualRendererComponent } from './visual-renderer.component';
       </div>
     }
   `,
-  styles: [
-    `
+    styles: [
+        `
       :host { display: block; }
       .meta-pill { padding: 2px 8px; border-radius: 999px; border: 1px solid var(--paper-3); background: color-mix(in oklab, var(--paper-2) 70%, transparent); }
       .edit-link { font-size: 11px; color: var(--peri, #8aa6ff); background: transparent; border: none; cursor: pointer; }
@@ -90,7 +89,7 @@ import { VisualRendererComponent } from './visual-renderer.component';
       .vd-input { width: 100%; background: var(--paper-2); border: 1px solid var(--paper-3); border-radius: 10px; padding: 8px 11px; color: var(--text); font-size: 13.5px; font-family: inherit; }
       .vd-input:focus { outline: none; border-color: var(--green); }
     `,
-  ],
+    ]
 })
 export class VisualDetailComponent {
   private readonly api = inject(VisualService);

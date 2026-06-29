@@ -9,11 +9,10 @@ import { ToastService } from '../../core/services/toast.service';
 import { Mentor, MentorMarketplaceService, MentorProfileInput, MentorSession } from '../../core/services/mentor-marketplace.service';
 
 @Component({
-  selector: 'asta-mentors',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormsModule, ButtonComponent, CardComponent, EmptyStateComponent, SkeletonComponent],
-  template: `
+    selector: 'asta-mentors',
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    imports: [FormsModule, ButtonComponent, CardComponent, EmptyStateComponent, SkeletonComponent],
+    template: `
     <header class="asta-page-command-header">
       <div class="min-w-0">
         <h1 class="text-[26px] leading-tight mb-2 grad-flow">Mentors</h1>
@@ -111,7 +110,7 @@ import { Mentor, MentorMarketplaceService, MentorProfileInput, MentorSession } f
       </asta-card>
     }
   `,
-  styles: [`
+    styles: [`
     :host { display: block; }
     .avatar { display: grid; place-items: center; width: 42px; height: 42px; border-radius: 12px; background: linear-gradient(135deg, var(--green-deep), var(--green)); color: var(--ink); font-size: 18px; font-weight: 700; flex-shrink: 0; box-shadow: 0 6px 18px var(--asta-accent-glow); transition: transform .35s var(--ease-spring); }
     asta-card:hover .avatar { transform: scale(1.1) rotate(-4deg); }
@@ -137,7 +136,7 @@ import { Mentor, MentorMarketplaceService, MentorProfileInput, MentorSession } f
     .status { font-size: 10.5px; font-weight: 700; text-transform: uppercase; padding: 2px 8px; border-radius: 999px; background: var(--paper-3); color: var(--text-mute); }
     .status[data-s="completed"] { background: color-mix(in oklab, var(--green) 20%, transparent); color: var(--green-deep); }
     .status[data-s="accepted"] { background: color-mix(in oklab, var(--peri, #8aa6ff) 20%, transparent); color: var(--peri, #8aa6ff); }
-  `],
+  `]
 })
 export class MentorsComponent {
   private readonly api = inject(MentorMarketplaceService);

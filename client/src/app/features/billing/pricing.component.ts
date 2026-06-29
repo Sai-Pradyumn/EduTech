@@ -13,11 +13,10 @@ import { Plan } from '../../core/models';
  * globally under prefers-reduced-motion.
  */
 @Component({
-  selector: 'asta-pricing',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink, LogoComponent, ThemeToggleComponent, MagneticDirective],
-  template: `
+    selector: 'asta-pricing',
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    imports: [RouterLink, LogoComponent, ThemeToggleComponent, MagneticDirective],
+    template: `
     <div class="pr-root">
       <!-- ambient -->
       <div class="pr-bloom pr-bloom-a" aria-hidden="true"></div>
@@ -119,8 +118,8 @@ import { Plan } from '../../core/models';
       </section>
     </div>
   `,
-  styles: [
-    `
+    styles: [
+        `
       .pr-root { position: relative; min-height: 100vh; background: var(--paper); color: var(--text); overflow-x: clip; }
 
       /* ambient blooms */
@@ -277,7 +276,7 @@ import { Plan } from '../../core/models';
         .skel, .pr-hero, .pr-card { animation: none; }
       }
     `,
-  ],
+    ]
 })
 export class PricingComponent implements OnInit {
   private readonly billing = inject(BillingService);

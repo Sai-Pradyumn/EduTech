@@ -8,11 +8,10 @@ import { TranslationKey } from '../core/i18n/translations';
 
 /** Fixed ink sidebar with grouped nav + user mini-card (DESIGN_SPEC §5). */
 @Component({
-  selector: 'asta-sidebar',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink, RouterLinkActive, LogoComponent],
-  template: `
+    selector: 'asta-sidebar',
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    imports: [RouterLink, RouterLinkActive, LogoComponent],
+    template: `
     <aside
       class="flex flex-col h-full text-onink-soft"
       style="background:var(--ink);width:var(--sidebar-w)"
@@ -68,8 +67,8 @@ import { TranslationKey } from '../core/i18n/translations';
       }
     </aside>
   `,
-  styles: [
-    `
+    styles: [
+        `
       .nav-item { transition: background 0.18s var(--ease), color 0.18s var(--ease), transform 0.12s var(--ease-spring); }
       .nav-item:hover { background: var(--ink-2); color: var(--on-ink); }
       .nav-item:active { transform: scale(0.98); }
@@ -101,7 +100,7 @@ import { TranslationKey } from '../core/i18n/translations';
         .nav-active::before { animation: none; }
       }
     `,
-  ],
+    ]
 })
 export class SidebarComponent {
   @Input({ required: true }) nav: NavGroup[] = [];

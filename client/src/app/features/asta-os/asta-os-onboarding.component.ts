@@ -14,11 +14,10 @@ export interface AstaOnboardChoice {
  * once (the shell persists the dismissal); emits the chosen key, or `skip`.
  */
 @Component({
-  selector: 'asta-os-onboarding',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [AstaOsOrbComponent],
-  template: `
+    selector: 'asta-os-onboarding',
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    imports: [AstaOsOrbComponent],
+    template: `
     <div class="scrim"></div>
     <section class="card" role="dialog" aria-modal="true" aria-label="How do you want to start?">
       <div class="hero">
@@ -39,8 +38,8 @@ export interface AstaOnboardChoice {
       <button type="button" class="skip" (click)="skip.emit()">Just open the workspace →</button>
     </section>
   `,
-  styles: [
-    `
+    styles: [
+        `
       :host { position: fixed; inset: 0; z-index: 90; display: block; }
       .scrim { position: absolute; inset: 0; background: rgba(2,5,4,.72); backdrop-filter: blur(8px); animation: fade .25s ease; }
       .card { position: absolute; inset: 0; margin: auto; width: min(720px, 94vw); max-height: 92vh; overflow-y: auto; height: fit-content; padding: 32px 28px; border-radius: 24px; background: var(--asta-bg-soft); border: 1px solid var(--asta-border); box-shadow: 0 40px 120px rgba(0,0,0,.6); animation: rise .3s cubic-bezier(.2,.7,.2,1); }
@@ -64,7 +63,7 @@ export interface AstaOnboardChoice {
       .skip { display: block; margin: 22px auto 0; font-size: 13px; color: var(--asta-muted); }
       .skip:hover { color: var(--asta-text); }
     `,
-  ],
+    ]
 })
 export class AstaOsOnboardingComponent {
   readonly greeting = input('Welcome to Asta OS');

@@ -8,11 +8,10 @@ import { CertificateView } from '../../core/models';
 
 /** My certificates (B7): credential cards with a public verification link. */
 @Component({
-  selector: 'asta-certificates',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [DatePipe, ButtonComponent, SkeletonComponent],
-  template: `
+    selector: 'asta-certificates',
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    imports: [DatePipe, ButtonComponent, SkeletonComponent],
+    template: `
     <!-- Command header -->
     <header class="asta-page-command-header">
       <div class="min-w-0">
@@ -68,8 +67,8 @@ import { CertificateView } from '../../core/models';
       }
     </div>
   `,
-  styles: [
-    `
+    styles: [
+        `
       .cert-card { transition: transform .22s var(--ease), box-shadow .22s var(--ease), border-color .22s var(--ease); }
       .cert-card:hover { transform: translateY(-3px); box-shadow: var(--shadow-md), 0 0 0 1px color-mix(in oklch, var(--green) 26%, transparent); }
       .cert-medal {
@@ -94,7 +93,7 @@ import { CertificateView } from '../../core/models';
         .cert-card:hover .cert-shine { animation: none; }
       }
     `,
-  ],
+    ]
 })
 export class CertificatesComponent implements OnInit {
   private readonly certApi = inject(CertificateService);

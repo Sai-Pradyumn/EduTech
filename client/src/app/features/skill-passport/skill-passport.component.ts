@@ -18,11 +18,10 @@ import { LedgerService } from '../../core/services/ledger.service';
 import { LEDGER_KIND_META, LedgerKind } from '../../core/services/ledger.service';
 
 @Component({
-  selector: 'asta-skill-passport',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormsModule, ButtonComponent, CardComponent, EmptyStateComponent, RingComponent, SkeletonComponent],
-  template: `
+    selector: 'asta-skill-passport',
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    imports: [FormsModule, ButtonComponent, CardComponent, EmptyStateComponent, RingComponent, SkeletonComponent],
+    template: `
     <header class="asta-page-command-header">
       <div class="min-w-0">
         <h1 class="text-[26px] leading-tight mb-2 grad-flow">Skill Passport</h1>
@@ -204,7 +203,7 @@ import { LEDGER_KIND_META, LedgerKind } from '../../core/services/ledger.service
       }
     }
   `,
-  styles: [`
+    styles: [`
     :host { display: block; }
     .identity { border: 1px solid color-mix(in oklab, var(--green) 22%, var(--paper-3)); }
     .avatar { display: grid; place-items: center; width: 56px; height: 56px; border-radius: 16px; background: linear-gradient(135deg, var(--green-deep), var(--green)); color: var(--ink); font-size: 24px; font-weight: 700; flex-shrink: 0; }
@@ -253,7 +252,7 @@ import { LEDGER_KIND_META, LedgerKind } from '../../core/services/ledger.service
     .rm:hover { color: var(--danger, #ff5d5d); }
     .tl-more { margin-top: 10px; font-size: 12px; color: var(--peri, #8aa6ff); background: transparent; border: none; cursor: pointer; padding: 4px 0; }
     .tl-more:hover { color: var(--green-deep); }
-  `],
+  `]
 })
 export class SkillPassportComponent {
   private readonly api = inject(SkillPassportService);

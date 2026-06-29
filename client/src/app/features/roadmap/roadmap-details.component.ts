@@ -11,7 +11,6 @@ import { BadgeComponent } from '../../shared/ui/badge.component';
 import { SkeletonComponent } from '../../shared/ui/skeleton.component';
 import { RingComponent } from '../../shared/ui/ring.component';
 import { ProgressComponent } from '../../shared/ui/progress.component';
-import { ProgressWidgetComponent } from './components/progress-widget.component';
 import { WeekCardComponent, TaskToggle } from './components/week-card.component';
 import { MilestoneCardComponent } from './components/milestone-card.component';
 import { ProjectCardComponent } from './components/project-card.component';
@@ -22,30 +21,28 @@ import { CountDirective } from '../../shared/directives/count.directive';
 import { OfflineToggleComponent } from '../../shared/ui/offline-toggle.component';
 
 @Component({
-  selector: 'asta-roadmap-details',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [
-    RouterLink,
-    ButtonComponent,
-    CardComponent,
-    BadgeComponent,
-    SkeletonComponent,
-    RingComponent,
-    ProgressComponent,
-    ProgressWidgetComponent,
-    WeekCardComponent,
-    MilestoneCardComponent,
-    ProjectCardComponent,
-    ScrollDrawDirective,
-    AstaLearningRiverComponent,
-    AstaStepTrackerComponent,
-    MagneticDirective,
-    CountDirective,
-    OfflineToggleComponent,
-    FormsModule,
-  ],
-  template: `
+    selector: 'asta-roadmap-details',
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    imports: [
+        RouterLink,
+        ButtonComponent,
+        CardComponent,
+        BadgeComponent,
+        SkeletonComponent,
+        RingComponent,
+        ProgressComponent,
+        WeekCardComponent,
+        MilestoneCardComponent,
+        ProjectCardComponent,
+        ScrollDrawDirective,
+        AstaLearningRiverComponent,
+        AstaStepTrackerComponent,
+        MagneticDirective,
+        CountDirective,
+        OfflineToggleComponent,
+        FormsModule,
+    ],
+    template: `
     @if (loading()) {
       <div class="flex flex-wrap items-center justify-between gap-4 mb-6">
         <asta-skeleton h="34px" w="280px" />
@@ -338,8 +335,8 @@ import { OfflineToggleComponent } from '../../shared/ui/offline-toggle.component
       }
     }
   `,
-  styles: [
-    `
+    styles: [
+        `
       .panel-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
       .panel-ico {
         width: 32px; height: 32px; flex-shrink: 0;
@@ -372,7 +369,7 @@ import { OfflineToggleComponent } from '../../shared/ui/offline-toggle.component
       .nt-check { width: 18px; height: 18px; flex-shrink: 0; margin-top: 1px; border-radius: 6px; border: 1.5px solid var(--paper-3); background: var(--paper-2); transition: border-color .15s, background .15s; }
       .nt-check:hover { border-color: var(--green); background: color-mix(in oklch, var(--green) 16%, transparent); }
     `,
-  ],
+    ]
 })
 export class RoadmapDetailsComponent {
   private readonly service = inject(RoadmapService);

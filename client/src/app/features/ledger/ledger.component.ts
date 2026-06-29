@@ -14,11 +14,10 @@ const VER_META: Record<VerificationLevel, { label: string; tone: string }> = {
 };
 
 @Component({
-  selector: 'asta-ledger',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ButtonComponent, CardComponent, EmptyStateComponent, SkeletonComponent],
-  template: `
+    selector: 'asta-ledger',
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    imports: [ButtonComponent, CardComponent, EmptyStateComponent, SkeletonComponent],
+    template: `
     <header class="asta-page-command-header">
       <div class="min-w-0">
         <h1 class="text-[26px] leading-tight mb-2 grad-flow">Proof-of-Learning</h1>
@@ -98,8 +97,8 @@ const VER_META: Record<VerificationLevel, { label: string; tone: string }> = {
       }
     }
   `,
-  styles: [
-    `
+    styles: [
+        `
       :host { display: block; }
       .stat { text-align: center; }
       .stat .num { font-size: 28px; font-weight: 700; font-variant-numeric: tabular-nums; }
@@ -139,7 +138,7 @@ const VER_META: Record<VerificationLevel, { label: string; tone: string }> = {
         .heat .hcell:hover, .row:hover .glyph { transform: none; }
       }
     `,
-  ],
+    ]
 })
 export class LedgerComponent {
   private readonly api = inject(LedgerService);

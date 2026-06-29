@@ -9,11 +9,10 @@ import { AstaOsOrbComponent } from './asta-os-orb.component';
  * this is a clean seam for a future realtime voice/video provider.
  */
 @Component({
-  selector: 'asta-os-face-mode',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [AstaOsOrbComponent],
-  template: `
+    selector: 'asta-os-face-mode',
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    imports: [AstaOsOrbComponent],
+    template: `
     <div class="face">
       <div class="halo"><asta-os-orb [state]="state()" size="hero" /></div>
       <p class="status">{{ statusLabel() }}</p>
@@ -24,15 +23,15 @@ import { AstaOsOrbComponent } from './asta-os-orb.component';
       }
     </div>
   `,
-  styles: [
-    `
+    styles: [
+        `
       .face { display: flex; flex-direction: column; align-items: center; gap: 22px; padding: 32px 16px; text-align: center; }
       .halo { padding: 26px; border-radius: 999px; background: radial-gradient(circle, color-mix(in srgb, var(--asta-green) 12%, transparent), transparent 70%); }
       .status { font-family: var(--mono); font-size: 11px; text-transform: uppercase; letter-spacing: .08em; color: var(--asta-muted); }
       .caption { max-width: 560px; font-size: 17px; line-height: 1.5; color: var(--asta-text); }
       .caption.muted { color: var(--asta-subtle); }
     `,
-  ],
+    ]
 })
 export class AstaOsFaceModeComponent {
   readonly state = input<AstaOrbState>('idle');

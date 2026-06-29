@@ -10,11 +10,10 @@ import { ToastService } from '../../core/services/toast.service';
 /** Offline & sync center (Phase 10 · M4). Shows connection state, resources saved for
  *  offline, local drafts, the sync queue and the web-push opt-in. Compact, in-app. */
 @Component({
-  selector: 'asta-offline',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [DatePipe],
-  template: `
+    selector: 'asta-offline',
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    imports: [DatePipe],
+    template: `
     <header class="asta-page-command-header max-w-app mx-auto">
       <div class="min-w-0">
         <h1 class="text-[26px] leading-tight mb-2 grad-flow">Offline &amp; sync</h1>
@@ -121,7 +120,7 @@ import { ToastService } from '../../core/services/toast.service';
         </div>
       </div>
     </div>
-  `,
+  `
 })
 export class OfflineComponent implements OnInit {
   readonly net = inject(NetworkStatusService);

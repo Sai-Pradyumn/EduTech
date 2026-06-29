@@ -13,11 +13,10 @@ import { DonutChartComponent, ChartDatum } from '../../shared/charts';
  * and honest loading / empty / error states (Workstream E). Read-only; Role.Admin.
  */
 @Component({
-  selector: 'asta-admin-documents',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [DatePipe, FormsModule, SkeletonComponent, EmptyStateComponent, DonutChartComponent],
-  template: `
+    selector: 'asta-admin-documents',
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    imports: [DatePipe, FormsModule, SkeletonComponent, EmptyStateComponent, DonutChartComponent],
+    template: `
    <div class="asta-observatory">
     <!-- Command header -->
     <header class="asta-page-command-header">
@@ -70,8 +69,8 @@ import { DonutChartComponent, ChartDatum } from '../../shared/charts';
     }
    </div>
   `,
-  styles: [
-    `
+    styles: [
+        `
       table { width: 100%; border-collapse: collapse; font-size: 13px; }
       th { text-align: left; font-family: var(--mono); font-size: 10px; text-transform: uppercase; letter-spacing: .04em; color: var(--text-mute); padding: 12px 14px; border-bottom: 1px solid var(--paper-3); white-space: nowrap; }
       td { padding: 11px 14px; border-bottom: 1px solid var(--paper-2); vertical-align: top; }
@@ -85,7 +84,7 @@ import { DonutChartComponent, ChartDatum } from '../../shared/charts';
       .gen { font-size: 11px; font-family: var(--mono); color: var(--text-mute); margin-top: 10px; }
       .retry { border-radius: 100px; padding: 9px 18px; font-weight: 600; background: var(--accent); color: var(--ink); min-height: 40px; }
     `,
-  ],
+    ]
 })
 export class AdminDocumentsComponent implements OnInit {
   private readonly api = inject(AdminService);

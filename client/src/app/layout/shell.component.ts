@@ -30,11 +30,10 @@ import { ADMIN_NAV, STUDENT_NAV, workspaceNav } from '../core/constants/nav';
 
 /** App shell: fixed sidebar + sticky topbar + routed content (DESIGN_SPEC §5). */
 @Component({
-  selector: 'asta-shell',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterOutlet, RouterLink, RouterLinkActive, RouteTransitionDirective, SidebarComponent, TopbarComponent, AuroraComponent, ConstellationComponent],
-  template: `
+    selector: 'asta-shell',
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    imports: [RouterOutlet, RouterLink, RouterLinkActive, RouteTransitionDirective, SidebarComponent, TopbarComponent, AuroraComponent, ConstellationComponent],
+    template: `
     <!-- Skip link (a11y §9) — first focusable; jumps past the nav to main content. -->
     <a href="#main-content" class="skip-link">Skip to content</a>
     <!-- Fixed-viewport split: the document never scrolls; the sidebar column and
@@ -105,8 +104,8 @@ import { ADMIN_NAV, STUDENT_NAV, workspaceNav } from '../core/constants/nav';
       </nav>
     </div>
   `,
-  styles: [
-    `
+    styles: [
+        `
       /* Root is a fixed-viewport split: nothing here scrolls — the sidebar and
          main columns own their scroll. h-dvh keeps it correct under mobile chrome. */
       .asta-shell {
@@ -199,7 +198,7 @@ import { ADMIN_NAV, STUDENT_NAV, workspaceNav } from '../core/constants/nav';
         }
       }
     `,
-  ],
+    ]
 })
 export class ShellComponent {
   private readonly auth = inject(AuthService);

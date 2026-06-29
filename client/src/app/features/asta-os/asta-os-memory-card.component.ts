@@ -8,11 +8,10 @@ import { AstaMemorySuggestion } from '../../core/models';
  * suggestion on save, or a bare dismiss. Calm, non-blocking, noir-styled.
  */
 @Component({
-  selector: 'asta-os-memory-card',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormsModule],
-  template: `
+    selector: 'asta-os-memory-card',
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    imports: [FormsModule],
+    template: `
     <div class="card" [class.saving]="saving()">
       <div class="ico" aria-hidden="true">
         <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a5 5 0 0 0-5 5c0 1.5.5 2.5 1.5 3.5M12 2a5 5 0 0 1 5 5c0 1.5-.5 2.5-1.5 3.5M9 22h6M10 22v-4a2 2 0 0 1 4 0v4M12 11v3" /></svg>
@@ -37,8 +36,8 @@ import { AstaMemorySuggestion } from '../../core/models';
       </div>
     </div>
   `,
-  styles: [
-    `
+    styles: [
+        `
       .card { display: flex; gap: 12px; padding: 14px 16px; border-radius: 16px; background: var(--asta-panel); border: 1px solid color-mix(in srgb, var(--asta-gold) 30%, var(--asta-border)); }
       .card.saving { opacity: .6; }
       .ico { flex-shrink: 0; width: 34px; height: 34px; display: grid; place-items: center; border-radius: 10px; color: var(--asta-gold); background: color-mix(in srgb, var(--asta-gold) 12%, transparent); }
@@ -62,7 +61,7 @@ import { AstaMemorySuggestion } from '../../core/models';
       }
       @media (prefers-reduced-motion: reduce) { .card, .ico { animation: none; } }
     `,
-  ],
+    ]
 })
 export class AstaOsMemoryCardComponent {
   readonly suggestion = input.required<AstaMemorySuggestion>();

@@ -7,11 +7,10 @@ import { ToastService } from '../../core/services/toast.service';
 /** Account security & devices (Phase 10 · M6). Active sessions, revoke a device, sign out
  *  everywhere (clears the refresh token). */
 @Component({
-  selector: 'asta-security',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [DatePipe],
-  template: `
+    selector: 'asta-security',
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    imports: [DatePipe],
+    template: `
     <header class="asta-page-command-header max-w-app mx-auto">
       <div class="min-w-0">
         <h1 class="text-[26px] leading-tight mb-2 grad-flow">Security &amp; devices</h1>
@@ -62,8 +61,8 @@ import { ToastService } from '../../core/services/toast.service';
       </div>
     </div>
   `,
-  styles: [
-    `
+    styles: [
+        `
       .sec-row { animation: astaRevealUp 0.4s var(--ease) both; transition: background 0.15s var(--ease); }
       .sec-row:nth-child(2) { animation-delay: 0.05s; }
       .sec-row:nth-child(3) { animation-delay: 0.1s; }
@@ -74,7 +73,7 @@ import { ToastService } from '../../core/services/toast.service';
       .sec-ico-on { background: color-mix(in oklch, var(--green) 14%, transparent); color: var(--green-deep); box-shadow: 0 0 12px var(--asta-accent-glow); }
       @media (prefers-reduced-motion: reduce) { .sec-row { animation: none; } .sec-row:hover .sec-ico { transform: none; } }
     `,
-  ],
+    ]
 })
 export class SecurityComponent implements OnInit {
   private readonly enterprise = inject(EnterpriseService);

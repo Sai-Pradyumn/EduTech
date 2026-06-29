@@ -12,11 +12,10 @@ import { printDocument, PrintSection } from '../../shared/util/print';
 import { downloadPdf } from '../../shared/util/pdf';
 
 @Component({
-  selector: 'asta-interview',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormsModule, ButtonComponent, CardComponent, EmptyStateComponent, RingComponent, SkeletonComponent],
-  template: `
+    selector: 'asta-interview',
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    imports: [FormsModule, ButtonComponent, CardComponent, EmptyStateComponent, RingComponent, SkeletonComponent],
+    template: `
     <header class="asta-page-command-header">
       <div class="min-w-0">
         <h1 class="text-[26px] leading-tight mb-2 grad-flow">Interview OS</h1>
@@ -168,7 +167,7 @@ import { downloadPdf } from '../../shared/util/pdf';
       </asta-card>
     }
   `,
-  styles: [`
+    styles: [`
     :host { display: block; }
     .copy-report { font-size: 11px; color: var(--peri, #8aa6ff); background: transparent; border: none; cursor: pointer; }
     .copy-report:hover { color: var(--green-deep); }
@@ -217,7 +216,7 @@ import { downloadPdf } from '../../shared/util/pdf';
     .bt-val { font-size: 12px; font-weight: 700; font-variant-numeric: tabular-nums; }
     .bt-n { font-size: 10.5px; font-weight: 500; color: var(--text-mute); }
     @media (prefers-reduced-motion: reduce) { .bt-fill { animation: none; } }
-  `],
+  `]
 })
 export class InterviewComponent {
   private readonly api = inject(InterviewService);

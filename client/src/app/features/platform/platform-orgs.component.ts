@@ -9,11 +9,10 @@ import { CardComponent } from '../../shared/ui/card.component';
 import { EmptyStateComponent } from '../../shared/ui/empty-state.component';
 
 @Component({
-  selector: 'asta-platform-orgs',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormsModule, ButtonComponent, CardComponent, EmptyStateComponent],
-  template: `
+    selector: 'asta-platform-orgs',
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    imports: [FormsModule, ButtonComponent, CardComponent, EmptyStateComponent],
+    template: `
     <div class="asta-observatory">
     <!-- Command header -->
     <header class="asta-page-command-header">
@@ -78,8 +77,8 @@ import { EmptyStateComponent } from '../../shared/ui/empty-state.component';
     }
     </div>
   `,
-  styles: [
-    `
+    styles: [
+        `
       .stat { padding: 14px 16px; }
       .lbl { font-size: 11px; color: var(--text-mute); text-transform: uppercase; letter-spacing: .04em; }
       .row { display: flex; align-items: center; justify-content: space-between; gap: 10px; border: 1px solid var(--paper-3); border-radius: 12px; padding: 10px 14px; }
@@ -88,7 +87,7 @@ import { EmptyStateComponent } from '../../shared/ui/empty-state.component';
       @keyframes skel-shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
       @media (prefers-reduced-motion: reduce) { .skel { animation: none; } }
     `,
-  ],
+    ]
 })
 export class PlatformOrgsComponent implements OnInit {
   readonly ctx = inject(OrgContextService);

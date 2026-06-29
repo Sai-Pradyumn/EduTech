@@ -9,11 +9,10 @@ import { ToastService } from '../../core/services/toast.service';
 import { CohortOutcomes, InstitutionOverview, InstitutionService } from '../../core/services/institution.service';
 
 @Component({
-  selector: 'asta-institution',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormsModule, ButtonComponent, CardComponent, EmptyStateComponent, RingComponent, SkeletonComponent],
-  template: `
+    selector: 'asta-institution',
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    imports: [FormsModule, ButtonComponent, CardComponent, EmptyStateComponent, RingComponent, SkeletonComponent],
+    template: `
     <header class="asta-page-command-header">
       <div class="min-w-0">
         <h1 class="text-[26px] leading-tight mb-2 grad-flow">Institution</h1>
@@ -111,7 +110,7 @@ import { CohortOutcomes, InstitutionOverview, InstitutionService } from '../../c
       }
     }
   `,
-  styles: [`
+    styles: [`
     :host { display: block; }
     .stat { text-align: center; }
     .stat .num { font-size: 26px; font-weight: 700; font-variant-numeric: tabular-nums; }
@@ -135,7 +134,7 @@ import { CohortOutcomes, InstitutionOverview, InstitutionService } from '../../c
     .prow { display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: 13px; padding: 4px 0; }
     .ps { font-weight: 700; font-variant-numeric: tabular-nums; }
     .gap { font-size: 11px; color: var(--text-mute); }
-  `],
+  `]
 })
 export class InstitutionComponent {
   private readonly api = inject(InstitutionService);

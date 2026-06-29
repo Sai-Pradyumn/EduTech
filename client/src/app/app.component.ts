@@ -10,11 +10,10 @@ import { AiDockComponent } from './shared/components/ai-dock.component';
 import { AstaVoiceOverlayComponent } from './shared/components/ai/asta-voice-overlay.component';
 
 @Component({
-  selector: 'asta-root',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterOutlet, ToastContainerComponent, CommandPaletteComponent, ShortcutsOverlayComponent, AiDockComponent, AstaVoiceOverlayComponent],
-  template: `
+    selector: 'asta-root',
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    imports: [RouterOutlet, ToastContainerComponent, CommandPaletteComponent, ShortcutsOverlayComponent, AiDockComponent, AstaVoiceOverlayComponent],
+    template: `
     <router-outlet />
     <asta-toast-container />
     <!-- Classic-only chrome: Asta OS is self-contained (its own dock, composer and voice room),
@@ -25,7 +24,7 @@ import { AstaVoiceOverlayComponent } from './shared/components/ai/asta-voice-ove
       <asta-ai-dock />
       <asta-voice-overlay />
     }
-  `,
+  `
 })
 export class AppComponent {
   private readonly router = inject(Router);

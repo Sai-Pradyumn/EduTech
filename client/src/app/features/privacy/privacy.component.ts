@@ -6,11 +6,10 @@ import { ToastService } from '../../core/services/toast.service';
 import { PrivacyService, PrivacySettings } from '../../core/services/privacy.service';
 
 @Component({
-  selector: 'asta-privacy',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ButtonComponent, CardComponent, SkeletonComponent],
-  template: `
+    selector: 'asta-privacy',
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    imports: [ButtonComponent, CardComponent, SkeletonComponent],
+    template: `
     <header class="asta-page-command-header">
       <div class="min-w-0">
         <h1 class="text-[26px] leading-tight mb-2 grad-flow">Data &amp; Privacy</h1>
@@ -55,7 +54,7 @@ import { PrivacyService, PrivacySettings } from '../../core/services/privacy.ser
       }
     }
   `,
-  styles: [`
+    styles: [`
     :host { display: block; }
     .row { display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: 13.5px; font-weight: 500; }
     .sub { font-size: 11px; color: var(--text-mute); margin-top: 1px; }
@@ -63,7 +62,7 @@ import { PrivacyService, PrivacySettings } from '../../core/services/privacy.ser
     .badge.pub { background: color-mix(in oklab, var(--green) 20%, transparent); color: var(--green-deep); }
     .mono { font-variant-numeric: tabular-nums; font-weight: 600; }
     .danger { border: 1px solid color-mix(in oklab, var(--coral, #ffb454) 25%, var(--paper-3)); }
-  `],
+  `]
 })
 export class PrivacyComponent {
   private readonly api = inject(PrivacyService);

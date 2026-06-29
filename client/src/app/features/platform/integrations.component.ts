@@ -7,11 +7,10 @@ import { ModalComponent } from '../../shared/ui/modal.component';
 /** Integrations (Phase 10 · M12). Webhook (Slack/Discord), CSV (LMS), manual (GitHub) and
  *  export (.ics) connectors are fully functional; OAuth providers activate when keys are set. */
 @Component({
-  selector: 'asta-integrations',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormsModule, ModalComponent],
-  template: `
+    selector: 'asta-integrations',
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    imports: [FormsModule, ModalComponent],
+    template: `
     <header class="asta-page-command-header max-w-app mx-auto">
       <div class="min-w-0">
         <h1 class="text-[26px] leading-tight mb-2 grad-flow">Integrations</h1>
@@ -82,8 +81,8 @@ import { ModalComponent } from '../../shared/ui/modal.component';
 
     <input #csvInput type="file" accept=".csv,text/csv" hidden (change)="onCsv($event)" />
   `,
-  styles: [
-    `
+    styles: [
+        `
       .skel{background:linear-gradient(90deg,var(--paper-2) 25%,var(--paper-3) 50%,var(--paper-2) 75%);background-size:200% 100%;animation:s 1.4s ease infinite}
       @keyframes s{0%{background-position:200% 0}100%{background-position:-200% 0}}
       .int-card { transition: transform .22s var(--ease), box-shadow .22s var(--ease), border-color .22s var(--ease); }
@@ -93,7 +92,7 @@ import { ModalComponent } from '../../shared/ui/modal.component';
       :host-context([data-theme='dark']) .int-on { background: radial-gradient(140% 100% at 100% 0%, color-mix(in oklch, var(--green) 8%, transparent), transparent 55%), var(--paper-2); }
       @media (prefers-reduced-motion:reduce){.skel{animation:none}.int-card:hover{transform:none}}
     `,
-  ],
+    ]
 })
 export class IntegrationsComponent implements OnInit {
   private readonly svc = inject(IntegrationService);

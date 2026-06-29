@@ -7,11 +7,10 @@ import { VerificationResult } from '../../core/models';
 
 /** Public certificate verification page (B7) — no auth, no app shell. */
 @Component({
-  selector: 'asta-cert-verify',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [DatePipe, RouterLink, LogoComponent],
-  template: `
+    selector: 'asta-cert-verify',
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    imports: [DatePipe, RouterLink, LogoComponent],
+    template: `
     <div class="cv-root min-h-screen grid place-items-center px-5 relative overflow-hidden" style="background:var(--paper)">
       <div class="cv-bloom" aria-hidden="true"></div>
       <div class="w-full relative z-10" style="max-width:520px">
@@ -55,8 +54,8 @@ import { VerificationResult } from '../../core/models';
       </div>
     </div>
   `,
-  styles: [
-    `
+    styles: [
+        `
       .cv-bloom {
         position: absolute;
         top: -240px;
@@ -104,7 +103,7 @@ import { VerificationResult } from '../../core/models';
         .cv-check { stroke-dashoffset: 0; animation: none; }
       }
     `,
-  ],
+    ]
 })
 export class CertVerifyComponent implements OnInit {
   private readonly route = inject(ActivatedRoute);

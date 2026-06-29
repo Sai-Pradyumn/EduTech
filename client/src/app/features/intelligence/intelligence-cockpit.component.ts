@@ -12,11 +12,10 @@ import { LineChartComponent, ChartDatum } from '../../shared/charts';
 import { MagneticDirective } from '../../shared/directives/magnetic.directive';
 
 @Component({
-  selector: 'asta-intelligence-cockpit',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink, ButtonComponent, CardComponent, RingComponent, SkeletonComponent, EmptyStateComponent, AiSkillRadarComponent, LineChartComponent, MagneticDirective],
-  template: `
+    selector: 'asta-intelligence-cockpit',
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    imports: [RouterLink, ButtonComponent, CardComponent, RingComponent, SkeletonComponent, EmptyStateComponent, AiSkillRadarComponent, LineChartComponent, MagneticDirective],
+    template: `
     <!-- Command header -->
     <header class="asta-page-command-header">
       <div class="min-w-0">
@@ -167,8 +166,8 @@ import { MagneticDirective } from '../../shared/directives/magnetic.directive';
       }
     }
   `,
-  styles: [
-    `
+    styles: [
+        `
       .bar { height: 6px; border-radius: 100px; background: var(--paper-3); overflow: hidden; }
       .bar-fill { height: 100%; border-radius: 100px; background: var(--green); transition: width .8s var(--ease); }
       .lg-dot { display: inline-block; width: 10px; height: 10px; border-radius: 3px; }
@@ -176,7 +175,7 @@ import { MagneticDirective } from '../../shared/directives/magnetic.directive';
       /* Reserves the skill-radar's footprint while it's deferred (no layout shift). */
       .radar-ph { height: 240px; max-width: 240px; margin: 0 auto; border-radius: 50%; background: color-mix(in oklch, var(--paper-3) 35%, transparent); }
     `,
-  ],
+    ]
 })
 export class IntelligenceCockpitComponent {
   private readonly intel = inject(IntelligenceService);

@@ -8,11 +8,10 @@ import { PortfolioService, PublicPortfolio } from '../../core/services/portfolio
 
 /** Public, unauthenticated portfolio at /p/:username (privacy filtered server-side). */
 @Component({
-  selector: 'asta-public-portfolio',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink, CardComponent, EmptyStateComponent, SkeletonComponent, LogoComponent],
-  template: `
+    selector: 'asta-public-portfolio',
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    imports: [RouterLink, CardComponent, EmptyStateComponent, SkeletonComponent, LogoComponent],
+    template: `
     <div class="wrap">
       <div class="pf-bloom" aria-hidden="true"></div>
       <header class="pub-top">
@@ -70,7 +69,7 @@ import { PortfolioService, PublicPortfolio } from '../../core/services/portfolio
       }
     </div>
   `,
-  styles: [`
+    styles: [`
     :host { display: block; }
     .wrap { position: relative; max-width: 920px; margin: 0 auto; padding: 24px 18px 60px; min-height: 100dvh; }
     .pf-bloom { position: absolute; top: -200px; left: 50%; transform: translateX(-50%); width: 760px; height: 480px; border-radius: 50%; filter: blur(110px); opacity: .35; pointer-events: none; background: radial-gradient(circle, color-mix(in oklch, var(--green) 24%, transparent), transparent 70%); }
@@ -97,7 +96,7 @@ import { PortfolioService, PublicPortfolio } from '../../core/services/portfolio
     .cert-id { color: var(--text-mute); font-size: 10.5px; }
     .footer { text-align: center; font-size: 12px; color: var(--text-mute); margin-top: 24px; }
     .footer a, .kicker { }
-  `],
+  `]
 })
 export class PublicPortfolioComponent {
   private readonly api = inject(PortfolioService);

@@ -9,11 +9,10 @@ import { ToastService } from '../../core/services/toast.service';
 import { LearningReplay, ReplayService } from '../../core/services/replay.service';
 
 @Component({
-  selector: 'asta-replay',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ButtonComponent, CardComponent, EmptyStateComponent, SkeletonComponent],
-  template: `
+    selector: 'asta-replay',
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    imports: [ButtonComponent, CardComponent, EmptyStateComponent, SkeletonComponent],
+    template: `
     <header class="asta-page-command-header">
       <div class="min-w-0">
         <h1 class="text-[26px] leading-tight mb-2 grad-flow">Learning Replay</h1>
@@ -63,8 +62,8 @@ import { LearningReplay, ReplayService } from '../../core/services/replay.servic
       }
     }
   `,
-  styles: [
-    `
+    styles: [
+        `
       :host { display: block; }
       /* The narrated recap is the stage — violet ring + glow, text rises in. */
       .recap { border: 1px solid color-mix(in oklab, var(--peri,#8aa6ff) 30%, var(--paper-3)); box-shadow: 0 0 22px var(--asta-glow-violet); }
@@ -81,7 +80,7 @@ import { LearningReplay, ReplayService } from '../../core/services/replay.servic
       .next:hover { border-color: var(--green); transform: translateX(2px); }
       @media (prefers-reduced-motion: reduce) { .recap-text, .list li { animation: none; } .next:hover { transform: none; } }
     `,
-  ],
+    ]
 })
 export class ReplayComponent {
   private readonly api = inject(ReplayService);

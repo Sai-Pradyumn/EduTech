@@ -49,12 +49,11 @@ const TOTAL_STEPS = 7;
 const DRAFT_KEY = 'asta.onboarding-draft';
 
 @Component({
-  selector: 'asta-onboarding',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  host: { '(input)': 'persist()', '(change)': 'persist()' },
-  imports: [FormsModule, ButtonComponent, ChipInputComponent, LogoComponent, MagneticDirective],
-  template: `
+    selector: 'asta-onboarding',
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    host: { '(input)': 'persist()', '(change)': 'persist()' },
+    imports: [FormsModule, ButtonComponent, ChipInputComponent, LogoComponent, MagneticDirective],
+    template: `
     <div class="min-h-screen flex flex-col items-center px-5 py-8">
       <header class="w-full flex justify-center mb-8"><asta-logo /></header>
 
@@ -195,8 +194,8 @@ const DRAFT_KEY = 'asta.onboarding-draft';
       </div>
     </div>
   `,
-  styles: [
-    `
+    styles: [
+        `
       .seg {
         padding: 9px 16px; border-radius: 100px; font-size: 14px; font-weight: 500;
         border: 1px solid var(--paper-3); background: var(--paper); color: var(--text); cursor: pointer;
@@ -222,7 +221,7 @@ const DRAFT_KEY = 'asta.onboarding-draft';
         .ob-seg-on { box-shadow: none; }
       }
     `,
-  ],
+    ]
 })
 export class OnboardingComponent {
   private readonly auth = inject(AuthService);

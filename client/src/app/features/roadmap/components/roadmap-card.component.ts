@@ -7,11 +7,10 @@ import { ProgressComponent } from '../../../shared/ui/progress.component';
 
 /** Compact roadmap card for the list view. */
 @Component({
-  selector: 'asta-roadmap-card',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink, CardComponent, BadgeComponent, ProgressComponent],
-  template: `
+    selector: 'asta-roadmap-card',
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    imports: [RouterLink, CardComponent, BadgeComponent, ProgressComponent],
+    template: `
     <asta-card [accentVar]="active ? 'var(--green)' : null">
       <div class="flex items-start justify-between gap-3 mb-2">
         <h3 class="text-[19px] leading-snug">{{ roadmap.title }}</h3>
@@ -33,14 +32,14 @@ import { ProgressComponent } from '../../../shared/ui/progress.component';
       </a>
     </asta-card>
   `,
-  styles: [
-    `
+    styles: [
+        `
       :host { display: block; }
       .arr { display: inline-block; transition: transform 0.2s var(--ease-spring); }
       .rm-link:hover .arr { transform: translateX(4px); }
       @media (prefers-reduced-motion: reduce) { .rm-link:hover .arr { transform: none; } }
     `,
-  ],
+    ]
 })
 export class RoadmapCardComponent {
   @Input({ required: true }) roadmap!: RoadmapSummary;

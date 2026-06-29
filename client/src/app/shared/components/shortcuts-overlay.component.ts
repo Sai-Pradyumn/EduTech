@@ -8,11 +8,10 @@ interface Shortcut { keys: string[]; label: string; }
  * the command-palette keys. Mounted once in AppComponent next to the palette.
  */
 @Component({
-  selector: 'asta-shortcuts-overlay',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ModalComponent],
-  template: `
+    selector: 'asta-shortcuts-overlay',
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    imports: [ModalComponent],
+    template: `
     <asta-modal [open]="open()" [maxWidth]="460" (closed)="open.set(false)">
       @if (open()) {
         <h3 class="font-display text-xl mb-1">Keyboard shortcuts</h3>
@@ -28,7 +27,7 @@ interface Shortcut { keys: string[]; label: string; }
       }
     </asta-modal>
   `,
-  styles: [`
+    styles: [`
     .sc-list { display: flex; flex-direction: column; gap: 2px; }
     .sc-row { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 9px 4px; border-bottom: 1px solid var(--paper-2); animation: astaRevealUp 0.35s var(--ease) both; }
     .sc-row:nth-child(2) { animation-delay: 0.05s; }
@@ -40,7 +39,7 @@ interface Shortcut { keys: string[]; label: string; }
     .sc-label { font-size: 14px; color: var(--text); }
     .sc-keys { display: flex; gap: 4px; flex-shrink: 0; }
     kbd { font-family: var(--mono); font-size: 11px; padding: 2px 7px; border: 1px solid var(--paper-3); border-radius: 6px; background: var(--paper-2); color: var(--text-soft); }
-  `],
+  `]
 })
 export class ShortcutsOverlayComponent {
   readonly open = signal(false);
