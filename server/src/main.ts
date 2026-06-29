@@ -69,8 +69,40 @@ async function bootstrap(): Promise<void> {
   }
 
   const port = config.get('port', { infer: true });
-  await app.listen(port);
+  // A clear, actionable message beats an unhandled-rejection stack when the port
+  // is already taken — by far the most common reason "the backend won't start"
+  // on a dev box (a previous run still holding :3000).
+  try {
+    await app.listen(port);
+  } catch (err) {
+    const e = err as NodeJS.ErrnoException;
+    if (e.code === 'EADDRINUSE') {
+      Logger.error(
+        `Port ${port} is already in use — another process (likely a previous Asta API run) is holding it. ` +
+          `Stop it and retry, or start on another port with PORT=3001 npm run dev.`,
+        'Bootstrap',
+      );
+    } else {
+      Logger.error(
+        `Failed to start Asta API: ${e.message}`,
+        e.stack,
+        'Bootstrap',
+      );
+    }
+    await app.close().catch(() => undefined);
+    process.exit(1);
+  }
   Logger.log(`Asta API listening on http://localhost:${port}/api`, 'Bootstrap');
 }
 
-void bootstrap();
+bootstrap().catch((err) => {
+  // Anything thrown during module init (bad config, unreachable required service)
+  // lands here with a readable message instead of a bare UnhandledPromiseRejection.
+  const e = err as Error;
+  Logger.error(
+    `Asta API failed to bootstrap: ${e.message}`,
+    e.stack,
+    'Bootstrap',
+  );
+  process.exit(1);
+});
