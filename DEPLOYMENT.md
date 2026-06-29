@@ -1,6 +1,11 @@
 # Deploying Asta
 
-**Backend (NestJS) → Render · Frontend (Angular) → Vercel · CI/CD → GitHub Actions**
+Two supported paths — pick one:
+
+- **Option A — PaaS:** Backend → Render · Frontend → Vercel · DB → MongoDB Atlas. No servers to manage; documented in full below.
+- **Option B — Containers:** one host (or any container platform) running `docker-compose.prod.yml`, or the prebuilt GHCR images. Jump to [Option B](#option-b--containerized-docker-compose-or-ghcr-images).
+
+Both run the same code on **Node 22 / Angular 20**.
 
 ## Why not "just GitHub Actions"?
 
@@ -96,3 +101,61 @@ Render rebuilds the API; Vercel rebuilds the client. You can also trigger manual
   and `ENABLE_BULLMQ=true` + `REDIS_HOST`/`REDIS_PORT` to enable the real queue.
 - **CORS**: the API only accepts the origin in `CLIENT_ORIGIN`. If the browser console shows CORS
   errors, that var doesn't match your actual Vercel domain.
+
+---
+
+## Option B — Containerized (Docker Compose or GHCR images)
+
+One nginx-fronted web container serves the SPA **and** reverse-proxies `/api` + `/socket.io`
+to the API, so the browser only ever talks to one origin — no cross-origin CORS, and the
+client ships same-origin relative URLs (`environment.prod.ts`).
+
+```
+browser ──▶ web (nginx :80) ──▶ api (:3000) ──▶ mongo (replica set)
+                  │                  └──▶ redis
+                  └─ serves SPA + proxies /api and /socket.io
+```
+
+### What's in the repo
+
+| File | Purpose |
+|------|---------|
+| [docker-compose.prod.yml](docker-compose.prod.yml) | Full stack: web + api + mongo (replica set) + redis, health-gated startup |
+| [server/Dockerfile](server/Dockerfile) · [client/Dockerfile](client/Dockerfile) | Multi-stage images (Node 22) |
+| [client/nginx.conf](client/nginx.conf) | SPA + `/api` + `/socket.io` reverse proxy |
+| [.env.production.example](.env.production.example) | Prod env template (copy → `.env`) |
+| [.github/workflows/release.yml](.github/workflows/release.yml) | Builds both images; pushes to GHCR on `main` / tags |
+
+### Quick start (one host with Docker)
+
+```bash
+cp .env.production.example .env      # then edit: JWT secrets, CLIENT_ORIGIN, (optional) AI
+docker compose -f docker-compose.prod.yml up -d --build
+# app is on http://<host>/  (the web container listens on :80)
+```
+
+Point your domain's DNS at the host and terminate TLS in front (a reverse proxy / load
+balancer, or add a certbot/Caddy sidecar). Set `CLIENT_ORIGIN` to that public URL.
+
+### Prebuilt images (no local Docker build)
+
+Every push to `main` publishes to the GitHub Container Registry:
+
+```
+ghcr.io/<owner>/<repo>-api:latest
+ghcr.io/<owner>/<repo>-web:latest
+```
+
+Pull those on any container platform (a VM, Fly.io, Cloud Run, ECS, a k8s cluster…) instead
+of building. The API needs `JWT_SECRET`, `JWT_REFRESH_SECRET`, `MONGO_URI`, `CLIENT_ORIGIN`;
+the web image is config-free (it proxies to the `api` service name — adjust `nginx.conf`
+`proxy_pass` if your API has a different host).
+
+### Real AI in production
+
+Same as everywhere: with no provider configured the app runs in honest **mock mode**
+(placeholder replies). To get real answers, set **one** in `.env`:
+- a cloud key (`GROQ_API_KEY` / `GEMINI_API_KEY` / `OPENAI_API_KEY` …), or
+- **Ollama** (zero-key, local): run an Ollama container reachable from `api`, then
+  `OLLAMA_ENABLED=true` + `OLLAMA_BASE_URL=http://ollama:11434/v1` (needs a pulled model
+  and enough RAM on the host). Admins can confirm what's live on **/admin/ai-ops**.

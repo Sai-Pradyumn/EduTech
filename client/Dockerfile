@@ -1,5 +1,5 @@
 # Asta web (Angular) — build then serve static via nginx
-FROM node:20-alpine AS build
+FROM node:22-alpine AS build
 WORKDIR /app
 COPY package.json package-lock.json ./
 COPY server/package.json ./server/package.json

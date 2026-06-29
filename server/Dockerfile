@@ -1,5 +1,5 @@
 # Asta API (NestJS) — multi-stage production image
-FROM node:20-alpine AS build
+FROM node:22-alpine AS build
 WORKDIR /app
 # Install with the repo's single hoisted tree (npm workspaces)
 COPY package.json package-lock.json ./
@@ -9,7 +9,7 @@ RUN npm ci
 COPY server ./server
 RUN npm run build --workspace server
 
-FROM node:20-alpine AS runner
+FROM node:22-alpine AS runner
 ENV NODE_ENV=production
 WORKDIR /app
 COPY package.json package-lock.json ./
