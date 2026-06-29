@@ -33,6 +33,8 @@ export interface AppConfig {
       };
       deepseek: { apiKey: string; model: string; baseURL: string };
       gemini: { apiKey: string; model: string };
+      /** Local, free, zero-key provider (Ollama's OpenAI-compatible API). Opt-in. */
+      ollama: { enabled: boolean; apiKey: string; model: string; baseURL: string };
     };
   };
   flags: {
@@ -91,7 +93,7 @@ export default (): AppConfig => ({
       (process.env.LLM_STRATEGY as AppConfig['ai']['strategy']) ?? 'fallback',
     order: (
       process.env.LLM_PROVIDERS ??
-      'groq,gemini,mistral,openrouter,deepseek,openai,claude'
+      'groq,gemini,mistral,openrouter,deepseek,openai,claude,ollama'
     )
       .split(',')
       .map((s) => s.trim())
@@ -141,6 +143,16 @@ export default (): AppConfig => ({
       gemini: {
         apiKey: process.env.GEMINI_API_KEY ?? process.env.GOOGLE_API_KEY ?? '',
         model: process.env.GEMINI_MODEL ?? 'gemini-2.0-flash',
+      },
+      ollama: {
+        // Local, free, zero-key. Opt-in: set OLLAMA_ENABLED=true and run a daemon
+        // (`ollama serve` after `ollama pull llama3.2`). It joins the chain as the
+        // last real provider before mock, so real AI answers work with no cloud keys.
+        enabled: process.env.OLLAMA_ENABLED === 'true',
+        // Ollama ignores the key, but the OpenAI SDK needs a non-empty string.
+        apiKey: process.env.OLLAMA_API_KEY ?? 'ollama',
+        model: process.env.OLLAMA_MODEL ?? 'llama3.2',
+        baseURL: process.env.OLLAMA_BASE_URL ?? 'http://localhost:11434/v1',
       },
     },
   },

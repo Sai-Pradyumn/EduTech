@@ -23,6 +23,7 @@ function baseAi(over: Partial<Record<string, unknown>> = {}) {
       'deepseek',
       'openai',
       'claude',
+      'ollama',
     ],
     providers: {
       claude: { apiKey: '', model: 'm' },
@@ -32,6 +33,12 @@ function baseAi(over: Partial<Record<string, unknown>> = {}) {
       openrouter: { apiKey: '', model: 'm', baseURL: 'https://x', headers: {} },
       deepseek: { apiKey: '', model: 'm', baseURL: 'https://x' },
       gemini: { apiKey: '', model: 'm' },
+      ollama: {
+        enabled: false,
+        apiKey: 'ollama',
+        model: 'm',
+        baseURL: 'http://localhost:11434/v1',
+      },
     },
     ...over,
   };
@@ -93,5 +100,28 @@ describe('providerChainFactory', () => {
     const chain = build(ai);
     expect(chain[0].name).toBe('gemini');
     expect(chain[chain.length - 1].name).toBe('mock');
+  });
+
+  it('Ollama (local, zero-key) joins the chain only when enabled', () => {
+    const ai = baseAi();
+    ai.providers.ollama.enabled = true;
+    const chain = build(ai);
+    // Real local AI with NO cloud key configured.
+    expect(chain.map((c) => c.name)).toEqual(['ollama', 'mock']);
+  });
+
+  it('Ollama stays out of the chain when disabled (default)', () => {
+    const chain = build(baseAi());
+    expect(chain.map((c) => c.name)).not.toContain('ollama');
+    expect(chain.map((c) => c.name)).toEqual(['mock']);
+  });
+
+  it('live cloud keys still take priority over local Ollama', () => {
+    const ai = baseAi();
+    ai.providers.groq.apiKey = 'k-groq';
+    ai.providers.ollama.enabled = true;
+    const chain = build(ai);
+    // Cloud first (cheap/fast), Ollama as the free fallback, mock last.
+    expect(chain.map((c) => c.name)).toEqual(['groq', 'ollama', 'mock']);
   });
 });

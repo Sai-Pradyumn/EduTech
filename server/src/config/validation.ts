@@ -26,7 +26,7 @@ export const validationSchema = Joi.object({
     .default('fallback'),
   // Comma-separated priority order (auto-select + fallback chain).
   LLM_PROVIDERS: Joi.string().default(
-    'groq,gemini,mistral,openrouter,deepseek,openai,claude',
+    'groq,gemini,mistral,openrouter,deepseek,openai,claude,ollama',
   ),
   AI_REQUEST_TIMEOUT_MS: Joi.number().default(45000),
   AI_MAX_OUTPUT_TOKENS: Joi.number().default(2048),
@@ -54,6 +54,12 @@ export const validationSchema = Joi.object({
   OPENROUTER_TITLE: Joi.string().optional(),
   DEEPSEEK_MODEL: Joi.string().optional(),
   DEEPSEEK_BASE_URL: Joi.string().optional(),
+  // Ollama — local, free, zero-key real AI. Opt-in via OLLAMA_ENABLED=true with a
+  // running daemon (default http://localhost:11434/v1). The "key" is ignored.
+  OLLAMA_ENABLED: Joi.string().valid('true', 'false').default('false'),
+  OLLAMA_API_KEY: Joi.string().allow('').optional(),
+  OLLAMA_MODEL: Joi.string().optional(),
+  OLLAMA_BASE_URL: Joi.string().optional(),
 
   ENABLE_LANGGRAPH: Joi.string().valid('true', 'false').default('false'),
   ENABLE_REALTIME_VOICE: Joi.string().valid('true', 'false').default('false'),
