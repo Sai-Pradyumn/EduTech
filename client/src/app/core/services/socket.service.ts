@@ -13,17 +13,34 @@ export class SocketService {
 
   private connect(): Socket {
     if (this.socket?.connected) return this.socket;
-    this.socket = io(environment.socketUrl, {
+    if (this.socket) {
+      // A stale (disconnected) instance — refresh its token and let it reconnect.
+      this.socket.auth = { token: this.auth.accessToken ?? '' };
+      this.socket.connect();
+      return this.socket;
+    }
+    const socket = io(environment.socketUrl, {
       transports: ['websocket'],
       auth: { token: this.auth.accessToken ?? '' },
       autoConnect: true,
+      reconnection: true,
+      reconnectionAttempts: 5,
+      reconnectionDelay: 800,
+      reconnectionDelayMax: 5000,
     });
-    return this.socket;
+    // On every (re)connection attempt, send the *current* token — it may have been
+    // refreshed since the socket was first created, which would otherwise 401.
+    socket.io.on('reconnect_attempt', () => {
+      socket.auth = { token: this.auth.accessToken ?? '' };
+    });
+    this.socket = socket;
+    return socket;
   }
 
   /**
-   * Send a message to the Agent OS and stream workflow + token events until
-   * the run completes or errors.
+   * Send a message to the Agent OS and stream workflow + token events until the run
+   * completes or errors. A dropped connection mid-stream surfaces as a terminal
+   * error event so the UI never hangs waiting for a `completed` that won't arrive.
    */
   streamAgent(payload: {
     message: string;
@@ -34,16 +51,41 @@ export class SocketService {
   }): Observable<AgentStreamEvent> {
     return new Observable<AgentStreamEvent>((subscriber) => {
       const socket = this.connect();
+      let settled = false;
+      const finish = (event: AgentStreamEvent) => {
+        if (settled) return;
+        settled = true;
+        subscriber.next(event);
+        subscriber.complete();
+      };
+
       const onEvent = (event: AgentStreamEvent) => {
+        if (settled) return;
         subscriber.next(event);
         if (event.type === 'completed' || event.type === 'error') {
+          settled = true;
           subscriber.complete();
         }
       };
-      socket.on('agent.event', onEvent);
-      socket.emit('agent.send', payload);
+      const onDisconnect = () =>
+        finish({ type: 'error', messageId: '', message: 'Connection lost — please try again.' });
+      const onConnectError = () =>
+        finish({ type: 'error', messageId: '', message: 'Could not reach Asta. Check your connection.' });
 
-      return () => socket.off('agent.event', onEvent);
+      socket.on('agent.event', onEvent);
+      socket.once('disconnect', onDisconnect);
+      socket.io.once('reconnect_failed', onConnectError);
+      if (socket.connected) {
+        socket.emit('agent.send', payload);
+      } else {
+        socket.once('connect', () => socket.emit('agent.send', payload));
+      }
+
+      return () => {
+        socket.off('agent.event', onEvent);
+        socket.off('disconnect', onDisconnect);
+        socket.io.off('reconnect_failed', onConnectError);
+      };
     });
   }
 

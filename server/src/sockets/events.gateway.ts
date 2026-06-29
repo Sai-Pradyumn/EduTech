@@ -20,7 +20,12 @@ import { AgentStreamEvent } from '../modules/ai/types/agent.types';
 interface SocketData {
   userId?: string;
   role?: Role;
+  /** True while an agent run is streaming on this socket (one in flight at a time). */
+  busy?: boolean;
 }
+
+/** Mirror the HTTP DTO's cap so the WS path can't be used to bypass it. */
+const MAX_MESSAGE_LEN = 4000;
 
 interface AgentSendPayload {
   sessionId?: string;
@@ -77,11 +82,32 @@ export class EventsGateway implements OnGatewayConnection {
       this.reject(client);
       return { ok: false };
     }
-    if (!payload?.message?.trim()) return { ok: false };
+    const message = payload?.message?.trim();
+    if (!message) return { ok: false };
 
-    const msgPreview = payload.message.slice(0, 60);
+    // Mirror the HTTP cap — a streamed message can't be larger than the REST one.
+    if (message.length > MAX_MESSAGE_LEN) {
+      this.emitError(
+        client,
+        `Message too long (max ${MAX_MESSAGE_LEN} characters).`,
+      );
+      return { ok: false };
+    }
+
+    // One run per socket: a second send while one is streaming would interleave
+    // token events and double the cost. Tell the client instead of running it.
+    if (data.busy) {
+      this.emitError(
+        client,
+        'Still answering your previous message — please wait.',
+      );
+      return { ok: false };
+    }
+    data.busy = true;
+
+    const msgPreview = message.slice(0, 60);
     this.logger.log(
-      `[WS] agent.send from user ${userId} | agent: ${payload.agentType ?? 'auto'} | message: "${msgPreview}${payload.message.length > 60 ? '...' : ''}"`,
+      `[WS] agent.send from user ${userId} | agent: ${payload.agentType ?? 'auto'} | message: "${msgPreview}${message.length > 60 ? '...' : ''}"`,
     );
 
     const emit = (event: AgentStreamEvent) => client.emit('agent.event', event);
@@ -90,7 +116,7 @@ export class EventsGateway implements OnGatewayConnection {
         {
           userId,
           role: data.role as Role,
-          message: payload.message,
+          message,
           intent: payload.intent,
           agentType: payload.agentType,
           sessionId: payload.sessionId,
@@ -107,7 +133,15 @@ export class EventsGateway implements OnGatewayConnection {
       this.logger.error(
         `[WS] agent.send FAILED | error: ${(err as Error).message}`,
       );
+      // Emit a terminal error event so the client's streaming UI unblocks instead
+      // of hanging forever waiting for a `completed`/`error` it would never get.
+      this.emitError(
+        client,
+        'Asta could not finish that response. Please try again.',
+      );
       return { ok: false };
+    } finally {
+      data.busy = false;
     }
   }
 
@@ -125,12 +159,13 @@ export class EventsGateway implements OnGatewayConnection {
     this.server.to(`user:${userId}`).emit(event, data);
   }
 
+  /** Emit a terminal error event on the agent stream (completes the client observable). */
+  private emitError(client: Socket, message: string): void {
+    client.emit('agent.event', { type: 'error', messageId: '', message });
+  }
+
   private reject(client: Socket): void {
-    client.emit('agent.event', {
-      type: 'error',
-      messageId: '',
-      message: 'Unauthorized socket',
-    });
+    this.emitError(client, 'Unauthorized socket');
     client.disconnect(true);
   }
 }
