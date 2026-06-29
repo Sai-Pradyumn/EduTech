@@ -32,8 +32,11 @@ test.describe('public pages smoke', () => {
     await expect(page.getByText(/every plan runs on the full agent OS/i)).toBeVisible();
   });
 
-  test('unknown route redirects home (catch-all)', async ({ page }) => {
+  test('unknown route shows the branded 404 page', async ({ page }) => {
     await gotoApp(page, '/this-route-does-not-exist');
+    // The catch-all renders a real 404 (not a redirect); the custom TitleStrategy
+    // brands its tab title too.
     await expect(page).toHaveTitle(/Asta/i);
+    await expect(page.getByText('404')).toBeVisible();
   });
 });
