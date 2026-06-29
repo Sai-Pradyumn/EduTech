@@ -12,7 +12,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22'
           cache: 'npm'
       - name: Install (single hoisted workspace tree)
         run: npm ci
@@ -49,7 +49,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22'
           cache: 'npm'
       - name: Install (single hoisted workspace tree)
         run: npm ci
@@ -60,17 +60,46 @@ jobs:
 
   e2e:
     runs-on: ubuntu-latest
+    services:
+      mongo:
+        image: mongo:7
+        ports:
+          - 27017:27017
+        options: >-
+          --health-cmd "mongosh --quiet --eval 'db.runCommand({ ping: 1 })'"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      # Full-stack Playwright run against a real (mock-AI) backend, so the
+      # auth / admin / generation journeys actually execute instead of skipping.
+      MONGO_URI: mongodb://127.0.0.1:27017/asta
+      JWT_SECRET: ci-e2e-not-a-secret
+      JWT_REFRESH_SECRET: ci-e2e-not-a-secret
+      # Deterministic generation flows (no live keys, no AI variance).
+      AI_PROVIDER: mock
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22'
           cache: 'npm'
       - name: Install (single hoisted workspace tree)
         run: npm ci
       - name: Install Playwright Chromium
         run: npx playwright install --with-deps chromium
-      - name: Run e2e smoke suite (auto-starts the client; no backend needed)
+      - name: Build the API
+        run: npm run build --workspace server
+      - name: Seed the test database (demo users + fixtures)
+        run: npm run seed --workspace server
+      - name: Start the API (mock mode) and wait for health
+        run: |
+          npm run start:prod --workspace server &
+          for i in $(seq 1 60); do
+            curl -sf http://127.0.0.1:3000/api/health && break
+            sleep 1
+          done
+      - name: Run full e2e suite (Playwright auto-starts the client)
         run: npm run test:e2e
       - name: Upload Playwright traces on failure
         if: failure()
