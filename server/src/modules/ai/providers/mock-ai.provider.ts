@@ -28,8 +28,15 @@ export class MockAIProvider implements IAIProvider {
 
   generateText(messages: AIMessage[], _opts?: GenOptions): Promise<string> {
     const last = messages[messages.length - 1]?.content ?? '';
+    // Honest offline placeholder: the gateway only reaches the mock provider when
+    // every real provider is unavailable (no key, invalid key, rate-limited, or out
+    // of credit). Saying so plainly — instead of faking a "real" answer — turns a
+    // confusing silent failure into a self-explaining, actionable state.
     return Promise.resolve(
-      `Here's a clear, structured explanation based on your question: "${last.slice(0, 80)}".`,
+      `⚠️ Asta is running in offline demo mode, so this is a placeholder — not a real answer to ` +
+        `"${last.slice(0, 80)}". No live AI provider responded (every configured key is missing, invalid, ` +
+        `rate-limited, or out of credit). Add at least one working LLM API key (e.g. GROQ_API_KEY, ` +
+        `OPENAI_API_KEY, or GEMINI_API_KEY) to the server's .env and restart to get genuine responses.`,
     );
   }
 
