@@ -22,7 +22,11 @@ export type CourseVisibility = (typeof COURSE_VISIBILITIES)[number];
 export class CourseLesson {
   @Prop({ required: true }) id!: string;
   @Prop({ required: true }) title!: string;
+  /** Short design brief (2–4 sentences) written at course-generation time. */
   @Prop({ default: '' }) content!: string;
+  /** Full teachable lesson (markdown) — generated lazily on first open. */
+  @Prop({ default: '' }) body!: string;
+  @Prop() bodyGeneratedAt?: Date;
   @Prop({ default: 20 }) estimateMinutes!: number;
 }
 const CourseLessonSchema = SchemaFactory.createForClass(CourseLesson);
@@ -79,6 +83,12 @@ export class Course {
   @Prop({ type: CourseProjectSchema, default: () => ({}) })
   project!: CourseProject;
   @Prop({ type: [String], default: [] }) certificateCriteria!: string[];
+
+  // ── Learner progress (Learn mode) ──
+  /** Lesson ids the author-learner has completed. */
+  @Prop({ type: [String], default: [] }) completedLessons!: string[];
+  /** Last opened lesson — powers "continue where you left off". */
+  @Prop() lastLessonId?: string;
 
   @Prop() linkedFlowId?: string;
   @Prop() publishedAt?: Date;

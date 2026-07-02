@@ -17,6 +17,7 @@ import {
   CourseVisibility,
 } from './schemas/course.schema';
 import { CourseArchitectAgent } from './course-architect.agent';
+import { LessonComposerService } from './lesson-composer.service';
 import { GenerateCourseDto, UpdateCourseDto } from './dto/course.dto';
 
 @Injectable()
@@ -30,6 +31,7 @@ export class CourseBuilderService {
     private readonly visuals: VisualsService,
     private readonly projects: ProjectsService,
     private readonly architect: CourseArchitectAgent,
+    private readonly lessons: LessonComposerService,
   ) {}
 
   async generate(
@@ -124,14 +126,18 @@ export class CourseBuilderService {
           id: m.id,
           title: m.title,
           summary: m.summary ?? existing?.summary ?? '',
-          lessons: (m.lessons ?? existing?.lessons ?? []).map((l) => ({
-            id: l.id,
-            title: l.title,
-            content: l.content ?? '',
-            estimateMinutes:
-              existing?.lessons.find((x) => x.id === l.id)?.estimateMinutes ??
-              20,
-          })),
+          lessons: (m.lessons ?? existing?.lessons ?? []).map((l) => {
+            const prev = existing?.lessons.find((x) => x.id === l.id);
+            return {
+              id: l.id,
+              title: l.title,
+              content: l.content ?? '',
+              // Generated lesson bodies survive design edits.
+              body: prev?.body ?? '',
+              bodyGeneratedAt: prev?.bodyGeneratedAt,
+              estimateMinutes: prev?.estimateMinutes ?? 20,
+            };
+          }),
           linkedQuizId: existing?.linkedQuizId,
           linkedVisualId: existing?.linkedVisualId,
           voiceScript: existing?.voiceScript ?? '',
@@ -139,6 +145,73 @@ export class CourseBuilderService {
       });
       c.markModified('modules');
     }
+    return c.save();
+  }
+
+  // ── Learn mode ──
+
+  /**
+   * Full lesson body, generated on FIRST open and cached on the lesson.
+   * Opening a lesson also records it as the "continue here" point.
+   */
+  async expandLesson(
+    userId: string,
+    id: string,
+    lessonId: string,
+  ): Promise<CourseDocument> {
+    const c = await this.get(userId, id);
+    const mod = c.modules.find((m) => m.lessons.some((l) => l.id === lessonId));
+    const lesson = mod?.lessons.find((l) => l.id === lessonId);
+    if (!mod || !lesson) throw new NotFoundException('Lesson not found');
+
+    let changed = false;
+    if (!lesson.body) {
+      lesson.body = await this.lessons.compose(userId, c, mod, lesson);
+      lesson.bodyGeneratedAt = new Date();
+      changed = true;
+    }
+    if (c.lastLessonId !== lessonId) {
+      c.lastLessonId = lessonId;
+      changed = true;
+    }
+    if (changed) {
+      c.markModified('modules');
+      await c.save();
+    }
+    return c;
+  }
+
+  /** Rewrite an already-generated lesson body (explicit learner request). */
+  async regenerateLesson(
+    userId: string,
+    id: string,
+    lessonId: string,
+  ): Promise<CourseDocument> {
+    const c = await this.get(userId, id);
+    const mod = c.modules.find((m) => m.lessons.some((l) => l.id === lessonId));
+    const lesson = mod?.lessons.find((l) => l.id === lessonId);
+    if (!mod || !lesson) throw new NotFoundException('Lesson not found');
+    lesson.body = await this.lessons.compose(userId, c, mod, lesson);
+    lesson.bodyGeneratedAt = new Date();
+    c.markModified('modules');
+    return c.save();
+  }
+
+  async setLessonProgress(
+    userId: string,
+    id: string,
+    lessonId: string,
+    completed: boolean,
+  ): Promise<CourseDocument> {
+    const c = await this.get(userId, id);
+    const exists = c.modules.some((m) =>
+      m.lessons.some((l) => l.id === lessonId),
+    );
+    if (!exists) throw new NotFoundException('Lesson not found');
+    const set = new Set(c.completedLessons);
+    if (completed) set.add(lessonId);
+    else set.delete(lessonId);
+    c.completedLessons = [...set];
     return c.save();
   }
 

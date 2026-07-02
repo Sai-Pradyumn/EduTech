@@ -65,6 +65,16 @@ import { Course, CourseService, Difficulty } from '../../core/services/course.se
               <span class="pill">{{ c.level }}</span>
               @if (c.status === 'published') { <span class="pill">{{ c.visibility }}</span> }
             </div>
+            @if (progressPct(c) > 0) {
+              <div class="mt-3">
+                <div class="mini-track"><span class="mini-fill" [style.width.%]="progressPct(c)"></span></div>
+                <p class="text-[11px] text-txt-mute mt-1.5">
+                  {{ progressPct(c) }}% ·
+                  @if (continueLesson(c); as l) { <span class="cont">▶ Continue: {{ l }}</span> }
+                  @else { <span class="cont">✓ Complete</span> }
+                </p>
+              </div>
+            }
           </asta-card>
         }
       </div>
@@ -84,6 +94,9 @@ import { Course, CourseService, Difficulty } from '../../core/services/course.se
       asta-card:hover .cb-stat .num { transform: scale(1.1); }
       @media (prefers-reduced-motion: reduce) { asta-card:hover .cb-stat .num { transform: none; } }
       .line-clamp-2 { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+      .mini-track { height: 4px; border-radius: 999px; background: var(--paper-3); overflow: hidden; }
+      .mini-fill { display: block; height: 100%; background: linear-gradient(90deg, var(--green-deep), var(--green)); }
+      .cont { color: var(--green-deep); font-weight: 600; }
       .cb-stat { text-align: center; }
       .cb-stat .num { font-size: 26px; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--green-deep); }
       .cb-stat .lbl { font-size: 10.5px; color: var(--text-mute); text-transform: uppercase; letter-spacing: .04em; margin-top: 2px; }
@@ -121,4 +134,20 @@ export class CourseListComponent {
     });
   }
   open(c: Course): void { this.router.navigate(['/app/course-builder', c.id]); }
+
+  // ── Learn-mode progress on the cards ──
+  progressPct(c: Course): number {
+    const total = c.modules.reduce((n, m) => n + m.lessons.length, 0);
+    if (!total) return 0;
+    return Math.round(((c.completedLessons?.length ?? 0) / total) * 100);
+  }
+  /** Title of the lesson the learner would land on ("continue where you left off"). */
+  continueLesson(c: Course): string | null {
+    const lessons = c.modules.flatMap((m) => m.lessons);
+    const done = new Set(c.completedLessons ?? []);
+    const target =
+      (c.lastLessonId && lessons.find((l) => l.id === c.lastLessonId && !done.has(l.id))) ||
+      lessons.find((l) => !done.has(l.id));
+    return target?.title ?? null;
+  }
 }

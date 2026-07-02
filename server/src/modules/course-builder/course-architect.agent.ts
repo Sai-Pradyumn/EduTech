@@ -157,6 +157,7 @@ export class CourseArchitectAgent {
             id: `${id}_l${j}`,
             title: this.cut(l.title!, MAX_TITLE),
             content: this.cut(l.content ?? '', MAX_CONTENT),
+            body: '', // full lesson body is generated lazily on first open
             estimateMinutes: this.clampInt(l.estimateMinutes, 5, 90, 20),
           }));
         return {

@@ -5,7 +5,18 @@ product in its category: what the industry bar looks like, where Asta stands,
 and the concrete gaps. Legend matches `IMPROVEMENTS_BACKLOG.md` —
 `P1` high · `P2` medium · `P3` nice-to-have; effort `S/M/L`.
 
+> **2026-07 line-level re-verification** — several items below were found to ALREADY exist and
+> are corrected in place: spaced repetition (SM-2-lite on mistakes + due endpoint + review UI),
+> Knowledge-Hub grounded chat **with doc scoping** and citations, timed/retake/shuffle quizzes,
+> auto-titled sessions, flow-node deep links into Tutor/quiz, Skill-Twin "Why?" drawers, and the
+> public portfolio page (`/p/:username`). Gaps that were re-confirmed: course Learn mode (shipped
+> below), memory manager, time-based nudges/digest, interview voice, classic-tutor message actions.
+
 **Shipped in this audit round** (branch `feat/full-revamp`):
+- ✅ **Course Learn Mode** — courses are now takeable: full lesson bodies written by AI on first
+  open (cached, honest outline offline), lesson reader with prev/next, per-lesson completion,
+  auto-advance, course progress %, continue-where-you-left-off on the course cards, module-quiz
+  CTAs, per-lesson rewrite.
 - ✅ Chat commands — saying "mark week 2 complete / refocus week 3 on X /
   restore version 2" in ANY chat executes the real update (registry +
   orchestrator hook + roadmap commands).
@@ -27,8 +38,8 @@ Strong: streaming with workflow feed, modes, visual blocks, feedback, retry.
 Now has history, deep links, large view.
 - [ ] `P1·M` **Message actions**: copy / regenerate / edit-my-message on every
   turn (OS canvas has them; classic doesn't).
-- [ ] `P2·M` **Session titles + search**: auto-title sessions from the first
-  exchange; search across past chats (OS has in-chat search only).
+- [ ] `P2·S` **Search across past chats** (sessions already auto-title from the
+  first exchange — corrected; OS has in-chat search only).
 - [ ] `P2·S` **Stop generation** button while streaming.
 - [ ] `P3·M` Shareable/exportable conversations (OS has export; classic none).
 
@@ -69,12 +80,12 @@ node.
 
 ### Courses — bar: Coursera/Udemy authoring
 Strong: AI-designed blueprints (goal-specific since 3e50776), lessons, quizzes,
-voice scripts, capstone, certificates.
-- [ ] `P1·M` **Lesson content depth**: lesson briefs are 2–4 sentences; industry
-  bar is full lesson bodies. Generate the full lesson on first open (lazy,
-  cached) instead of upfront.
-- [ ] `P2·S` Resume-where-you-left-off across sessions (deep-link to the next
-  incomplete lesson from Today/dashboard).
+voice scripts, capstone, certificates. **Now takeable: Learn mode.**
+- [x] **Lesson content depth** — full lesson bodies generated lazily on first
+  open (LessonComposerService; cached; honest outline offline).
+- [x] **Resume-where-you-left-off** — lastLessonId + completedLessons; course
+  cards show progress + "Continue: <lesson>".
+- [ ] `P3·S` Deep-link "continue course" from Today/dashboard strips.
 
 ### Daily plan / Today — bar: Todoist + Duolingo daily goals
 Strong: generated plan, modes, carry-over, streak, ledger events.
@@ -85,10 +96,12 @@ Strong: generated plan, modes, carry-over, streak, ledger events.
 
 ### Quiz Studio — bar: LeetCode/Anki hybrid
 Strong: AI-written questions per topic/document (since 3e50776), grading,
-mistakes feed the twin.
-- [ ] `P2·M` **Spaced repetition**: re-surface failed questions on a decay
-  schedule (mistakes exist; the scheduler doesn't).
-- [ ] `P2·S` Timed exam mode with per-question timing analytics.
+mistakes feed the twin. **Corrected:** timed mode + countdown, retake and
+shuffle already exist; spaced repetition (SM-2-lite) already exists on mistakes
+with a due queue, review UI and dashboard strip.
+- [ ] `P2·M` **Test me, don't trust me**: due reviews are self-reported
+  (Recalled/Forgot) — offer a real 1–2-question re-test per due concept.
+- [ ] `P3·S` Per-question timing analytics.
 
 ### Interview — bar: Pramp/Interviewing.io
 Strong: AI questions tailored to role + weak areas, scoring, PDF report.
@@ -108,9 +121,8 @@ Strong: severity/frequency, repair routing into live features.
 
 ### Knowledge Hub (RAG) — bar: NotebookLM
 Strong: hybrid retrieval (Qdrant dense + keyword), summaries, flashcards,
-citations, doc-grounded quizzes.
-- [ ] `P1·M` **Grounded chat over a selected set of docs** with inline
-  citations in the OS canvas (retrieval exists; the doc-picker UX doesn't).
+doc-grounded quizzes. **Corrected:** grounded chat with cited sources AND
+per-document scoping (select docs → documentIds) already exists in the hub.
 - [ ] `P2·M` Audio overview (NotebookLM's headline feature) via the existing
   voice synthesis path.
 
@@ -126,8 +138,8 @@ Strong: AI analysis, JD matching, PDF.
   exists; link them).
 
 ### Career readiness / Portfolio / Skill passport — bar: LinkedIn profile
-Strong: readiness scoring, portfolio, verifiable ledger.
-- [ ] `P2·M` Public shareable profile page (portfolio exists; no public URL).
+Strong: readiness scoring, portfolio, verifiable ledger. **Corrected:** a public
+shareable portfolio page already exists (`/p/:username`, public passport too).
 
 ## Social & live
 

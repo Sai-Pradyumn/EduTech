@@ -96,18 +96,21 @@ export function buildCourseBlueprint(
         id: `${id}_l0`,
         title: `${title}: concepts`,
         content: `Introduce ${title.toLowerCase()} with definitions and a worked example.`,
+        body: '',
         estimateMinutes: 25,
       },
       {
         id: `${id}_l1`,
         title: `${title}: practice`,
         content: `Guided practice applying ${title.toLowerCase()}.`,
+        body: '',
         estimateMinutes: 30,
       },
       {
         id: `${id}_l2`,
         title: `${title}: pitfalls & recap`,
         content: `Common mistakes in ${title.toLowerCase()} and a quick recap.`,
+        body: '',
         estimateMinutes: 15,
       },
     ];

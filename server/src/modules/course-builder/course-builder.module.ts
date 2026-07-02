@@ -7,6 +7,7 @@ import { ProjectsModule } from '../projects/projects.module';
 import { Roadmap, RoadmapSchema } from '../roadmap/schemas/roadmap.schema';
 import { Course, CourseSchema } from './schemas/course.schema';
 import { CourseArchitectAgent } from './course-architect.agent';
+import { LessonComposerService } from './lesson-composer.service';
 import { CourseBuilderController } from './course-builder.controller';
 import { CourseBuilderService } from './course-builder.service';
 
@@ -27,7 +28,11 @@ import { CourseBuilderService } from './course-builder.service';
     ProjectsModule,
   ],
   controllers: [CourseBuilderController],
-  providers: [CourseBuilderService, CourseArchitectAgent],
+  providers: [
+    CourseBuilderService,
+    CourseArchitectAgent,
+    LessonComposerService,
+  ],
   exports: [CourseBuilderService],
 })
 export class CourseBuilderModule {}

@@ -1,6 +1,7 @@
 import { Type } from 'class-transformer';
 import {
   IsArray,
+  IsBoolean,
   IsEnum,
   IsIn,
   IsOptional,
@@ -52,4 +53,8 @@ export class UpdateCourseDto {
 export class PublishCourseDto {
   @IsIn(COURSE_VISIBILITIES)
   visibility!: CourseVisibility;
+}
+
+export class LessonProgressDto {
+  @IsBoolean() completed!: boolean;
 }

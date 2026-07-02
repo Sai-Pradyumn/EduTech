@@ -5,7 +5,16 @@ import { ApiService } from './api.service';
 export type Difficulty = 'beginner' | 'intermediate' | 'advanced';
 export type CourseVisibility = 'private' | 'org' | 'cohort';
 
-export interface CourseLesson { id: string; title: string; content: string; estimateMinutes: number; }
+export interface CourseLesson {
+  id: string;
+  title: string;
+  /** Short design brief from generation time. */
+  content: string;
+  /** Full teachable lesson (markdown) — generated on first open. */
+  body: string;
+  bodyGeneratedAt: string | null;
+  estimateMinutes: number;
+}
 export interface CourseModule {
   id: string;
   title: string;
@@ -28,6 +37,9 @@ export interface Course {
   modules: CourseModule[];
   project: { title: string; brief: string; linkedProjectId: string | null };
   certificateCriteria: string[];
+  /** Learner progress (Learn mode). */
+  completedLessons: string[];
+  lastLessonId: string | null;
   linkedFlowId: string | null;
   publishedAt: string | null;
   createdAt: string;
@@ -42,6 +54,10 @@ export class CourseService {
   generate(body: { goal: string; level?: Difficulty; audience?: string; outline?: string }): Observable<Course> { return this.api.post<Course>('/courses', body); }
   fromRoadmap(roadmapId: string): Observable<Course> { return this.api.post<Course>(`/courses/from-roadmap/${roadmapId}`, {}); }
   update(id: string, body: Partial<Pick<Course, 'title' | 'description' | 'audience'>> & { modules?: { id: string; title: string; summary?: string; lessons?: { id: string; title: string; content?: string }[] }[] }): Observable<Course> { return this.api.patch<Course>(`/courses/${id}`, body); }
+  /** Learn mode: full lesson body on first open (cached); marks the continue point. */
+  expandLesson(id: string, lessonId: string): Observable<Course> { return this.api.post<Course>(`/courses/${id}/lessons/${lessonId}/expand`, {}); }
+  regenerateLesson(id: string, lessonId: string): Observable<Course> { return this.api.post<Course>(`/courses/${id}/lessons/${lessonId}/regenerate`, {}); }
+  setLessonProgress(id: string, lessonId: string, completed: boolean): Observable<Course> { return this.api.patch<Course>(`/courses/${id}/lessons/${lessonId}/progress`, { completed }); }
   generateQuiz(id: string, moduleId: string): Observable<Course> { return this.api.post<Course>(`/courses/${id}/modules/${moduleId}/quiz`, {}); }
   generateVisual(id: string, moduleId: string): Observable<Course> { return this.api.post<Course>(`/courses/${id}/modules/${moduleId}/visual`, {}); }
   generateProject(id: string): Observable<Course> { return this.api.post<Course>(`/courses/${id}/project`, {}); }

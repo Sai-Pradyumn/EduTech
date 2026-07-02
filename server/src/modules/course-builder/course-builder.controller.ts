@@ -17,6 +17,7 @@ import { CourseBuilderService } from './course-builder.service';
 import { CourseDocument } from './schemas/course.schema';
 import {
   GenerateCourseDto,
+  LessonProgressDto,
   PublishCourseDto,
   UpdateCourseDto,
 } from './dto/course.dto';
@@ -40,6 +41,8 @@ function toView(c: CourseDocument) {
         id: l.id,
         title: l.title,
         content: l.content,
+        body: l.body ?? '',
+        bodyGeneratedAt: l.bodyGeneratedAt?.toISOString() ?? null,
         estimateMinutes: l.estimateMinutes,
       })),
       linkedQuizId: m.linkedQuizId ?? null,
@@ -52,6 +55,8 @@ function toView(c: CourseDocument) {
       linkedProjectId: c.project?.linkedProjectId ?? null,
     },
     certificateCriteria: c.certificateCriteria,
+    completedLessons: c.completedLessons ?? [],
+    lastLessonId: c.lastLessonId ?? null,
     linkedFlowId: c.linkedFlowId ?? null,
     publishedAt: c.publishedAt?.toISOString() ?? null,
     createdAt:
@@ -115,6 +120,43 @@ export class CourseBuilderController {
     @Body() dto: UpdateCourseDto,
   ) {
     return toView(await this.courses.update(user.id, id, dto));
+  }
+
+  /** Learn mode: full lesson body on first open (cached); marks "continue here". */
+  @Post(':id/lessons/:lessonId/expand')
+  async expandLesson(
+    @CurrentUser() user: AuthUser,
+    @Param('id') id: string,
+    @Param('lessonId') lessonId: string,
+  ) {
+    return toView(await this.courses.expandLesson(user.id, id, lessonId));
+  }
+
+  /** Explicit rewrite of an already-generated lesson body. */
+  @Post(':id/lessons/:lessonId/regenerate')
+  async regenerateLesson(
+    @CurrentUser() user: AuthUser,
+    @Param('id') id: string,
+    @Param('lessonId') lessonId: string,
+  ) {
+    return toView(await this.courses.regenerateLesson(user.id, id, lessonId));
+  }
+
+  @Patch(':id/lessons/:lessonId/progress')
+  async lessonProgress(
+    @CurrentUser() user: AuthUser,
+    @Param('id') id: string,
+    @Param('lessonId') lessonId: string,
+    @Body() dto: LessonProgressDto,
+  ) {
+    return toView(
+      await this.courses.setLessonProgress(
+        user.id,
+        id,
+        lessonId,
+        dto.completed,
+      ),
+    );
   }
 
   @Post(':id/modules/:moduleId/quiz')

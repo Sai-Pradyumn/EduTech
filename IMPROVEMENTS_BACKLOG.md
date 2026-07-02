@@ -59,11 +59,13 @@ effort `S` (hours) · `M` (a day) · `L` (multi-day).
 - [x] **Roadmap versions (git-style)** — every generation/edit/restore is a restorable snapshot; History panel + chat restore; progress survives restores.
 - [x] **Roadmap → learning deep-links** — week cards route into Tutor (learn/quiz on that topic) and per-week rework.
 - [x] **Tutor past chats + large view** — session history UI (was persisted but invisible), topic deep-link prefill, working `open_route`; large-screen mode in classic tutor and Asta OS (Esc exits).
-- [ ] `P1·M` **Course lesson depth on demand** — generate the full lesson body lazily on first open (briefs are 2–4 sentences today).
-- [ ] `P1·M` **Doc-grounded chat picker** — select documents to ground an OS chat with inline citations (retrieval exists; UX doesn't).
-- [ ] `P1·M` **Classic-tutor message actions** — copy/regenerate/edit-turn parity with the OS canvas.
-- [ ] `P2·M` **Extend chat commands** — daily-plan items, memory saves, course archive; plus a one-click undo chip after any chat write.
-- [ ] `P2·M` **Spaced repetition** for failed quiz questions.
+- [x] **Course Learn Mode** — full lesson bodies generated on first open (cached; honest outline offline), reader with prev/next + complete + auto-advance, progress %, continue-where-you-left-off, module-quiz CTAs, per-lesson rewrite.
+- [x] ~~Doc-grounded chat picker~~ — **already existed** (KH grounded chat scopes to selected docs via documentIds; corrected in the audit).
+- [x] ~~Spaced repetition~~ — **already existed** (SM-2-lite on mistakes + due queue + review UI); remaining enrichment: real re-test instead of self-report (P2, phase 2).
+- [ ] `P1·M` **Classic-tutor message actions** — copy/regenerate/edit-turn/stop parity with the OS canvas.
+- [ ] `P2·M` **Extend chat commands** — daily-plan items, memory remember/forget, course archive/continue; plus an undo chip after any chat write.
+- [ ] `P2·M` **Memory manager** — view/edit/delete what Asta remembers + forget-by-chat.
+- [ ] `P2·M` **Time-based engagement** — inactivity + due-review nudges, weekly digest (in-app + email, config-gated).
 - [ ] `P2·S` **Version diff view** before restoring a roadmap version.
 
 ## 9. UX & features
