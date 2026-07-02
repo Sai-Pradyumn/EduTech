@@ -33,6 +33,8 @@ export interface AgentRuntimeContext {
   profile: StudentProfileDocument | null;
   roadmap: RoadmapContext | null;
   memories: MemoryItem[];
+  /** Query-relevant learner facts from the context engine (already budgeted). */
+  facts?: { source: string; text: string }[];
   /** Recent turns of this session (excludes the current message). */
   history: HistoryTurn[];
   /** Rolling summary of earlier turns (when the chat is long). */

@@ -56,7 +56,22 @@ export class LlmComposerService {
             : ''),
       );
     }
-    if (ctx.memories?.length) {
+    if (ctx.facts?.length) {
+      // Context-engine output: already query-relevant and token-budgeted. Grouped
+      // by signal so the model can weigh a struggle differently from a plan item.
+      const labels: Record<string, string> = {
+        memory: 'Remembered about them',
+        mistake: 'Current struggles (address these when relevant)',
+        mastery: 'Skill state',
+        plan: 'Their plan',
+        course: 'Courses they are building',
+      };
+      for (const [source, label] of Object.entries(labels)) {
+        const group = ctx.facts.filter((f) => f.source === source);
+        if (group.length)
+          lines.push(`${label}:`, ...group.map((f) => `- ${f.text}`));
+      }
+    } else if (ctx.memories?.length) {
       lines.push(
         'Remembered:',
         ...ctx.memories.slice(0, 6).map((m) => `- (${m.kind}) ${m.content}`),

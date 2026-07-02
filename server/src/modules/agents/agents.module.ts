@@ -5,6 +5,16 @@ import { RagModule } from '../rag/rag.module';
 import { AssessmentModule } from '../assessment/assessment.module';
 import { ProjectsModule } from '../projects/projects.module';
 import { Roadmap, RoadmapSchema } from '../roadmap/schemas/roadmap.schema';
+import { Mistake, MistakeSchema } from '../mistakes/schemas/mistake.schema';
+import {
+  SkillTwinSnapshot,
+  SkillTwinSnapshotSchema,
+} from '../skill-twin/schemas/skill-twin-snapshot.schema';
+import {
+  DailyPlan,
+  DailyPlanSchema,
+} from '../daily-plan/schemas/daily-plan.schema';
+import { Course, CourseSchema } from '../course-builder/schemas/course.schema';
 import { RoadmapAgentService } from './roadmap/roadmap-agent.service';
 import { TutorAgentService } from './agents/tutor-agent.service';
 import { MentorAgentService } from './agents/mentor-agent.service';
@@ -17,6 +27,7 @@ import { ContentCreatorAgentService } from './agents/content-creator-agent.servi
 import { AdminInsightAgentService } from './agents/admin-insight-agent.service';
 import { AgentRouterService } from './core/agent-router.service';
 import { AgentContextService } from './core/agent-context.service';
+import { ContextEngineService } from './core/context-engine.service';
 import { LlmComposerService } from './core/llm-composer.service';
 import { PlannerService } from './core/planner.service';
 import { NextActionService } from './core/next-action.service';
@@ -59,6 +70,10 @@ import { TutorController } from './tutor.controller';
       { name: AgentMemory.name, schema: AgentMemorySchema },
       { name: AgentWorkflowLog.name, schema: AgentWorkflowLogSchema },
       { name: Roadmap.name, schema: RoadmapSchema },
+      { name: Mistake.name, schema: MistakeSchema },
+      { name: SkillTwinSnapshot.name, schema: SkillTwinSnapshotSchema },
+      { name: DailyPlan.name, schema: DailyPlanSchema },
+      { name: Course.name, schema: CourseSchema },
     ]),
   ],
   providers: [
@@ -74,6 +89,7 @@ import { TutorController } from './tutor.controller';
     AdminInsightAgentService,
     AgentRouterService,
     AgentContextService,
+    ContextEngineService,
     LlmComposerService,
     PlannerService,
     NextActionService,

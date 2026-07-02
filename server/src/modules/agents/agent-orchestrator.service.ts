@@ -114,8 +114,15 @@ export class AgentOrchestratorService {
     });
 
     try {
-      trace.step('context', 'Loading profile, roadmap & memory');
-      const loaded = await this.context.load(request.userId, request.message);
+      trace.step(
+        'context',
+        'Loading learner context (profile, activity, memory)',
+      );
+      const loaded = await this.context.load(
+        request.userId,
+        request.message,
+        primaryAgent,
+      );
 
       // Screen for prompt injection; when flagged, harden the agent system prompt.
       const injection = this.injection.inspect(request.message);
@@ -155,6 +162,7 @@ export class AgentOrchestratorService {
           profile: loaded.profile,
           roadmap: loaded.roadmap,
           memories: loaded.memories,
+          facts: loaded.facts,
           history,
           summary: session.summary,
           emit: tagged,
