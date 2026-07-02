@@ -27,6 +27,6 @@ import { EvaluationService } from './services/evaluation.service';
   ],
   controllers: [AssessmentController],
   providers: [AssessmentService, QuizGeneratorService, EvaluationService],
-  exports: [AssessmentService],
+  exports: [AssessmentService, QuizGeneratorService],
 })
 export class AssessmentModule {}

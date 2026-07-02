@@ -153,7 +153,37 @@ type Filter = 'all' | 'due' | MistakeStatus;
                   <span class="rm-q">Did you recall this?</span>
                   <button class="rm-btn yes" [disabled]="busyId() === m.id" (click)="review(m, true)">Recalled</button>
                   <button class="rm-btn no" [disabled]="busyId() === m.id" (click)="review(m, false)">Forgot</button>
+                  <button class="rm-btn test" [disabled]="busyId() === m.id || testId() === m.id" (click)="startTest(m)">Test me</button>
                 </div>
+
+                @if (testId() === m.id) {
+                  <!-- eslint-disable-next-line @angular-eslint/template/click-events-have-key-events, @angular-eslint/template/interactive-supports-focus -- container only stops clicks from toggling the row; the controls inside are buttons -->
+                  <div class="test-card mt-2" (click)="$event.stopPropagation()">
+                    @if (testLoading()) {
+                      <p class="text-[12px] text-txt-mute">Writing real questions for "{{ m.concept }}"…</p>
+                    } @else if (testResult(); as r) {
+                      <p class="text-[13px] font-semibold" [class.tst-pass]="r.passed" [class.tst-fail]="!r.passed">
+                        {{ r.correct }}/{{ r.total }} correct — {{ r.passed ? 'recall confirmed, spacing out further ✓' : 'resurfacing this sooner' }}
+                      </p>
+                      <button class="rm-btn mt-2" (click)="closeTest()">Close</button>
+                    } @else {
+                      @for (q of testQs(); track $index; let qi = $index) {
+                        <div class="mb-2.5">
+                          <p class="text-[13px] font-medium mb-1.5">{{ qi + 1 }}. {{ q.prompt }}</p>
+                          <div class="grid gap-1">
+                            @for (o of q.options; track $index; let oi = $index) {
+                              <button class="tst-opt" [class.on]="testAnswers()[qi] === oi" (click)="pickAnswer(qi, oi)">{{ o }}</button>
+                            }
+                          </div>
+                        </div>
+                      }
+                      <div class="flex gap-2">
+                        <button class="rm-btn yes" [disabled]="!allAnswered()" (click)="submitTest(m)">Submit</button>
+                        <button class="rm-btn" (click)="closeTest()">Cancel</button>
+                      </div>
+                    }
+                  </div>
+                }
               }
 
               @if (expanded() === m.id) {
@@ -282,6 +312,14 @@ type Filter = 'all' | 'due' | MistakeStatus;
       .rm-btn.yes:not(:disabled):hover { border-color: var(--green); }
       .rm-btn.no { color: var(--coral, #ffb454); }
       .rm-btn.no:not(:disabled):hover { border-color: var(--coral, #ffb454); }
+      .rm-btn.test { color: var(--peri-deep, #6f86e0); }
+      .rm-btn.test:not(:disabled):hover { border-color: var(--peri, #8aa6ff); }
+      .test-card { margin-left: 24px; padding: 12px 14px; border-radius: 12px; border: 1px solid color-mix(in oklab, var(--peri, #8aa6ff) 30%, var(--paper-3)); background: var(--paper-2); }
+      .tst-opt { text-align: left; font-size: 12.5px; padding: 7px 11px; border-radius: 9px; border: 1px solid var(--paper-3); background: var(--paper); color: var(--text-soft); cursor: pointer; transition: border-color .15s, background .15s; }
+      .tst-opt:hover { border-color: color-mix(in oklab, var(--peri, #8aa6ff) 45%, var(--paper-3)); }
+      .tst-opt.on { border-color: var(--peri, #8aa6ff); background: color-mix(in oklab, var(--peri, #8aa6ff) 12%, transparent); color: var(--text); }
+      .tst-pass { color: var(--green-deep); }
+      .tst-fail { color: var(--coral, #ffb454); }
     `,
     ]
 })
@@ -382,6 +420,61 @@ export class MistakesComponent {
       },
       error: () => { this.busyId.set(null); this.toast.error('Could not save review'); },
     });
+  }
+
+  // ── "Test me": real questions instead of self-report ──
+  readonly testId = signal<string | null>(null);
+  readonly testQs = signal<{ prompt: string; options: string[] }[]>([]);
+  readonly testAnswers = signal<(number | null)[]>([]);
+  readonly testLoading = signal(false);
+  readonly testResult = signal<{ correct: number; total: number; passed: boolean } | null>(null);
+  readonly allAnswered = computed(() => this.testAnswers().length > 0 && this.testAnswers().every((a) => a !== null));
+
+  startTest(m: Mistake): void {
+    this.testId.set(m.id);
+    this.testQs.set([]);
+    this.testResult.set(null);
+    this.testLoading.set(true);
+    this.api.testStart(m.id).subscribe({
+      next: (r) => {
+        this.testQs.set(r.questions);
+        this.testAnswers.set(r.questions.map(() => null));
+        this.testLoading.set(false);
+      },
+      error: (e: Error) => {
+        this.testLoading.set(false);
+        this.testId.set(null);
+        this.toast.error(e.message || 'Could not build a test — use Recalled/Forgot instead');
+      },
+    });
+  }
+
+  pickAnswer(qi: number, oi: number): void {
+    this.testAnswers.update((a) => a.map((v, i) => (i === qi ? oi : v)));
+  }
+
+  submitTest(m: Mistake): void {
+    const answers = this.testAnswers().map((a) => a ?? -1);
+    this.testLoading.set(true);
+    this.api.testSubmit(m.id, answers).subscribe({
+      next: (r) => {
+        this.testLoading.set(false);
+        this.testResult.set({ correct: r.correct, total: r.total, passed: r.passed });
+        this.replace(r.mistake);
+        this.dueList.update((l) => l.filter((x) => x.id !== m.id));
+        this.refreshStats();
+      },
+      error: (e: Error) => {
+        this.testLoading.set(false);
+        this.toast.error(e.message || 'Could not grade the test');
+      },
+    });
+  }
+
+  closeTest(): void {
+    this.testId.set(null);
+    this.testQs.set([]);
+    this.testResult.set(null);
   }
 
   // ── bulk selection ──

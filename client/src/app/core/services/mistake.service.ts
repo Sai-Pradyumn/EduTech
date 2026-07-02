@@ -79,6 +79,13 @@ export class MistakeService {
   review(id: string, recalled: boolean): Observable<Mistake> {
     return this.api.post<Mistake>(`/mistakes/${id}/review`, { recalled });
   }
+  /** "Test me": real MCQs for this concept (answers stay server-side). */
+  testStart(id: string): Observable<{ questions: { prompt: string; options: string[] }[] }> {
+    return this.api.post<{ questions: { prompt: string; options: string[] }[] }>(`/mistakes/${id}/test`, {});
+  }
+  testSubmit(id: string, answers: number[]): Observable<{ correct: number; total: number; passed: boolean; mistake: Mistake }> {
+    return this.api.post<{ correct: number; total: number; passed: boolean; mistake: Mistake }>(`/mistakes/${id}/test/submit`, { answers });
+  }
   repair(id: string): Observable<Mistake> {
     return this.api.post<Mistake>(`/mistakes/${id}/repair`, {});
   }

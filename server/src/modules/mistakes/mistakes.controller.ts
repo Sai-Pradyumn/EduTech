@@ -11,10 +11,12 @@ import {
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { AuthUser } from '../../common/interfaces';
 import { MistakesService } from './mistakes.service';
+import { ReviewTestService } from './review-test.service';
 import { MistakeDocument, MistakeStatus } from './schemas/mistake.schema';
 import {
   CaptureMistakeDto,
   ReviewMistakeDto,
+  SubmitReviewTestDto,
   ToggleActionDto,
   UpdateMistakeStatusDto,
 } from './dto/mistake.dto';
@@ -57,7 +59,10 @@ function toView(m: MistakeDocument) {
 
 @Controller('mistakes')
 export class MistakesController {
-  constructor(private readonly mistakes: MistakesService) {}
+  constructor(
+    private readonly mistakes: MistakesService,
+    private readonly reviewTests: ReviewTestService,
+  ) {}
 
   @Get()
   async list(
@@ -108,6 +113,27 @@ export class MistakesController {
     @Body() dto: ReviewMistakeDto,
   ) {
     return toView(await this.mistakes.review(user.id, id, dto.recalled));
+  }
+
+  /** "Test me": real MCQs for this concept (answers stay server-side). */
+  @Post(':id/test')
+  testStart(@CurrentUser() user: AuthUser, @Param('id') id: string) {
+    return this.reviewTests.start(user.id, id);
+  }
+
+  @Post(':id/test/submit')
+  async testSubmit(
+    @CurrentUser() user: AuthUser,
+    @Param('id') id: string,
+    @Body() dto: SubmitReviewTestDto,
+  ) {
+    const r = await this.reviewTests.submit(user.id, id, dto.answers);
+    return {
+      correct: r.correct,
+      total: r.total,
+      passed: r.passed,
+      mistake: toView(r.mistake),
+    };
   }
 
   @Patch(':id/actions')

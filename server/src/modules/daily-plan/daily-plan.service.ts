@@ -52,9 +52,10 @@ export class DailyPlanService {
         .map((i) => i.sourceId ?? i.title),
     );
 
-    const [activeFlow, openMistakes, roadmap] = await Promise.all([
+    const [activeFlow, openMistakes, dueReviews, roadmap] = await Promise.all([
       this.flows.findActive(userId),
       this.mistakes.list(userId, 'open'),
+      this.mistakes.due(userId),
       this.roadmaps
         .findOne({
           user: new Types.ObjectId(userId),
@@ -126,16 +127,31 @@ export class DailyPlanService {
         sourceId: nextNode.id,
       });
     }
-    if (openMistakes[0]) {
-      const m = openMistakes[0];
+    // Scheduled spaced reviews come first — they are time-sensitive by design.
+    if (dueReviews[0]) {
+      const r = dueReviews[0];
+      add({
+        id: 'i_review',
+        kind: 'mistake',
+        title: `Spaced review: ${r.concept}`,
+        reason: `Due today — recalling it now locks it into long-term memory (interval ${r.reviewInterval ?? 1}d).`,
+        route: '/app/mistakes?filter=due',
+        estimateMinutes: 10,
+        sourceId: `review:${String(r._id)}`,
+      });
+    }
+    const topOpen = openMistakes.find(
+      (m) => String(m._id) !== String(dueReviews[0]?._id ?? ''),
+    );
+    if (topOpen) {
       add({
         id: 'i_mistake',
         kind: 'mistake',
-        title: `Repair: ${m.concept}`,
-        reason: `Highest open gap (severity ${m.severity}).`,
+        title: `Repair: ${topOpen.concept}`,
+        reason: `Highest open gap (severity ${topOpen.severity}).`,
         route: '/app/mistakes',
         estimateMinutes: 20,
-        sourceId: String(m._id),
+        sourceId: String(topOpen._id),
       });
     }
     if (roadmap) {

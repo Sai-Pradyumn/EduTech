@@ -1,6 +1,9 @@
 import {
+  ArrayMaxSize,
+  IsArray,
   IsBoolean,
   IsIn,
+  IsInt,
   IsNumber,
   IsOptional,
   IsString,
@@ -44,4 +47,12 @@ export class ToggleActionDto {
 /** Outcome of a spaced review prompt: did the learner recall the concept? */
 export class ReviewMistakeDto {
   @IsBoolean() recalled!: boolean;
+}
+
+/** Selected option index per question of a "Test me" review. */
+export class SubmitReviewTestDto {
+  @IsArray()
+  @ArrayMaxSize(5)
+  @IsInt({ each: true })
+  answers!: number[];
 }
