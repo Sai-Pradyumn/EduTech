@@ -1,13 +1,9 @@
 import { Injectable } from '@nestjs/common';
 import { AgentType, Intent } from '../../../common/enums';
-import {
-  AgentResponse,
-  QuizBlock,
-  StudyPlanBlock,
-  VisualBlock,
-} from '../../ai/types/agent.types';
+import { AgentResponse } from '../../ai/types/agent.types';
 import { AgentRuntimeContext, IAgent } from '../core/agent.interface';
 import { LlmComposerService } from '../core/llm-composer.service';
+import { VisualComposerService } from '../core/visual-composer.service';
 import { personaFor } from '../prompts/personas';
 
 type Format = 'notes' | 'flashcards' | 'summary' | 'cheatsheet';
@@ -29,7 +25,10 @@ function detectFormat(message: string): Format {
 export class ContentCreatorAgentService implements IAgent {
   readonly type = AgentType.ContentCreator;
 
-  constructor(private readonly composer: LlmComposerService) {}
+  constructor(
+    private readonly composer: LlmComposerService,
+    private readonly visuals: VisualComposerService,
+  ) {}
 
   async handle(ctx: AgentRuntimeContext): Promise<AgentResponse> {
     const format = detectFormat(ctx.request.message);
@@ -67,26 +66,13 @@ export class ContentCreatorAgentService implements IAgent {
       temperature: 0.6,
     });
 
-    const blocks: VisualBlock[] = [];
-    const plan: StudyPlanBlock = {
-      type: 'study_plan',
-      title: `Study ${topic} in 3 passes`,
-      items: [
-        { label: `Read & highlight the ${format}`, minutes: 15, kind: 'learn' },
-        {
-          label: `Recall ${topic} from memory (no peeking)`,
-          minutes: 10,
-          kind: 'revision',
-        },
-        {
-          label: `Apply it: one small exercise on ${topic}`,
-          minutes: 20,
-          kind: 'practice',
-        },
-      ],
-    };
-    blocks.push(plan);
-    if (format === 'flashcards') blocks.push(this.flashcardQuiz(topic));
+    // Visuals come from the generated material itself (quiz from the actual
+    // flashcards, plan from the actual steps) — attached only when they help.
+    const blocks = await this.visuals.compose(ctx.request.message, answer, {
+      topic,
+      agentType: AgentType.ContentCreator,
+      userId: ctx.request.userId,
+    });
     for (const b of blocks)
       ctx.emit({ type: 'visual_block', messageId: '', block: b });
 
@@ -193,26 +179,6 @@ export class ContentCreatorAgentService implements IAgent {
       '',
       `**5. Recall prompts.** Cover the page and answer: *What is ${t}? When? One pitfall?*`,
     ].join('\n');
-  }
-
-  private flashcardQuiz(topic: string): QuizBlock {
-    return {
-      type: 'quiz',
-      title: `Recall check: ${topic}`,
-      questions: [
-        {
-          prompt: `Which is the best one-line definition of ${this.titleCase(topic)}?`,
-          options: [
-            `Its core idea, stated precisely`,
-            'A vaguely related concept',
-            'An unrelated tool',
-            'None of these',
-          ],
-          answerIndex: 0,
-          explanation: `Knowing the crisp definition is the anchor for everything else about ${topic}.`,
-        },
-      ],
-    };
   }
 
   private extractTopic(message: string): string {

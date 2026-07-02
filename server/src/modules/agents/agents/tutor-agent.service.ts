@@ -3,16 +3,14 @@ import { AgentType, Intent, TutorMode } from '../../../common/enums';
 import {
   AgentAction,
   AgentResponse,
-  ConceptMapBlock,
   PracticeBlock,
-  QuizBlock,
-  StudyPlanBlock,
   VisualBlock,
   WeaknessAnalysisBlock,
 } from '../../ai/types/agent.types';
 import { AgentRuntimeContext, IAgent } from '../core/agent.interface';
 import { LlmComposerService } from '../core/llm-composer.service';
 import { ToolAugmentationService } from '../core/tool-augmentation.service';
+import { VisualComposerService } from '../core/visual-composer.service';
 import { personaFor } from '../prompts/personas';
 
 /** Small topic-knowledge library so explanations/analogies feel specific, not generic. */
@@ -109,6 +107,7 @@ export class TutorAgentService implements IAgent {
   constructor(
     private readonly composer: LlmComposerService,
     private readonly toolAug: ToolAugmentationService,
+    private readonly visuals: VisualComposerService,
   ) {}
 
   async handle(ctx: AgentRuntimeContext): Promise<AgentResponse> {
@@ -168,7 +167,17 @@ export class TutorAgentService implements IAgent {
       temperature: 0.5,
     });
 
-    const visualBlocks = this.buildVisualBlocks(topic, mode, know, weakHit);
+    // Visuals are generated FROM the answer that was just written (or derived
+    // from its structure offline) and only attached when they genuinely help —
+    // never a topic template. Mode/profile blocks stay conditional.
+    const visualBlocks = [
+      ...(await this.visuals.compose(ctx.request.message, answer, {
+        topic,
+        agentType: AgentType.Tutor,
+        userId: ctx.request.userId,
+      })),
+      ...this.modeBlocks(topic, mode, weakHit),
+    ];
     for (const block of visualBlocks) {
       ctx.emit({ type: 'visual_block', messageId: '', block });
     }
@@ -293,54 +302,19 @@ export class TutorAgentService implements IAgent {
     ].join('\n');
   }
 
-  private buildVisualBlocks(
+  /**
+   * Mode- and profile-gated blocks only. The explanatory visual (concept map /
+   * study plan / quiz-from-answer) comes from VisualComposerService, generated
+   * from the actual answer — nothing here is a topic template.
+   */
+  private modeBlocks(
     topic: string,
     mode: TutorMode,
-    know: { pillars: string[] } | null,
     weakHit: string | null,
   ): VisualBlock[] {
     const blocks: VisualBlock[] = [];
-    const pillars = know?.pillars ?? [
-      'Core idea',
-      'How it works',
-      'When to use it',
-      'Example',
-    ];
-
-    const conceptMap: ConceptMapBlock = {
-      type: 'concept_map',
-      title: `${this.titleCase(topic)} — concept map`,
-      rootConcept: this.titleCase(topic),
-      nodes: [
-        { id: 'root', label: this.titleCase(topic), group: 'root' },
-        ...pillars.map((p, i) => ({ id: `n${i}`, label: p, group: 'pillar' })),
-      ],
-      edges: pillars.map((_, i) => ({ from: 'root', to: `n${i}` })),
-    };
-    blocks.push(conceptMap);
-
-    const studyPlan: StudyPlanBlock = {
-      type: 'study_plan',
-      title: `Master ${topic} in 3 sittings`,
-      items: [
-        { label: `Understand: ${pillars[0]}`, minutes: 20, kind: 'learn' },
-        {
-          label: `Practice: 3 problems on ${topic}`,
-          minutes: 30,
-          kind: 'practice',
-        },
-        {
-          label: `Recall: explain ${topic} from memory`,
-          minutes: 10,
-          kind: 'revision',
-        },
-      ],
-    };
-    blocks.push(studyPlan);
 
     if (mode === TutorMode.Practice || mode === TutorMode.Exam) {
-      blocks.push(this.quizBlock(topic));
-    } else {
       const practice: PracticeBlock = {
         type: 'practice',
         title: 'Practice task',
@@ -366,26 +340,6 @@ export class TutorAgentService implements IAgent {
     }
 
     return blocks;
-  }
-
-  private quizBlock(topic: string): QuizBlock {
-    return {
-      type: 'quiz',
-      title: `Quick quiz: ${topic}`,
-      questions: [
-        {
-          prompt: `Which statement best describes ${topic}?`,
-          options: [
-            `It’s a core concept used to solve a specific class of problems`,
-            'It’s only relevant to advanced users',
-            'It has no real-world use',
-            'It’s the same as everything else',
-          ],
-          answerIndex: 0,
-          explanation: `${this.titleCase(topic)} is a foundational tool — knowing when to apply it matters as much as the definition.`,
-        },
-      ],
-    };
   }
 
   private buildActions(topic: string): AgentAction[] {

@@ -28,6 +28,7 @@ import { AdminInsightAgentService } from './agents/admin-insight-agent.service';
 import { AgentRouterService } from './core/agent-router.service';
 import { AgentContextService } from './core/agent-context.service';
 import { ContextEngineService } from './core/context-engine.service';
+import { VisualComposerService } from './core/visual-composer.service';
 import { LlmComposerService } from './core/llm-composer.service';
 import { PlannerService } from './core/planner.service';
 import { NextActionService } from './core/next-action.service';
@@ -91,6 +92,7 @@ import { TutorController } from './tutor.controller';
     AgentContextService,
     ContextEngineService,
     LlmComposerService,
+    VisualComposerService,
     PlannerService,
     NextActionService,
     AgentMemoryService,
