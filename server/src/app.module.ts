@@ -36,6 +36,7 @@ import { AgentGraphModule } from './modules/agent-graph/agent-graph.module';
 import { BillingModule } from './modules/billing/billing.module';
 import { CertificatesModule } from './modules/certificates/certificates.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
+import { ResourcesModule } from './modules/resources/resources.module';
 import { RoadmapModule } from './modules/roadmap/roadmap.module';
 import { ProgressionModule } from './modules/progression/progression.module';
 import { FlowsModule } from './modules/flows/flows.module';
@@ -127,6 +128,7 @@ import { SocketsModule } from './sockets/sockets.module';
     UsersModule,
     TenancyModule,
     StudentProfileModule,
+    ResourcesModule,
     RoadmapModule,
     ProgressionModule,
     FlowsModule,

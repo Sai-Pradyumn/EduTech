@@ -78,6 +78,7 @@ export const STUDENT_NAV: NavGroup[] = [
       { label: 'Study Spaces', route: '/app/spaces', icon: I.spaces },
       { label: 'Simulations', route: '/app/simulations', icon: I.sim },
       { label: 'Knowledge', route: '/app/knowledge', icon: I.knowledge },
+      { label: 'Resources', route: '/app/resources', icon: I.docs },
       { label: 'Quizzes', route: '/app/quizzes', icon: I.quiz },
       { label: 'Projects', route: '/app/projects', icon: I.projects },
       { label: 'Course Builder', route: '/app/course-builder', icon: I.course },

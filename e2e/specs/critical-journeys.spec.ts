@@ -73,4 +73,21 @@ test.describe('student critical journeys', () => {
       timeout: 45_000,
     });
   });
+
+  test('resources: seeded catalog renders and saving builds the library', async ({ page }) => {
+    await loginAsStudent(page);
+    await page.goto('/app/resources', { waitUntil: 'domcontentloaded' });
+    await expect(
+      page.locator('#main-content').getByRole('heading', { name: /resources/i }),
+    ).toBeVisible({ timeout: 20_000 });
+
+    // The shipped catalog auto-seeds on boot, so real entries must render.
+    await expect(page.getByText('Browse the catalog')).toBeVisible();
+    const firstSave = page.getByRole('button', { name: /^save$/i }).first();
+    await expect(firstSave).toBeVisible({ timeout: 20_000 });
+
+    // Save → the personal library section appears with the item.
+    await firstSave.click();
+    await expect(page.getByText('My library')).toBeVisible({ timeout: 10_000 });
+  });
 });

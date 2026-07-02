@@ -237,6 +237,12 @@ export const routes: Routes = [
         loadComponent: () => import('./features/knowledge-hub/knowledge-hub.component').then((m) => m.KnowledgeHubComponent),
       },
       {
+        path: 'resources',
+        title: 'Resources',
+        data: { title: 'Resources' },
+        loadComponent: () => import('./features/resources/resources.component').then((m) => m.ResourcesComponent),
+      },
+      {
         path: 'quizzes',
         title: 'Quiz Studio',
         data: { title: 'Quiz Studio' },

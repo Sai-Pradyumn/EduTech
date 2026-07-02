@@ -33,16 +33,22 @@ describe('InterviewCoachAgent.generateQuestions', () => {
 
   it('generates learner-tailored questions when AI is live', async () => {
     const { agent, ai } = coach();
-    const qs = await agent.generateQuestions('u1', 'frontend', 'Frontend Developer', {
-      mainGoal: 'MERN stack developer',
-      weakAreas: ['CSS layout'],
-    });
+    const qs = await agent.generateQuestions(
+      'u1',
+      'frontend',
+      'Frontend Developer',
+      {
+        mainGoal: 'MERN stack developer',
+        weakAreas: ['CSS layout'],
+      },
+    );
     expect(qs.length).toBe(5);
     expect(qs[0]).toContain('CSS');
     // The learner grounding must be in the prompt.
-    const userMsg = (
-      ai.generateStructuredOutput.mock.calls[0][0] as { content: string }[]
-    ).find((m) => m.content.includes('Weak areas'));
+    const calls = ai.generateStructuredOutput.mock.calls as [
+      { content: string }[],
+    ][];
+    const userMsg = calls[0][0].find((m) => m.content.includes('Weak areas'));
     expect(userMsg?.content).toContain('CSS layout');
   });
 
@@ -61,7 +67,9 @@ describe('InterviewCoachAgent.generateQuestions', () => {
 
   it('falls back to the bank when generation throws', async () => {
     const { agent, ai } = coach();
-    ai.generateStructuredOutput.mockRejectedValueOnce(new Error('provider down'));
+    ai.generateStructuredOutput.mockRejectedValueOnce(
+      new Error('provider down'),
+    );
     const qs = await agent.generateQuestions('u1', 'technical', 'SDE');
     expect(qs).toEqual(buildQuestions('technical', 'SDE'));
   });
