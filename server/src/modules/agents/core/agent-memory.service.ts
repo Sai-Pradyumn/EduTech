@@ -69,6 +69,30 @@ export class AgentMemoryService {
     return hit / terms.size;
   }
 
+  /** Raw rows with ids — powers the user-facing memory manager. */
+  async listRaw(userId: string): Promise<
+    {
+      id: string;
+      kind: string;
+      content: string;
+      weight: number;
+      updatedAt: Date | null;
+    }[]
+  > {
+    const docs = await this.model
+      .find({ user: new Types.ObjectId(userId) })
+      .sort({ weight: -1, updatedAt: -1 })
+      .limit(200)
+      .exec();
+    return docs.map((d) => ({
+      id: String(d._id),
+      kind: d.kind,
+      content: d.content,
+      weight: d.weight ?? 1,
+      updatedAt: (d as { updatedAt?: Date }).updatedAt ?? null,
+    }));
+  }
+
   /** Upsert a memory; dedupes by (kind, content) and bumps weight on repeat. */
   async remember(
     userId: string,

@@ -3,6 +3,8 @@ import { HydratedDocument, Types } from 'mongoose';
 
 /** Kinds of long-term facts Asta can remember about a learner (Phase E). */
 export const MEMORY_TYPES = [
+  /** Generic learner-stated fact ("remember that …" chat command). */
+  'fact',
   'learning_goal',
   'career_goal',
   'time_availability',

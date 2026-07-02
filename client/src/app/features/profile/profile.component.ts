@@ -7,6 +7,7 @@ import { ThemeService, ThemeMode } from '../../core/services/theme.service';
 import { I18nService } from '../../core/services/i18n.service';
 import { ToastService } from '../../core/services/toast.service';
 import { VoiceActivationService } from '../../core/services/voice-activation.service';
+import { MemoryEntry, MemoryService } from '../../core/services/memory.service';
 import {
   CreateStudentProfilePayload,
   BRANCHES,
@@ -210,6 +211,38 @@ type Form = Pick<
           </div>
         </section>
 
+        <!-- Memory manager: everything Asta knows, deletable -->
+        <section class="card mb-4 p-5 md:p-6 motion-card-reveal motion-row-3" style="--motion-card-index:1">
+          <div class="sec-head mb-4">
+            <div>
+              <h2 class="t-h-card mb-0.5">What Asta remembers</h2>
+              <p class="t-small text-txt-mute">Facts that personalize your learning. Delete anything — or say “forget …” in any chat.</p>
+            </div>
+            <span class="panel-ico" aria-hidden="true">
+              <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a4 4 0 0 0-4 4 4 4 0 0 0-3 6.5A4 4 0 0 0 7 21h10a4 4 0 0 0 2-7.5A4 4 0 0 0 16 7a4 4 0 0 0-4-4Z"/></svg>
+            </span>
+          </div>
+
+          @if (!memoryLoaded()) {
+            <button type="button" class="seg" (click)="loadMemories()">Show memories</button>
+          } @else if (memories().length === 0) {
+            <p class="t-small text-txt-mute">Nothing saved yet. Say “remember that I prefer video lessons” in any chat, or approve a memory card in Asta OS.</p>
+          } @else {
+            <ul class="space-y-2">
+              @for (m of memories(); track m.id) {
+                <li class="mem-row">
+                  <span class="mem-badge" [class.observed]="m.source === 'observed'">{{ m.source === 'observed' ? 'observed' : 'you approved' }}</span>
+                  <span class="min-w-0 flex-1 text-[13.5px]">{{ m.text }}</span>
+                  <button type="button" class="mem-del" (click)="deleteMemory(m)">
+                    {{ armedMemory() === m.id ? 'Confirm delete?' : 'Delete' }}
+                  </button>
+                </li>
+              }
+            </ul>
+            <p class="t-small text-txt-mute mt-3">Deleting removes it from Asta’s context immediately — answers stop being shaped by it.</p>
+          }
+        </section>
+
         <!-- Voice -->
         <section class="card mb-4 p-5 md:p-6 motion-card-reveal motion-row-3" style="--motion-card-index:0">
           <div class="sec-head mb-4">
@@ -280,6 +313,11 @@ type Form = Pick<
       .btn-primary:hover:not(:disabled) { transform: translateY(-1px); }
       .btn-primary:active:not(:disabled) { transform: scale(.97); }
       .btn-primary:disabled { opacity: .55; cursor: not-allowed; }
+      .mem-row { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 10px; background: var(--paper-2); }
+      .mem-badge { font-size: 9.5px; text-transform: uppercase; letter-spacing: .04em; font-weight: 700; padding: 2px 8px; border-radius: 999px; flex-shrink: 0; background: color-mix(in oklab, var(--green) 16%, transparent); color: var(--green-deep); }
+      .mem-badge.observed { background: color-mix(in oklab, var(--peri, #8aa6ff) 14%, transparent); color: var(--peri-deep, #6f86e0); }
+      .mem-del { font-size: 11.5px; font-weight: 600; padding: 4px 11px; border-radius: 999px; border: 1px solid var(--paper-3); background: transparent; color: var(--text-mute); cursor: pointer; flex-shrink: 0; transition: color .14s, border-color .14s; }
+      .mem-del:hover { color: var(--danger, #e0654f); border-color: color-mix(in oklab, var(--danger, #e0654f) 45%, var(--paper-3)); }
     `,
     ]
 })
@@ -313,6 +351,41 @@ export class ProfileComponent implements OnInit {
   readonly error = signal<string | null>(null);
   readonly savedAt = signal(false);
   readonly form = signal<Form | null>(null);
+
+  // ── Memory manager: everything Asta knows, deletable ──
+  private readonly memoryApi = inject(MemoryService);
+  readonly memories = signal<MemoryEntry[]>([]);
+  readonly memoryLoaded = signal(false);
+  /** Two-step delete confirmation (auto-disarms after 4s). */
+  readonly armedMemory = signal<string | null>(null);
+
+  loadMemories(): void {
+    this.memoryApi.listAll().subscribe({
+      next: (list) => {
+        this.memories.set(list);
+        this.memoryLoaded.set(true);
+      },
+      error: () => this.toast.error('Could not load memories'),
+    });
+  }
+
+  deleteMemory(m: MemoryEntry): void {
+    if (this.armedMemory() !== m.id) {
+      this.armedMemory.set(m.id);
+      setTimeout(() => {
+        if (this.armedMemory() === m.id) this.armedMemory.set(null);
+      }, 4000);
+      return;
+    }
+    this.armedMemory.set(null);
+    this.memoryApi.remove(m).subscribe({
+      next: () => {
+        this.memories.update((l) => l.filter((x) => x.id !== m.id));
+        this.toast.success('Forgotten — it no longer shapes your answers');
+      },
+      error: () => this.toast.error('Could not delete this memory'),
+    });
+  }
   /** Read-only account metadata surfaced in the Account section (from the loaded profile). */
   readonly meta = signal<{ createdAt: string; onboardingCompleted: boolean } | null>(null);
 
