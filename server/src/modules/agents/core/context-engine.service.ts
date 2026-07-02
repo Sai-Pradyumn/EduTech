@@ -22,6 +22,7 @@ import {
   SkillTwinSnapshot,
   SkillTwinSnapshotDocument,
 } from '../../skill-twin/schemas/skill-twin-snapshot.schema';
+import { HybridRetrieverService } from '../../rag/vector/hybrid-retriever.service';
 import { StudentProfileService } from '../../student-profile/student-profile.service';
 import { StudentProfileDocument } from '../../student-profile/schemas/student-profile.schema';
 import {
@@ -32,7 +33,7 @@ import { MemoryItem, RoadmapContext } from './agent.interface';
 
 /** One selectable piece of learner context, scored per query at selection time. */
 export interface ContextFact {
-  source: 'memory' | 'mistake' | 'mastery' | 'plan' | 'course';
+  source: 'memory' | 'mistake' | 'mastery' | 'plan' | 'course' | 'knowledge';
   text: string;
   /** Query-independent importance in [0,1] (severity, weight, recency…). */
   salience: number;
@@ -59,19 +60,24 @@ const SNAPSHOT_TTL_MS = 60_000;
 const MAX_CACHED_USERS = 500;
 const SOURCE_TIMEOUT_MS = 1_500;
 /** Hard cap on the prompt space the facts block may take. */
-const FACT_TOKEN_BUDGET = 480;
+const FACT_TOKEN_BUDGET = 640;
 const MAX_FACTS = 14;
 /** Facts every turn gets even with zero lexical overlap (top salience). */
 const MIN_FACTS = 6;
+/** Per-turn semantic retrieval over the learner's documents (tier 2). */
+const KNOWLEDGE_TOP_K = 4;
+const KNOWLEDGE_MAX_FACTS = 3;
+const KNOWLEDGE_SNIPPET_CHARS = 300;
 
 /** Which sources matter most to each agent (light nudge, not a filter). */
 const AGENT_AFFINITY: Partial<Record<AgentType, ContextFact['source'][]>> = {
-  [AgentType.DoubtSolver]: ['mistake', 'memory'],
+  [AgentType.DoubtSolver]: ['mistake', 'memory', 'knowledge'],
   [AgentType.Assessment]: ['mistake', 'mastery'],
   [AgentType.Career]: ['mastery', 'course'],
   [AgentType.Mentor]: ['plan', 'mastery', 'mistake'],
-  [AgentType.Tutor]: ['mistake', 'course', 'memory'],
-  [AgentType.ContentCreator]: ['course', 'memory'],
+  [AgentType.Tutor]: ['mistake', 'course', 'knowledge'],
+  [AgentType.ContentCreator]: ['course', 'knowledge'],
+  [AgentType.Rag]: ['knowledge', 'memory'],
   [AgentType.Roadmap]: ['plan', 'mastery'],
 };
 
@@ -105,6 +111,7 @@ export class ContextEngineService {
     @InjectModel(DailyPlan.name)
     private readonly plans: Model<DailyPlanDocument>,
     @InjectModel(Course.name) private readonly courses: Model<CourseDocument>,
+    private readonly retriever: HybridRetrieverService,
   ) {}
 
   // ───────────────────────── public API ─────────────────────────
@@ -114,8 +121,26 @@ export class ContextEngineService {
     query?: string,
     agentType?: AgentType,
   ): Promise<EngineContext> {
-    const snapshot = await this.snapshot(userId);
-    const selected = this.select(snapshot, query, agentType);
+    // Tier 1 (cached activity snapshot) and tier 2 (per-turn semantic retrieval over
+    // the learner's documents — relevance depends on the query, so never cached) run
+    // in parallel, then fuse into one scored pool.
+    const [snapshot, knowledge] = await Promise.all([
+      this.snapshot(userId),
+      this.guard('knowledge', () => this.fetchKnowledge(userId, query), []),
+    ]);
+    const pool = knowledge.length
+      ? {
+          ...snapshot,
+          facts: [
+            ...snapshot.facts,
+            ...knowledge.map((f) => ({
+              ...f,
+              terms: new Set(this.tokenize(f.text)),
+            })),
+          ],
+        }
+      : snapshot;
+    const selected = this.select(pool, query, agentType);
     return {
       profile: snapshot.profile,
       roadmap: snapshot.roadmap,
@@ -305,6 +330,37 @@ export class ContextEngineService {
       });
     }
     return facts;
+  }
+
+  /**
+   * Tier-2 source: hybrid semantic retrieval (dense embeddings + keyword RRF +
+   * rerank) over everything the learner has uploaded to their knowledge base.
+   * Real corpus data with provenance — grounded in their documents, not templates.
+   */
+  private async fetchKnowledge(
+    userId: string,
+    query?: string,
+  ): Promise<ContextFact[]> {
+    if (!query || this.tokenize(query).length === 0) return [];
+    const hits = await this.retriever.retrieve(
+      query,
+      { userId },
+      KNOWLEDGE_TOP_K,
+    );
+    return hits
+      .filter((h) => h.score > 0)
+      .slice(0, KNOWLEDGE_MAX_FACTS)
+      .map((h) => {
+        const snippet =
+          h.text.length > KNOWLEDGE_SNIPPET_CHARS
+            ? `${h.text.slice(0, KNOWLEDGE_SNIPPET_CHARS)}…`
+            : h.text;
+        return {
+          source: 'knowledge' as const,
+          text: `From their document "${h.documentTitle}"${h.headingPath ? ` › ${h.headingPath}` : ''}: ${snippet}`,
+          salience: 0.35 + 0.5 * Math.min(1, h.score),
+        };
+      });
   }
 
   private async fetchCourses(userId: string): Promise<ContextFact[]> {

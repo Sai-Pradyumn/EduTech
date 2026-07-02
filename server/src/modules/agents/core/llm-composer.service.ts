@@ -65,6 +65,7 @@ export class LlmComposerService {
         mastery: 'Skill state',
         plan: 'Their plan',
         course: 'Courses they are building',
+        knowledge: 'From their own notes & documents (cite when used)',
       };
       for (const [source, label] of Object.entries(labels)) {
         const group = ctx.facts.filter((f) => f.source === source);

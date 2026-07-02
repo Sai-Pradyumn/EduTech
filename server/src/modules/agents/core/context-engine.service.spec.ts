@@ -1,6 +1,8 @@
 import { Logger } from '@nestjs/common';
 import { Model } from 'mongoose';
 import { AgentType } from '../../../common/enums';
+import { HybridRetrieverService } from '../../rag/vector/hybrid-retriever.service';
+import { ChunkHit } from '../../rag/vector/vector-store.interface';
 import { StudentProfileService } from '../../student-profile/student-profile.service';
 import { ContextEngineService } from './context-engine.service';
 
@@ -107,6 +109,12 @@ function build(over: Partial<Record<string, unknown>> = {}) {
     ],
   );
 
+  const retriever = {
+    retrieve: jest
+      .fn()
+      .mockResolvedValue((over.knowledgeHits as ChunkHit[]) ?? []),
+  } as unknown as HybridRetrieverService & { retrieve: jest.Mock };
+
   const engine = new ContextEngineService(
     profiles,
     roadmaps as never,
@@ -115,8 +123,18 @@ function build(over: Partial<Record<string, unknown>> = {}) {
     twins as never,
     plans as never,
     courses as never,
+    (over.retriever as never) ?? retriever,
   );
-  return { engine, profiles, memories, mistakes, twins, plans, courses };
+  return {
+    engine,
+    profiles,
+    memories,
+    mistakes,
+    twins,
+    plans,
+    courses,
+    retriever,
+  };
 }
 
 describe('ContextEngineService', () => {
@@ -187,6 +205,48 @@ describe('ContextEngineService', () => {
     expect(ctx.profile).toBeTruthy();
     expect(ctx.facts.some((f) => f.source === 'memory')).toBe(true);
     expect(ctx.facts.some((f) => f.source === 'mistake')).toBe(false);
+  });
+
+  it('fuses RAG hits from the learner corpus as cited knowledge facts', async () => {
+    const hits: Partial<ChunkHit>[] = [
+      {
+        chunkId: 'c1',
+        documentId: 'd1',
+        documentTitle: 'My DBMS notes',
+        headingPath: 'Normalization',
+        text: 'Third normal form removes transitive dependencies between non-key attributes.',
+        score: 0.8,
+      },
+    ];
+    const { engine, retriever } = build({ knowledgeHits: hits });
+    const ctx = await engine.load(VALID_ID, 'explain third normal form');
+    expect(retriever.retrieve).toHaveBeenCalledWith(
+      'explain third normal form',
+      { userId: VALID_ID },
+      expect.any(Number),
+    );
+    const knowledge = ctx.facts.filter((f) => f.source === 'knowledge');
+    expect(knowledge.length).toBe(1);
+    expect(knowledge[0].text).toContain('My DBMS notes');
+    expect(knowledge[0].text).toContain('transitive dependencies');
+  });
+
+  it('retrieval is per-turn — the snapshot cache never serves stale knowledge', async () => {
+    const { engine, retriever } = build();
+    await engine.load(VALID_ID, 'first question');
+    await engine.load(VALID_ID, 'second question');
+    // Snapshot sources were cached (1 fetch), but retrieval ran for each turn.
+    expect(retriever.retrieve).toHaveBeenCalledTimes(2);
+  });
+
+  it('a broken retriever degrades to no knowledge facts, never a failed turn', async () => {
+    const broken = {
+      retrieve: jest.fn().mockRejectedValue(new Error('vector store down')),
+    };
+    const { engine } = build({ retriever: broken });
+    const ctx = await engine.load(VALID_ID, 'explain recursion');
+    expect(ctx.facts.length).toBeGreaterThan(0);
+    expect(ctx.facts.some((f) => f.source === 'knowledge')).toBe(false);
   });
 
   it('keeps the back-compat memories view (kind parsed out)', async () => {

@@ -54,6 +54,12 @@ import { fileStorageFactory } from './storage/file-storage';
     fileStorageFactory,
     { provide: RERANKER_TOKEN, useClass: LlmReranker },
   ],
-  exports: [RagAnswerService, KnowledgeService, IngestionService],
+  exports: [
+    RagAnswerService,
+    KnowledgeService,
+    IngestionService,
+    // The Context Engine (AgentsModule) retrieves per-turn knowledge facts directly.
+    HybridRetrieverService,
+  ],
 })
 export class RagModule {}
