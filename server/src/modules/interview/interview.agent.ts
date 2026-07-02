@@ -1,11 +1,24 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { AgentType } from '../../common/enums';
 import { AiService } from '../ai/ai.service';
+import {
+  buildQuestions,
+  INTERVIEW_TYPE_META,
+  InterviewType,
+} from './interview-bank';
 
 export interface AnswerScore {
   score: number; // 0–100
   feedback: string;
   missing: string[];
+}
+
+/** The profile slice used to tailor generated questions to the learner. */
+export interface QuestionProfile {
+  mainGoal?: string;
+  currentSkillLevel?: string;
+  currentSkills?: string[];
+  weakAreas?: string[];
 }
 
 /**
@@ -17,6 +30,83 @@ export class InterviewCoachAgent {
   private readonly logger = new Logger(InterviewCoachAgent.name);
 
   constructor(private readonly ai: AiService) {}
+
+  /**
+   * Interview questions tailored to the role AND this learner (goal, skills, weak
+   * areas) when an LLM is live. The deterministic bank is the offline fallback —
+   * generation never being available must not block an interview.
+   */
+  async generateQuestions(
+    userId: string,
+    type: InterviewType,
+    role: string,
+    profile?: QuestionProfile | null,
+  ): Promise<string[]> {
+    const fallback = buildQuestions(type, role);
+    if (!this.ai.isLive) return fallback;
+
+    const meta = INTERVIEW_TYPE_META[type];
+    const learner = [
+      profile?.mainGoal ? `Goal: ${profile.mainGoal}` : '',
+      profile?.currentSkillLevel ? `Level: ${profile.currentSkillLevel}` : '',
+      profile?.currentSkills?.length
+        ? `Knows: ${profile.currentSkills.join(', ')}`
+        : '',
+      profile?.weakAreas?.length
+        ? `Weak areas (probe at least one): ${profile.weakAreas.join(', ')}`
+        : '',
+    ]
+      .filter(Boolean)
+      .join('\n');
+
+    try {
+      const out = await this.ai.generateStructuredOutput<{
+        questions: string[];
+      }>(
+        [
+          {
+            role: 'system',
+            content:
+              `You are a senior interviewer running a ${meta.label} interview for a "${role}" role ` +
+              `(focus: ${meta.focus}). Write 5 sharp, realistic interview questions a real interviewer ` +
+              'would ask, tailored to this candidate. Open approachable, end harder. One question per ' +
+              'item; no numbering, no preamble.',
+          },
+          {
+            role: 'user',
+            content: learner || `Candidate is preparing for: ${role}`,
+          },
+        ],
+        {
+          type: 'object',
+          properties: {
+            questions: { type: 'array', items: { type: 'string' } },
+          },
+          required: ['questions'],
+        },
+        {
+          temperature: 0.7,
+          meta: {
+            userId,
+            agentType: AgentType.Career,
+            operation: 'interview.questions',
+          },
+          mockFactory: () => ({ questions: fallback }),
+        },
+      );
+      const questions = (out.questions ?? [])
+        .map((q) => String(q).trim())
+        .filter((q) => q.length >= 12 && q.length <= 400)
+        .slice(0, 6);
+      // A degenerate generation (too few usable questions) falls back to the bank.
+      return questions.length >= 4 ? questions : fallback;
+    } catch (err) {
+      this.logger.warn(
+        `Interview question generation failed: ${(err as Error).message}`,
+      );
+      return fallback;
+    }
+  }
 
   async scoreAnswer(
     userId: string,

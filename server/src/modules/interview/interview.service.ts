@@ -14,11 +14,7 @@ import {
   InterviewSession,
   InterviewSessionDocument,
 } from './schemas/interview-session.schema';
-import {
-  buildQuestions,
-  INTERVIEW_TYPE_META,
-  InterviewType,
-} from './interview-bank';
+import { INTERVIEW_TYPE_META, InterviewType } from './interview-bank';
 import { InterviewCoachAgent } from './interview.agent';
 
 /**
@@ -46,7 +42,15 @@ export class InterviewService {
     const role = roleId
       ? (findRole(roleId)?.title ?? '')
       : matchRoleFromGoal(profile?.mainGoal ?? '').title;
-    const questions = buildQuestions(type, role).map((q) => ({
+    // Live AI → questions tailored to the role and this learner's profile
+    // (goal, skills, weak areas); the deterministic bank is the offline path.
+    const generated = await this.coach.generateQuestions(userId, type, role, {
+      mainGoal: profile?.mainGoal,
+      currentSkillLevel: profile?.currentSkillLevel,
+      currentSkills: profile?.currentSkills,
+      weakAreas: profile?.weakAreas,
+    });
+    const questions = generated.map((q) => ({
       id: randomUUID(),
       question: q,
       answer: '',
