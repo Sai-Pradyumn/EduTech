@@ -82,6 +82,15 @@ export class LlmComposerService {
     if (ctx.summary?.trim()) {
       lines.push(`Conversation so far: ${ctx.summary.trim()}`);
     }
+    const executed = ctx.request.context?.['executedCommands'];
+    if (Array.isArray(executed) && executed.length) {
+      lines.push(
+        'Actions the system ALREADY EXECUTED for this exact message (they are done — ' +
+          'acknowledge them naturally and build on the new state; never offer to do them or ' +
+          'claim you cannot do them):',
+        ...executed.map((s) => `- ${String(s)}`),
+      );
+    }
     return lines.length ? `LEARNER CONTEXT\n${lines.join('\n')}` : '';
   }
 

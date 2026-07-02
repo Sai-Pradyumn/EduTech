@@ -77,6 +77,15 @@ export interface RoadmapSummary {
   createdAt: string;
 }
 
+/** One git-style content snapshot in a roadmap's history. */
+export interface RoadmapVersionSummary {
+  version: number;
+  label: string;
+  createdAt: string;
+  weeks: number;
+  current: boolean;
+}
+
 export interface GenerateRoadmapPayload {
   goal?: string;
   targetTimeline?: string;

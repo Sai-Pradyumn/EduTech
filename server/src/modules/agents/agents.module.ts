@@ -35,6 +35,7 @@ import { NextActionService } from './core/next-action.service';
 import { AgentMemoryService } from './core/agent-memory.service';
 import { AgentObservabilityService } from './core/agent-observability.service';
 import { AgentToolRegistryService } from './core/agent-tool-registry.service';
+import { ChatCommandRegistryService } from './core/chat-command-registry.service';
 import { ToolsRegistrarService } from './core/agent-tools';
 import { ToolAugmentationService } from './core/tool-augmentation.service';
 import { AgentRegistryService } from './core/agent-registry.service';
@@ -98,6 +99,7 @@ import { TutorController } from './tutor.controller';
     AgentMemoryService,
     AgentObservabilityService,
     AgentToolRegistryService,
+    ChatCommandRegistryService,
     ToolsRegistrarService,
     ToolAugmentationService,
     AgentRegistryService,
@@ -111,6 +113,7 @@ import { TutorController } from './tutor.controller';
     AgentMemoryService,
     AgentContextService,
     NextActionService,
+    ChatCommandRegistryService,
   ],
 })
 export class AgentsModule {}

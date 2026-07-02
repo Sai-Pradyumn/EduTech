@@ -11,6 +11,10 @@ import { AiRateLimitService } from '../ai/guards/ai-rate-limit.service';
 import { PromptInjectionGuard } from '../ai/guards/prompt-injection.guard';
 import { AgentRouterService } from './core/agent-router.service';
 import { AgentContextService } from './core/agent-context.service';
+import {
+  ChatCommandRegistryService,
+  ChatCommandResult,
+} from './core/chat-command-registry.service';
 import { AgentRegistryService } from './core/agent-registry.service';
 import { AgentSessionService } from './core/agent-session.service';
 import { AgentMemoryService } from './core/agent-memory.service';
@@ -47,6 +51,7 @@ export class AgentOrchestratorService {
     private readonly nextAction: NextActionService,
     private readonly rateLimit: AiRateLimitService,
     private readonly injection: PromptInjectionGuard,
+    private readonly commands: ChatCommandRegistryService,
   ) {}
 
   async handle(
@@ -114,6 +119,26 @@ export class AgentOrchestratorService {
     });
 
     try {
+      // 2.5) Chat commands: unambiguous asks ("mark week 2 complete", "refocus
+      // week 3 on X") execute REAL state changes now — before context loads — so
+      // this very turn sees the new state and the reply confirms what happened.
+      let executed: ChatCommandResult[] = [];
+      if (request.source !== 'admin') {
+        executed = await this.commands.detectAndExecute(
+          request.userId,
+          request.message,
+        );
+        for (const r of executed) {
+          trace.step('command', r.summary);
+          tagged({
+            type: 'tool_result',
+            messageId,
+            tool: 'chat_command',
+            summary: r.summary,
+          });
+        }
+      }
+
       trace.step(
         'context',
         'Loading learner context (profile, activity, memory)',
@@ -136,6 +161,9 @@ export class AgentOrchestratorService {
           : {}),
         ...(injection.flagged
           ? { securityNote: this.injection.defenseNote }
+          : {}),
+        ...(executed.length
+          ? { executedCommands: executed.map((r) => r.summary) }
           : {}),
       };
 
@@ -187,6 +215,25 @@ export class AgentOrchestratorService {
       }
 
       const response = this.synthesize(responses);
+      // Executed commands lead the reply — the state change is the headline, the
+      // agent's prose is the follow-through. A review chip links to the change.
+      if (executed.length) {
+        const confirmations = executed
+          .map((r) => (r.ok ? `✅ ${r.summary}` : `⚠️ ${r.summary}`))
+          .join('\n');
+        response.answer = `${confirmations}\n\n${response.answer}`;
+        response.actions = [
+          ...executed
+            .filter((r) => r.ok && r.route)
+            .map((r, i) => ({
+              id: `cmd_${i}`,
+              label: r.routeLabel ?? 'Review the change',
+              kind: 'open_route' as const,
+              payload: { route: r.route },
+            })),
+          ...response.actions,
+        ].slice(0, 6);
+      }
       // 3) Proactive next move from the learner's state.
       response.nextAction = this.nextAction.decide({
         profile: loaded.profile,

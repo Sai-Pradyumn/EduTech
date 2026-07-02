@@ -54,7 +54,19 @@ effort `S` (hours) · `M` (a day) · `L` (multi-day).
 - [ ] `P2·S` **Audit other dual-source metrics** — health/readiness appear in multiple places (dashboard, cohort, reports, skill-twin); confirm they derive from one source.
 - [ ] `P3·S` **Timezone correctness** — daily-plan "today" uses UTC slice; verify behaviour for non-UTC users (streak/day boundaries).
 
-## 8. UX & features
+## 8. Feature depth vs industry (2026-07 audit → `FEATURE_INDUSTRY_AUDIT.md`)
+- [x] **Chat commands execute real changes** — "mark week 2 complete / refocus week 3 on X / restore version 2" in any chat really updates the roadmap (ChatCommandRegistry + orchestrator hook; precision-first matchers; questions never write).
+- [x] **Roadmap versions (git-style)** — every generation/edit/restore is a restorable snapshot; History panel + chat restore; progress survives restores.
+- [x] **Roadmap → learning deep-links** — week cards route into Tutor (learn/quiz on that topic) and per-week rework.
+- [x] **Tutor past chats + large view** — session history UI (was persisted but invisible), topic deep-link prefill, working `open_route`; large-screen mode in classic tutor and Asta OS (Esc exits).
+- [ ] `P1·M` **Course lesson depth on demand** — generate the full lesson body lazily on first open (briefs are 2–4 sentences today).
+- [ ] `P1·M` **Doc-grounded chat picker** — select documents to ground an OS chat with inline citations (retrieval exists; UX doesn't).
+- [ ] `P1·M` **Classic-tutor message actions** — copy/regenerate/edit-turn parity with the OS canvas.
+- [ ] `P2·M` **Extend chat commands** — daily-plan items, memory saves, course archive; plus a one-click undo chip after any chat write.
+- [ ] `P2·M` **Spaced repetition** for failed quiz questions.
+- [ ] `P2·S` **Version diff view** before restoring a roadmap version.
+
+## 9. UX & features
 - [x] **Keyboard-shortcuts help overlay** (`?`) — modal listing app + palette shortcuts.
 - [x] **Command-palette quick actions** — New learning flow, Toggle theme, Sign out (action callbacks).
 - [x] **Confirm for destructive actions** — space delete, space-source remove, knowledge-doc delete, application remove and both bulk deletes (applications, Mistake OS) now use the armed two-click confirm pattern (label flips to "Confirm delete?", auto-disarms after 4–5s). Flows have no delete UI (archive only).
@@ -62,14 +74,14 @@ effort `S` (hours) · `M` (a day) · `L` (multi-day).
 - [x] **Notifications page** — full `/app/notifications` history (server `?limit=`, type-filter chips, unread-only, mark-all-read, bell "See all" link).
 - [x] **Today reflection journal** — optional mood (1–5) + one-line note per day (server schema + `/daily-plan/reflection`), surfaced as mood emoji in the week strip.
 
-## 9. Observability
+## 10. Observability
 - [x] **Global client `ErrorHandler`** — swallows benign noise, prompts reload on stale chunk loads, logs + shows one throttled toast — and now POSTs uncaught errors to the server feed (`POST /ops/client-errors`: public, 10/min per-IP, strict payload caps; deduped + max 5/session client-side, raw `fetch` + `keepalive`). Visible in `/admin/ops`.
 - [x] **Web-vitals** — dependency-free `WebVitalsService` (PerformanceObserver, outside the Angular zone) reports LCP/CLS/INP once per page load via the product-analytics `track()` channel (new whitelisted `web_vital` event).
 
-## 10. PWA / offline
+## 11. PWA / offline
 - [ ] `P3·M` **Expand offline coverage** — the offline cache + sync queue exist; extend the cached GET allowlist and add offline-friendly empty states on more screens.
 
-## 11. Docs & DevEx
+## 12. Docs & DevEx
 - [ ] `P2·S` **Pre-commit hooks** — husky + lint-staged. _Deferred:_ the server lint script bakes in `--fix` (mutates files) and flat-config resolution from the monorepo root is fiddly; do it once client lint exists so one lint-staged config covers both.
 - [x] **API docs** — Swagger UI served at `/api/docs`, generated from the Nest controllers (non-production by default; `ENABLE_API_DOCS=true` to expose in prod).
 - [ ] `P3·S` **ADRs** — short architecture-decision records for the big calls (Agent OS pipeline, provider abstraction, entitlements).

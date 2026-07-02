@@ -6,6 +6,7 @@ import {
   Roadmap,
   RoadmapStatus,
   RoadmapSummary,
+  RoadmapVersionSummary,
   UpdateProgressPayload,
 } from '../models';
 
@@ -40,6 +41,16 @@ export class RoadmapService {
   /** Regenerate a single week in place (optionally with an adjustment note). */
   regenerateWeek(id: string, weekNumber: number, note?: string): Observable<Roadmap> {
     return this.api.post<Roadmap>(`/roadmaps/${id}/regenerate-week`, { weekNumber, note });
+  }
+
+  /** Git-style content history (newest first). */
+  versions(id: string): Observable<RoadmapVersionSummary[]> {
+    return this.api.get<RoadmapVersionSummary[]>(`/roadmaps/${id}/versions`);
+  }
+
+  /** Restore the roadmap content to an earlier version (progress survives). */
+  restoreVersion(id: string, version: number): Observable<Roadmap> {
+    return this.api.post<Roadmap>(`/roadmaps/${id}/versions/${version}/restore`, {});
   }
 
   remove(id: string): Observable<{ ok: true }> {

@@ -1,10 +1,10 @@
 import { ChangeDetectionStrategy, Component, Input, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { RouterLink } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { RoadmapService } from '../../core/services/roadmap.service';
 import { ToastService } from '../../core/services/toast.service';
 import { ConfettiService } from '../../core/services/confetti.service';
-import { Roadmap } from '../../core/models';
+import { Roadmap, RoadmapVersionSummary } from '../../core/models';
 import { ButtonComponent } from '../../shared/ui/button.component';
 import { CardComponent } from '../../shared/ui/card.component';
 import { BadgeComponent } from '../../shared/ui/badge.component';
@@ -255,12 +255,53 @@ import { OfflineToggleComponent } from '../../shared/ui/offline-toggle.component
                   [isCurrent]="week.weekNumber === currentWeek()"
                   [completedTasks]="r.completedTasks"
                   (weekToggle)="toggleWeek(week.weekNumber, $event)"
-                  (taskToggle)="toggleTask($event)" />
+                  (taskToggle)="toggleTask($event)"
+                  (learn)="learnTopic($event)"
+                  (practice)="practiceTopic($event)"
+                  (regen)="regenerateWeek($event)" />
               }
             </div>
           </div>
         </div>
       </section>
+
+      <!-- Version history — every generation/edit is a restorable point (like git) -->
+      <asta-card class="block mb-8 motion-card-reveal" pad="16px 18px">
+        <div class="panel-head">
+          <div>
+            <p class="kicker mb-1">History</p>
+            <h2 class="t-h-card">Versions — restore any point</h2>
+          </div>
+          <asta-btn variant="ghost" size="sm" (click)="toggleVersions()">{{ showVersions() ? 'Hide' : 'Show history' }}</asta-btn>
+        </div>
+        @if (showVersions()) {
+          @if (versionsLoading()) {
+            <asta-skeleton h="72px" class="block mt-3" />
+          } @else if (versions().length === 0) {
+            <p class="text-[13px] text-txt-mute mt-3">No versions yet — regenerate a week or edit via chat and each change lands here.</p>
+          } @else {
+            <ul class="mt-3 space-y-2">
+              @for (v of versions(); track v.version) {
+                <li class="ver-row">
+                  <span class="ver-badge" [class.ver-cur]="v.current">v{{ v.version }}</span>
+                  <div class="min-w-0 flex-1">
+                    <p class="text-[13.5px] font-semibold truncate">{{ v.label }}</p>
+                    <p class="text-[12px] text-txt-mute">{{ v.weeks }} weeks · {{ versionWhen(v) }}</p>
+                  </div>
+                  @if (v.current) {
+                    <span class="pill">current</span>
+                  } @else {
+                    <button class="ver-restore" [disabled]="restoring()" (click)="restoreVersion(v.version)">
+                      {{ restoring() ? 'Restoring…' : 'Restore' }}
+                    </button>
+                  }
+                </li>
+              }
+            </ul>
+            <p class="text-[12px] text-txt-mute mt-3">Restoring changes the plan's content only — everything you've completed stays completed where it still applies. You can also say it in any chat: “restore my roadmap to version 2”.</p>
+          }
+        }
+      </asta-card>
 
       <!-- Milestones -->
       <section class="mb-8 motion-card-reveal motion-lower">
@@ -368,6 +409,12 @@ import { OfflineToggleComponent } from '../../shared/ui/offline-toggle.component
       .dp-task { font-size: 12.5px; color: var(--text-soft); }
       .nt-check { width: 18px; height: 18px; flex-shrink: 0; margin-top: 1px; border-radius: 6px; border: 1.5px solid var(--paper-3); background: var(--paper-2); transition: border-color .15s, background .15s; }
       .nt-check:hover { border-color: var(--green); background: color-mix(in oklch, var(--green) 16%, transparent); }
+      .ver-row { display: flex; align-items: center; gap: 12px; padding: 8px 10px; border-radius: 10px; background: var(--paper-2); }
+      .ver-badge { font-family: var(--mono); font-size: 11px; font-weight: 700; padding: 3px 9px; border-radius: 999px; background: var(--paper-3); color: var(--text-soft); flex-shrink: 0; }
+      .ver-badge.ver-cur { background: color-mix(in oklch, var(--green) 18%, transparent); color: var(--green-deep); }
+      .ver-restore { font-size: 12px; font-weight: 600; padding: 5px 13px; border-radius: 999px; border: 1px solid color-mix(in oklch, var(--peri, #8aa6ff) 35%, var(--paper-3)); background: color-mix(in oklch, var(--peri, #8aa6ff) 10%, transparent); color: var(--peri-deep, #6f86e0); cursor: pointer; transition: background .12s; flex-shrink: 0; }
+      .ver-restore:hover:not(:disabled) { background: color-mix(in oklch, var(--peri, #8aa6ff) 20%, transparent); }
+      .ver-restore:disabled { opacity: .6; cursor: default; }
     `,
     ]
 })
@@ -375,6 +422,7 @@ export class RoadmapDetailsComponent {
   private readonly service = inject(RoadmapService);
   private readonly toast = inject(ToastService);
   private readonly confetti = inject(ConfettiService);
+  private readonly router = inject(Router);
 
   /** Bound from the :id route param via withComponentInputBinding(). */
   @Input() set id(value: string) {
@@ -614,12 +662,81 @@ export class RoadmapDetailsComponent {
         this.regenNote.set('');
         this.regenerating.set(false);
         this.showDaily.set(false);
-        this.toast.success(`Week ${weekNumber} regenerated`);
+        this.versions.set([]); // history changed — reload on next open
+        this.toast.success(`Week ${weekNumber} regenerated — saved as a new version`);
       },
       error: (e: Error) => {
         this.regenerating.set(false);
         this.toast.error(e.message || 'Could not regenerate the week');
       },
     });
+  }
+
+  // ── Deep links: a roadmap week routes straight into learning it ──
+
+  /** Open the AI Tutor pre-focused on this week's topic. */
+  learnTopic(topic: string): void {
+    void this.router.navigate(['/app/tutor'], { queryParams: { topic, mode: 'explain' } });
+  }
+
+  /** Open the AI Tutor in practice mode — quizzes this week's topic. */
+  practiceTopic(topic: string): void {
+    void this.router.navigate(['/app/tutor'], { queryParams: { topic, mode: 'practice' } });
+  }
+
+  // ── Version history (git-style restore points) ──
+
+  readonly versions = signal<RoadmapVersionSummary[]>([]);
+  readonly showVersions = signal(false);
+  readonly versionsLoading = signal(false);
+  readonly restoring = signal(false);
+
+  toggleVersions(): void {
+    this.showVersions.update((v) => !v);
+    if (this.showVersions() && this.versions().length === 0) this.loadVersions();
+  }
+
+  private loadVersions(): void {
+    this.versionsLoading.set(true);
+    this.service.versions(this._id).subscribe({
+      next: (list) => {
+        this.versions.set(list);
+        this.versionsLoading.set(false);
+      },
+      error: () => {
+        this.versionsLoading.set(false);
+        this.toast.error('Could not load version history');
+      },
+    });
+  }
+
+  restoreVersion(version: number): void {
+    if (this.restoring()) return;
+    this.restoring.set(true);
+    this.service.restoreVersion(this._id, version).subscribe({
+      next: (r) => {
+        this.roadmap.set(r);
+        this.restoring.set(false);
+        this.versions.set([]);
+        this.loadVersions();
+        this.toast.success(`Restored to version ${version} — your progress was kept`);
+      },
+      error: (e: Error) => {
+        this.restoring.set(false);
+        this.toast.error(e.message || 'Could not restore this version');
+      },
+    });
+  }
+
+  versionWhen(v: RoadmapVersionSummary): string {
+    const ms = Date.now() - new Date(v.createdAt).getTime();
+    const mins = Math.floor(ms / 60_000);
+    if (mins < 1) return 'just now';
+    if (mins < 60) return `${mins}m ago`;
+    const hours = Math.floor(mins / 60);
+    if (hours < 24) return `${hours}h ago`;
+    const days = Math.floor(hours / 24);
+    if (days < 7) return `${days}d ago`;
+    return new Date(v.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
   }
 }

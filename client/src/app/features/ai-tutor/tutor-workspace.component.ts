@@ -1,8 +1,9 @@
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, HostListener, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { ActivatedRoute, Router } from '@angular/router';
 import { AgentService } from '../../core/services/agent.service';
 import { ToastService } from '../../core/services/toast.service';
-import { AgentAction, AgentStreamEvent, VisualBlock, WorkflowStepView } from '../../core/models';
+import { AgentAction, AgentSessionSummary, AgentStreamEvent, VisualBlock, WorkflowStepView } from '../../core/models';
 import { RichContentComponent } from '../../shared/components/ai/rich-content.component';
 import { ButtonComponent } from '../../shared/ui/button.component';
 import { CardComponent } from '../../shared/ui/card.component';
@@ -52,7 +53,8 @@ const STARTERS = [
     <!-- Screen-reader-only status for streaming AI replies (a11y). -->
     <span class="sr-only" aria-live="polite" role="status">{{ liveStatus() }}</span>
 
-    <div class="grid gap-5 lg:grid-cols-[1fr_minmax(320px,400px)]" style="min-height:calc(100dvh - 230px)">
+    <div class="grid gap-5 lg:grid-cols-[1fr_minmax(320px,400px)]" [class.maximized]="expanded()"
+      [style.minHeight]="expanded() ? null : 'calc(100dvh - 230px)'">
       <!-- LEFT: chat -->
       <div class="flex flex-col card" style="padding:0;overflow:hidden">
         <div class="flex items-center justify-between gap-3 px-5 py-3.5" style="border-bottom:1px solid var(--asta-line, color-mix(in oklch, var(--paper-3) 60%, transparent))">
@@ -63,15 +65,46 @@ const STARTERS = [
               <p class="text-[11px] font-mono text-txt-mute">{{ busy() ? 'Thinking…' : 'Ready' }} · {{ mode() }}</p>
             </div>
           </div>
-          <div class="flex flex-wrap gap-1.5 justify-end" style="max-width:62%">
-            @for (m of modes; track m) {
-              <button class="mode-pill" [class.mode-on]="mode() === m" (click)="mode.set(m)">{{ m }}</button>
-            }
+          <div class="flex items-center gap-1.5">
+            <div class="flex flex-wrap gap-1.5 justify-end">
+              @for (m of modes; track m) {
+                <button class="mode-pill" [class.mode-on]="mode() === m" (click)="mode.set(m)">{{ m }}</button>
+              }
+            </div>
+            <button class="hdr-btn" [class.hdr-on]="showHistory()" title="Past chats" (click)="toggleHistory()" aria-label="Past chats">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l3 2"/></svg>
+            </button>
+            <button class="hdr-btn" [title]="expanded() ? 'Exit large view (Esc)' : 'Large view'" (click)="expanded.set(!expanded())" [attr.aria-label]="expanded() ? 'Exit large view' : 'Large view'">
+              @if (expanded()) {
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3v3a2 2 0 0 1-2 2H3M21 8h-3a2 2 0 0 1-2-2V3M3 16h3a2 2 0 0 1 2 2v3M16 21v-3a2 2 0 0 1 2-2h3"/></svg>
+              } @else {
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3H5a2 2 0 0 0-2 2v3M21 8V5a2 2 0 0 0-2-2h-3M3 16v3a2 2 0 0 0 2 2h3M16 21h3a2 2 0 0 0 2-2v-3"/></svg>
+              }
+            </button>
           </div>
         </div>
 
+        <!-- past chats -->
+        @if (showHistory()) {
+          <div class="hist-panel">
+            @if (historyLoading()) {
+              <p class="text-[13px] text-txt-mute px-1 py-2">Loading your chats…</p>
+            } @else if (history().length === 0) {
+              <p class="text-[13px] text-txt-mute px-1 py-2">No past chats yet — everything you discuss is saved here.</p>
+            } @else {
+              @for (s of history(); track s.id) {
+                <button class="hist-row" (click)="openSession(s)">
+                  <span class="truncate">{{ s.title || 'Untitled chat' }}</span>
+                  <span class="hist-when">{{ sessionWhen(s) }}</span>
+                </button>
+              }
+            }
+          </div>
+        }
+
         <!-- thread -->
-        <div class="flex-1 overflow-y-auto scroll-area px-5 py-5 space-y-5" style="max-height:calc(100dvh - 400px)">
+        <div class="flex-1 overflow-y-auto scroll-area px-5 py-5 space-y-5"
+          [style.maxHeight]="expanded() ? 'none' : 'calc(100dvh - 400px)'">
           @if (messages().length === 0) {
             <div class="grid place-items-center text-center py-12">
               <span class="tutor-orb big mb-4" aria-hidden="true"></span>
@@ -213,6 +246,17 @@ const STARTERS = [
       .rec-item { display: flex; gap: 8px; align-items: flex-start; cursor: pointer; padding: 4px 6px; margin: 0 -6px; border-radius: 8px; transition: background .16s var(--ease), color .16s var(--ease); }
       .rec-item:hover { background: color-mix(in oklch, var(--paper-2) 55%, transparent); color: var(--text); }
 
+      /* Large view: the whole workspace takes over the viewport (Esc to exit). */
+      .maximized { position: fixed; inset: 0; z-index: 80; background: var(--paper); padding: 16px 18px; overflow: auto; margin: 0; }
+
+      .hdr-btn { display: grid; place-items: center; width: 30px; height: 30px; flex-shrink: 0; border-radius: 9px; color: var(--text-mute); border: 1px solid transparent; cursor: pointer; transition: color .15s var(--ease), background .15s var(--ease); }
+      .hdr-btn:hover, .hdr-btn.hdr-on { color: var(--green-deep); background: var(--asta-accent-glow); }
+
+      .hist-panel { max-height: 260px; overflow-y: auto; padding: 8px 12px; border-bottom: 1px solid color-mix(in oklch, var(--paper-3) 60%, transparent); background: color-mix(in oklch, var(--paper-2) 40%, transparent); }
+      .hist-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; width: 100%; text-align: left; font-size: 13.5px; padding: 8px 10px; border-radius: 9px; color: var(--text-soft); cursor: pointer; transition: background .14s var(--ease), color .14s var(--ease); }
+      .hist-row:hover { background: color-mix(in oklch, var(--paper-2) 80%, transparent); color: var(--text); }
+      .hist-when { font-family: var(--mono); font-size: 11px; color: var(--text-mute); flex-shrink: 0; }
+
       .panel-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
       .panel-ico { width: 32px; height: 32px; flex-shrink: 0; display: grid; place-items: center; border-radius: 10px; color: var(--green-deep); background: color-mix(in oklch, var(--green) 13%, transparent); transition: transform .4s var(--ease-spring); }
       asta-card:hover .panel-ico { transform: scale(1.14) rotate(-8deg); }
@@ -230,6 +274,8 @@ const STARTERS = [
 export class TutorWorkspaceComponent {
   private readonly agent = inject(AgentService);
   private readonly toast = inject(ToastService);
+  private readonly route = inject(ActivatedRoute);
+  private readonly router = inject(Router);
 
   readonly modes = MODES;
   readonly starters = STARTERS;
@@ -239,10 +285,43 @@ export class TutorWorkspaceComponent {
   readonly busy = signal(false);
   /** Polite screen-reader status for streaming tutor replies (no visual footprint). */
   readonly liveStatus = signal('');
+  /** Large view: the workspace takes over the viewport (Esc exits). */
+  readonly expanded = signal(false);
+  readonly history = signal<AgentSessionSummary[]>([]);
+  readonly showHistory = signal(false);
+  readonly historyLoading = signal(false);
 
   draft = '';
   private sessionId?: string;
   private lastTopic = '';
+
+  constructor() {
+    // Deep links (e.g. a roadmap week's "Learn with Tutor"): ?topic=X&mode=practice
+    // pre-focuses the session and starts it on that topic immediately.
+    const qp = this.route.snapshot.queryParamMap;
+    const mode = qp.get('mode');
+    if (mode && (MODES as readonly string[]).includes(mode)) this.mode.set(mode as Mode);
+    const topic = qp.get('topic')?.trim();
+    if (topic) {
+      setTimeout(() => this.send(this.topicPrompt(topic)));
+      void this.router.navigate([], { relativeTo: this.route, queryParams: {}, replaceUrl: true });
+    }
+  }
+
+  private topicPrompt(topic: string): string {
+    switch (this.mode()) {
+      case 'practice': return `Quiz me on ${topic}`;
+      case 'interview': return `Interview me on ${topic}`;
+      case 'visual': return `Explain ${topic} visually`;
+      case 'revision': return `Help me revise ${topic}`;
+      default: return `Teach me ${topic} — connect it to my roadmap and my weak areas`;
+    }
+  }
+
+  @HostListener('document:keydown.escape')
+  onEscape(): void {
+    if (this.expanded()) this.expanded.set(false);
+  }
 
   /** Reset the conversation for a fresh session. */
   newChat(): void {
@@ -250,6 +329,63 @@ export class TutorWorkspaceComponent {
     this.steps.set([]);
     this.sessionId = undefined;
     this.lastTopic = '';
+  }
+
+  // ── Past chats: every session is saved server-side; resume any of them. ──
+
+  toggleHistory(): void {
+    this.showHistory.update((v) => !v);
+    if (this.showHistory() && this.history().length === 0) {
+      this.historyLoading.set(true);
+      this.agent.listSessions().subscribe({
+        next: (list) => {
+          this.history.set(list);
+          this.historyLoading.set(false);
+        },
+        error: () => this.historyLoading.set(false),
+      });
+    }
+  }
+
+  openSession(s: AgentSessionSummary): void {
+    this.historyLoading.set(true);
+    this.agent.getMessages(s.id).subscribe({
+      next: (msgs) => {
+        this.messages.set(
+          msgs.map((m) => ({
+            role: m.role,
+            content: m.content,
+            agentType: m.agentType,
+            visualBlocks: m.visualBlocks ?? [],
+            actions: m.actions ?? [],
+            followUps: m.followUpQuestions ?? [],
+            recommended: m.recommendedNextActions ?? [],
+            streaming: false,
+            messageId: m.id,
+          })),
+        );
+        this.sessionId = s.id; // continue the thread where it left off
+        this.steps.set([]);
+        this.showHistory.set(false);
+        this.historyLoading.set(false);
+      },
+      error: () => {
+        this.historyLoading.set(false);
+        this.toast.error('Could not load that chat');
+      },
+    });
+  }
+
+  sessionWhen(s: AgentSessionSummary): string {
+    if (!s.lastMessageAt) return '';
+    const ms = Date.now() - new Date(s.lastMessageAt).getTime();
+    const mins = Math.floor(ms / 60_000);
+    if (mins < 60) return mins < 1 ? 'now' : `${mins}m`;
+    const hours = Math.floor(mins / 60);
+    if (hours < 24) return `${hours}h`;
+    const days = Math.floor(hours / 24);
+    if (days < 7) return `${days}d`;
+    return new Date(s.lastMessageAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
   }
 
   readonly latest = computed(() => {
@@ -313,7 +449,11 @@ export class TutorWorkspaceComponent {
       case 'ask_interviewer': this.mode.set('interview'); this.send(`Interview me on ${topic}`); break;
       case 'generate_quiz': this.mode.set('practice'); this.send(`Quiz me on ${topic}`); break;
       case 'generate_notes': this.send(`Generate concise notes on ${topic}`); break;
-      case 'open_route': /* handled by router elsewhere */ break;
+      case 'open_route': {
+        const route = a.payload?.['route'] as string | undefined;
+        if (route) void this.router.navigateByUrl(route);
+        break;
+      }
       default: this.send(`${a.label}: ${topic}`);
     }
   }

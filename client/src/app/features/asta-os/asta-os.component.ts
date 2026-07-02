@@ -90,7 +90,7 @@ interface CockpitTab {
         AstaOsHistoryComponent,
     ],
     template: `
-    <div class="os">
+    <div class="os" [class.focus]="focusMode()">
       <!-- ambient aurora + constellation -->
       <div class="ambient" aria-hidden="true"><span class="a1"></span><span class="a2"></span><span class="grid"></span></div>
 
@@ -123,6 +123,15 @@ interface CockpitTab {
                 <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3" /></svg>
               </button>
             }
+            <button type="button" class="ctl-btn" [class.ctl-on]="focusMode()" (click)="focusMode.set(!focusMode())"
+              [title]="focusMode() ? 'Exit large view (Esc)' : 'Large view — hide side panels'"
+              [attr.aria-label]="focusMode() ? 'Exit large view' : 'Large view'">
+              @if (focusMode()) {
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3v3a2 2 0 0 1-2 2H3M21 8h-3a2 2 0 0 1-2-2V3M3 16h3a2 2 0 0 1 2 2v3M16 21v-3a2 2 0 0 1 2-2h3"/></svg>
+              } @else {
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3H5a2 2 0 0 0-2 2v3M21 8V5a2 2 0 0 0-2-2h-3M3 16v3a2 2 0 0 0 2 2h3M16 21h3a2 2 0 0 0 2-2v-3"/></svg>
+              }
+            </button>
             <asta-os-learning-mode [active]="learningMode()" (change)="learningMode.set($event)" />
             <asta-os-session-mode-toggle [active]="sessionMode()" (change)="sessionMode.set($event)" />
             @if (voice.wakeEnabled()) { <span class="wake"><span class="ping"></span> Wake word on</span> }
@@ -303,6 +312,13 @@ interface CockpitTab {
       .welcome .sub { max-width: 540px; color: var(--asta-muted); font-size: 15px; line-height: 1.55; }
       .canvas-wrap { flex: 1; min-height: 0; overflow-y: auto; padding: 4px 4px 8px; }
 
+      /* Large view: side panels fold away, the conversation takes the full width
+         (readable measure preserved). Esc exits. */
+      .os.focus { grid-template-columns: minmax(0, 1fr); }
+      .os.focus .dock-col, .os.focus .context-col { display: none; }
+      .os.focus .center { max-width: 1080px; width: 100%; margin: 0 auto; }
+      .ctl-btn.ctl-on { color: var(--asta-green); border-color: color-mix(in srgb, var(--asta-green) 45%, transparent); }
+
       .composer-wrap { margin-top: auto; }
 
       .mnav { display: none; }
@@ -351,6 +367,8 @@ export class AstaOsComponent {
   /** Files attached in the composer, uploaded + grounded into the next send. */
   protected readonly pendingFiles = signal<File[]>([]);
   protected readonly searchOpen = signal(false);
+  /** Large view: dock + context panel fold away; the conversation gets the screen. */
+  protected readonly focusMode = signal(false);
   protected readonly searchQuery = signal('');
   protected searchText = '';
   /** Seed pushed into the composer for edit-and-resend (nonce forces re-fill). */
@@ -427,7 +445,7 @@ export class AstaOsComponent {
     });
   }
 
-  /** Cmd/Ctrl-K focuses the composer; Esc closes search. */
+  /** Cmd/Ctrl-K focuses the composer; Esc closes search, then large view. */
   @HostListener('document:keydown', ['$event'])
   protected onGlobalKey(e: KeyboardEvent): void {
     if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
@@ -435,6 +453,8 @@ export class AstaOsComponent {
       this.focusNonce.update((n) => n + 1);
     } else if (e.key === 'Escape' && this.searchOpen()) {
       this.toggleSearch(false);
+    } else if (e.key === 'Escape' && this.focusMode()) {
+      this.focusMode.set(false);
     }
   }
 

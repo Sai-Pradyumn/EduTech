@@ -15,14 +15,46 @@ import { StudentProfileService } from '../student-profile/student-profile.servic
 import { RoadmapAgentService } from '../agents/roadmap/roadmap-agent.service';
 import { RoadmapBlueprintInput } from '../agents/roadmap/roadmap-blueprint.generator';
 import { Roadmap, RoadmapDocument } from './schemas/roadmap.schema';
+import {
+  RoadmapVersion,
+  RoadmapVersionDocument,
+} from './schemas/roadmap-version.schema';
 import { GenerateRoadmapDto } from './dto/generate-roadmap.dto';
 import { UpdateRoadmapProgressDto } from './dto/update-roadmap-progress.dto';
 import { UpdateRoadmapStatusDto } from './dto/update-roadmap-status.dto';
+
+/** Git-style history: how many content snapshots each roadmap keeps. */
+const MAX_VERSIONS = 20;
+
+/** Content fields captured by a version (progress is never versioned). */
+const CONTENT_FIELDS = [
+  'title',
+  'goal',
+  'overview',
+  'estimatedDuration',
+  'difficulty',
+  'weeklyPlan',
+  'milestones',
+  'recommendedProjects',
+  'assessmentPlan',
+  'dailyStudyPlan',
+  'successTips',
+] as const;
+
+export interface RoadmapVersionSummary {
+  version: number;
+  label: string;
+  createdAt: string;
+  weeks: number;
+  current: boolean;
+}
 
 @Injectable()
 export class RoadmapService {
   constructor(
     @InjectModel(Roadmap.name) private readonly model: Model<RoadmapDocument>,
+    @InjectModel(RoadmapVersion.name)
+    private readonly versions: Model<RoadmapVersionDocument>,
     private readonly profiles: StudentProfileService,
     private readonly roadmapAgent: RoadmapAgentService,
     private readonly events: EventEmitter2,
@@ -58,7 +90,7 @@ export class RoadmapService {
       )
       .exec();
 
-    return this.model.create({
+    const created = await this.model.create({
       user: profile.user,
       studentProfile: profile._id,
       title: generated.title,
@@ -77,6 +109,8 @@ export class RoadmapService {
       completedWeeks: [],
       completedTasks: [],
     });
+    await this.snapshot(created, 'Generated');
+    return created;
   }
 
   findMine(userId: string): Promise<RoadmapDocument[]> {
@@ -219,7 +253,121 @@ export class RoadmapService {
       roadmap.status = RoadmapStatus.Active;
     }
     this.logActivity(roadmap, 'week', `Regenerated Week ${weekNumber}`);
-    return roadmap.save();
+    const saved = await roadmap.save();
+    await this.snapshot(
+      saved,
+      `Week ${weekNumber} regenerated${note?.trim() ? `: ${note.trim()}` : ''}`,
+    );
+    return saved;
+  }
+
+  // ───────────────────────── versions (git-style history) ─────────────────────────
+
+  /** Version summaries, newest first. v(latest) is what the roadmap holds now. */
+  async listVersions(
+    userId: string,
+    id: string,
+  ): Promise<RoadmapVersionSummary[]> {
+    await this.findByIdForUser(userId, id); // ownership gate
+    const docs = await this.versions
+      .find({ roadmap: new Types.ObjectId(id) })
+      .sort({ version: -1 })
+      .lean()
+      .exec();
+    return docs.map((v, i) => ({
+      version: v.version,
+      label: v.label,
+      createdAt: v.createdAt?.toISOString() ?? '',
+      weeks: v.weeklyPlan?.length ?? 0,
+      current: i === 0,
+    }));
+  }
+
+  /**
+   * Restore the roadmap's content to an earlier version. Progress survives:
+   * completed weeks/tasks are kept where they still exist in the restored plan,
+   * then progress is recomputed. The restore itself becomes a new version, so
+   * nothing in history is ever lost (exactly like reverting a commit).
+   */
+  async restoreVersion(
+    userId: string,
+    id: string,
+    version: number,
+  ): Promise<RoadmapDocument> {
+    const roadmap = await this.findByIdForUser(userId, id);
+    const snap = await this.versions
+      .findOne({ roadmap: roadmap._id, version })
+      .lean()
+      .exec();
+    if (!snap) throw new NotFoundException(`Version ${version} not found`);
+
+    for (const field of CONTENT_FIELDS) {
+      // Same shapes by construction — versions are created from this document.
+      (roadmap as unknown as Record<string, unknown>)[field] = snap[field];
+    }
+    roadmap.markModified('weeklyPlan');
+    roadmap.markModified('milestones');
+
+    // Keep only progress that still points at real weeks/tasks in this version.
+    const weekNumbers = new Set(roadmap.weeklyPlan.map((w) => w.weekNumber));
+    roadmap.completedWeeks = roadmap.completedWeeks.filter((w) =>
+      weekNumbers.has(w),
+    );
+    roadmap.completedTasks = roadmap.completedTasks.filter((t) => {
+      const m = /^w(\d+):t(\d+)$/.exec(t);
+      if (!m) return false;
+      const wk = roadmap.weeklyPlan.find((w) => w.weekNumber === Number(m[1]));
+      return !!wk && Number(m[2]) < wk.tasks.length;
+    });
+    roadmap.progressPercentage = this.computeProgress(roadmap);
+    if (
+      roadmap.status === RoadmapStatus.Completed &&
+      roadmap.progressPercentage < 100
+    ) {
+      roadmap.status = RoadmapStatus.Active;
+    }
+    this.logActivity(roadmap, 'week', `Restored to version ${version}`);
+    const saved = await roadmap.save();
+    await this.snapshot(saved, `Restored to v${version} (${snap.label})`);
+    return saved;
+  }
+
+  /** Append a content snapshot as the next version; keep the newest MAX_VERSIONS. */
+  private async snapshot(
+    roadmap: RoadmapDocument,
+    label: string,
+  ): Promise<void> {
+    const latest = await this.versions
+      .findOne({ roadmap: roadmap._id })
+      .sort({ version: -1 })
+      .lean()
+      .exec();
+    const version = (latest?.version ?? 0) + 1;
+    await this.versions.create({
+      roadmap: roadmap._id,
+      user: roadmap.user,
+      version,
+      label,
+      title: roadmap.title,
+      goal: roadmap.goal,
+      overview: roadmap.overview,
+      estimatedDuration: roadmap.estimatedDuration,
+      difficulty: roadmap.difficulty,
+      weeklyPlan: roadmap.weeklyPlan,
+      milestones: roadmap.milestones,
+      recommendedProjects: roadmap.recommendedProjects,
+      assessmentPlan: roadmap.assessmentPlan,
+      dailyStudyPlan: roadmap.dailyStudyPlan,
+      successTips: roadmap.successTips,
+    });
+    if (version > MAX_VERSIONS) {
+      await this.versions
+        .deleteMany({
+          roadmap: roadmap._id,
+          version: { $lte: version - MAX_VERSIONS },
+        })
+        .exec();
+    }
   }
 
   async updateStatus(

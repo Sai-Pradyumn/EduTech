@@ -11,7 +11,7 @@ import {
 } from '@nestjs/common';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { AuthUser } from '../../common/interfaces';
-import { RoadmapService } from './roadmap.service';
+import { RoadmapService, RoadmapVersionSummary } from './roadmap.service';
 import { GenerateRoadmapDto } from './dto/generate-roadmap.dto';
 import { RegenerateWeekDto } from './dto/regenerate-week.dto';
 import { UpdateRoadmapProgressDto } from './dto/update-roadmap-progress.dto';
@@ -76,6 +76,27 @@ export class RoadmapController {
   ): Promise<RoadmapResponse> {
     return toRoadmapResponse(
       await this.roadmaps.regenerateWeek(user.id, id, dto.weekNumber, dto.note),
+    );
+  }
+
+  /** Git-style content history: every generation/edit/restore is a version. */
+  @Get(':id/versions')
+  versions(
+    @CurrentUser() user: AuthUser,
+    @Param('id') id: string,
+  ): Promise<RoadmapVersionSummary[]> {
+    return this.roadmaps.listVersions(user.id, id);
+  }
+
+  /** Restore the roadmap content to any earlier version (progress survives). */
+  @Post(':id/versions/:version/restore')
+  async restore(
+    @CurrentUser() user: AuthUser,
+    @Param('id') id: string,
+    @Param('version') version: string,
+  ): Promise<RoadmapResponse> {
+    return toRoadmapResponse(
+      await this.roadmaps.restoreVersion(user.id, id, Number(version)),
     );
   }
 

@@ -75,6 +75,11 @@ export interface TaskToggle {
               </ul>
             </div>
             <p class="sm:col-span-2 text-sm"><span class="text-txt-mute">Outcome:</span> {{ week.expectedOutcome }}</p>
+            <div class="sm:col-span-2 flex flex-wrap gap-2 pt-1">
+              <button type="button" class="wk-act" (click)="act($event, learn)">Learn with Tutor →</button>
+              <button type="button" class="wk-act" (click)="act($event, practice)">Quiz me on this</button>
+              <button type="button" class="wk-act" (click)="act($event, regen)">↻ Rework this week</button>
+            </div>
           </div>
         }
       </div>
@@ -107,6 +112,13 @@ export interface TaskToggle {
       .wk-expand > *:nth-child(2) { animation-delay: 0.06s; }
       .wk-expand > *:nth-child(3) { animation-delay: 0.12s; }
       .wk-expand > *:nth-child(4) { animation-delay: 0.18s; }
+      .wk-act {
+        font-size: 12.5px; font-weight: 600; padding: 6px 13px; border-radius: 999px;
+        border: 1px solid color-mix(in oklch, var(--paper-3) 70%, transparent);
+        background: var(--paper-2); color: var(--text-soft); cursor: pointer;
+        transition: transform .16s var(--ease-spring), border-color .16s var(--ease), color .16s var(--ease);
+      }
+      .wk-act:hover { transform: translateY(-1px); color: var(--text); border-color: color-mix(in oklch, var(--green) 40%, transparent); }
       .wk-tag { animation: astaSoftPop 0.35s var(--ease-spring) both; }
       @media (prefers-reduced-motion: reduce) {
         .wk-node-done, .wk-node-current, .wk-check, .wk-expand > *, .wk-tag { animation: none; stroke-dashoffset: 0; }
@@ -121,8 +133,18 @@ export class WeekCardComponent {
   @Input() completedTasks: string[] = [];
   @Output() weekToggle = new EventEmitter<boolean>();
   @Output() taskToggle = new EventEmitter<TaskToggle>();
+  /** Deep-link actions: learn/practice carry the week's focus topic. */
+  @Output() learn = new EventEmitter<string>();
+  @Output() practice = new EventEmitter<string>();
+  @Output() regen = new EventEmitter<number>();
 
   readonly open = signal(false);
+
+  act(ev: Event, emitter: EventEmitter<string> | EventEmitter<number>): void {
+    ev.stopPropagation();
+    if (emitter === this.regen) this.regen.emit(this.week.weekNumber);
+    else (emitter as EventEmitter<string>).emit(this.week.focus);
+  }
 
   taskId(index: number): string {
     return `w${this.week.weekNumber}:t${index}`;
