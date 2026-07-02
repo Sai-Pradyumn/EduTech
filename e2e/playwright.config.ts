@@ -21,7 +21,22 @@ export default defineConfig({
   retries: process.env.CI ? 1 : 0,
   reporter: process.env.CI ? 'github' : 'list',
   use: { baseURL, trace: 'on-first-retry' },
-  projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'] } }],
+  projects: [
+    {
+      name: 'chromium',
+      use: { ...devices['Desktop Chrome'] },
+      testIgnore: /screen-audit/,
+    },
+    // The 37-screen audit walks serially and is rate-limit sensitive (every
+    // full page load re-boots the app), so it runs AFTER the parallel suite
+    // instead of competing with it for the API's per-IP budget.
+    {
+      name: 'audit',
+      use: { ...devices['Desktop Chrome'] },
+      testMatch: /screen-audit/,
+      dependencies: ['chromium'],
+    },
+  ],
   // Auto-start the client unless we're pointed at an external URL.
   webServer: process.env.E2E_BASE_URL
     ? undefined

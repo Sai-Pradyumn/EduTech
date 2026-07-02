@@ -30,14 +30,18 @@ export const appConfig: ApplicationConfig = {
       withInMemoryScrolling({ scrollPositionRestoration: 'top' }),
     ),
     provideHttpClient(withInterceptors([authTokenInterceptor, errorInterceptor])),
-    // Restore the session from a stored token before the app renders.
+    // Restore the session from a stored token before the app renders. Only an
+    // actually-invalid token (401/403) clears the session — a transient failure
+    // during boot (rate limit, flaky network, server restart) must NOT log the
+    // user out; their refresh token is still perfectly valid.
     provideAppInitializer(async () => {
       const auth = inject(AuthService);
       if (!auth.accessToken) return;
       try {
         await firstValueFrom(auth.loadCurrentUser());
-      } catch {
-        auth.clearSession();
+      } catch (err) {
+        const status = (err as { status?: number })?.status ?? 0;
+        if (status === 401 || status === 403) auth.clearSession();
       }
     }),
     // Start web-vitals reporting once the app boots.
