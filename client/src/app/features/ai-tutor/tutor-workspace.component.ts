@@ -66,6 +66,9 @@ const STARTERS = [
             </div>
           </div>
           <div class="flex items-center gap-1.5">
+            @if (busy()) {
+              <button class="stop-btn" (click)="stopGeneration()" aria-label="Stop generating">■ Stop</button>
+            }
             <div class="flex flex-wrap gap-1.5 justify-end">
               @for (m of modes; track m) {
                 <button class="mode-pill" [class.mode-on]="mode() === m" (click)="mode.set(m)">{{ m }}</button>
@@ -92,11 +95,16 @@ const STARTERS = [
             } @else if (history().length === 0) {
               <p class="text-[13px] text-txt-mute px-1 py-2">No past chats yet — everything you discuss is saved here.</p>
             } @else {
-              @for (s of history(); track s.id) {
+              <input class="hist-search" [value]="histQuery()" (input)="histQuery.set($any($event.target).value)"
+                placeholder="Search your chats…" aria-label="Search past chats" />
+              @for (s of filteredHistory(); track s.id) {
                 <button class="hist-row" (click)="openSession(s)">
                   <span class="truncate">{{ s.title || 'Untitled chat' }}</span>
                   <span class="hist-when">{{ sessionWhen(s) }}</span>
                 </button>
+              }
+              @if (filteredHistory().length === 0) {
+                <p class="text-[13px] text-txt-mute px-1 py-2">No chats match “{{ histQuery() }}”.</p>
               }
             }
           </div>
@@ -115,11 +123,26 @@ const STARTERS = [
               </div>
             </div>
           }
-          @for (msg of messages(); track $index) {
+          @for (msg of messages(); track $index; let mi = $index) {
             @if (msg.role === 'user') {
-              <div class="flex justify-end motion-fade-up">
-                <div class="user-bubble">{{ msg.content }}</div>
-              </div>
+              @if (editIndex() === mi) {
+                <div class="flex justify-end motion-fade-up">
+                  <div class="edit-box">
+                    <textarea class="edit-in" rows="3" [value]="editDraft()" (input)="editDraft.set($any($event.target).value)" aria-label="Edit your message"></textarea>
+                    <div class="flex gap-2 justify-end mt-2">
+                      <button class="starter-chip sm" (click)="cancelEdit()">Cancel</button>
+                      <button class="starter-chip sm send" [disabled]="!editDraft().trim() || busy()" (click)="saveEdit(mi)">Send again</button>
+                    </div>
+                  </div>
+                </div>
+              } @else {
+                <div class="flex justify-end items-start gap-1.5 motion-fade-up msg-user">
+                  <button class="fb-btn msg-tool" title="Edit & resend" aria-label="Edit and resend this message" (click)="startEdit(mi, msg)">
+                    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.85 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>
+                  </button>
+                  <div class="user-bubble">{{ msg.content }}</div>
+                </div>
+              }
             } @else {
               <div class="flex gap-3 motion-fade-up">
                 <span class="msg-orb shrink-0" [class.busy]="msg.streaming" aria-hidden="true"></span>
@@ -144,6 +167,12 @@ const STARTERS = [
                   }
                   @if (!msg.streaming && !msg.failed && msg.role === 'assistant') {
                     <div class="flex items-center flex-wrap gap-2 mt-2.5">
+                      <button class="fb-btn" title="Copy answer" aria-label="Copy answer" (click)="copyAnswer(msg)">
+                        <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+                      </button>
+                      <button class="fb-btn" title="Regenerate this answer" aria-label="Regenerate this answer" [disabled]="busy()" (click)="regenerate(mi)">
+                        <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/></svg>
+                      </button>
                       <button class="fb-btn" title="Helpful" (click)="feedback('up', msg)">
                         <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 10v12M15 5.88 14 10h5.83a2 2 0 0 1 1.92 2.56l-2.33 8A2 2 0 0 1 17.5 22H4a2 2 0 0 1-2-2v-8a2 2 0 0 1 2-2h2.76a2 2 0 0 0 1.79-1.11L12 2a3.13 3.13 0 0 1 3 3.88Z"/></svg>
                       </button>
@@ -256,6 +285,19 @@ const STARTERS = [
       .hist-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; width: 100%; text-align: left; font-size: 13.5px; padding: 8px 10px; border-radius: 9px; color: var(--text-soft); cursor: pointer; transition: background .14s var(--ease), color .14s var(--ease); }
       .hist-row:hover { background: color-mix(in oklch, var(--paper-2) 80%, transparent); color: var(--text); }
       .hist-when { font-family: var(--mono); font-size: 11px; color: var(--text-mute); flex-shrink: 0; }
+      .hist-search { width: 100%; margin-bottom: 6px; font-size: 13px; padding: 7px 11px; border-radius: 9px; border: 1px solid var(--paper-3); background: var(--paper); color: var(--text); }
+      .hist-search:focus { outline: none; border-color: var(--green); }
+
+      .stop-btn { font-family: var(--mono); font-size: 11.5px; font-weight: 700; padding: 5px 12px; border-radius: 999px; border: 1px solid color-mix(in oklch, #e0654f 45%, transparent); background: color-mix(in oklch, #e0654f 12%, transparent); color: #e0654f; cursor: pointer; flex-shrink: 0; }
+      .stop-btn:hover { background: color-mix(in oklch, #e0654f 20%, transparent); }
+
+      .msg-user .msg-tool { opacity: 0; transition: opacity .15s var(--ease); margin-top: 6px; }
+      .msg-user:hover .msg-tool { opacity: 1; }
+      .edit-box { width: min(80%, 560px); padding: 10px 12px; border-radius: 16px 16px 4px 16px; border: 1px solid color-mix(in oklch, var(--green) 40%, var(--paper-3)); background: var(--paper-2); }
+      .edit-in { width: 100%; resize: vertical; font: inherit; font-size: 14px; border-radius: 9px; border: 1px solid var(--paper-3); background: var(--paper); color: var(--text); padding: 7px 10px; }
+      .edit-in:focus { outline: none; border-color: var(--green); }
+      .starter-chip.send { color: var(--green-deep); border-color: color-mix(in oklch, var(--green) 40%, transparent); }
+      .starter-chip.send:disabled { opacity: .55; cursor: default; }
 
       .panel-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
       .panel-ico { width: 32px; height: 32px; flex-shrink: 0; display: grid; place-items: center; border-radius: 10px; color: var(--green-deep); background: color-mix(in oklch, var(--green) 13%, transparent); transition: transform .4s var(--ease-spring); }
@@ -290,10 +332,20 @@ export class TutorWorkspaceComponent {
   readonly history = signal<AgentSessionSummary[]>([]);
   readonly showHistory = signal(false);
   readonly historyLoading = signal(false);
+  readonly histQuery = signal('');
+  readonly filteredHistory = computed(() => {
+    const q = this.histQuery().trim().toLowerCase();
+    if (!q) return this.history();
+    return this.history().filter((s) => (s.title || '').toLowerCase().includes(q));
+  });
+  /** Inline "edit & resend" state for a user turn. */
+  readonly editIndex = signal<number | null>(null);
+  readonly editDraft = signal('');
 
   draft = '';
   private sessionId?: string;
   private lastTopic = '';
+  private streamSub?: { unsubscribe(): void };
 
   constructor() {
     // Deep links (e.g. a roadmap week's "Learn with Tutor"): ?topic=X&mode=practice
@@ -424,7 +476,7 @@ export class TutorWorkspaceComponent {
     const assistant: ChatMsg = { role: 'assistant', content: '', visualBlocks: [], actions: [], followUps: [], recommended: [], streaming: true };
     this.push(assistant);
 
-    this.agent.stream({ message, sessionId: this.sessionId, mode: this.mode() }).subscribe({
+    this.streamSub = this.agent.stream({ message, sessionId: this.sessionId, mode: this.mode() }).subscribe({
       next: (e) => this.onEvent(e, assistant),
       error: () => {
         assistant.streaming = false;
@@ -434,6 +486,60 @@ export class TutorWorkspaceComponent {
         this.liveStatus.set('The response failed.');
       },
     });
+  }
+
+  /** Stop the stream, keep whatever arrived, and say so honestly. */
+  stopGeneration(): void {
+    this.streamSub?.unsubscribe();
+    this.streamSub = undefined;
+    this.messages.update((list) => {
+      const last = list[list.length - 1];
+      if (last?.role === 'assistant' && last.streaming) {
+        last.streaming = false;
+        if (last.content) last.content += '\n\n_Stopped by you — the answer above is partial._';
+        else last.failed = true;
+      }
+      return [...list];
+    });
+    this.busy.set(false);
+    this.liveStatus.set('Generation stopped.');
+  }
+
+  // ── per-message actions ──
+
+  copyAnswer(msg: ChatMsg): void {
+    void navigator.clipboard.writeText(msg.content).then(
+      () => this.toast.success('Copied'),
+      () => this.toast.error('Could not copy'),
+    );
+  }
+
+  /** Re-run the user prompt that produced this answer, replacing it. */
+  regenerate(assistantIndex: number): void {
+    if (this.busy()) return;
+    const list = this.messages();
+    const userMsg = list[assistantIndex - 1];
+    if (!userMsg || userMsg.role !== 'user') return;
+    this.messages.set(list.slice(0, assistantIndex - 1));
+    this.send(userMsg.content);
+  }
+
+  startEdit(index: number, msg: ChatMsg): void {
+    if (this.busy()) return;
+    this.editIndex.set(index);
+    this.editDraft.set(msg.content);
+  }
+  cancelEdit(): void {
+    this.editIndex.set(null);
+    this.editDraft.set('');
+  }
+  /** Resend from this point: later turns are dropped locally, then re-asked. */
+  saveEdit(index: number): void {
+    const text = this.editDraft().trim();
+    if (!text) return;
+    this.messages.update((list) => list.slice(0, index));
+    this.cancelEdit();
+    this.send(text);
   }
 
   /** Re-send the last user prompt after a failed response. */
