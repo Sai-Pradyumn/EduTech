@@ -50,10 +50,12 @@ function build(over: Partial<Record<string, unknown>> = {}) {
   const notifications = { createUnique: jest.fn().mockResolvedValue({}) };
   const mailer = { live: over.mailerLive ?? false, send: jest.fn() };
 
+  const liveSessions = fakeModel([]);
   const svc = new EngagementSchedulerService(
     users as never,
     plans as never,
     roadmaps as never,
+    liveSessions as never,
     mistakes as unknown as MistakesService,
     notifications as unknown as NotificationsService,
     mailer as unknown as MailerService,

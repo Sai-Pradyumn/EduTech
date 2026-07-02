@@ -261,6 +261,71 @@ export class RoadmapService {
     return saved;
   }
 
+  /**
+   * Adaptive re-plan: when the learner's real pace has slipped, regenerate the
+   * next not-yet-completed weeks (capped — this is one LLM call per week) so the
+   * plan fits reality instead of guilt-tripping. Progress on completed weeks is
+   * untouched; re-planned weeks' task progress resets; the whole change is one
+   * restorable version.
+   */
+  async replanRemaining(
+    userId: string,
+    id: string,
+    note?: string,
+  ): Promise<RoadmapDocument> {
+    const REPLAN_MAX_WEEKS = 4;
+    const roadmap = await this.findByIdForUser(userId, id);
+    const remaining = roadmap.weeklyPlan
+      .filter((w) => !roadmap.completedWeeks.includes(w.weekNumber))
+      .slice(0, REPLAN_MAX_WEEKS);
+    if (remaining.length === 0) return roadmap;
+
+    const profile = await this.profiles.findByUserOrThrow(userId);
+    const input: RoadmapBlueprintInput = {
+      fullName: profile.fullName,
+      mainGoal: roadmap.goal || profile.mainGoal,
+      currentSkillLevel: profile.currentSkillLevel,
+      currentSkills: profile.currentSkills,
+      weakAreas: profile.weakAreas,
+      availableTimePerDay: profile.availableTimePerDay,
+      targetTimeline: profile.targetTimeline,
+      preferredLearningStyle: profile.preferredLearningStyle,
+      careerTarget: profile.careerTarget,
+    };
+    const adjustment =
+      note?.trim() ||
+      'Adaptive re-plan: my pace has slipped — make this week tighter and more achievable in the time I actually have.';
+
+    for (const week of remaining) {
+      const newWeek = await this.roadmapAgent.regenerateWeek(
+        userId,
+        input,
+        week,
+        adjustment,
+      );
+      const idx = roadmap.weeklyPlan.findIndex(
+        (w) => w.weekNumber === week.weekNumber,
+      );
+      roadmap.weeklyPlan[idx] = { ...newWeek, weekNumber: week.weekNumber };
+      roadmap.completedTasks = roadmap.completedTasks.filter(
+        (t) => !t.startsWith(`w${week.weekNumber}:`),
+      );
+    }
+    roadmap.markModified('weeklyPlan');
+    roadmap.progressPercentage = this.computeProgress(roadmap);
+    this.logActivity(
+      roadmap,
+      'week',
+      `Re-planned ${remaining.length} upcoming week${remaining.length === 1 ? '' : 's'}`,
+    );
+    const saved = await roadmap.save();
+    await this.snapshot(
+      saved,
+      `Adaptive re-plan (${remaining.length} week${remaining.length === 1 ? '' : 's'})`,
+    );
+    return saved;
+  }
+
   // ───────────────────────── versions (git-style history) ─────────────────────────
 
   /** Version summaries, newest first. v(latest) is what the roadmap holds now. */

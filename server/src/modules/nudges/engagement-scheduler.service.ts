@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Cron } from '@nestjs/schedule';
 import { Model, Types } from 'mongoose';
+import { LiveSessionStatus } from '../../common/enums';
 import { MailerService } from '../mailer/mailer.service';
 import { MistakesService } from '../mistakes/mistakes.service';
 import { NotificationsService } from '../notifications/notifications.service';
@@ -9,6 +10,10 @@ import {
   DailyPlan,
   DailyPlanDocument,
 } from '../daily-plan/schemas/daily-plan.schema';
+import {
+  LiveSession,
+  LiveSessionDocument,
+} from '../live-session/schemas/live-session.schema';
 import { Roadmap, RoadmapDocument } from '../roadmap/schemas/roadmap.schema';
 import { User, UserDocument } from '../users/schemas/user.schema';
 
@@ -37,10 +42,56 @@ export class EngagementSchedulerService {
     private readonly plans: Model<DailyPlanDocument>,
     @InjectModel(Roadmap.name)
     private readonly roadmaps: Model<RoadmapDocument>,
+    @InjectModel(LiveSession.name)
+    private readonly liveSessions: Model<LiveSessionDocument>,
     private readonly mistakes: MistakesService,
     private readonly notifications: NotificationsService,
     private readonly mailer: MailerService,
   ) {}
+
+  /** Sessions starting within the hour → remind the org's members (deduped). */
+  @Cron('*/15 * * * *')
+  async sessionReminders(): Promise<void> {
+    const now = new Date();
+    const soon = new Date(now.getTime() + 60 * 60_000);
+    const sessions = await this.liveSessions
+      .find({
+        status: LiveSessionStatus.Scheduled,
+        scheduledStart: { $gte: now, $lte: soon },
+      })
+      .lean()
+      .exec();
+    for (const s of sessions) {
+      try {
+        const members = await this.users
+          .find({ organization: s.organization })
+          .limit(200)
+          .lean()
+          .exec();
+        const when = new Date(s.scheduledStart).toLocaleTimeString([], {
+          hour: 'numeric',
+          minute: '2-digit',
+        });
+        for (const m of members) {
+          await this.notifications.createUnique(String(m._id), {
+            type: 'nudge',
+            title: `Live session soon: ${s.title}`,
+            body: `"${s.title}" with ${s.hostName || 'your mentor'} starts at ${when}. Grab your seat.`,
+            link: '/app/live-sessions',
+          });
+        }
+      } catch (err) {
+        this.logger.warn(
+          `session reminder failed for ${String(s._id)}: ${(err as Error).message}`,
+        );
+      }
+    }
+    if (sessions.length) {
+      this.logger.log(
+        `Session reminders: ${sessions.length} upcoming session(s)`,
+      );
+    }
+  }
 
   @Cron('0 9 * * *')
   async dailyScan(): Promise<void> {

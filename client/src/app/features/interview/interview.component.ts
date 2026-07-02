@@ -7,6 +7,8 @@ import { EmptyStateComponent } from '../../shared/ui/empty-state.component';
 import { RingComponent } from '../../shared/ui/ring.component';
 import { SkeletonComponent } from '../../shared/ui/skeleton.component';
 import { ToastService } from '../../core/services/toast.service';
+import { SpeechRecognitionService } from '../../core/services/speech-recognition.service';
+import { TextToSpeechService } from '../../core/services/text-to-speech.service';
 import { InterviewService, InterviewSession, InterviewTypeMeta } from '../../core/services/interview.service';
 import { printDocument, PrintSection } from '../../shared/util/print';
 import { downloadPdf } from '../../shared/util/pdf';
@@ -81,21 +83,36 @@ import { downloadPdf } from '../../shared/util/pdf';
         } @else {
           <!-- active session -->
           <asta-card class="block motion-card-reveal motion-row-primary active">
-            <div class="flex items-center justify-between mb-3">
+            <div class="flex items-center justify-between mb-3 gap-2 flex-wrap">
               <p class="kicker !mb-0">{{ s.typeLabel }} · {{ s.role }}</p>
-              <span class="prog">Q{{ Math.min(s.currentIndex + 1, s.total) }} / {{ s.total }}</span>
+              <div class="flex items-center gap-2">
+                @if (stt.supported) {
+                  <button class="voice-toggle" [class.on]="voiceMode()" (click)="toggleVoice(s)"
+                    [title]="voiceMode() ? 'Voice mode on — questions are read aloud, answers can be spoken' : 'Turn on voice mode'">
+                    🎙 {{ voiceMode() ? 'Voice on' : 'Voice mode' }}
+                  </button>
+                }
+                <span class="prog">Q{{ Math.min(s.currentIndex + 1, s.total) }} / {{ s.total }}</span>
+              </div>
             </div>
             @if (currentQ(s); as q) {
               <p class="question">{{ q.question }}</p>
               <textarea class="answer" rows="5" [ngModel]="draft()" (ngModelChange)="draft.set($event)" placeholder="Type (or dictate) your answer…" [disabled]="busy()"></textarea>
               @if (lastFeedback()) { <div class="fb-box"><span class="score" [style.color]="scoreColor(lastScore())">{{ lastScore() }}</span> {{ lastFeedback() }}</div> }
-              <div class="mt-3 flex gap-2">
+              <div class="mt-3 flex gap-2 flex-wrap">
                 <asta-btn variant="accent" size="sm" (click)="submit(s)" [disabled]="busy() || !draft().trim()">{{ busy() ? 'Scoring…' : 'Submit answer' }}</asta-btn>
+                @if (voiceMode()) {
+                  <asta-btn variant="ghost" size="sm" (click)="dictate()" [disabled]="busy()">
+                    {{ listening() ? '■ Stop dictating' : '🎤 Dictate answer' }}
+                  </asta-btn>
+                  <asta-btn variant="ghost" size="sm" (click)="readQuestion(q.question)" [disabled]="busy()">🔊 Repeat question</asta-btn>
+                }
                 @if (s.currentIndex < s.total - 1) {
                   <asta-btn variant="ghost" size="sm" (click)="skip(s)" [disabled]="busy()">Skip</asta-btn>
                 }
                 <asta-btn variant="ghost" size="sm" (click)="finish(s)" [disabled]="busy()">Finish &amp; get report</asta-btn>
               </div>
+              @if (listening()) { <p class="listening">Listening… speak your answer; it lands in the box above. Click “Stop dictating” when done.</p> }
             } @else {
               <asta-empty-state title="All questions answered" description="Finish to get your scored report."><asta-btn variant="accent" (click)="finish(s)">Finish &amp; get report</asta-btn></asta-empty-state>
             }
@@ -181,6 +198,11 @@ import { downloadPdf } from '../../shared/util/pdf';
     .h-meta { display: block; font-size: 11px; color: var(--text-mute); }
     .h-score { font-size: 15px; font-weight: 700; }
     .active { border: 1px solid color-mix(in oklab, var(--peri, #8aa6ff) 25%, var(--paper-3)); }
+    .voice-toggle { font-size: 11.5px; font-weight: 600; padding: 4px 11px; border-radius: 999px; border: 1px solid var(--paper-3); background: var(--paper-2); color: var(--text-soft); cursor: pointer; transition: border-color .15s, color .15s; }
+    .voice-toggle.on { color: var(--green-deep); border-color: color-mix(in oklab, var(--green) 45%, var(--paper-3)); background: color-mix(in oklab, var(--green) 10%, transparent); }
+    .listening { margin-top: 8px; font-size: 12px; color: var(--green-deep); animation: ivPulse 1.6s ease-in-out infinite; }
+    @keyframes ivPulse { 0%, 100% { opacity: 1; } 50% { opacity: .55; } }
+    @media (prefers-reduced-motion: reduce) { .listening { animation: none; } }
     .prog { font-size: 11px; color: var(--text-mute); font-variant-numeric: tabular-nums; }
     .question { font-size: 16px; font-weight: 600; line-height: 1.4; margin-bottom: 10px; }
     .answer { width: 100%; padding: 11px 13px; border-radius: 11px; border: 1px solid var(--paper-3); background: var(--paper-2); color: var(--text); font-size: 14px; font-family: inherit; }
@@ -223,8 +245,54 @@ export class InterviewComponent {
   private readonly toast = inject(ToastService);
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
+  readonly stt = inject(SpeechRecognitionService);
+  private readonly tts = inject(TextToSpeechService);
 
   readonly Math = Math;
+  // ── Voice mode: questions read aloud, answers dictated ──
+  readonly voiceMode = signal(false);
+  readonly listening = signal(false);
+
+  toggleVoice(s: InterviewSession): void {
+    this.voiceMode.update((v) => !v);
+    if (this.voiceMode()) {
+      const q = this.currentQ(s);
+      if (q) this.readQuestion(q.question);
+    } else {
+      this.stopDictation();
+    }
+  }
+
+  readQuestion(text: string): void {
+    void this.tts.speak(text, { rate: 1 });
+  }
+
+  dictate(): void {
+    if (this.listening()) {
+      this.stopDictation();
+      return;
+    }
+    this.stt.start({
+      continuous: true,
+      interimResults: false,
+      onStart: () => this.listening.set(true),
+      onResult: (text, isFinal) => {
+        if (isFinal) {
+          this.draft.update((d) => (d ? `${d} ${text}` : text));
+        }
+      },
+      onError: (code) => {
+        this.listening.set(false);
+        if (code === 'not-allowed') this.toast.error('Microphone blocked — allow it in browser settings');
+      },
+      onEnd: () => this.listening.set(false),
+    });
+  }
+
+  private stopDictation(): void {
+    this.stt.stop();
+    this.listening.set(false);
+  }
   readonly types = signal<InterviewTypeMeta[]>([]);
   readonly sessions = signal<InterviewSession[]>([]);
   readonly session = signal<InterviewSession | null>(null);
@@ -293,22 +361,31 @@ export class InterviewComponent {
     this.api.session(id).subscribe({ next: (s) => { this.session.set(s); this.loading.set(false); }, error: () => { this.loading.set(false); this.toast.error('Not found'); } });
   }
   submit(s: InterviewSession): void {
+    this.stopDictation();
     this.busy.set(true);
     this.api.respond(s.id, this.draft().trim()).subscribe({
       next: (updated) => {
         const q = updated.questions[s.currentIndex];
         this.lastScore.set(q?.score ?? null); this.lastFeedback.set(q?.feedback ?? '');
         this.draft.set(''); this.session.set(updated); this.busy.set(false);
+        this.speakNext(updated);
       },
       error: () => { this.busy.set(false); this.toast.error('Scoring failed'); },
     });
   }
   skip(s: InterviewSession): void {
+    this.stopDictation();
     this.busy.set(true);
     this.api.skip(s.id).subscribe({
-      next: (updated) => { this.resetTurn(); this.session.set(updated); this.busy.set(false); },
+      next: (updated) => { this.resetTurn(); this.session.set(updated); this.busy.set(false); this.speakNext(updated); },
       error: () => { this.busy.set(false); this.toast.error('Could not skip'); },
     });
+  }
+  /** Voice mode: the interviewer reads the next question out loud. */
+  private speakNext(s: InterviewSession): void {
+    if (!this.voiceMode() || s.status === 'finished') return;
+    const q = this.currentQ(s);
+    if (q) this.readQuestion(q.question);
   }
   finish(s: InterviewSession): void {
     this.busy.set(true);

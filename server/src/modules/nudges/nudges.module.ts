@@ -8,6 +8,10 @@ import {
   DailyPlan,
   DailyPlanSchema,
 } from '../daily-plan/schemas/daily-plan.schema';
+import {
+  LiveSession,
+  LiveSessionSchema,
+} from '../live-session/schemas/live-session.schema';
 import { Roadmap, RoadmapSchema } from '../roadmap/schemas/roadmap.schema';
 import { User, UserSchema } from '../users/schemas/user.schema';
 import { EngagementSchedulerService } from './engagement-scheduler.service';
@@ -27,6 +31,7 @@ import { NudgesController } from './nudges.controller';
       { name: User.name, schema: UserSchema },
       { name: DailyPlan.name, schema: DailyPlanSchema },
       { name: Roadmap.name, schema: RoadmapSchema },
+      { name: LiveSession.name, schema: LiveSessionSchema },
     ]),
     NotificationsModule,
     SkillPassportModule,

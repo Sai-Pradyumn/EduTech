@@ -43,6 +43,11 @@ export class RoadmapService {
     return this.api.post<Roadmap>(`/roadmaps/${id}/regenerate-week`, { weekNumber, note });
   }
 
+  /** Adaptive re-plan: regenerate the next uncompleted weeks to fit real pace. */
+  replan(id: string, note?: string): Observable<Roadmap> {
+    return this.api.post<Roadmap>(`/roadmaps/${id}/replan`, note ? { note } : {});
+  }
+
   /** Git-style content history (newest first). */
   versions(id: string): Observable<RoadmapVersionSummary[]> {
     return this.api.get<RoadmapVersionSummary[]>(`/roadmaps/${id}/versions`);

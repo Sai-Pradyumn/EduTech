@@ -66,8 +66,9 @@ search, today strip. Now has focus mode.
 Strong: generation from profile, weekly plan with tasks, milestones, projects,
 progress/streak/projection, per-week regenerate, versions, deep links, chat
 control.
-- [ ] `P2·M` **Adaptive re-planning**: when a learner falls behind pace,
-  proactively offer a re-scoped plan (the projection already knows the pace).
+- [x] **Adaptive re-planning** — when real pace slips beyond 2× the plan, a
+  Pace-check card offers one-click re-planning of the next weeks (capped at 4
+  LLM rewrites, versioned, completed weeks untouched).
 - [ ] `P2·S` **Version diff view**: show what changed between two versions
   (week-level added/removed/changed chips) before restoring.
 - [ ] `P3·M` Calendar export (ICS) of the weekly plan.
@@ -105,7 +106,8 @@ with a due queue, review UI and dashboard strip.
 
 ### Interview — bar: Pramp/Interviewing.io
 Strong: AI questions tailored to role + weak areas, scoring, PDF report.
-- [ ] `P2·M` Voice-mode interviews reusing the OS voice room.
+- [x] **Voice mode** — questions read aloud (TTS), answers dictated (STT),
+  auto-reads the next question after each submit; toggle in the session header.
 - [ ] `P3·M` Question-bank difficulty ladder per company archetype.
 
 ### Practice Studio (code) — bar: LeetCode editor
@@ -145,7 +147,10 @@ shareable portfolio page already exists (`/p/:username`, public passport too).
 
 ### Live sessions / Peer rooms / Voice rooms — bar: Discord stages + Zoom
 Strong: real Jitsi rooms, recaps, orchestrated agents in-room.
-- [ ] `P2·M` Scheduled recurring sessions with reminders via the nudge engine.
+- [x] **Reminders + calendar** — org members get a nudge when a session starts
+  within the hour (15-min scheduler scan, deduped); "Add to calendar" downloads
+  a standard .ics with a 15-min alarm and the join link.
+- [ ] `P3·M` Recurring session templates.
 
 ### Community / Spaces / Cohorts — bar: Discord/Circle
 Strong: threads, spaces with sources.

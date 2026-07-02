@@ -123,6 +123,7 @@ import { CohortView, LiveSessionStatus, SessionDetail, SessionView } from '../..
                   <button class="btn-go" (click)="join(s)">{{ joinedSet().has(s.id) ? 'Rejoin room ↗' : 'Join room ↗' }}</button>
                 }
                 @if (s.meetingUrl) { <button class="btn-soft" (click)="copyLink(s.meetingUrl)">Copy meeting link</button> }
+                @if (s.status === 'scheduled') { <button class="btn-soft" (click)="downloadIcs(s)">📅 Add to calendar</button> }
                 @if (canManage()) {
                   @if (s.status === 'scheduled') { <button class="btn-soft" (click)="start(s.id)">Start session</button> }
                   @if (s.status === 'live') { <button class="btn-soft" (click)="showEnd.set(!showEnd())">End & recap</button> }
@@ -302,6 +303,43 @@ export class LiveSessionsComponent implements OnInit {
       () => this.toast.success('Meeting link copied'),
       () => this.toast.error('Copy failed'),
     );
+  }
+
+  /** Standard .ics download so the session lands in any calendar app. */
+  downloadIcs(s: SessionView): void {
+    const toStamp = (d: Date): string =>
+      d.toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '');
+    const start = new Date(s.scheduledStart);
+    const end = new Date(start.getTime() + (s.durationMins || 60) * 60_000);
+    const esc = (t: string): string =>
+      t.replace(/\\/g, '\\\\').replace(/;/g, '\\;').replace(/,/g, '\\,').replace(/\n/g, '\\n');
+    const ics = [
+      'BEGIN:VCALENDAR',
+      'VERSION:2.0',
+      'PRODID:-//Asta//Live Sessions//EN',
+      'BEGIN:VEVENT',
+      `UID:asta-session-${s.id}`,
+      `DTSTAMP:${toStamp(new Date())}`,
+      `DTSTART:${toStamp(start)}`,
+      `DTEND:${toStamp(end)}`,
+      `SUMMARY:${esc(s.title)}`,
+      `DESCRIPTION:${esc(`${s.description || 'Asta live session'}${s.meetingUrl ? `\nJoin: ${s.meetingUrl}` : ''}`)}`,
+      ...(s.meetingUrl ? [`URL:${s.meetingUrl}`] : []),
+      'BEGIN:VALARM',
+      'TRIGGER:-PT15M',
+      'ACTION:DISPLAY',
+      `DESCRIPTION:${esc(s.title)} starts in 15 minutes`,
+      'END:VALARM',
+      'END:VEVENT',
+      'END:VCALENDAR',
+    ].join('\r\n');
+    const blob = new Blob([ics], { type: 'text/calendar' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `${s.title.replace(/[^a-z0-9]+/gi, '-').toLowerCase()}.ics`;
+    a.click();
+    URL.revokeObjectURL(a.href);
+    this.toast.success('Calendar file downloaded');
   }
 
   removeSession(id: string): void {

@@ -13,7 +13,7 @@ import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { AuthUser } from '../../common/interfaces';
 import { RoadmapService, RoadmapVersionSummary } from './roadmap.service';
 import { GenerateRoadmapDto } from './dto/generate-roadmap.dto';
-import { RegenerateWeekDto } from './dto/regenerate-week.dto';
+import { RegenerateWeekDto, ReplanDto } from './dto/regenerate-week.dto';
 import { UpdateRoadmapProgressDto } from './dto/update-roadmap-progress.dto';
 import { UpdateRoadmapStatusDto } from './dto/update-roadmap-status.dto';
 import {
@@ -76,6 +76,18 @@ export class RoadmapController {
   ): Promise<RoadmapResponse> {
     return toRoadmapResponse(
       await this.roadmaps.regenerateWeek(user.id, id, dto.weekNumber, dto.note),
+    );
+  }
+
+  /** Adaptive re-plan: regenerate the next uncompleted weeks to fit real pace. */
+  @Post(':id/replan')
+  async replan(
+    @CurrentUser() user: AuthUser,
+    @Param('id') id: string,
+    @Body() dto: ReplanDto,
+  ): Promise<RoadmapResponse> {
+    return toRoadmapResponse(
+      await this.roadmaps.replanRemaining(user.id, id, dto.note),
     );
   }
 

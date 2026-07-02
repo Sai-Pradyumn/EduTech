@@ -265,6 +265,20 @@ import { OfflineToggleComponent } from '../../shared/ui/offline-toggle.component
         </div>
       </section>
 
+      <!-- Pace check: real rhythm vs the plan → one-click adaptive re-plan -->
+      @if (projection()?.slipped && nextWeek()) {
+        <asta-card class="block mb-6 motion-card-reveal pace-card" pad="16px 18px">
+          <div class="flex items-center justify-between gap-4 flex-wrap">
+            <div class="min-w-0">
+              <p class="kicker mb-1" style="color:var(--coral-deep, #d98324)">Pace check</p>
+              <p class="text-[14px] text-txt-soft">Your real rhythm is slower than this plan assumes. That's normal — re-plan the next few weeks to fit the time you actually have, instead of falling behind a plan that doesn't.</p>
+            </div>
+            <asta-btn variant="accent" size="sm" [loading]="replanning()" (click)="replan()">↻ Re-plan upcoming weeks</asta-btn>
+          </div>
+          <p class="text-[12px] text-txt-mute mt-2">Completed weeks stay untouched; the change is saved as a version you can restore.</p>
+        </asta-card>
+      }
+
       <!-- Version history — every generation/edit is a restorable point (like git) -->
       <asta-card class="block mb-8 motion-card-reveal" pad="16px 18px">
         <div class="panel-head">
@@ -415,6 +429,7 @@ import { OfflineToggleComponent } from '../../shared/ui/offline-toggle.component
       .ver-restore { font-size: 12px; font-weight: 600; padding: 5px 13px; border-radius: 999px; border: 1px solid color-mix(in oklch, var(--peri, #8aa6ff) 35%, var(--paper-3)); background: color-mix(in oklch, var(--peri, #8aa6ff) 10%, transparent); color: var(--peri-deep, #6f86e0); cursor: pointer; transition: background .12s; flex-shrink: 0; }
       .ver-restore:hover:not(:disabled) { background: color-mix(in oklch, var(--peri, #8aa6ff) 20%, transparent); }
       .ver-restore:disabled { opacity: .6; cursor: default; }
+      .pace-card { border: 1px solid color-mix(in oklch, var(--coral, #ffb454) 40%, var(--paper-3)); }
     `,
     ]
 })
@@ -454,25 +469,27 @@ export class RoadmapDetailsComponent {
    * Returns a friendly label for the Progress card — or a nudge when there's
    * not enough signal yet.
    */
-  readonly projection = computed<{ label: string; sub: string } | null>(() => {
+  readonly projection = computed<{ label: string; sub: string; slipped: boolean } | null>(() => {
     const r = this.roadmap();
     if (!r) return null;
     const total = r.weeklyPlan.length;
     const done = r.completedWeeks.length;
     if (total === 0) return null;
-    if (done >= total) return { label: 'Roadmap complete 🎉', sub: 'Every week done' };
+    if (done >= total) return { label: 'Roadmap complete 🎉', sub: 'Every week done', slipped: false };
     const elapsedDays = Math.max(0, (Date.now() - new Date(r.createdAt).getTime()) / 86_400_000);
     if (done < 1 || elapsedDays < 1) {
-      return { label: `${total - done} weeks to go`, sub: 'Finish a week to project your pace' };
+      return { label: `${total - done} weeks to go`, sub: 'Finish a week to project your pace', slipped: false };
     }
     const weeksPerDay = done / elapsedDays;
     const daysLeft = Math.ceil((total - done) / weeksPerDay);
+    // "Slipped" = taking more than 2× a week per remaining plan-week.
+    const slipped = daysLeft > (total - done) * 14;
     // Cap absurd projections (very slow pace) to avoid silly far-future dates.
-    if (daysLeft > 730) return { label: `${total - done} weeks to go`, sub: 'Pick up the pace to set a finish date' };
+    if (daysLeft > 730) return { label: `${total - done} weeks to go`, sub: 'Pick up the pace to set a finish date', slipped: true };
     const finish = new Date(Date.now() + daysLeft * 86_400_000);
     const date = finish.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
     const wk = daysLeft >= 14 ? `~${Math.round(daysLeft / 7)} weeks left` : `~${daysLeft} days left`;
-    return { label: `On pace to finish ${date}`, sub: `${wk} at your current rhythm` };
+    return { label: `On pace to finish ${date}`, sub: `${wk} at your current rhythm`, slipped };
   });
 
   // ── Momentum (from the activity log) ──
@@ -682,6 +699,27 @@ export class RoadmapDetailsComponent {
   /** Open the AI Tutor in practice mode — quizzes this week's topic. */
   practiceTopic(topic: string): void {
     void this.router.navigate(['/app/tutor'], { queryParams: { topic, mode: 'practice' } });
+  }
+
+  // ── Adaptive re-plan (pace slipped) ──
+
+  readonly replanning = signal(false);
+
+  replan(): void {
+    if (this.replanning()) return;
+    this.replanning.set(true);
+    this.service.replan(this._id).subscribe({
+      next: (r) => {
+        this.roadmap.set(r);
+        this.replanning.set(false);
+        this.versions.set([]); // history changed — reload on next open
+        this.toast.success('Upcoming weeks re-planned for your real pace — saved as a new version');
+      },
+      error: (e: Error) => {
+        this.replanning.set(false);
+        this.toast.error(e.message || 'Could not re-plan');
+      },
+    });
   }
 
   // ── Version history (git-style restore points) ──
