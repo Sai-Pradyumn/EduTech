@@ -106,7 +106,7 @@ describe('Asta API (e2e)', () => {
       .expect(400);
   });
 
-  it('AI agent replies without 500 — honest offline notice when keys are down', async () => {
+  it('AI agent replies without 500 — real answer live, honest notice offline', async () => {
     if (!seeded) return;
     const res = await request(app.getHttpServer())
       .post('/api/ai/agent/message')
@@ -117,15 +117,15 @@ describe('Asta API (e2e)', () => {
         mode: 'explain',
       })
       .expect(201);
-    const response = body<{ response: { answer: string; provider?: string } }>(
-      res,
-    ).data.response;
+    const response = body<{ response: { answer: string } }>(res).data.response;
     expect(typeof response.answer).toBe('string');
     expect(response.answer.length).toBeGreaterThan(0);
-    // With no live LLM key in CI, the gateway falls back to the honest mock
-    // terminal rather than fabricating an answer.
-    if (!response.provider || response.provider === 'mock') {
-      expect(response.answer).toMatch(/offline demo mode/i);
+    // Environment-robust: with a working key this is a substantive real answer;
+    // with every key down the gateway's mock terminal must self-identify instead
+    // of fabricating (the notice text itself is unit-tested on the mock provider).
+    if (!/offline demo mode/i.test(response.answer)) {
+      expect(response.answer.length).toBeGreaterThan(40);
+      expect(response.answer.toLowerCase()).toContain('closure');
     }
   }, 60_000); // real provider round-trips before the mock terminal can exceed 5s
 });

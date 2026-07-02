@@ -14,6 +14,11 @@ import {
 import { AiUsageLog, AiUsageLogDocument } from './schemas/ai-usage-log.schema';
 import { EntitlementsService } from '../entitlements/entitlements.service';
 import { FeatureKey } from '../billing/plans';
+import {
+  AiContractViolationError,
+  formatViolations,
+  validateAgainstSchema,
+} from './contracts/output-contract';
 
 /** Maps a tagged AI `feature` to the entitlement counter it should consume (Phase 10 · M2). */
 const FEATURE_METER_MAP: Record<string, FeatureKey | undefined> = {
@@ -159,6 +164,15 @@ export class AiService {
     await this.autolog(opts, messages, acc, cap, Date.now() - started);
   }
 
+  /**
+   * Structured output with contract enforcement. The declared schema is a promise
+   * to the caller, not a hint to the model: live output that violates it gets ONE
+   * repair pass (the model sees its own JSON plus the exact violations), and output
+   * that still doesn't conform becomes a typed AiContractViolationError so the call
+   * site's deterministic fallback fires. Malformed AI output can never flow onward
+   * (e.g. into Mongoose) from here. Mock output is exempt — mockFactory shapes are
+   * caller-owned and deliberately minimal.
+   */
   async generateStructuredOutput<T>(
     messages: AIMessage[],
     schema: Record<string, unknown>,
@@ -167,11 +181,50 @@ export class AiService {
     await this.guardBudget(opts);
     const cap = this.captureOpts(opts);
     const started = Date.now();
-    const out = await this.provider.generateStructuredOutput<T>(
+    let out = await this.provider.generateStructuredOutput<T>(
       messages,
       schema,
       cap.opts,
     );
+
+    if (this.isLive) {
+      let violations = validateAgainstSchema(out, schema);
+      if (violations.length > 0) {
+        const operation = opts?.meta?.operation ?? 'structured';
+        this.logger.warn(
+          `[AI-CONTRACT] "${operation}" violated its schema (${violations.length} problem(s), first: ${violations[0].path} ${violations[0].message}) — running repair pass`,
+        );
+        out = await this.provider.generateStructuredOutput<T>(
+          [
+            ...messages,
+            { role: 'assistant', content: JSON.stringify(out) },
+            {
+              role: 'user',
+              content:
+                'Your JSON above violates the required schema. Return the complete corrected ' +
+                'JSON object (keep the same content, no commentary) fixing exactly these problems:\n' +
+                formatViolations(violations),
+            },
+          ],
+          schema,
+          cap.opts,
+        );
+        violations = validateAgainstSchema(out, schema);
+        if (violations.length > 0) {
+          await this.autolog(
+            opts,
+            messages,
+            JSON.stringify(out),
+            cap,
+            Date.now() - started,
+            'error',
+          );
+          throw new AiContractViolationError(operation, violations);
+        }
+        this.logger.log(`[AI-CONTRACT] "${operation}" repaired successfully`);
+      }
+    }
+
     await this.autolog(
       opts,
       messages,
@@ -214,6 +267,7 @@ export class AiService {
     output: string,
     cap: { get: () => { usage?: TokenUsage; model: string } },
     latencyMs: number,
+    status: 'success' | 'error' | 'fallback' = 'success',
   ): Promise<void> {
     const meta = opts?.meta;
     if (!meta?.userId) return; // only attributed calls are logged here
@@ -232,6 +286,7 @@ export class AiService {
       tokensOut,
       latencyMs,
       model,
+      status,
     });
   }
 

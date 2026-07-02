@@ -66,6 +66,7 @@ export class LlmComposerService {
         plan: 'Their plan',
         course: 'Courses they are building',
         knowledge: 'From their own notes & documents (cite when used)',
+        path: 'Recommended next step (suggest proactively when they ask what to do next)',
       };
       for (const [source, label] of Object.entries(labels)) {
         const group = ctx.facts.filter((f) => f.source === source);

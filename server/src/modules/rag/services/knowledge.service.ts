@@ -125,25 +125,30 @@ export class KnowledgeService {
       };
     };
 
-    const result = await this.ai.generateStructuredOutput<DocumentSummary>(
-      [
+    let result: DocumentSummary | null;
+    try {
+      result = await this.ai.generateStructuredOutput<DocumentSummary>(
+        [
+          {
+            role: 'system',
+            content:
+              'Summarize the document grounded ONLY in the provided text. Return a TL;DR and key points.',
+          },
+          { role: 'user', content: `Title: ${doc.title}\n\n${sample}` },
+        ],
         {
-          role: 'system',
-          content:
-            'Summarize the document grounded ONLY in the provided text. Return a TL;DR and key points.',
+          type: 'object',
+          properties: {
+            tldr: { type: 'string' },
+            keyPoints: { type: 'array', items: { type: 'string' } },
+          },
+          required: ['tldr', 'keyPoints'],
         },
-        { role: 'user', content: `Title: ${doc.title}\n\n${sample}` },
-      ],
-      {
-        type: 'object',
-        properties: {
-          tldr: { type: 'string' },
-          keyPoints: { type: 'array', items: { type: 'string' } },
-        },
-        required: ['tldr', 'keyPoints'],
-      },
-      { mockFactory: fallback },
-    );
+        { mockFactory: fallback, meta: { operation: 'rag.summary' } },
+      );
+    } catch {
+      result = null; // extractive fallback below — a summary is always produced
+    }
     await this.ai.logUsage({
       userId,
       agentType: AgentType.Rag,

@@ -33,7 +33,14 @@ import { MemoryItem, RoadmapContext } from './agent.interface';
 
 /** One selectable piece of learner context, scored per query at selection time. */
 export interface ContextFact {
-  source: 'memory' | 'mistake' | 'mastery' | 'plan' | 'course' | 'knowledge';
+  source:
+    | 'memory'
+    | 'mistake'
+    | 'mastery'
+    | 'plan'
+    | 'course'
+    | 'knowledge'
+    | 'path';
   text: string;
   /** Query-independent importance in [0,1] (severity, weight, recency…). */
   salience: number;
@@ -73,12 +80,12 @@ const KNOWLEDGE_SNIPPET_CHARS = 300;
 const AGENT_AFFINITY: Partial<Record<AgentType, ContextFact['source'][]>> = {
   [AgentType.DoubtSolver]: ['mistake', 'memory', 'knowledge'],
   [AgentType.Assessment]: ['mistake', 'mastery'],
-  [AgentType.Career]: ['mastery', 'course'],
-  [AgentType.Mentor]: ['plan', 'mastery', 'mistake'],
+  [AgentType.Career]: ['mastery', 'course', 'path'],
+  [AgentType.Mentor]: ['plan', 'mastery', 'mistake', 'path'],
   [AgentType.Tutor]: ['mistake', 'course', 'knowledge'],
   [AgentType.ContentCreator]: ['course', 'knowledge'],
   [AgentType.Rag]: ['knowledge', 'memory'],
-  [AgentType.Roadmap]: ['plan', 'mastery'],
+  [AgentType.Roadmap]: ['plan', 'mastery', 'path'],
 };
 
 /**
@@ -187,13 +194,19 @@ export class ContextEngineService {
         this.guard('courses', () => this.fetchCourses(userId), []),
       ]);
 
+    const path = this.pathFacts(profile, roadmap, mistake);
     const snapshot: UserSnapshot = {
       at: Date.now(),
       profile,
       roadmap,
-      facts: [...memory, ...mistake, ...mastery, ...plan, ...course].map(
-        (f) => ({ ...f, terms: new Set(this.tokenize(f.text)) }),
-      ),
+      facts: [
+        ...memory,
+        ...mistake,
+        ...mastery,
+        ...plan,
+        ...course,
+        ...path,
+      ].map((f) => ({ ...f, terms: new Set(this.tokenize(f.text)) })),
     };
 
     this.cache.set(userId, snapshot);
@@ -361,6 +374,46 @@ export class ContextEngineService {
           salience: 0.35 + 0.5 * Math.min(1, h.score),
         };
       });
+  }
+
+  /**
+   * Forward-guidance facts so every agent can recommend the learner's next step
+   * without extra queries: derived from signals the snapshot already fetched.
+   */
+  private pathFacts(
+    profile: StudentProfileDocument | null,
+    roadmap: RoadmapContext | null,
+    mistakes: ContextFact[],
+  ): ContextFact[] {
+    const facts: ContextFact[] = [];
+    if (roadmap?.currentWeekFocus) {
+      facts.push({
+        source: 'path',
+        text:
+          `Next step on their roadmap "${roadmap.title}" (${roadmap.progressPercentage}% done): ` +
+          `the current week's focus is "${roadmap.currentWeekFocus}". When they ask what to do ` +
+          'or learn next, steer them here first.',
+        salience: 0.62,
+      });
+    } else if (!roadmap && profile?.mainGoal) {
+      facts.push({
+        source: 'path',
+        text:
+          `They have no active roadmap yet. When they ask for direction, recommend generating ` +
+          `a roadmap for their goal "${profile.mainGoal}".`,
+        salience: 0.55,
+      });
+    }
+    if (mistakes.length > 0 && roadmap) {
+      facts.push({
+        source: 'path',
+        text:
+          'They have open mistakes to repair (listed under struggles). A short repair session ' +
+          'is the highest-value suggestion after the current roadmap week.',
+        salience: 0.5,
+      });
+    }
+    return facts;
   }
 
   private async fetchCourses(userId: string): Promise<ContextFact[]> {

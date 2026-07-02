@@ -1,5 +1,5 @@
 import { Logger } from '@nestjs/common';
-import { Model } from 'mongoose';
+import { Model, Types } from 'mongoose';
 import { AgentType } from '../../../common/enums';
 import { HybridRetrieverService } from '../../rag/vector/hybrid-retriever.service';
 import { ChunkHit } from '../../rag/vector/vector-store.interface';
@@ -34,10 +34,12 @@ const VALID_ID = '507f1f77bcf86cd799439011';
 
 function build(over: Partial<Record<string, unknown>> = {}) {
   const profiles = {
-    findByUser: jest.fn().mockResolvedValue({ fullName: 'Demo Student' }),
+    findByUser: jest
+      .fn()
+      .mockResolvedValue((over.profile as Doc) ?? { fullName: 'Demo Student' }),
   } as unknown as StudentProfileService;
 
-  const roadmaps = fakeModel(null);
+  const roadmaps = fakeModel((over.roadmap as Doc) ?? null);
   const memories = fakeModel(
     (over.memories as Doc[]) ?? [
       { kind: 'preference', content: 'prefers visual explanations', weight: 5 },
@@ -117,7 +119,7 @@ function build(over: Partial<Record<string, unknown>> = {}) {
 
   const engine = new ContextEngineService(
     profiles,
-    roadmaps as never,
+    (over.roadmapsModel as never) ?? roadmaps,
     (over.memoriesModel as never) ?? (memories as never),
     (over.mistakesModel as never) ?? (mistakes as never),
     twins as never,
@@ -128,6 +130,7 @@ function build(over: Partial<Record<string, unknown>> = {}) {
   return {
     engine,
     profiles,
+    roadmaps,
     memories,
     mistakes,
     twins,
@@ -136,6 +139,18 @@ function build(over: Partial<Record<string, unknown>> = {}) {
     retriever,
   };
 }
+
+const ACTIVE_ROADMAP: Doc = {
+  id: 'r1',
+  title: 'Java Backend Path',
+  goal: 'become a Java backend developer',
+  progressPercentage: 25,
+  weeklyPlan: [
+    { weekNumber: 1, title: 'W1', focus: 'Java basics' },
+    { weekNumber: 2, title: 'W2', focus: 'Collections and generics' },
+  ],
+  completedWeeks: [1],
+};
 
 describe('ContextEngineService', () => {
   beforeAll(() => {
@@ -247,6 +262,69 @@ describe('ContextEngineService', () => {
     const ctx = await engine.load(VALID_ID, 'explain recursion');
     expect(ctx.facts.length).toBeGreaterThan(0);
     expect(ctx.facts.some((f) => f.source === 'knowledge')).toBe(false);
+  });
+
+  it('recommends the next roadmap step as a path fact (forward guidance)', async () => {
+    const { engine } = build({ roadmap: ACTIVE_ROADMAP });
+    const ctx = await engine.load(
+      VALID_ID,
+      'what should I do next?',
+      AgentType.Mentor,
+    );
+    const path = ctx.facts.filter((f) => f.source === 'path');
+    expect(path.length).toBeGreaterThan(0);
+    // Points at the first uncompleted week of THEIR active roadmap.
+    expect(path[0].text).toContain('Java Backend Path');
+    expect(path[0].text).toContain('Collections and generics');
+  });
+
+  it('with no roadmap, recommends generating one for their stated goal', async () => {
+    const { engine } = build({
+      profile: { fullName: 'Demo Student', mainGoal: 'crack GATE CS' },
+    });
+    const ctx = await engine.load(
+      VALID_ID,
+      'where do I even start?',
+      AgentType.Mentor,
+    );
+    const path = ctx.facts.filter((f) => f.source === 'path');
+    expect(path.some((f) => f.text.includes('crack GATE CS'))).toBe(true);
+  });
+
+  it('privacy: every context source is scoped to the requesting user only', async () => {
+    const {
+      engine,
+      roadmaps,
+      memories,
+      mistakes,
+      twins,
+      plans,
+      courses,
+      retriever,
+    } = build({ roadmap: ACTIVE_ROADMAP });
+    await engine.load(VALID_ID, 'anything at all');
+
+    const scoped: jest.Mock[] = [
+      roadmaps.findOne,
+      memories.find,
+      mistakes.find,
+      twins.findOne,
+      plans.findOne,
+      courses.find,
+    ];
+    for (const mock of scoped) {
+      const calls = mock.mock.calls as [Record<string, unknown>][];
+      expect(calls.length).toBeGreaterThan(0);
+      for (const [filter] of calls) {
+        expect(filter.user).toEqual(new Types.ObjectId(VALID_ID));
+      }
+    }
+    // Semantic retrieval over documents is user-filtered too.
+    expect(retriever.retrieve).toHaveBeenCalledWith(
+      expect.any(String),
+      { userId: VALID_ID },
+      expect.any(Number),
+    );
   });
 
   it('keeps the back-compat memories view (kind parsed out)', async () => {
