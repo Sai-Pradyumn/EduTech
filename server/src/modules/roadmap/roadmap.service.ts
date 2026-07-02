@@ -49,6 +49,24 @@ export interface RoadmapVersionSummary {
   current: boolean;
 }
 
+export interface RoadmapWeekDiff {
+  weekNumber: number;
+  kind: 'added' | 'removed' | 'changed';
+  /** The week's focus in the version being previewed (current focus for removals). */
+  focus: string;
+  changes: string[];
+}
+
+/** What restoring a version would change, relative to the roadmap right now. */
+export interface RoadmapVersionDiff {
+  version: number;
+  label: string;
+  createdAt: string;
+  same: boolean;
+  fields: string[];
+  weeks: RoadmapWeekDiff[];
+}
+
 @Injectable()
 export class RoadmapService {
   constructor(
@@ -346,6 +364,158 @@ export class RoadmapService {
       weeks: v.weeklyPlan?.length ?? 0,
       current: i === 0,
     }));
+  }
+
+  /**
+   * Preview what restoring `version` would change, computed against the
+   * roadmap's CURRENT content — week-level adds/removes/changes plus the
+   * scalar fields. Read-only: nothing is written.
+   */
+  async diffVersion(
+    userId: string,
+    id: string,
+    version: number,
+  ): Promise<RoadmapVersionDiff> {
+    const roadmap = await this.findByIdForUser(userId, id);
+    const snap = await this.versions
+      .findOne({ roadmap: roadmap._id, version })
+      .lean()
+      .exec();
+    if (!snap) throw new NotFoundException(`Version ${version} not found`);
+
+    const short = (v: string | number | null | undefined, n = 48): string => {
+      const s = String(v ?? '');
+      return s.length > n ? `${s.slice(0, n - 1)}…` : s;
+    };
+
+    const fields: string[] = [];
+    for (const f of [
+      'title',
+      'goal',
+      'estimatedDuration',
+      'difficulty',
+    ] as const) {
+      const cur = String(roadmap[f] ?? '');
+      const ver = String(snap[f] ?? '');
+      if (cur !== ver) fields.push(`${f}: “${short(cur)}” → “${short(ver)}”`);
+    }
+    if ((roadmap.overview ?? '') !== (snap.overview ?? '')) {
+      fields.push('overview rewritten');
+    }
+    const arrays: Array<[string, unknown[], unknown[]]> = [
+      ['milestones', roadmap.milestones ?? [], snap.milestones ?? []],
+      [
+        'projects',
+        roadmap.recommendedProjects ?? [],
+        snap.recommendedProjects ?? [],
+      ],
+      ['assessments', roadmap.assessmentPlan ?? [], snap.assessmentPlan ?? []],
+      [
+        'daily study plan',
+        roadmap.dailyStudyPlan ?? [],
+        snap.dailyStudyPlan ?? [],
+      ],
+      ['success tips', roadmap.successTips ?? [], snap.successTips ?? []],
+    ];
+    for (const [name, cur, ver] of arrays) {
+      if (JSON.stringify(cur) === JSON.stringify(ver)) continue;
+      fields.push(
+        cur.length === ver.length
+          ? `${name} changed`
+          : `${name}: ${cur.length} → ${ver.length}`,
+      );
+    }
+
+    const curWeeks = new Map(
+      (roadmap.weeklyPlan ?? []).map((w) => [w.weekNumber, w]),
+    );
+    const verWeeks = new Map(
+      (snap.weeklyPlan ?? []).map((w) => [w.weekNumber, w]),
+    );
+    const weeks: RoadmapWeekDiff[] = [];
+    const numbers = [...new Set([...curWeeks.keys(), ...verWeeks.keys()])].sort(
+      (a, b) => a - b,
+    );
+    for (const n of numbers) {
+      const cur = curWeeks.get(n);
+      const ver = verWeeks.get(n);
+      if (ver && !cur) {
+        weeks.push({
+          weekNumber: n,
+          kind: 'added',
+          focus: ver.focus,
+          changes: [`restores week ${n}`],
+        });
+        continue;
+      }
+      if (cur && !ver) {
+        weeks.push({
+          weekNumber: n,
+          kind: 'removed',
+          focus: cur.focus,
+          changes: [`removes week ${n}`],
+        });
+        continue;
+      }
+      if (!cur || !ver) continue;
+      const changes: string[] = [];
+      if (cur.title !== ver.title || cur.focus !== ver.focus) {
+        changes.push(
+          `focus: “${short(cur.focus, 40)}” → “${short(ver.focus, 40)}”`,
+        );
+      }
+      const listDelta = (
+        label: string,
+        curList: string[],
+        verList: string[],
+      ): void => {
+        const curSet = new Set(curList);
+        const verSet = new Set(verList);
+        const added = verList.filter((t) => !curSet.has(t));
+        const removed = curList.filter((t) => !verSet.has(t));
+        if (added.length) {
+          changes.push(
+            `+${added.length} ${label}${added.length === 1 ? '' : 's'}: ${added
+              .slice(0, 3)
+              .map((t) => short(t, 32))
+              .join(', ')}${added.length > 3 ? '…' : ''}`,
+          );
+        }
+        if (removed.length) {
+          changes.push(
+            `−${removed.length} ${label}${removed.length === 1 ? '' : 's'}`,
+          );
+        }
+      };
+      listDelta('topic', cur.topics ?? [], ver.topics ?? []);
+      const curTasks = cur.tasks ?? [];
+      const verTasks = ver.tasks ?? [];
+      if (curTasks.length !== verTasks.length) {
+        changes.push(`tasks: ${curTasks.length} → ${verTasks.length}`);
+      } else {
+        const reworded = curTasks.filter((t, i) => t !== verTasks[i]).length;
+        if (reworded) {
+          changes.push(`${reworded} task${reworded === 1 ? '' : 's'} reworded`);
+        }
+      }
+      if (changes.length) {
+        weeks.push({
+          weekNumber: n,
+          kind: 'changed',
+          focus: ver.focus,
+          changes,
+        });
+      }
+    }
+
+    return {
+      version,
+      label: snap.label,
+      createdAt: snap.createdAt?.toISOString() ?? '',
+      same: fields.length === 0 && weeks.length === 0,
+      fields,
+      weeks,
+    };
   }
 
   /**

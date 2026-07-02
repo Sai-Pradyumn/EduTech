@@ -4,7 +4,7 @@ import { Router, RouterLink } from '@angular/router';
 import { RoadmapService } from '../../core/services/roadmap.service';
 import { ToastService } from '../../core/services/toast.service';
 import { ConfettiService } from '../../core/services/confetti.service';
-import { Roadmap, RoadmapVersionSummary } from '../../core/models';
+import { Roadmap, RoadmapVersionDiff, RoadmapVersionSummary } from '../../core/models';
 import { ButtonComponent } from '../../shared/ui/button.component';
 import { CardComponent } from '../../shared/ui/card.component';
 import { BadgeComponent } from '../../shared/ui/badge.component';
@@ -241,6 +241,7 @@ import { OfflineToggleComponent } from '../../shared/ui/offline-toggle.component
           <div class="lg:col-span-2">
             <div class="panel-head mb-3">
               <h2 class="text-[20px] leading-tight">Weekly plan</h2>
+              <asta-btn variant="ghost" size="sm" (click)="exportPlanIcs()" title="One calendar block per remaining week, starting next Monday">📅 Export plan (.ics)</asta-btn>
             </div>
             <div class="relative motion-row-3" astaScrollDraw>
               <!-- spine: static track + a scroll-drawn accent that fills as you read down -->
@@ -297,17 +298,40 @@ import { OfflineToggleComponent } from '../../shared/ui/offline-toggle.component
             <ul class="mt-3 space-y-2">
               @for (v of versions(); track v.version) {
                 <li class="ver-row">
-                  <span class="ver-badge" [class.ver-cur]="v.current">v{{ v.version }}</span>
-                  <div class="min-w-0 flex-1">
-                    <p class="text-[13.5px] font-semibold truncate">{{ v.label }}</p>
-                    <p class="text-[12px] text-txt-mute">{{ v.weeks }} weeks · {{ versionWhen(v) }}</p>
+                  <div class="ver-main">
+                    <span class="ver-badge" [class.ver-cur]="v.current">v{{ v.version }}</span>
+                    <div class="min-w-0 flex-1">
+                      <p class="text-[13.5px] font-semibold truncate">{{ v.label }}</p>
+                      <p class="text-[12px] text-txt-mute">{{ v.weeks }} weeks · {{ versionWhen(v) }}</p>
+                    </div>
+                    @if (v.current) {
+                      <span class="pill">current</span>
+                    } @else {
+                      <button class="ver-diff-btn" (click)="toggleDiff(v.version)">{{ diffFor() === v.version ? 'Hide' : 'What changed?' }}</button>
+                      <button class="ver-restore" [disabled]="restoring()" (click)="restoreVersion(v.version)">
+                        {{ restoring() ? 'Restoring…' : 'Restore' }}
+                      </button>
+                    }
                   </div>
-                  @if (v.current) {
-                    <span class="pill">current</span>
-                  } @else {
-                    <button class="ver-restore" [disabled]="restoring()" (click)="restoreVersion(v.version)">
-                      {{ restoring() ? 'Restoring…' : 'Restore' }}
-                    </button>
+                  @if (diffFor() === v.version) {
+                    <div class="ver-diff-panel">
+                      @if (diffLoading()) {
+                        <asta-skeleton h="36px" class="block" />
+                      } @else if (diff(); as d) {
+                        @if (d.same) {
+                          <p class="text-[12.5px] text-txt-mute">Identical to your current plan — restoring changes nothing.</p>
+                        } @else {
+                          @for (f of d.fields; track f) { <p class="diff-line"><span class="diff-kind">•</span>{{ f }}</p> }
+                          @for (w of d.weeks; track w.weekNumber) {
+                            <p class="diff-line">
+                              <span class="diff-kind" [class.k-add]="w.kind === 'added'" [class.k-del]="w.kind === 'removed'">{{ w.kind === 'added' ? '+' : w.kind === 'removed' ? '−' : '~' }}</span>
+                              <b>W{{ w.weekNumber }}</b>&nbsp;{{ w.focus }} — {{ w.changes.join(' · ') }}
+                            </p>
+                          }
+                          <p class="text-[11.5px] text-txt-mute mt-1.5">This is what restoring v{{ d.version }} would change. Your completed work stays either way.</p>
+                        }
+                      }
+                    </div>
                   }
                 </li>
               }
@@ -423,7 +447,15 @@ import { OfflineToggleComponent } from '../../shared/ui/offline-toggle.component
       .dp-task { font-size: 12.5px; color: var(--text-soft); }
       .nt-check { width: 18px; height: 18px; flex-shrink: 0; margin-top: 1px; border-radius: 6px; border: 1.5px solid var(--paper-3); background: var(--paper-2); transition: border-color .15s, background .15s; }
       .nt-check:hover { border-color: var(--green); background: color-mix(in oklch, var(--green) 16%, transparent); }
-      .ver-row { display: flex; align-items: center; gap: 12px; padding: 8px 10px; border-radius: 10px; background: var(--paper-2); }
+      .ver-row { padding: 8px 10px; border-radius: 10px; background: var(--paper-2); }
+      .ver-main { display: flex; align-items: center; gap: 12px; }
+      .ver-diff-btn { font-size: 12px; font-weight: 600; padding: 5px 11px; border-radius: 999px; border: 1px solid var(--paper-3); background: transparent; color: var(--txt-soft); cursor: pointer; transition: background .12s; flex-shrink: 0; }
+      .ver-diff-btn:hover { background: var(--paper-3); }
+      .ver-diff-panel { margin-top: 8px; padding: 8px 4px 2px; border-top: 1px dashed var(--paper-3); }
+      .diff-line { font-size: 12.5px; color: var(--txt-soft); margin-bottom: 4px; display: flex; gap: 6px; align-items: baseline; }
+      .diff-kind { display: inline-block; min-width: 12px; font-weight: 700; color: var(--txt-mute); }
+      .diff-kind.k-add { color: var(--green-deep, #3aa16b); }
+      .diff-kind.k-del { color: var(--coral-deep, #d0605f); }
       .ver-badge { font-family: var(--mono); font-size: 11px; font-weight: 700; padding: 3px 9px; border-radius: 999px; background: var(--paper-3); color: var(--text-soft); flex-shrink: 0; }
       .ver-badge.ver-cur { background: color-mix(in oklch, var(--green) 18%, transparent); color: var(--green-deep); }
       .ver-restore { font-size: 12px; font-weight: 600; padding: 5px 13px; border-radius: 999px; border: 1px solid color-mix(in oklch, var(--peri, #8aa6ff) 35%, var(--paper-3)); background: color-mix(in oklch, var(--peri, #8aa6ff) 10%, transparent); color: var(--peri-deep, #6f86e0); cursor: pointer; transition: background .12s; flex-shrink: 0; }
@@ -748,6 +780,33 @@ export class RoadmapDetailsComponent {
     });
   }
 
+  // ── Version diff preview (what a restore would change) ──
+
+  readonly diffFor = signal<number | null>(null);
+  readonly diff = signal<RoadmapVersionDiff | null>(null);
+  readonly diffLoading = signal(false);
+
+  toggleDiff(version: number): void {
+    if (this.diffFor() === version) {
+      this.diffFor.set(null);
+      return;
+    }
+    this.diffFor.set(version);
+    this.diff.set(null);
+    this.diffLoading.set(true);
+    this.service.versionDiff(this._id, version).subscribe({
+      next: (d) => {
+        if (this.diffFor() === version) this.diff.set(d);
+        this.diffLoading.set(false);
+      },
+      error: () => {
+        this.diffLoading.set(false);
+        this.diffFor.set(null);
+        this.toast.error('Could not compute what changed');
+      },
+    });
+  }
+
   restoreVersion(version: number): void {
     if (this.restoring()) return;
     this.restoring.set(true);
@@ -756,6 +815,7 @@ export class RoadmapDetailsComponent {
         this.roadmap.set(r);
         this.restoring.set(false);
         this.versions.set([]);
+        this.diffFor.set(null);
         this.loadVersions();
         this.toast.success(`Restored to version ${version} — your progress was kept`);
       },
@@ -764,6 +824,61 @@ export class RoadmapDetailsComponent {
         this.toast.error(e.message || 'Could not restore this version');
       },
     });
+  }
+
+  /**
+   * Export the remaining plan as calendar blocks: one Mon–Fri all-day event per
+   * uncompleted week, starting next Monday — weeks in the plan aren't dated, so
+   * the schedule is projected forward from today.
+   */
+  exportPlanIcs(): void {
+    const r = this.roadmap();
+    if (!r) return;
+    const weeks = r.weeklyPlan.filter((w) => !r.completedWeeks.includes(w.weekNumber));
+    if (weeks.length === 0) {
+      this.toast.info('Every week is complete — nothing left to schedule 🎉');
+      return;
+    }
+    const esc = (t: string): string =>
+      t.replace(/\\/g, '\\\\').replace(/;/g, '\\;').replace(/,/g, '\\,').replace(/\n/g, '\\n');
+    const dateStamp = (d: Date): string => d.toISOString().slice(0, 10).replace(/-/g, '');
+    // Next Monday (or today if it is Monday).
+    const start = new Date();
+    start.setHours(0, 0, 0, 0);
+    start.setDate(start.getDate() + ((8 - start.getDay()) % 7));
+    const events = weeks.flatMap((w, i) => {
+      const mon = new Date(start.getTime() + i * 7 * 86_400_000);
+      const sat = new Date(mon.getTime() + 5 * 86_400_000);
+      const detail = [
+        w.focus,
+        ...(w.topics.length ? [`Topics: ${w.topics.join(', ')}`] : []),
+        ...(w.tasks.length ? [`Tasks: ${w.tasks.join(' · ')}`] : []),
+      ].join('\n');
+      return [
+        'BEGIN:VEVENT',
+        `UID:asta-roadmap-${r.id}-w${w.weekNumber}`,
+        `DTSTAMP:${new Date().toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '')}`,
+        `DTSTART;VALUE=DATE:${dateStamp(mon)}`,
+        `DTEND;VALUE=DATE:${dateStamp(sat)}`,
+        `SUMMARY:${esc(`Asta W${w.weekNumber} — ${w.focus}`)}`,
+        `DESCRIPTION:${esc(detail)}`,
+        'END:VEVENT',
+      ];
+    });
+    const ics = [
+      'BEGIN:VCALENDAR',
+      'VERSION:2.0',
+      'PRODID:-//Asta//Roadmap//EN',
+      ...events,
+      'END:VCALENDAR',
+    ].join('\r\n');
+    const blob = new Blob([ics], { type: 'text/calendar' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `${r.title.replace(/[^a-z0-9]+/gi, '-').toLowerCase()}-plan.ics`;
+    a.click();
+    URL.revokeObjectURL(a.href);
+    this.toast.success(`${weeks.length} week${weeks.length === 1 ? '' : 's'} exported to calendar`);
   }
 
   versionWhen(v: RoadmapVersionSummary): string {

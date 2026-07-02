@@ -38,7 +38,7 @@ effort `S` (hours) · `M` (a day) · `L` (multi-day).
 
 ## 5. Security & dependencies
 - [x] **Dependency audit (triaged + partially fixed)** — re-triaged the prod (`--omit=dev`) tree: it was 11 advisories. Fixed the two that don't need a major bump — removed the **unused `uuid`** dep from the server (it uses `crypto.randomUUID`), and added a root `overrides` pinning **DOMPurify** to `^3.4.0` so jspdf stops pulling its vulnerable optional `2.5.9` (we only use jsPDF's text API, never `doc.html()`, so DOMPurify is off our runtime path). Prod advisories now **9**, all needing deliberate majors:
-  - [ ] `P2·L` **Angular 18 → 19/20** — the 8 high + 1 critical are all `@angular/core` XSS (SVG/MathML script attrs, i18n) + XSRF-token-leakage advisories (`<=18.2.14`), cascading to every `@angular/*` package. Framework major; touches everything — needs a dedicated upgrade + full regression.
+  - [x] **Angular 18 → 20** — done: client is on Angular 20.3 (+ Jest 30); the `@angular/core` XSS/XSRF advisories are cleared. Gotchas for the next major (21+) are recorded in the project memory.
   - [x] **jspdf 2 → 4** — upgraded to 4.2.1 (prod advisories 9 → 8; the rest are the Angular major). The `pdf.ts` text API (splitTextToSize/text/addPage/save) is unchanged in v4 and the strict build is green. _Needs manual verification:_ download one resume/interview/readiness PDF and eyeball the layout.
   - _(Most remaining dev-tree advisories are still build-toolchain: webpack-dev-server/sockjs via @angular-devkit — same Angular-major upgrade clears them.)_
 - [x] **Security headers** — the server middleware sets nosniff, `X-Frame-Options: DENY` (frame-ancestors equivalent), Referrer-Policy, COOP, Permissions-Policy, and now **HSTS** (180d, includeSubDomains). CSP is intentionally *not* on the API: it serves JSON under `/api`, not the SPA's HTML — and the static host now sets it: `vercel.json` ships CSP (script-src 'self' — the two inline boot scripts moved to `public/boot.js`), HSTS, nosniff, frame-deny, COOP, Permissions-Policy + immutable caching for hashed assets.
@@ -62,11 +62,11 @@ effort `S` (hours) · `M` (a day) · `L` (multi-day).
 - [x] **Course Learn Mode** — full lesson bodies generated on first open (cached; honest outline offline), reader with prev/next + complete + auto-advance, progress %, continue-where-you-left-off, module-quiz CTAs, per-lesson rewrite.
 - [x] ~~Doc-grounded chat picker~~ — **already existed** (KH grounded chat scopes to selected docs via documentIds; corrected in the audit).
 - [x] ~~Spaced repetition~~ — **already existed** (SM-2-lite on mistakes + due queue + review UI); remaining enrichment: real re-test instead of self-report (P2, phase 2).
-- [ ] `P1·M` **Classic-tutor message actions** — copy/regenerate/edit-turn/stop parity with the OS canvas.
-- [ ] `P2·M` **Extend chat commands** — daily-plan items, memory remember/forget, course archive/continue; plus an undo chip after any chat write.
-- [ ] `P2·M` **Memory manager** — view/edit/delete what Asta remembers + forget-by-chat.
-- [ ] `P2·M` **Time-based engagement** — inactivity + due-review nudges, weekly digest (in-app + email, config-gated).
-- [ ] `P2·S` **Version diff view** before restoring a roadmap version.
+- [x] **Classic-tutor message actions** — copy/regenerate/edit-and-resend/stop parity with the OS canvas, plus history search.
+- [x] **Extend chat commands** — daily-plan items, memory remember/forget, course archive/continue, "start my review"; every chat write returns an Undo chip (inverse command through the same audited path).
+- [x] **Memory manager** — profile section lists everything Asta knows (confirmed + observed) with two-click delete; remember/forget-by-chat names exactly what changed.
+- [x] **Time-based engagement** — daily inactivity + due-review nudges, Monday week-in-review digest (in-app always; email when SMTP configured), session-soon reminders (@nestjs/schedule crons, createUnique-deduped).
+- [x] **Version diff view** — "What changed?" per roadmap version (week-level added/removed/changed + field changes) before restoring; plus weekly-plan ICS export.
 
 ## 9. UX & features
 - [x] **Keyboard-shortcuts help overlay** (`?`) — modal listing app + palette shortcuts.

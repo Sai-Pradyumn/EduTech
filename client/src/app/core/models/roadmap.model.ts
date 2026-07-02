@@ -86,6 +86,23 @@ export interface RoadmapVersionSummary {
   current: boolean;
 }
 
+export interface RoadmapWeekDiff {
+  weekNumber: number;
+  kind: 'added' | 'removed' | 'changed';
+  focus: string;
+  changes: string[];
+}
+
+/** What restoring a version would change, relative to the current plan. */
+export interface RoadmapVersionDiff {
+  version: number;
+  label: string;
+  createdAt: string;
+  same: boolean;
+  fields: string[];
+  weeks: RoadmapWeekDiff[];
+}
+
 export interface GenerateRoadmapPayload {
   goal?: string;
   targetTimeline?: string;

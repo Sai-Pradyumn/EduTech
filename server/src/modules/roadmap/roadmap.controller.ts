@@ -11,7 +11,11 @@ import {
 } from '@nestjs/common';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { AuthUser } from '../../common/interfaces';
-import { RoadmapService, RoadmapVersionSummary } from './roadmap.service';
+import {
+  RoadmapService,
+  RoadmapVersionDiff,
+  RoadmapVersionSummary,
+} from './roadmap.service';
 import { GenerateRoadmapDto } from './dto/generate-roadmap.dto';
 import { RegenerateWeekDto, ReplanDto } from './dto/regenerate-week.dto';
 import { UpdateRoadmapProgressDto } from './dto/update-roadmap-progress.dto';
@@ -98,6 +102,16 @@ export class RoadmapController {
     @Param('id') id: string,
   ): Promise<RoadmapVersionSummary[]> {
     return this.roadmaps.listVersions(user.id, id);
+  }
+
+  /** Preview what restoring a version would change (read-only). */
+  @Get(':id/versions/:version/diff')
+  diff(
+    @CurrentUser() user: AuthUser,
+    @Param('id') id: string,
+    @Param('version') version: string,
+  ): Promise<RoadmapVersionDiff> {
+    return this.roadmaps.diffVersion(user.id, id, Number(version));
   }
 
   /** Restore the roadmap content to any earlier version (progress survives). */

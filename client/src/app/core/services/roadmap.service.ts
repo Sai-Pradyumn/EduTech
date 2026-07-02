@@ -6,6 +6,7 @@ import {
   Roadmap,
   RoadmapStatus,
   RoadmapSummary,
+  RoadmapVersionDiff,
   RoadmapVersionSummary,
   UpdateProgressPayload,
 } from '../models';
@@ -51,6 +52,11 @@ export class RoadmapService {
   /** Git-style content history (newest first). */
   versions(id: string): Observable<RoadmapVersionSummary[]> {
     return this.api.get<RoadmapVersionSummary[]>(`/roadmaps/${id}/versions`);
+  }
+
+  /** Preview what restoring a version would change (read-only). */
+  versionDiff(id: string, version: number): Observable<RoadmapVersionDiff> {
+    return this.api.get<RoadmapVersionDiff>(`/roadmaps/${id}/versions/${version}/diff`);
   }
 
   /** Restore the roadmap content to an earlier version (progress survives). */

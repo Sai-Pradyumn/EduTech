@@ -28,6 +28,17 @@ and the concrete gaps. Legend matches `IMPROVEMENTS_BACKLOG.md` —
   UI), topic deep-link prefill, working `open_route` actions.
 - ✅ Large-screen mode — Classic tutor (full-viewport takeover, Esc exits) and
   Asta OS (side panels fold away, canvas gets the screen).
+- ✅ Review loop closure — real MCQ re-tests for due concepts; due reviews land
+  in the daily plan; "start my review" from any chat.
+- ✅ Memory manager — everything Asta knows (confirmed + observed) listed and
+  deletable in the profile; remember/forget by chat.
+- ✅ Tutor control — copy/regenerate/edit-and-resend/stop + chat search.
+- ✅ Chat commands + Undo — daily plan, courses, memory, mistakes registrars;
+  every chat write gets an Undo chip.
+- ✅ Time-based engagement — inactivity + due-review nudges, Monday digest
+  (in-app + SMTP-gated email), session-soon reminders.
+- ✅ Interview voice mode, session ICS + reminders, adaptive re-plan, roadmap
+  version diff + plan ICS export (see sections below).
 
 ---
 
@@ -36,11 +47,9 @@ and the concrete gaps. Legend matches `IMPROVEMENTS_BACKLOG.md` —
 ### AI Tutor (Classic) — bar: ChatGPT / Claude apps
 Strong: streaming with workflow feed, modes, visual blocks, feedback, retry.
 Now has history, deep links, large view.
-- [ ] `P1·M` **Message actions**: copy / regenerate / edit-my-message on every
-  turn (OS canvas has them; classic doesn't).
-- [ ] `P2·S` **Search across past chats** (sessions already auto-title from the
-  first exchange — corrected; OS has in-chat search only).
-- [ ] `P2·S` **Stop generation** button while streaming.
+- [x] **Message actions** — copy / regenerate / edit-and-resend on every turn.
+- [x] **Search across past chats** — history panel title filter.
+- [x] **Stop generation** — keeps the partial answer with an honest note.
 - [ ] `P3·M` Shareable/exportable conversations (OS has export; classic none).
 
 ### Asta OS — bar: ChatGPT desktop + Arc-style command surfaces
@@ -52,11 +61,11 @@ search, today strip. Now has focus mode.
 - [ ] `P3·M` Pin/star sessions.
 
 ### Chat commands (new) — bar: Linear/Slack slash-actions, ChatGPT tasks
-- [ ] `P2·M` **Broaden targets**: daily-plan items ("mark 'revise recursion'
-  done"), memory ("remember that I prefer video"), courses ("archive my TS
-  course"). The registry is generic — each module registers its own commands.
-- [ ] `P2·S` **Undo affordance**: after a chat-command write, offer a one-click
-  undo chip (roadmap already has versions; wire "undo" to restore previous).
+- [x] **Broaden targets** — daily-plan items (check off / add), memory
+  (remember/forget), courses (archive/restore/continue), mistakes ("start my
+  review"); each module has its own registrar.
+- [x] **Undo affordance** — every chat-command write returns an Undo chip that
+  sends the honest inverse command back through the same audited path.
 - [ ] `P3·M` LLM-assisted intent extraction behind the deterministic matchers
   (higher recall, keep precision-first execution confirmation).
 
@@ -69,9 +78,11 @@ control.
 - [x] **Adaptive re-planning** — when real pace slips beyond 2× the plan, a
   Pace-check card offers one-click re-planning of the next weeks (capped at 4
   LLM rewrites, versioned, completed weeks untouched).
-- [ ] `P2·S` **Version diff view**: show what changed between two versions
-  (week-level added/removed/changed chips) before restoring.
-- [ ] `P3·M` Calendar export (ICS) of the weekly plan.
+- [x] **Version diff view** — "What changed?" per version: week-level
+  added/removed/changed lines + field changes, computed against the current
+  plan before restoring.
+- [x] **Calendar export (ICS)** — remaining weeks exported as Mon–Fri calendar
+  blocks projected forward from next Monday.
 
 ### Flows (graph learning) — bar: skill trees (Duolingo/Khan)
 Strong: dependency graph, node types, weak-area repair nodes, live agents per
@@ -90,7 +101,8 @@ voice scripts, capstone, certificates. **Now takeable: Learn mode.**
 
 ### Daily plan / Today — bar: Todoist + Duolingo daily goals
 Strong: generated plan, modes, carry-over, streak, ledger events.
-- [ ] `P2·S` Chat command: "mark 'revise recursion' as done" (see registry).
+- [x] **Chat commands** — "check off 'revise recursion'", "add 30 min of X to
+  my plan" execute for real from any chat (with Undo).
 - [ ] `P3·S` Time-of-day awareness (morning vs evening plan framing).
 
 ## Practice & assessment
@@ -100,8 +112,8 @@ Strong: AI-written questions per topic/document (since 3e50776), grading,
 mistakes feed the twin. **Corrected:** timed mode + countdown, retake and
 shuffle already exist; spaced repetition (SM-2-lite) already exists on mistakes
 with a due queue, review UI and dashboard strip.
-- [ ] `P2·M` **Test me, don't trust me**: due reviews are self-reported
-  (Recalled/Forgot) — offer a real 1–2-question re-test per due concept.
+- [x] **Test me, don't trust me** — real MCQ re-test per due concept (answers
+  stay server-side; grading feeds the SM-2 scheduler).
 - [ ] `P3·S` Per-question timing analytics.
 
 ### Interview — bar: Pramp/Interviewing.io
@@ -117,7 +129,9 @@ Strong: real execution (Piston), problems.
 
 ### Mistake OS — bar: error-log products (Anki lapses)
 Strong: severity/frequency, repair routing into live features.
-- [ ] `P2·S` "Repair session" chat command + a weekly repair digest nudge.
+- [x] **Review from anywhere** — "start my review" chat command routes to the
+  due queue; the daily scan nudges when reviews are due (top concept named);
+  the Monday digest names the biggest open gap.
 
 ## Knowledge & content
 
@@ -165,7 +179,9 @@ Strong: skill twin, cognitive guardian, momentum, next action.
 
 ### Notifications / Nudges — bar: Duolingo's engagement engine
 Strong: nudge engine with real triggers.
-- [ ] `P2·M` Digest email (weekly progress + next step) — SMTP config exists.
+- [x] **Time-based engagement** — daily inactivity + due-review nudges and a
+  Monday week-in-review digest with honest numbers: in-app always, email when
+  SMTP is configured.
 
 ### Gamification (streaks/certificates/ledger) — bar: Duolingo
 Strong: streaks, confetti, certificates, immutable ledger.
@@ -175,8 +191,9 @@ Strong: streaks, confetti, certificates, immutable ledger.
 
 ## Cross-cutting themes (the real industry gap)
 
-1. **Actions from language** — shipped for roadmap; extend the command registry
-   to daily plan, courses, memory, flows. One registrar per module.
+1. **Actions from language** — shipped for roadmap, daily plan, courses,
+   memory and mistakes (one registrar per module, all with Undo); flows are
+   the last surface without one.
 2. **Every insight must route somewhere** — any card that names a topic must
    deep-link into learning it (roadmap → tutor shipped; apply to mistakes,
    twin, readiness, resources).
