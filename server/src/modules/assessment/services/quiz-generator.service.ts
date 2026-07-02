@@ -1,5 +1,6 @@
-import { Injectable } from '@nestjs/common';
-import { Difficulty, QuestionType } from '../../../common/enums';
+import { Injectable, Logger } from '@nestjs/common';
+import { AgentType, Difficulty, QuestionType } from '../../../common/enums';
+import { AiService } from '../../ai/ai.service';
 import { BankQuestion, KNOWN_TOPICS, QUIZ_BANK } from '../quiz-bank';
 
 export interface GeneratedQuestion {
@@ -57,15 +58,169 @@ const STOP = new Set([
   'can',
 ]);
 
+/** Raw AI question draft before sanitization. */
+interface DraftQuestion {
+  prompt?: string;
+  options?: string[];
+  answerIndex?: number;
+  explanation?: string;
+}
+
 /**
- * Builds quiz questions deterministically (no AI key needed): curated bank for known
- * topics, templated conceptual MCQs for any topic, and cloze MCQs grounded in document
- * chunks for document-source quizzes.
+ * Builds quiz questions. Live AI writes real questions for THIS topic (or grounded
+ * strictly in THIS document's excerpts); the deterministic paths — curated bank,
+ * templated MCQs, cloze-from-chunks — are the offline fallback so a quiz can always
+ * be generated.
  */
 @Injectable()
 export class QuizGeneratorService {
+  private readonly logger = new Logger(QuizGeneratorService.name);
+
+  constructor(private readonly ai: AiService) {}
+
   knownTopic(topic: string): boolean {
     return this.matchKey(topic) !== null;
+  }
+
+  /** Topic quiz: AI-written for this topic when live; bank/template offline. */
+  async smartFromTopic(
+    userId: string,
+    topic: string,
+    difficulty: Difficulty,
+    count: number,
+  ): Promise<GeneratedQuestion[]> {
+    const generated = await this.aiQuestions(
+      userId,
+      topic,
+      difficulty,
+      count,
+      `Write ${count} exam-quality multiple-choice questions on "${topic}" at ${difficulty} level. ` +
+        'Test understanding and application, not trivia. Distractors must be plausible.',
+    );
+    return generated ?? this.fromTopic(topic, difficulty, count);
+  }
+
+  /** Document quiz: AI grounded ONLY in the excerpts when live; cloze offline. */
+  async smartFromDocument(
+    userId: string,
+    topic: string,
+    chunks: DocChunk[],
+    difficulty: Difficulty,
+    count: number,
+  ): Promise<GeneratedQuestion[]> {
+    const excerpts = chunks
+      .map(
+        (c, i) =>
+          `[${i + 1}]${c.headingPath ? ` (${c.headingPath})` : ''} ${c.text}`,
+      )
+      .join('\n\n')
+      .slice(0, 5000);
+    const generated = await this.aiQuestions(
+      userId,
+      topic,
+      difficulty,
+      count,
+      `Write ${count} multiple-choice questions at ${difficulty} level that are answerable ` +
+        `ONLY from these excerpts of the learner's own document — never from outside knowledge:\n\n${excerpts}`,
+    );
+    return generated ?? this.fromDocument(topic, chunks, difficulty, count);
+  }
+
+  /** One structured call; sanitized hard; null → caller falls back. */
+  private async aiQuestions(
+    userId: string,
+    topic: string,
+    difficulty: Difficulty,
+    count: number,
+    instruction: string,
+  ): Promise<GeneratedQuestion[] | null> {
+    if (!this.ai.isLive) return null;
+    try {
+      const out = await this.ai.generateStructuredOutput<{
+        questions: DraftQuestion[];
+      }>(
+        [
+          {
+            role: 'system',
+            content:
+              'You are a rigorous assessment writer. Every question has exactly 4 options, one ' +
+              'correct answerIndex (0–3) and a one-sentence explanation of the correct answer.',
+          },
+          { role: 'user', content: instruction },
+        ],
+        {
+          type: 'object',
+          properties: {
+            questions: {
+              type: 'array',
+              items: {
+                type: 'object',
+                properties: {
+                  prompt: { type: 'string' },
+                  options: { type: 'array', items: { type: 'string' } },
+                  answerIndex: { type: 'number' },
+                  explanation: { type: 'string' },
+                },
+                required: ['prompt', 'options', 'answerIndex'],
+              },
+            },
+          },
+          required: ['questions'],
+        },
+        {
+          temperature: 0.4,
+          meta: {
+            userId,
+            agentType: AgentType.Assessment,
+            operation: 'quiz.questions',
+          },
+          mockFactory: () => ({ questions: [] }), // offline → deterministic path
+        },
+      );
+      const usable = (out.questions ?? [])
+        .filter(
+          (q) =>
+            q?.prompt &&
+            q.prompt.trim().length >= 10 &&
+            Array.isArray(q.options) &&
+            q.options.filter((o) => o?.trim()).length === 4,
+        )
+        .slice(0, count)
+        .map((q): GeneratedQuestion => {
+          const answerIndex = Math.max(
+            0,
+            Math.min(3, Math.round(q.answerIndex ?? 0)),
+          );
+          const options = q.options!.map((o) => o.trim().slice(0, 160));
+          return {
+            type: QuestionType.Mcq,
+            prompt: q.prompt!.trim().slice(0, 300),
+            options,
+            answerIndex,
+            modelAnswer: options[answerIndex],
+            keywords: this.keywords(`${q.prompt} ${options[answerIndex]}`),
+            explanation: (q.explanation ?? '').trim().slice(0, 400),
+            topic,
+            difficulty,
+            points: DIFF_POINTS[difficulty],
+          };
+        });
+      // A degenerate generation (fewer than half usable) falls back entirely.
+      return usable.length >= Math.max(1, Math.ceil(count / 2)) ? usable : null;
+    } catch (err) {
+      this.logger.warn(`AI quiz generation failed: ${(err as Error).message}`);
+      return null;
+    }
+  }
+
+  private keywords(text: string): string[] {
+    return [
+      ...new Set(
+        (text.toLowerCase().match(/[a-z0-9]+/g) ?? []).filter(
+          (t) => t.length > 3 && !STOP.has(t),
+        ),
+      ),
+    ].slice(0, 6);
   }
 
   fromTopic(

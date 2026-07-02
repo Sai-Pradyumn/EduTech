@@ -16,7 +16,7 @@ import {
   CourseDocument,
   CourseVisibility,
 } from './schemas/course.schema';
-import { buildCourseBlueprint } from './course-blueprint.generator';
+import { CourseArchitectAgent } from './course-architect.agent';
 import { GenerateCourseDto, UpdateCourseDto } from './dto/course.dto';
 
 @Injectable()
@@ -29,6 +29,7 @@ export class CourseBuilderService {
     private readonly assessment: AssessmentService,
     private readonly visuals: VisualsService,
     private readonly projects: ProjectsService,
+    private readonly architect: CourseArchitectAgent,
   ) {}
 
   async generate(
@@ -36,7 +37,12 @@ export class CourseBuilderService {
     dto: GenerateCourseDto,
   ): Promise<CourseDocument> {
     const level = dto.level ?? Difficulty.Beginner;
-    const bp = buildCourseBlueprint(dto.goal.trim(), level, dto.outline);
+    // Live AI designs the course for THIS goal (modules, lesson briefs, voice
+    // scripts); the deterministic blueprint is the offline path.
+    const bp = await this.architect.blueprint(userId, dto.goal.trim(), level, {
+      outline: dto.outline,
+      audience: dto.audience,
+    });
     return this.model.create({
       author: new Types.ObjectId(userId),
       title: bp.title,
@@ -63,10 +69,11 @@ export class CourseBuilderService {
     if (!roadmap || roadmap.user.toString() !== userId)
       throw new NotFoundException('Roadmap not found');
     const outline = roadmap.weeklyPlan.map((w) => w.focus).join('\n');
-    const bp = buildCourseBlueprint(
+    const bp = await this.architect.blueprint(
+      userId,
       roadmap.goal,
       roadmap.difficulty ?? Difficulty.Beginner,
-      outline,
+      { outline },
     );
     return this.model.create({
       author: new Types.ObjectId(userId),

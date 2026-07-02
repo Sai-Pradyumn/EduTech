@@ -129,7 +129,8 @@ export class AssessmentService {
         const doc = await this.knowledge.get(userId, dto.documentId);
         topic = doc.topic ?? doc.title;
         title = `Quiz · ${doc.title}`;
-        questions = this.generator.fromDocument(
+        questions = await this.generator.smartFromDocument(
+          userId,
           topic,
           chunks,
           difficulty,
@@ -145,7 +146,7 @@ export class AssessmentService {
           : [profile.mainGoal];
         topic = weak.join(', ');
         title = `Weak-area drill · ${weak.slice(0, 3).join(', ')}`;
-        questions = this.spread(weak, difficulty, count);
+        questions = await this.spread(userId, weak, difficulty, count);
         break;
       }
       case 'roadmap': {
@@ -159,7 +160,7 @@ export class AssessmentService {
         const topics = week?.topics.length ? week.topics : [roadmap.goal];
         topic = topics.join(', ');
         title = `Roadmap check · ${week ? `Week ${week.weekNumber}` : roadmap.title}`;
-        questions = this.spread(topics, difficulty, count);
+        questions = await this.spread(userId, topics, difficulty, count);
         roadmapId = roadmap._id;
         break;
       }
@@ -168,7 +169,12 @@ export class AssessmentService {
           throw new BadRequestException('topic is required for a topic quiz.');
         topic = dto.topic.trim();
         title = `Quiz · ${this.titleCase(topic)}`;
-        questions = this.generator.fromTopic(topic, difficulty, count);
+        questions = await this.generator.smartFromTopic(
+          userId,
+          topic,
+          difficulty,
+          count,
+        );
       }
     }
 
@@ -403,16 +409,24 @@ export class AssessmentService {
 
   // ── helpers ─────────────────────────────────────────────────────────────────
   /** Generate `count` questions spread across multiple topics (weak areas / roadmap week). */
-  private spread(
+  private async spread(
+    userId: string,
     topics: string[],
     difficulty: Difficulty,
     count: number,
-  ): GeneratedQuestion[] {
+  ): Promise<GeneratedQuestion[]> {
     const list = topics.length ? topics : ['general'];
     const per = Math.max(1, Math.ceil(count / list.length));
     const out: GeneratedQuestion[] = [];
     for (const t of list) {
-      out.push(...this.generator.fromTopic(t.trim(), difficulty, per));
+      out.push(
+        ...(await this.generator.smartFromTopic(
+          userId,
+          t.trim(),
+          difficulty,
+          per,
+        )),
+      );
       if (out.length >= count) break;
     }
     return out.slice(0, count);
