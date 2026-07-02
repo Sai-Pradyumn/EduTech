@@ -25,6 +25,17 @@ services:
     volumes:
       - asta-redis-data:/data
 
+  # Real vector DB for RAG dense retrieval. Opt-in: set VECTOR_STORE_PROVIDER=qdrant
+  # in server/.env (the default 'keyword' backend needs no extra service).
+  qdrant:
+    image: qdrant/qdrant:latest
+    container_name: asta-qdrant
+    ports:
+      - "6333:6333"
+    volumes:
+      - asta-qdrant-data:/qdrant/storage
+
 volumes:
   asta-mongo-data:
   asta-redis-data:
+  asta-qdrant-data:

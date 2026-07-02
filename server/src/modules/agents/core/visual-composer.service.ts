@@ -154,7 +154,10 @@ export class VisualComposerService {
 
   private sanitize(draft: VisualDraft, topic?: string): VisualBlock | null {
     if (!draft || draft.kind === 'none') return null;
-    const title = this.trim(draft.title, MAX_TITLE) || this.trim(topic, MAX_TITLE) || 'Overview';
+    const title =
+      this.trim(draft.title, MAX_TITLE) ||
+      this.trim(topic, MAX_TITLE) ||
+      'Overview';
 
     if (draft.kind === 'concept_map') {
       const nodes = (draft.nodes ?? [])

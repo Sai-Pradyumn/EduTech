@@ -63,7 +63,7 @@ export interface AppConfig {
     /** Phase 8 · Peer Rooms. On by default. */
     peerRooms: boolean;
   };
-  vector: { backend: 'keyword' | 'atlas' };
+  vector: { backend: 'keyword' | 'atlas' | 'qdrant'; qdrantUrl: string };
   rag: { topK: number; minScore: number; hybrid: boolean };
   storage: {
     provider: 'local' | 's3';
@@ -178,6 +178,7 @@ export default (): AppConfig => ({
     backend: (process.env.VECTOR_STORE_PROVIDER ??
       process.env.VECTOR_BACKEND ??
       'keyword') as AppConfig['vector']['backend'],
+    qdrantUrl: process.env.QDRANT_URL ?? 'http://localhost:6333',
   },
   rag: {
     topK: parseInt(process.env.RAG_TOP_K ?? '6', 10),

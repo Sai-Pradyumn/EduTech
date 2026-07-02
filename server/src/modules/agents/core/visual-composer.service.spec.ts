@@ -11,9 +11,9 @@ import { VisualComposerService } from './visual-composer.service';
 function svc(over: Partial<Record<string, unknown>> = {}) {
   const ai = {
     isLive: over.isLive ?? true,
-    generateStructuredOutput: jest.fn().mockResolvedValue(
-      over.output ?? { kind: 'none' },
-    ),
+    generateStructuredOutput: jest
+      .fn()
+      .mockResolvedValue(over.output ?? { kind: 'none' }),
   } as unknown as AiService & { generateStructuredOutput: jest.Mock };
   return { visuals: new VisualComposerService(ai), ai };
 }
@@ -67,9 +67,13 @@ describe('VisualComposerService', () => {
 
   it('live: respects the model saying "none" — no visual attached', async () => {
     const { visuals } = svc({ output: { kind: 'none' } });
-    const blocks = await visuals.compose('thanks, that helped!', 'You’re welcome — go build something!', {
-      agentType: 'tutor' as never,
-    });
+    const blocks = await visuals.compose(
+      'thanks, that helped!',
+      'You’re welcome — go build something!',
+      {
+        agentType: 'tutor' as never,
+      },
+    );
     expect(blocks).toEqual([]);
   });
 
@@ -88,7 +92,9 @@ describe('VisualComposerService', () => {
     );
     // Derivation kicks in: nodes come from THIS answer's sections.
     expect(blocks).toHaveLength(1);
-    const labels = (blocks[0] as { nodes: { label: string }[] }).nodes.map((n) => n.label);
+    const labels = (blocks[0] as { nodes: { label: string }[] }).nodes.map(
+      (n) => n.label,
+    );
     expect(labels.join(' ')).toContain('Call stack runs sync code');
   });
 
@@ -132,17 +138,30 @@ describe('VisualComposerService', () => {
         questions: [
           {
             prompt: 'What drains after each task?',
-            options: ['Microtasks', 'Macrotasks', 'The call stack', 'Rendering'],
+            options: [
+              'Microtasks',
+              'Macrotasks',
+              'The call stack',
+              'Rendering',
+            ],
             answerIndex: 0,
             explanation: 'Microtasks run to completion after each task.',
           },
-          { prompt: 'Bad one', options: ['only', 'three', 'options'], answerIndex: 0 },
+          {
+            prompt: 'Bad one',
+            options: ['only', 'three', 'options'],
+            answerIndex: 0,
+          },
         ],
       },
     });
-    const blocks = await visuals.compose('quiz me on the event loop', STRUCTURED_ANSWER, {
-      agentType: 'tutor' as never,
-    });
+    const blocks = await visuals.compose(
+      'quiz me on the event loop',
+      STRUCTURED_ANSWER,
+      {
+        agentType: 'tutor' as never,
+      },
+    );
     expect(blocks).toHaveLength(1);
     const quiz = blocks[0] as { questions: unknown[] };
     expect(quiz.questions).toHaveLength(1);

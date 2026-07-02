@@ -65,10 +65,13 @@ export const validationSchema = Joi.object({
   ENABLE_REALTIME_VOICE: Joi.string().valid('true', 'false').default('false'),
   ENABLE_FINE_TUNING: Joi.string().valid('true', 'false').default('false'),
 
-  VECTOR_BACKEND: Joi.string().valid('keyword', 'atlas').default('keyword'),
-  VECTOR_STORE_PROVIDER: Joi.string()
-    .valid('keyword', 'atlas')
+  VECTOR_BACKEND: Joi.string()
+    .valid('keyword', 'atlas', 'qdrant')
     .default('keyword'),
+  VECTOR_STORE_PROVIDER: Joi.string()
+    .valid('keyword', 'atlas', 'qdrant')
+    .default('keyword'),
+  QDRANT_URL: Joi.string().uri().optional(),
 
   RAG_TOP_K: Joi.number().min(1).max(20).default(6),
   RAG_MIN_SCORE: Joi.number().min(0).max(1).default(0.15),

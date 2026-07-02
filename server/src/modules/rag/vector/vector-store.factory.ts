@@ -9,6 +9,7 @@ import {
 } from '../schemas/document-chunk.schema';
 import { KeywordVectorStore } from './keyword-vector-store';
 import { MongoDbVectorStore } from './mongodb-vector-store';
+import { QdrantVectorStore } from './qdrant-vector-store';
 import { VECTOR_STORE_TOKEN, IVectorStore } from './vector-store.interface';
 
 /** Selects the IVectorStore implementation from VECTOR_STORE_PROVIDER (default keyword). */
@@ -20,6 +21,12 @@ export const vectorStoreFactory: Provider = {
     chunks: Model<DocumentChunkDocument>,
   ): IVectorStore => {
     const backend = config.get('vector.backend', { infer: true });
+    if (backend === 'qdrant') {
+      return new QdrantVectorStore(
+        chunks,
+        config.get('vector.qdrantUrl', { infer: true }),
+      );
+    }
     return backend === 'atlas'
       ? new MongoDbVectorStore(chunks)
       : new KeywordVectorStore(chunks);
