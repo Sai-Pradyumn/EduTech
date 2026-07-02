@@ -231,6 +231,15 @@ export class AgentOrchestratorService {
               kind: 'open_route' as const,
               payload: { route: r.route },
             })),
+          // One-click undo: the inverse command goes back through the same path.
+          ...executed
+            .filter((r) => r.ok && r.undo)
+            .map((r, i) => ({
+              id: `undo_${i}`,
+              label: 'Undo',
+              kind: 'custom' as const,
+              payload: { sendText: r.undo!.text },
+            })),
           ...response.actions,
         ].slice(0, 6);
       }

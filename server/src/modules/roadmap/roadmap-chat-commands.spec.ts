@@ -76,6 +76,10 @@ function build(over: Partial<Record<string, unknown>> = {}) {
     restoreVersion: jest
       .fn()
       .mockResolvedValue(activeRoadmap({ progressPercentage: 33 })),
+    listVersions: jest.fn().mockResolvedValue([
+      { version: 2, label: 'Week 3 regenerated', current: true },
+      { version: 1, label: 'Generated', current: false },
+    ]),
   };
 
   const contextEngine = {

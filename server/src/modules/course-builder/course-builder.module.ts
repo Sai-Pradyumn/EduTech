@@ -6,10 +6,12 @@ import { VisualsModule } from '../visuals/visuals.module';
 import { ProjectsModule } from '../projects/projects.module';
 import { Roadmap, RoadmapSchema } from '../roadmap/schemas/roadmap.schema';
 import { Course, CourseSchema } from './schemas/course.schema';
+import { AgentsModule } from '../agents/agents.module';
 import { CourseArchitectAgent } from './course-architect.agent';
 import { LessonComposerService } from './lesson-composer.service';
 import { CourseBuilderController } from './course-builder.controller';
 import { CourseBuilderService } from './course-builder.service';
+import { CourseChatCommands } from './course-chat-commands';
 
 /**
  * Phase 8 · Course Builder — mentors/admins turn a goal/outline/roadmap into a full course (modules +
@@ -26,12 +28,14 @@ import { CourseBuilderService } from './course-builder.service';
     AssessmentModule,
     VisualsModule,
     ProjectsModule,
+    AgentsModule,
   ],
   controllers: [CourseBuilderController],
   providers: [
     CourseBuilderService,
     CourseArchitectAgent,
     LessonComposerService,
+    CourseChatCommands,
   ],
   exports: [CourseBuilderService],
 })

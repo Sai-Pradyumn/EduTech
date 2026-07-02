@@ -9,6 +9,8 @@ export interface ChatCommandResult {
   /** Client route to review the change (rendered as an action chip). */
   route?: string;
   routeLabel?: string;
+  /** Inverse command — rendered as an "Undo" chip that sends this text back through chat. */
+  undo?: { text: string };
 }
 
 /**

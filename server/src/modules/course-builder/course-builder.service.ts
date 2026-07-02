@@ -295,6 +295,17 @@ export class CourseBuilderService {
     return c.save();
   }
 
+  /** Archive (or restore) a course — reversible, unlike remove(). */
+  async setArchived(
+    userId: string,
+    id: string,
+    archived: boolean,
+  ): Promise<CourseDocument> {
+    const c = await this.get(userId, id);
+    c.status = archived ? 'archived' : c.publishedAt ? 'published' : 'draft';
+    return c.save();
+  }
+
   async remove(userId: string, id: string): Promise<{ ok: true }> {
     const c = await this.get(userId, id);
     await c.deleteOne();

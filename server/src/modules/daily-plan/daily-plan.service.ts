@@ -208,6 +208,30 @@ export class DailyPlanService {
     return plan.save();
   }
 
+  /** Append a learner-chosen custom item to today's plan (chat command). */
+  async addItem(
+    userId: string,
+    title: string,
+    estimateMinutes = 20,
+  ): Promise<DailyPlanDocument> {
+    const plan = await this.getToday(userId);
+    plan.items.push({
+      id: `i_c_${Date.now().toString(36)}`,
+      kind: 'revision',
+      title: title.slice(0, 120),
+      reason: 'Added by you.',
+      route: '/app/today',
+      estimateMinutes: Math.max(5, Math.min(120, Math.round(estimateMinutes))),
+      done: false,
+    });
+    plan.totalMinutes = plan.items.reduce(
+      (s, i) => s + (i.estimateMinutes || 0),
+      0,
+    );
+    plan.markModified('items');
+    return plan.save();
+  }
+
   /** Persist a learner-chosen item order (drag-to-reorder on the Today screen). */
   async reorder(userId: string, itemIds: string[]): Promise<DailyPlanDocument> {
     const plan = await this.getToday(userId);

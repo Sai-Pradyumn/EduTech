@@ -560,7 +560,11 @@ export class TutorWorkspaceComponent {
         if (route) void this.router.navigateByUrl(route);
         break;
       }
-      default: this.send(`${a.label}: ${topic}`);
+      default: {
+        // Undo chips (and other server-authored actions) carry the exact text to send.
+        const sendText = a.payload?.['sendText'] as string | undefined;
+        this.send(sendText ?? `${a.label}: ${topic}`);
+      }
     }
   }
 

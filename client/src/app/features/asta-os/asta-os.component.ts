@@ -893,7 +893,11 @@ export class AstaOsComponent {
       case 'generate_quiz': this.send(`Quiz me on ${topic}`); break;
       case 'explain_visually': this.send(`Explain ${topic} visually`); break;
       case 'ask_interviewer': this.send(`Interview me on ${topic}`); break;
-      default: this.send(a.label);
+      default: {
+        // Undo chips (and other server-authored actions) carry the exact text to send.
+        const sendText = a.payload?.['sendText'];
+        this.send(typeof sendText === 'string' ? sendText : a.label);
+      }
     }
   }
 

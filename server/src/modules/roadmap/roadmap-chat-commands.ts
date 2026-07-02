@@ -110,6 +110,10 @@ export class RoadmapChatCommands implements OnModuleInit {
       description: 'Mark the roadmap week covering a topic as complete',
       match: (m) =>
         this.guarded(m, () => {
+          // Plan-item completions ("… done on my plan", "check off …") belong
+          // to the daily-plan commands — never grab those here.
+          if (/\bplan\b/i.test(m) || /\b(?:check|tick)\s+off\b/i.test(m))
+            return null;
           const r =
             /mark\s+(?:the\s+)?(.{2,60}?)\s+(?:as\s+)?(?:complete(?:d)?|done|mastered)/i.exec(
               m,
@@ -177,6 +181,7 @@ export class RoadmapChatCommands implements OnModuleInit {
         `Progress: ${updated.progressPercentage}%. ${this.nextUp(updated)}`,
       route: this.route(updated),
       routeLabel: 'Open roadmap',
+      undo: { text: `reopen week ${week.weekNumber}` },
     };
   }
 
@@ -202,6 +207,7 @@ export class RoadmapChatCommands implements OnModuleInit {
       summary: `Reopened Week ${weekNumber} — it's back on your plan. Progress: ${updated.progressPercentage}%.`,
       route: this.route(updated),
       routeLabel: 'Open roadmap',
+      undo: { text: `mark week ${weekNumber} as complete` },
     };
   }
 
@@ -234,6 +240,12 @@ export class RoadmapChatCommands implements OnModuleInit {
     const reworked = updated.weeklyPlan.find(
       (w) => w.weekNumber === week.weekNumber,
     );
+    // The pre-rework content is the second-newest version (the rework snapshotted).
+    const versions = await this.roadmaps.listVersions(
+      userId,
+      roadmap.id as string,
+    );
+    const previous = versions[1]?.version;
     return {
       ok: true,
       summary:
@@ -241,6 +253,9 @@ export class RoadmapChatCommands implements OnModuleInit {
         `and its tasks were reset for the new plan. Saved as a new version, so you can restore the old week any time.`,
       route: this.route(updated),
       routeLabel: 'See the new week',
+      ...(previous
+        ? { undo: { text: `restore my roadmap to version ${previous}` } }
+        : {}),
     };
   }
 
