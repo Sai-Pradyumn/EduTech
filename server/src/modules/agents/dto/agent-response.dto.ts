@@ -8,6 +8,7 @@ export interface AgentSessionSummary {
   title: string;
   agentType: string;
   lastMessageAt: string | null;
+  pinned: boolean;
 }
 
 export interface AgentMessageView {
@@ -33,6 +34,7 @@ export function toSessionSummary(
     title: doc.title,
     agentType: doc.agentType,
     lastMessageAt: (doc.lastMessageAt ?? d.updatedAt)?.toISOString() ?? null,
+    pinned: doc.pinned ?? false,
   };
 }
 

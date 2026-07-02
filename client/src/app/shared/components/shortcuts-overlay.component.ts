@@ -51,6 +51,9 @@ export class ShortcutsOverlayComponent {
     { keys: ['Esc'], label: 'Close dialogs, the palette or this help' },
     { keys: ['↑', '↓'], label: 'Move through palette results' },
     { keys: ['↵'], label: 'Open the selected palette result' },
+    { keys: [this.mod, 'K'], label: 'Asta OS — focus the composer' },
+    { keys: ['Esc'], label: 'Asta OS — close search, exit focus mode' },
+    { keys: ['Esc'], label: 'AI Tutor — exit large-screen view' },
   ];
 
   @HostListener('document:keydown', ['$event'])

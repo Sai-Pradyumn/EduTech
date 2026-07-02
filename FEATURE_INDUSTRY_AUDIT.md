@@ -50,15 +50,18 @@ Now has history, deep links, large view.
 - [x] **Message actions** — copy / regenerate / edit-and-resend on every turn.
 - [x] **Search across past chats** — history panel title filter.
 - [x] **Stop generation** — keeps the partial answer with an honest note.
-- [ ] `P3·M` Shareable/exportable conversations (OS has export; classic none).
+- [x] **Exportable conversations** — one-click markdown download of the
+  current thread (OS already had export).
 
 ### Asta OS — bar: ChatGPT desktop + Arc-style command surfaces
 Strong: tabs, tools, voice/face rooms, memory cards, canvas actions, export,
 search, today strip. Now has focus mode.
-- [ ] `P2·M` **Cross-session search** (search across all past sessions, not
-  just the open one).
-- [ ] `P2·S` Keyboard shortcut map surfaced in-product (⌘K exists; add "?").
-- [ ] `P3·M` Pin/star sessions.
+- [x] **Cross-session search** — the history popover searches titles AND
+  message content across every past session (server-side, snippet per hit).
+- [x] **Keyboard shortcut map** — the global "?" overlay now lists the Asta OS
+  and Tutor keys (⌘K composer focus, Esc behaviours).
+- [x] **Pin/star sessions** — star in the history popover; pinned sessions
+  lead every history list (classic tutor included).
 
 ### Chat commands (new) — bar: Linear/Slack slash-actions, ChatGPT tasks
 - [x] **Broaden targets** — daily-plan items (check off / add), memory

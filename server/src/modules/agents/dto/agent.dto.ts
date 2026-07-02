@@ -1,6 +1,7 @@
 import {
   ArrayMaxSize,
   IsArray,
+  IsBoolean,
   IsEnum,
   IsIn,
   IsOptional,
@@ -34,6 +35,11 @@ export class AgentMessageDto {
   @ArrayMaxSize(50)
   @IsString({ each: true })
   documentIds?: string[];
+}
+
+export class PinSessionDto {
+  @IsBoolean()
+  pinned!: boolean;
 }
 
 export class FeedbackDto {

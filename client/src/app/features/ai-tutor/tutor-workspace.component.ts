@@ -74,6 +74,11 @@ const STARTERS = [
                 <button class="mode-pill" [class.mode-on]="mode() === m" (click)="mode.set(m)">{{ m }}</button>
               }
             </div>
+            @if (messages().length) {
+              <button class="hdr-btn" title="Export this conversation (.md)" (click)="exportConversation()" aria-label="Export this conversation as markdown">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5"/><path d="M12 15V3"/></svg>
+              </button>
+            }
             <button class="hdr-btn" [class.hdr-on]="showHistory()" title="Past chats" (click)="toggleHistory()" aria-label="Past chats">
               <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l3 2"/></svg>
             </button>
@@ -503,6 +508,32 @@ export class TutorWorkspaceComponent {
     });
     this.busy.set(false);
     this.liveStatus.set('Generation stopped.');
+  }
+
+  /** Download the current conversation as a markdown file. */
+  exportConversation(): void {
+    const msgs = this.messages();
+    if (!msgs.length) return;
+    const when = new Date().toLocaleString();
+    const lines = [
+      `# Asta Tutor conversation`,
+      ``,
+      `_Exported ${when} · mode: ${this.mode()}_`,
+      ``,
+      ...msgs.flatMap((m) => [
+        `## ${m.role === 'user' ? 'You' : 'Asta'}`,
+        ``,
+        m.content || (m.failed ? '_(failed to generate)_' : ''),
+        ``,
+      ]),
+    ];
+    const blob = new Blob([lines.join('\n')], { type: 'text/markdown' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `asta-tutor-${new Date().toISOString().slice(0, 10)}.md`;
+    a.click();
+    URL.revokeObjectURL(a.href);
+    this.toast.success('Conversation exported');
   }
 
   // ── per-message actions ──

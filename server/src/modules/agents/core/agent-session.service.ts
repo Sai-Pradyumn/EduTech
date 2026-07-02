@@ -14,6 +14,16 @@ import {
 const RECENT_WINDOW = 8; // turns kept verbatim; older turns roll into the summary
 const SUMMARIZE_AT = 16; // only summarize once a session grows past this many messages
 
+/** One cross-session search hit: the best (newest) match within a session. */
+export interface SessionSearchHit {
+  sessionId: string;
+  title: string;
+  agentType: string;
+  when: string;
+  /** Matching excerpt from a message; empty when only the title matched. */
+  snippet: string;
+}
+
 @Injectable()
 export class AgentSessionService {
   private readonly logger = new Logger(AgentSessionService.name);
@@ -101,9 +111,96 @@ export class AgentSessionService {
   listSessions(userId: string): Promise<AgentSessionDocument[]> {
     return this.sessions
       .find({ user: new Types.ObjectId(userId) })
-      .sort({ lastMessageAt: -1, updatedAt: -1 })
+      .sort({ pinned: -1, lastMessageAt: -1, updatedAt: -1 })
       .limit(50)
       .exec();
+  }
+
+  /** Pin/unpin a session (pinned sessions lead every history list). */
+  async setPinned(
+    userId: string,
+    sessionId: string,
+    pinned: boolean,
+  ): Promise<boolean> {
+    if (!Types.ObjectId.isValid(sessionId)) return false;
+    const res = await this.sessions
+      .updateOne(
+        { _id: sessionId, user: new Types.ObjectId(userId) },
+        { $set: { pinned } },
+      )
+      .exec();
+    return res.matchedCount > 0;
+  }
+
+  /**
+   * Search across ALL of a user's sessions — titles and message content.
+   * Returns at most 20 sessions, newest hit first, one snippet per session.
+   */
+  async searchSessions(
+    userId: string,
+    query: string,
+  ): Promise<SessionSearchHit[]> {
+    const q = query.trim();
+    if (q.length < 2) return [];
+    const rx = new RegExp(q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i');
+    const uid = new Types.ObjectId(userId);
+    const [msgs, titled] = await Promise.all([
+      this.messages
+        .find({ user: uid, content: rx })
+        .sort({ createdAt: -1 })
+        .limit(80)
+        .lean()
+        .exec(),
+      this.sessions
+        .find({ user: uid, title: rx })
+        .sort({ lastMessageAt: -1 })
+        .limit(10)
+        .lean()
+        .exec(),
+    ]);
+
+    const bySession = new Map<string, { snippet: string; when?: Date }>();
+    for (const m of msgs) {
+      const key = String(m.session);
+      if (bySession.has(key)) continue; // newest hit per session wins
+      const text = m.content;
+      const at = text.toLowerCase().indexOf(q.toLowerCase());
+      const from = at >= 0 ? Math.max(0, at - 40) : 0;
+      const to = at >= 0 ? at + q.length + 60 : 100;
+      const snippet = `${from > 0 ? '…' : ''}${text.slice(from, to).trim()}${to < text.length ? '…' : ''}`;
+      bySession.set(key, {
+        snippet,
+        when: (m as { createdAt?: Date }).createdAt,
+      });
+    }
+    for (const s of titled) {
+      const key = String(s._id);
+      if (!bySession.has(key)) {
+        bySession.set(key, { snippet: '', when: s.lastMessageAt });
+      }
+    }
+
+    const ids = [...bySession.keys()].slice(0, 20);
+    if (ids.length === 0) return [];
+    const sess = await this.sessions
+      .find({ _id: { $in: ids }, user: uid })
+      .lean()
+      .exec();
+    const byId = new Map(sess.map((s) => [String(s._id), s]));
+    return ids.flatMap((id) => {
+      const s = byId.get(id);
+      if (!s) return [];
+      const hit = bySession.get(id);
+      return [
+        {
+          sessionId: id,
+          title: s.title || 'Untitled session',
+          agentType: String(s.agentType),
+          when: (hit?.when ?? s.lastMessageAt)?.toISOString() ?? '',
+          snippet: hit?.snippet ?? '',
+        },
+      ];
+    });
   }
 
   async getMessages(

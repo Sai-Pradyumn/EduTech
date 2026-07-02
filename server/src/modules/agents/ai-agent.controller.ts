@@ -1,4 +1,12 @@
-import { Body, Controller, Get, Param, Post } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Param,
+  Patch,
+  Post,
+  Query,
+} from '@nestjs/common';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { Role } from '../../common/enums';
@@ -10,8 +18,11 @@ import { AgentOrchestratorService } from './agent-orchestrator.service';
 import { AgentContextService } from './core/agent-context.service';
 import { AgentToolRegistryService } from './core/agent-tool-registry.service';
 import { NextActionService } from './core/next-action.service';
-import { AgentSessionService } from './core/agent-session.service';
-import { AgentMessageDto, FeedbackDto } from './dto/agent.dto';
+import {
+  AgentSessionService,
+  SessionSearchHit,
+} from './core/agent-session.service';
+import { AgentMessageDto, FeedbackDto, PinSessionDto } from './dto/agent.dto';
 import {
   AgentMessageView,
   AgentSessionSummary,
@@ -90,6 +101,25 @@ export class AiAgentController {
   ): Promise<AgentSessionSummary[]> {
     const list = await this.sessions.listSessions(user.id);
     return list.map(toSessionSummary);
+  }
+
+  /** Search across ALL past sessions — titles + message content. Must precede sessions/:id. */
+  @Get('sessions/search')
+  searchSessions(
+    @CurrentUser() user: AuthUser,
+    @Query('q') q?: string,
+  ): Promise<SessionSearchHit[]> {
+    return this.sessions.searchSessions(user.id, q ?? '');
+  }
+
+  /** Pin/unpin a session — pinned sessions lead every history list. */
+  @Patch('sessions/:id/pin')
+  async pinSession(
+    @CurrentUser() user: AuthUser,
+    @Param('id') id: string,
+    @Body() dto: PinSessionDto,
+  ): Promise<{ ok: boolean }> {
+    return { ok: await this.sessions.setPinned(user.id, id, dto.pinned) };
   }
 
   @Get('sessions/:id')

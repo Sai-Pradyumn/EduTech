@@ -9,6 +9,7 @@ import {
   AgentStreamEvent,
   AiProvidersSnapshot,
   NextAction,
+  SessionSearchHit,
 } from '../models';
 
 export interface AgentMessageResult {
@@ -39,6 +40,16 @@ export class AgentService {
 
   getMessages(sessionId: string): Observable<AgentMessageView[]> {
     return this.api.get<AgentMessageView[]>(`/ai/sessions/${sessionId}`);
+  }
+
+  /** Search across ALL past sessions (titles + message content). */
+  searchSessions(q: string): Observable<SessionSearchHit[]> {
+    return this.api.get<SessionSearchHit[]>(`/ai/sessions/search?q=${encodeURIComponent(q)}`);
+  }
+
+  /** Pin/unpin a session — pinned sessions lead every history list. */
+  pinSession(sessionId: string, pinned: boolean): Observable<{ ok: boolean }> {
+    return this.api.patch<{ ok: boolean }>(`/ai/sessions/${sessionId}/pin`, { pinned });
   }
 
   sendFeedback(rating: string, messageId?: string, reason?: string): Observable<{ ok: boolean }> {

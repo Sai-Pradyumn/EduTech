@@ -146,6 +146,17 @@ export interface AgentSessionSummary {
   title: string;
   agentType: AgentType;
   lastMessageAt: string | null;
+  pinned: boolean;
+}
+
+/** One cross-session search hit — the best match within a session. */
+export interface SessionSearchHit {
+  sessionId: string;
+  title: string;
+  agentType: string;
+  when: string;
+  /** Matching excerpt; empty when only the title matched. */
+  snippet: string;
 }
 
 export interface AgentMessageView {

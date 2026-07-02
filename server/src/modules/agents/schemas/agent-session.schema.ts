@@ -22,6 +22,10 @@ export class AgentSession {
   @Prop({ default: '' })
   summary!: string;
 
+  /** Pinned sessions sort to the top of every history list. */
+  @Prop({ default: false })
+  pinned!: boolean;
+
   @Prop({ index: true })
   lastMessageAt?: Date;
 }
