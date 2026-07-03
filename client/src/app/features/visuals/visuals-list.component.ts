@@ -99,7 +99,7 @@ import {
         @for (v of filteredVisuals(); track v.id; let i = $index) {
           <asta-card class="motion-card-reveal hover-lift cursor-pointer block" [interactive]="true" [style.--motion-card-index]="i % 3" (click)="open(v)">
             <div class="thumb">
-              @if (v.thumbnail) { <img [src]="v.thumbnail" [alt]="v.title" /> } @else { <span class="thumb-glyph">{{ meta(v.type).glyph }}</span> }
+              @if (v.thumbnail) { <img [src]="v.thumbnail" [alt]="v.title" loading="lazy" decoding="async" /> } @else { <span class="thumb-glyph">{{ meta(v.type).glyph }}</span> }
             </div>
             <div class="flex items-start justify-between gap-2 mt-3">
               <p class="font-medium leading-snug line-clamp-2">{{ v.title }}</p>

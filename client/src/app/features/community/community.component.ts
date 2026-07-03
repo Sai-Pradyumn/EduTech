@@ -8,6 +8,8 @@ import { AuthService } from '../../core/services/auth.service';
 import { OrgContextService } from '../../core/services/org-context.service';
 import { ToastService } from '../../core/services/toast.service';
 import { CommunityChannel, CommunityReply, CommunityReport, CommunityThread, Project, ThreadKind } from '../../core/models';
+import { ShowMoreComponent } from '../../shared/ui/show-more.component';
+import { windowedList } from '../../shared/utils/windowed-list';
 
 /**
  * Community + discussion (B9). Org-scoped channels (General / Help / Showcase), threads
@@ -17,7 +19,7 @@ import { CommunityChannel, CommunityReply, CommunityReport, CommunityThread, Pro
 @Component({
     selector: 'asta-community',
     changeDetection: ChangeDetectionStrategy.OnPush,
-    imports: [FormsModule, DatePipe, RouterLink],
+    imports: [FormsModule, DatePipe, RouterLink, ShowMoreComponent],
     template: `
     <!-- Command header -->
     <header class="asta-page-command-header">
@@ -86,7 +88,7 @@ import { CommunityChannel, CommunityReply, CommunityReport, CommunityThread, Pro
               </div>
             }
             <div class="space-y-1.5 motion-row-2">
-              @for (t of visibleThreads(); track t.id; let i = $index) {
+              @for (t of threadWindow.items(); track t.id; let i = $index) {
                 <button class="w-full text-left card hover-lift motion-card-reveal" style="padding:10px 13px"
                   [style.--motion-card-index]="i"
                   [style.borderColor]="activeThread()?.id === t.id ? 'var(--green)' : null" (click)="selectThread(t.id)">
@@ -104,6 +106,7 @@ import { CommunityChannel, CommunityReply, CommunityReport, CommunityThread, Pro
               } @empty {
                 <p class="text-sm text-txt-mute py-2">No threads match “{{ threadQuery() }}”.</p>
               }
+              <asta-show-more [remaining]="threadWindow.remaining()" [step]="30" (more)="threadWindow.more()" />
             </div>
           </div>
         }
@@ -251,6 +254,9 @@ export class CommunityComponent implements OnInit {
     else sorted.sort((a, b) => +new Date(b.createdAt) - +new Date(a.createdAt));
     return sorted;
   });
+
+  /** Keep the thread list's DOM bounded in busy channels; reveal 30 more on demand. */
+  readonly threadWindow = windowedList(this.visibleThreads, 30);
 
   readonly threadKinds: ThreadKind[] = ['discussion', 'question', 'showcase'];
   private readonly meId = computed(() => this.auth.user()?.id ?? '');

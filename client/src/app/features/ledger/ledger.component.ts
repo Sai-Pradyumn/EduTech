@@ -3,6 +3,8 @@ import { ButtonComponent } from '../../shared/ui/button.component';
 import { CardComponent } from '../../shared/ui/card.component';
 import { EmptyStateComponent } from '../../shared/ui/empty-state.component';
 import { SkeletonComponent } from '../../shared/ui/skeleton.component';
+import { ShowMoreComponent } from '../../shared/ui/show-more.component';
+import { windowedList } from '../../shared/utils/windowed-list';
 import { ledgerKindMeta, LedgerEntry, LedgerKind, LedgerService, LedgerStats, VerificationLevel } from '../../core/services/ledger.service';
 
 const VER_META: Record<VerificationLevel, { label: string; tone: string }> = {
@@ -16,7 +18,7 @@ const VER_META: Record<VerificationLevel, { label: string; tone: string }> = {
 @Component({
     selector: 'asta-ledger',
     changeDetection: ChangeDetectionStrategy.OnPush,
-    imports: [ButtonComponent, CardComponent, EmptyStateComponent, SkeletonComponent],
+    imports: [ButtonComponent, CardComponent, EmptyStateComponent, SkeletonComponent, ShowMoreComponent],
     template: `
     <header class="asta-page-command-header">
       <div class="min-w-0">
@@ -81,7 +83,7 @@ const VER_META: Record<VerificationLevel, { label: string; tone: string }> = {
             </div>
           }
           <div class="timeline">
-            @for (e of filteredEntries(); track e.id) {
+            @for (e of timeline.items(); track e.id) {
               <div class="row">
                 <span class="glyph">{{ glyph(e.kind) }}</span>
                 <span class="line"></span>
@@ -93,6 +95,7 @@ const VER_META: Record<VerificationLevel, { label: string; tone: string }> = {
               </div>
             }
           </div>
+          <asta-show-more [remaining]="timeline.remaining()" [step]="40" (more)="timeline.more()" />
         </asta-card>
       }
     }
@@ -160,6 +163,9 @@ export class LedgerComponent {
     const k = this.kindFilter();
     return k === 'all' ? this.entries() : this.entries().filter((e) => e.kind === k);
   });
+
+  /** Keep the proof timeline's DOM bounded as it grows; reveal 40 more on demand. */
+  readonly timeline = windowedList(this.filteredEntries, 40);
 
   /** GitHub-style 13-week grid (columns = weeks Sun→Sat) of proof-event counts per day. */
   readonly heatmap = computed(() => {

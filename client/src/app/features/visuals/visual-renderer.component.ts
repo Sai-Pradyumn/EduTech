@@ -50,7 +50,7 @@ const GAP_X = 56;
         }
       }
       @case ('imageUrl') {
-        <img class="vimg" [src]="safeUrl()" [alt]="visual.title" />
+        <img class="vimg" [src]="safeUrl()" [alt]="visual.title" decoding="async" />
       }
       @case ('svg') {
         <div class="vsvg" [innerHTML]="safeHtml()"></div>

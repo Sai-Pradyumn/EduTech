@@ -2,13 +2,15 @@ import { ChangeDetectionStrategy, Component, OnInit, computed, inject, signal } 
 import { DatePipe, JsonPipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { AuditView, OpsService } from '../../core/services/ops.service';
+import { ShowMoreComponent } from '../../shared/ui/show-more.component';
+import { windowedList } from '../../shared/utils/windowed-list';
 
 /** Audit log viewer (Phase 10 · M6). Role.Admin. Immutable trail of security-relevant
  *  actions with actor, target and metadata. */
 @Component({
     selector: 'asta-admin-audit-logs',
     changeDetection: ChangeDetectionStrategy.OnPush,
-    imports: [DatePipe, JsonPipe, FormsModule],
+    imports: [DatePipe, JsonPipe, FormsModule, ShowMoreComponent],
     template: `
     <header class="asta-page-command-header">
       <div class="min-w-0">
@@ -37,7 +39,7 @@ import { AuditView, OpsService } from '../../core/services/ops.service';
 
     <div class="card motion-card-reveal motion-row-2" style="padding:18px">
       <div class="space-y-1">
-        @for (l of filtered(); track l.id) {
+        @for (l of auditWindow.items(); track l.id) {
           <div class="al-row flex items-center gap-3 text-sm py-2" style="border-bottom:1px solid var(--paper-3)">
             <span class="pill font-mono">{{ l.action }}</span>
             <span class="min-w-0 flex-1 truncate">
@@ -51,6 +53,7 @@ import { AuditView, OpsService } from '../../core/services/ops.service';
           <p class="text-sm text-txt-mute">{{ logs().length ? 'No entries match this filter.' : 'No audit entries yet.' }}</p>
         }
       </div>
+      <asta-show-more [remaining]="auditWindow.remaining()" [step]="60" (more)="auditWindow.more()" />
     </div>
   `,
     styles: [`
@@ -95,6 +98,9 @@ export class AdminAuditLogsComponent implements OnInit {
       return true;
     });
   });
+
+  /** Keep the DOM bounded when the trail grows large; reveal 60 more on demand. */
+  readonly auditWindow = windowedList(this.filtered, 60);
 
   ngOnInit(): void {
     this.ops.auditLogs().subscribe({ next: (l) => this.logs.set(l) });

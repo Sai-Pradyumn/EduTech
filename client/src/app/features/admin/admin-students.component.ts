@@ -5,6 +5,8 @@ import { AdminService } from '../../core/services/admin.service';
 import { AdminStudentRow } from '../../core/models';
 import { CardComponent } from '../../shared/ui/card.component';
 import { CountDirective } from '../../shared/directives/count.directive';
+import { ShowMoreComponent } from '../../shared/ui/show-more.component';
+import { windowedList } from '../../shared/utils/windowed-list';
 
 /**
  * Admin Command Center — students roster (A7). Every platform student with goal, skill level
@@ -13,7 +15,7 @@ import { CountDirective } from '../../shared/directives/count.directive';
 @Component({
     selector: 'asta-admin-students',
     changeDetection: ChangeDetectionStrategy.OnPush,
-    imports: [DatePipe, FormsModule, CardComponent, CountDirective],
+    imports: [DatePipe, FormsModule, CardComponent, CountDirective, ShowMoreComponent],
     template: `
    <div class="asta-observatory">
     <!-- Compact command header -->
@@ -66,7 +68,7 @@ import { CountDirective } from '../../shared/directives/count.directive';
         <table>
           <thead><tr><th>Student</th><th>Goal</th><th>Level</th><th>Health</th><th>Readiness</th><th>Quizzes</th><th>Last active</th></tr></thead>
           <tbody>
-            @for (s of filtered(); track s.userId) {
+            @for (s of roster.items(); track s.userId) {
               <tr>
                 <td data-label="Student">
                   <b>{{ s.name }}</b> @if (!s.onboarded) { <span class="flag">new</span> }
@@ -93,6 +95,7 @@ import { CountDirective } from '../../shared/directives/count.directive';
             }
           </tbody>
         </table>
+        <asta-show-more [remaining]="roster.remaining()" [step]="50" (more)="roster.more()" />
       </div>
     </asta-card>
 
@@ -283,6 +286,9 @@ export class AdminStudentsComponent implements OnInit {
     }
     return rows;
   });
+
+  /** Keep the roster's rendered rows bounded for large orgs; reveal 50 more on demand. */
+  readonly roster = windowedList(this.filtered, 50);
 
   ngOnInit(): void {
     this.api.students().subscribe({
