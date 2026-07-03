@@ -30,6 +30,7 @@ export class RoadmapChatCommands implements OnModuleInit {
     this.registry.register({
       name: 'roadmap.restore_version',
       description: 'Restore the roadmap to an earlier version',
+      examples: ['restore my roadmap to version 2'],
       match: (m) =>
         this.guarded(m, () => {
           const r =
@@ -44,6 +45,7 @@ export class RoadmapChatCommands implements OnModuleInit {
     this.registry.register({
       name: 'roadmap.mark_week_complete',
       description: 'Mark a roadmap week as complete',
+      examples: ['mark week 2 as complete'],
       match: (m) =>
         this.guarded(m, () => {
           const byNumber =
@@ -63,6 +65,7 @@ export class RoadmapChatCommands implements OnModuleInit {
     this.registry.register({
       name: 'roadmap.reopen_week',
       description: 'Reopen a completed roadmap week',
+      examples: ['reopen week 2'],
       match: (m) =>
         this.guarded(m, () => {
           const r = /(?:unmark|reopen|un-?complete)\s+week\s+(\d+)/i.exec(m);
@@ -74,6 +77,10 @@ export class RoadmapChatCommands implements OnModuleInit {
     this.registry.register({
       name: 'roadmap.refocus_week',
       description: 'Rework a roadmap week around a new focus',
+      examples: [
+        'refocus week 3 on testing',
+        'change my roadmap to focus on system design',
+      ],
       match: (m) =>
         this.guarded(m, () => {
           const byWeek =
@@ -108,6 +115,7 @@ export class RoadmapChatCommands implements OnModuleInit {
     this.registry.register({
       name: 'roadmap.mark_topic_complete',
       description: 'Mark the roadmap week covering a topic as complete',
+      examples: ['mark the fundamentals as completed'],
       match: (m) =>
         this.guarded(m, () => {
           // Plan-item completions ("… done on my plan", "check off …") belong
@@ -130,6 +138,7 @@ export class RoadmapChatCommands implements OnModuleInit {
     this.registry.register({
       name: 'roadmap.advance',
       description: 'Complete the current week and move to the next',
+      examples: ['move me to the next week'],
       match: (m) =>
         this.guarded(m, () =>
           /(?:move|go|advance|take\s+me|proceed)\s+(?:me\s+)?(?:on\s+)?to\s+(?:the\s+)?next\s+(?:week|flow|step|module|topic|phase)/i.test(

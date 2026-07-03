@@ -22,6 +22,7 @@ export class MemoryChatCommands implements OnModuleInit {
     this.registry.register({
       name: 'memory.remember',
       description: 'Save a fact to memory',
+      examples: ['remember that I prefer video lessons'],
       match: (m) =>
         this.guarded(m, () => {
           const r = /^remember\s+(?:that\s+)?(.{3,300})$/i.exec(m.trim());
@@ -33,6 +34,7 @@ export class MemoryChatCommands implements OnModuleInit {
     this.registry.register({
       name: 'memory.forget',
       description: 'Delete a memory',
+      examples: ['forget my language preference'],
       match: (m) =>
         this.guarded(m, () => {
           const r =

@@ -21,6 +21,8 @@ export interface ChatCommandResult {
 export interface ChatCommand {
   name: string;
   description: string;
+  /** Canonical phrasings that match — used by the "did you mean" suggester. */
+  examples?: string[];
   /** Returns extracted params when the message clearly asks for this command. */
   match(message: string): Record<string, unknown> | null;
   execute(
@@ -48,11 +50,23 @@ export class ChatCommandRegistryService {
     this.commands.push(command);
   }
 
-  list(): { name: string; description: string }[] {
-    return this.commands.map(({ name, description }) => ({
+  list(): { name: string; description: string; examples: string[] }[] {
+    return this.commands.map(({ name, description, examples }) => ({
       name,
       description,
+      examples: examples ?? [],
     }));
+  }
+
+  /** True when some registered matcher would fire for this text (nothing executes). */
+  wouldMatch(message: string): boolean {
+    return this.commands.some((c) => {
+      try {
+        return c.match(message) !== null;
+      } catch {
+        return false;
+      }
+    });
   }
 
   /**

@@ -36,6 +36,7 @@ import { AgentMemoryService } from './core/agent-memory.service';
 import { AgentObservabilityService } from './core/agent-observability.service';
 import { AgentToolRegistryService } from './core/agent-tool-registry.service';
 import { ChatCommandRegistryService } from './core/chat-command-registry.service';
+import { ChatCommandSuggestService } from './core/chat-command-suggest.service';
 import { ToolsRegistrarService } from './core/agent-tools';
 import { ToolAugmentationService } from './core/tool-augmentation.service';
 import { AgentRegistryService } from './core/agent-registry.service';
@@ -100,6 +101,7 @@ import { TutorController } from './tutor.controller';
     AgentObservabilityService,
     AgentToolRegistryService,
     ChatCommandRegistryService,
+    ChatCommandSuggestService,
     ToolsRegistrarService,
     ToolAugmentationService,
     AgentRegistryService,

@@ -1,11 +1,13 @@
 import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
+import { AgentsModule } from '../agents/agents.module';
 import { StudentProfileModule } from '../student-profile/student-profile.module';
 import { Roadmap, RoadmapSchema } from '../roadmap/schemas/roadmap.schema';
 import { LedgerModule } from '../ledger/ledger.module';
 import { Flow, FlowSchema } from './schemas/flow.schema';
 import { FlowsController } from './flows.controller';
 import { FlowsService } from './flows.service';
+import { FlowsChatCommands } from './flows-chat-commands';
 import { FlowArchitectService } from './flow-architect/flow-architect.service';
 
 /**
@@ -22,9 +24,10 @@ import { FlowArchitectService } from './flow-architect/flow-architect.service';
     ]),
     StudentProfileModule,
     LedgerModule,
+    AgentsModule,
   ],
   controllers: [FlowsController],
-  providers: [FlowsService, FlowArchitectService],
+  providers: [FlowsService, FlowArchitectService, FlowsChatCommands],
   exports: [FlowsService],
 })
 export class FlowsModule {}

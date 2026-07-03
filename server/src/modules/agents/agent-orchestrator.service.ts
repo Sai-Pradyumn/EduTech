@@ -15,6 +15,7 @@ import {
   ChatCommandRegistryService,
   ChatCommandResult,
 } from './core/chat-command-registry.service';
+import { ChatCommandSuggestService } from './core/chat-command-suggest.service';
 import { AgentRegistryService } from './core/agent-registry.service';
 import { AgentSessionService } from './core/agent-session.service';
 import { AgentMemoryService } from './core/agent-memory.service';
@@ -52,6 +53,7 @@ export class AgentOrchestratorService {
     private readonly rateLimit: AiRateLimitService,
     private readonly injection: PromptInjectionGuard,
     private readonly commands: ChatCommandRegistryService,
+    private readonly commandSuggest: ChatCommandSuggestService,
   ) {}
 
   async handle(
@@ -138,6 +140,13 @@ export class AgentOrchestratorService {
           });
         }
       }
+
+      // "Did you mean" for near-miss commands: runs in parallel with the agent
+      // pass (no added latency) and only ever produces a click-to-confirm chip.
+      const suggestPromise: Promise<string | null> =
+        executed.length === 0 && request.source !== 'admin'
+          ? this.commandSuggest.suggest(request.userId, request.message)
+          : Promise.resolve(null);
 
       trace.step(
         'context',
@@ -240,6 +249,18 @@ export class AgentOrchestratorService {
               kind: 'custom' as const,
               payload: { sendText: r.undo!.text },
             })),
+          ...response.actions,
+        ].slice(0, 6);
+      }
+      const didYouMean = await suggestPromise;
+      if (didYouMean) {
+        response.actions = [
+          {
+            id: 'cmd_suggest',
+            label: `Did you mean: “${didYouMean}”?`,
+            kind: 'custom' as const,
+            payload: { sendText: didYouMean },
+          },
           ...response.actions,
         ].slice(0, 6);
       }

@@ -69,8 +69,11 @@ search, today strip. Now has focus mode.
   review"); each module has its own registrar.
 - [x] **Undo affordance** — every chat-command write returns an Undo chip that
   sends the honest inverse command back through the same audited path.
-- [ ] `P3·M` LLM-assisted intent extraction behind the deterministic matchers
-  (higher recall, keep precision-first execution confirmation).
+- [x] **LLM-assisted intent ("did you mean")** — imperative near-misses get a
+  model-rewritten canonical phrasing as a click-to-confirm chip; the rewrite
+  never executes by itself and is only offered when it would really match a
+  deterministic matcher (precision stays absolute). Runs in parallel with the
+  agent pass — zero added latency.
 
 ## Learning path
 
@@ -90,8 +93,9 @@ control.
 ### Flows (graph learning) — bar: skill trees (Duolingo/Khan)
 Strong: dependency graph, node types, weak-area repair nodes, live agents per
 node.
-- [ ] `P2·M` Progress persistence parity with roadmap (complete-from-chat, the
-  command registry makes this one registrar).
+- [x] **Complete-from-chat** — "mark 'closures' complete in my flow" /
+  "reopen … in my flow" really update the active flow (fuzzy node resolution,
+  unlock announcements, Undo chip); ledger + repair events fire as if clicked.
 
 ### Courses — bar: Coursera/Udemy authoring
 Strong: AI-designed blueprints (goal-specific since 3e50776), lessons, quizzes,
@@ -135,6 +139,8 @@ Strong: severity/frequency, repair routing into live features.
 - [x] **Review from anywhere** — "start my review" chat command routes to the
   due queue; the daily scan nudges when reviews are due (top concept named);
   the Monday digest names the biggest open gap.
+- [x] **Repair from anywhere** — "repair my weakest area" names the worst open
+  gap (severity + frequency) and opens a tutor repair session on exactly it.
 
 ## Knowledge & content
 
@@ -195,8 +201,8 @@ Strong: streaks, confetti, certificates, immutable ledger.
 ## Cross-cutting themes (the real industry gap)
 
 1. **Actions from language** — shipped for roadmap, daily plan, courses,
-   memory and mistakes (one registrar per module, all with Undo); flows are
-   the last surface without one.
+   memory, mistakes AND flows (one registrar per module, all with Undo), plus
+   a "did you mean" suggester for near-miss phrasings.
 2. **Every insight must route somewhere** — any card that names a topic must
    deep-link into learning it (roadmap → tutor shipped; apply to mistakes,
    twin, readiness, resources).

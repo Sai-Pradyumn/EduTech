@@ -24,6 +24,7 @@ export class CourseChatCommands implements OnModuleInit {
     this.registry.register({
       name: 'course.archive',
       description: 'Archive a course',
+      examples: ['archive my typescript course'],
       match: (m) =>
         this.guarded(m, () => {
           const r = /^archive\s+(?:my\s+|the\s+)?(.{2,80}?)\s+course\s*$/i.exec(
@@ -37,6 +38,7 @@ export class CourseChatCommands implements OnModuleInit {
     this.registry.register({
       name: 'course.unarchive',
       description: 'Restore an archived course',
+      examples: ['restore my typescript course'],
       match: (m) =>
         this.guarded(m, () => {
           const r =
@@ -51,6 +53,7 @@ export class CourseChatCommands implements OnModuleInit {
     this.registry.register({
       name: 'course.continue',
       description: 'Continue a course where you left off',
+      examples: ['continue my course'],
       match: (m) =>
         this.guarded(m, () => {
           const r =

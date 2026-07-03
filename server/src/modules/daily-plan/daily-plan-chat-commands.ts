@@ -25,6 +25,10 @@ export class DailyPlanChatCommands implements OnModuleInit {
     this.registry.register({
       name: 'daily_plan.check_off',
       description: "Check off an item on today's plan",
+      examples: [
+        "check off 'revise recursion'",
+        "mark 'revise recursion' as done on my plan",
+      ],
       match: (m) =>
         this.guarded(m, () => {
           const r =
@@ -42,6 +46,7 @@ export class DailyPlanChatCommands implements OnModuleInit {
     this.registry.register({
       name: 'daily_plan.add_item',
       description: "Add an item to today's plan",
+      examples: ['add 30 min of system design to my plan'],
       match: (m) =>
         this.guarded(m, () => {
           const r =
