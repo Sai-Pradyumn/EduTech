@@ -28,6 +28,24 @@ export class RoadmapChatCommands implements OnModuleInit {
   onModuleInit(): void {
     // Registration order = match priority (most explicit first).
     this.registry.register({
+      name: 'roadmap.create',
+      description: 'Create a new roadmap for a topic',
+      examples: [
+        'create a roadmap for system design',
+        'make me a roadmap on data structures',
+      ],
+      match: (m) =>
+        this.guarded(m, () => {
+          const r =
+            /(?:create|generate|make|build|set\s*up|add|start)\s+(?:me\s+)?(?:a\s+|an\s+|my\s+)?(?:new\s+|personal\s+|custom\s+)?roadmap\s+(?:for|on|about|to\s+(?:learn|master|study|prepare\s+for))\s+(.{3,200})/i.exec(
+              m,
+            );
+          return r ? { goal: r[1] } : null;
+        }),
+      execute: (userId, p) => this.createRoadmap(userId, p.goal as string),
+    });
+
+    this.registry.register({
       name: 'roadmap.restore_version',
       description: 'Restore the roadmap to an earlier version',
       examples: ['restore my roadmap to version 2'],
@@ -390,6 +408,32 @@ export class RoadmapChatCommands implements OnModuleInit {
     return next
       ? `Next up: Week ${next.weekNumber} — "${next.focus}".`
       : 'That was the last open week — the roadmap is complete! 🎉';
+  }
+
+  /**
+   * Create a real roadmap entity from a chat request ("make me a roadmap for X") —
+   * the write Asta was missing: it used to only *reply* with a plan, never persist
+   * one. Uses the normal generation pipeline (profile-aware; deterministic offline).
+   */
+  private async createRoadmap(
+    userId: string,
+    goal: string,
+  ): Promise<ChatCommandResult> {
+    const clean = this.cleanNote(goal);
+    if (clean.length < 3) {
+      return {
+        ok: false,
+        summary:
+          'I couldn\'t tell what the roadmap should cover — try "create a roadmap for system design".',
+      };
+    }
+    const roadmap = await this.roadmaps.generate(userId, { goal: clean });
+    return {
+      ok: true,
+      summary: `Created a new roadmap — "${roadmap.title}" (${roadmap.weeklyPlan.length} weeks) — and made it your active plan.`,
+      route: this.route(roadmap),
+      routeLabel: 'Open roadmap',
+    };
   }
 
   private route(roadmap: RoadmapDocument): string {

@@ -46,6 +46,11 @@ function build(over: Partial<Record<string, unknown>> = {}) {
   const roadmap = over.roadmap === undefined ? activeRoadmap() : over.roadmap;
   const service = {
     findActive: jest.fn().mockResolvedValue(roadmap),
+    generate: jest
+      .fn()
+      .mockImplementation((_u: string, dto: { goal?: string }) =>
+        Promise.resolve(activeRoadmap({ title: `${dto.goal ?? 'New'} Path` })),
+      ),
     updateProgress: jest
       .fn()
       .mockImplementation(
@@ -190,6 +195,54 @@ describe('RoadmapChatCommands', () => {
     );
     expect(service.restoreVersion).toHaveBeenCalledWith('u1', 'r1', 2);
     expect(result.ok).toBe(true);
+  });
+
+  it('"make me a roadmap for system design" creates a REAL roadmap', async () => {
+    const { registry, service } = build();
+    const [result] = await registry.detectAndExecute(
+      'u1',
+      'make me a roadmap for system design',
+    );
+    expect(service.generate).toHaveBeenCalledWith('u1', {
+      goal: 'system design',
+    });
+    expect(result.ok).toBe(true);
+    expect(result.summary).toContain('Created a new roadmap');
+    expect(result.route).toBe('/app/roadmap/r1');
+    // Creating leaves refocus/complete untouched.
+    expect(service.updateProgress).not.toHaveBeenCalled();
+    expect(service.regenerateWeek).not.toHaveBeenCalled();
+  });
+
+  it('create receives the roadmap invalidation receipt', async () => {
+    const { registry } = build();
+    const [result] = await registry.detectAndExecute(
+      'u1',
+      'create a roadmap for data structures',
+    );
+    expect(result.affects).toEqual(['roadmap', 'dashboard', 'intelligence']);
+  });
+
+  it('"can you create a roadmap?" is a question → never creates', async () => {
+    const { registry, service } = build();
+    const results = await registry.detectAndExecute(
+      'u1',
+      'can you create a roadmap for me?',
+    );
+    expect(results).toEqual([]);
+    expect(service.generate).not.toHaveBeenCalled();
+  });
+
+  it('"change my roadmap to focus on interviews" still reworks a week (not create)', async () => {
+    const { registry, service } = build({
+      roadmap: activeRoadmap({ completedWeeks: [1] }),
+    });
+    await registry.detectAndExecute(
+      'u1',
+      'change my roadmap to focus on interviews',
+    );
+    expect(service.generate).not.toHaveBeenCalled();
+    expect(service.regenerateWeek).toHaveBeenCalled();
   });
 
   it('questions NEVER write ("how do I mark week 2 as complete?")', async () => {
