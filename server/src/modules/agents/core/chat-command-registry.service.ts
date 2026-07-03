@@ -94,15 +94,36 @@ export class ChatCommandRegistryService {
   }
 
   /**
-   * First matching command wins (one state change per message keeps confirmations
-   * unambiguous). A command failure degrades to an honest "couldn't do it" result —
-   * never a failed chat turn.
+   * Run the write commands in a message. A single clause runs the first matching
+   * command (one change per clause keeps confirmations unambiguous). A compound
+   * message split by explicit connectors ("do X; then Y", newlines) runs one
+   * command PER clause — so "mark week 2 complete; log recursion as a weak area"
+   * really does both — while a distinct command runs at most once. Failures degrade
+   * to an honest "couldn't do it" result, never a failed turn.
    */
   async detectAndExecute(
     userId: string,
     message: string,
   ): Promise<ChatCommandResult[]> {
+    const clauses = this.splitClauses(message);
+    const results: ChatCommandResult[] = [];
+    const usedCommands = new Set<string>();
+    for (const clause of clauses) {
+      const result = await this.runFirstMatch(userId, clause, usedCommands);
+      if (result) results.push(result);
+      if (results.length >= 4) break; // bound the fan-out
+    }
+    return results;
+  }
+
+  /** Run the first (unused) command that matches `message`, or null if none. */
+  private async runFirstMatch(
+    userId: string,
+    message: string,
+    usedCommands: Set<string>,
+  ): Promise<ChatCommandResult | null> {
     for (const command of this.commands) {
+      if (usedCommands.has(command.name)) continue;
       let params: Record<string, unknown> | null = null;
       try {
         params = command.match(message);
@@ -118,26 +139,39 @@ export class ChatCommandRegistryService {
         const result = await command.execute(userId, params);
         if (result.ok) {
           this.contextEngine.invalidate(userId);
+          usedCommands.add(command.name);
           // Default the invalidation receipt from the command's declared domains,
-          // else from its namespace (roadmap.* → roadmap/dailyPlan/dashboard/…).
+          // else from its namespace (roadmap.* → roadmap/dashboard/intelligence/…).
           if (!result.affects) {
             result.affects =
               command.affects ?? DOMAIN_DEFAULTS[command.name.split('.')[0]];
           }
         }
-        return [result];
+        return result;
       } catch (err) {
         this.logger.warn(
           `[CHAT-COMMAND] "${command.name}" failed: ${(err as Error).message}`,
         );
-        return [
-          {
-            ok: false,
-            summary: `I tried to ${command.description.toLowerCase()}, but it failed — nothing was changed.`,
-          },
-        ];
+        return {
+          ok: false,
+          summary: `I tried to ${command.description.toLowerCase()}, but it failed — nothing was changed.`,
+        };
       }
     }
-    return [];
+    return null;
+  }
+
+  /**
+   * Split a message into imperative clauses on EXPLICIT connectors only —
+   * semicolons, newlines, "and then", "and also", "then". Deliberately not a bare
+   * "and" (it lives inside real command args like "async and await"), so a single
+   * command is never split apart.
+   */
+  private splitClauses(message: string): string[] {
+    const parts = message
+      .split(/\s*(?:;|\n|\band then\b|\band also\b|\bthen\b)\s*/i)
+      .map((s) => s.trim())
+      .filter((s) => s.length > 2);
+    return parts.length > 1 ? parts : [message.trim()];
   }
 }
