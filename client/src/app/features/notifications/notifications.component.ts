@@ -3,6 +3,7 @@ import { Router } from '@angular/router';
 import { ButtonComponent } from '../../shared/ui/button.component';
 import { CardComponent } from '../../shared/ui/card.component';
 import { EmptyStateComponent } from '../../shared/ui/empty-state.component';
+import { OfflineNoticeComponent } from '../../shared/ui/offline-notice.component';
 import { SkeletonComponent } from '../../shared/ui/skeleton.component';
 import { NotificationService, NotificationView } from '../../core/services/notification.service';
 
@@ -14,7 +15,7 @@ import { NotificationService, NotificationView } from '../../core/services/notif
 @Component({
     selector: 'asta-notifications',
     changeDetection: ChangeDetectionStrategy.OnPush,
-    imports: [ButtonComponent, CardComponent, EmptyStateComponent, SkeletonComponent],
+    imports: [ButtonComponent, CardComponent, EmptyStateComponent, SkeletonComponent, OfflineNoticeComponent],
     template: `
     <header class="asta-page-command-header">
       <div class="min-w-0">
@@ -26,6 +27,8 @@ import { NotificationService, NotificationView } from '../../core/services/notif
         <asta-btn variant="ghost" size="sm" (click)="refresh()" [disabled]="loading()">Refresh</asta-btn>
       </div>
     </header>
+
+    <asta-offline-notice context="Your feed can't refresh" />
 
     @if (loading()) {
       <asta-card><asta-skeleton h="220px" /></asta-card>

@@ -4,6 +4,7 @@ import { CardComponent } from '../../shared/ui/card.component';
 import { EmptyStateComponent } from '../../shared/ui/empty-state.component';
 import { SkeletonComponent } from '../../shared/ui/skeleton.component';
 import { ShowMoreComponent } from '../../shared/ui/show-more.component';
+import { OfflineNoticeComponent } from '../../shared/ui/offline-notice.component';
 import { windowedList } from '../../shared/utils/windowed-list';
 import { ledgerKindMeta, LedgerEntry, LedgerKind, LedgerService, LedgerStats, VerificationLevel } from '../../core/services/ledger.service';
 
@@ -18,7 +19,7 @@ const VER_META: Record<VerificationLevel, { label: string; tone: string }> = {
 @Component({
     selector: 'asta-ledger',
     changeDetection: ChangeDetectionStrategy.OnPush,
-    imports: [ButtonComponent, CardComponent, EmptyStateComponent, SkeletonComponent, ShowMoreComponent],
+    imports: [ButtonComponent, CardComponent, EmptyStateComponent, SkeletonComponent, ShowMoreComponent, OfflineNoticeComponent],
     template: `
     <header class="asta-page-command-header">
       <div class="min-w-0">
@@ -30,6 +31,8 @@ const VER_META: Record<VerificationLevel, { label: string; tone: string }> = {
         <asta-btn variant="ghost" size="sm" (click)="refresh()" [disabled]="loading()">Refresh</asta-btn>
       </div>
     </header>
+
+    <asta-offline-notice context="Your proof timeline can't refresh" />
 
     @if (loading()) {
       <div class="grid gap-3 sm:grid-cols-3 mb-4">@for (i of [1,2,3]; track i) { <asta-card><asta-skeleton h="60px" /></asta-card> }</div>

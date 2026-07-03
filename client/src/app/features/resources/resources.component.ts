@@ -10,6 +10,7 @@ import { FormsModule } from '@angular/forms';
 import { ButtonComponent } from '../../shared/ui/button.component';
 import { CardComponent } from '../../shared/ui/card.component';
 import { EmptyStateComponent } from '../../shared/ui/empty-state.component';
+import { OfflineNoticeComponent } from '../../shared/ui/offline-notice.component';
 import { SkeletonComponent } from '../../shared/ui/skeleton.component';
 import { ToastService } from '../../core/services/toast.service';
 import {
@@ -41,7 +42,7 @@ const LEVELS: { key: ResourceLevel | ''; label: string }[] = [
 @Component({
   selector: 'asta-resources',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormsModule, ButtonComponent, CardComponent, EmptyStateComponent, SkeletonComponent],
+  imports: [FormsModule, ButtonComponent, CardComponent, EmptyStateComponent, SkeletonComponent, OfflineNoticeComponent],
   template: `
     <header class="asta-page-command-header">
       <div class="min-w-0">
@@ -53,6 +54,8 @@ const LEVELS: { key: ResourceLevel | ''; label: string }[] = [
         <asta-btn variant="ghost" size="sm" (click)="refresh()" [disabled]="loading()">Refresh</asta-btn>
       </div>
     </header>
+
+    <asta-offline-notice context="The catalog can't refresh" />
 
     <!-- Community submission — pending until an admin approves -->
     @if (suggesting()) {

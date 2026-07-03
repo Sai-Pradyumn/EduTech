@@ -9,6 +9,7 @@ import { OrgContextService } from '../../core/services/org-context.service';
 import { ToastService } from '../../core/services/toast.service';
 import { CommunityChannel, CommunityReply, CommunityReport, CommunityThread, Project, ThreadKind } from '../../core/models';
 import { ShowMoreComponent } from '../../shared/ui/show-more.component';
+import { OfflineNoticeComponent } from '../../shared/ui/offline-notice.component';
 import { windowedList } from '../../shared/utils/windowed-list';
 
 /**
@@ -19,7 +20,7 @@ import { windowedList } from '../../shared/utils/windowed-list';
 @Component({
     selector: 'asta-community',
     changeDetection: ChangeDetectionStrategy.OnPush,
-    imports: [FormsModule, DatePipe, RouterLink, ShowMoreComponent],
+    imports: [FormsModule, DatePipe, RouterLink, ShowMoreComponent, OfflineNoticeComponent],
     template: `
     <!-- Command header -->
     <header class="asta-page-command-header">
@@ -28,6 +29,8 @@ import { windowedList } from '../../shared/utils/windowed-list';
         <span class="goal-pill"><span class="dot"></span>Ask, discuss & showcase across your org channels</span>
       </div>
     </header>
+
+    <asta-offline-notice context="Threads can't load or post" />
 
     <div class="grid gap-5 lg:grid-cols-[minmax(260px,320px)_1fr]">
       <!-- Left: channels + thread list -->
