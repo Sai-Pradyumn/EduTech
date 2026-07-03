@@ -111,7 +111,12 @@ export class ResourcesService implements OnModuleInit {
     if (filter.q?.trim()) {
       const rx = new RegExp(this.escapeRegex(filter.q.trim()), 'i');
       conditions.push({
-        $or: [{ title: rx }, { description: rx }, { provider: rx }, { topics: rx }],
+        $or: [
+          { title: rx },
+          { description: rx },
+          { provider: rx },
+          { topics: rx },
+        ],
       });
     }
     query.$and = conditions;
@@ -264,7 +269,10 @@ export class ResourcesService implements OnModuleInit {
     return this.toView(doc.toObject(), null, userId);
   }
 
-  async toggleUpvote(userId: string, resourceId: string): Promise<ResourceView> {
+  async toggleUpvote(
+    userId: string,
+    resourceId: string,
+  ): Promise<ResourceView> {
     if (!Types.ObjectId.isValid(resourceId))
       throw new NotFoundException('Resource not found');
     const doc = await this.resources.findById(resourceId).exec();
@@ -291,7 +299,11 @@ export class ResourcesService implements OnModuleInit {
     if (!Types.ObjectId.isValid(resourceId))
       throw new NotFoundException('Resource not found');
     const doc = await this.resources
-      .findByIdAndUpdate(resourceId, { $set: { status: 'approved' } }, { new: true })
+      .findByIdAndUpdate(
+        resourceId,
+        { $set: { status: 'approved' } },
+        { new: true },
+      )
       .lean()
       .exec();
     if (!doc) throw new NotFoundException('Resource not found');

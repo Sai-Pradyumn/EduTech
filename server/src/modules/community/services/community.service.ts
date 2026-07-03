@@ -419,8 +419,7 @@ export class CommunityService {
         { $set: { status: 'resolved' } },
       )
       .exec();
-    if (res.matchedCount === 0)
-      throw new NotFoundException('Report not found');
+    if (res.matchedCount === 0) throw new NotFoundException('Report not found');
     return { ok: true };
   }
 
