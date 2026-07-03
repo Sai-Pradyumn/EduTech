@@ -24,8 +24,22 @@ jobs:
           # Build-time only; runtime secrets are injected by the deploy environment.
           JWT_SECRET: ci-build-not-a-secret
           JWT_REFRESH_SECRET: ci-build-not-a-secret
-      - name: Test (server unit tests)
-        run: npm test --if-present
+      - name: Test (server unit tests + coverage)
+        run: npm run test:cov --workspace server
+      - name: Generate coverage badge
+        run: node scripts/coverage-badge.mjs
+      - name: Upload coverage report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: server-coverage
+          path: |
+            server/coverage/lcov-report/
+            server/coverage/coverage-summary.json
+            .github/coverage-badge.svg
+          retention-days: 7
+      - name: Client unit tests
+        run: npm test --workspace client --if-present
 
   server-e2e:
     runs-on: ubuntu-latest

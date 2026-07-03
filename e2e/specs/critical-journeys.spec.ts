@@ -74,6 +74,46 @@ test.describe('student critical journeys', () => {
     });
   });
 
+  test('quiz studio: generate → take → submit, and the ledger renders proof', async ({ page }) => {
+    await loginAsStudent(page);
+
+    // The Proof-of-Learning ledger is an authenticated surface — it must render
+    // (with events or an honest empty state) once we're signed in.
+    await page.goto('/app/ledger', { waitUntil: 'domcontentloaded' });
+    await expect(
+      page.locator('#main-content').getByRole('heading', { name: /proof-of-learning/i }),
+    ).toBeVisible({ timeout: 20_000 });
+
+    // Generate a quiz (deterministic in mock mode), take it and submit it.
+    await page.goto('/app/quizzes', { waitUntil: 'domcontentloaded' });
+    await page.getByPlaceholder(/recursion, sql joins/i).fill('Arrays and recursion');
+    await page.getByRole('button', { name: /generate quiz/i }).click();
+
+    // The freshly generated quiz surfaces a Take button (or the app may drop us
+    // straight into the attempt with a Submit button — handle both).
+    const submit = page.getByRole('button', { name: /submit quiz/i });
+    const take = page.getByRole('button', { name: /^(take|retake)/i }).first();
+    await expect(take.or(submit)).toBeVisible({ timeout: 45_000 });
+    if (await take.isVisible().catch(() => false)) await take.click();
+    await expect(submit).toBeVisible({ timeout: 20_000 });
+
+    // Answer every question (first option for MCQ, a stub for free-text) so the
+    // Submit button unlocks, then submit and assert a real score renders.
+    const questions = page.locator('.q-flow .motion-card-reveal');
+    const count = await questions.count();
+    for (let i = 0; i < count; i++) {
+      const card = questions.nth(i);
+      const opt = card.locator('label.opt').first();
+      if (await opt.count()) await opt.click();
+      else await card.locator('textarea').first().fill('My answer.');
+    }
+    await expect(submit).toBeEnabled();
+    await submit.click();
+    await expect(
+      page.locator('#main-content').getByRole('heading', { name: /correct/i }),
+    ).toBeVisible({ timeout: 30_000 });
+  });
+
   test('resources: seeded catalog renders and saving builds the library', async ({ page }) => {
     await loginAsStudent(page);
     await page.goto('/app/resources', { waitUntil: 'domcontentloaded' });

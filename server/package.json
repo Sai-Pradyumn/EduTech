@@ -99,10 +99,20 @@
       "^.+\\.(t|j)s$": "ts-jest"
     },
     "collectCoverageFrom": [
-      "**/*.(t|j)s"
+      "**/*.(t|j)s",
+      "!**/*.spec.ts",
+      "!**/*.module.ts",
+      "!main.ts",
+      "!scripts/**"
+    ],
+    "coverageReporters": [
+      "text-summary",
+      "json-summary",
+      "lcov"
     ],
     "coverageDirectory": "../coverage",
     "testEnvironment": "node",
+    "testTimeout": 15000,
     "forceExit": true
   }
 }
