@@ -290,10 +290,46 @@ export class AgentWorkspaceComponent implements OnInit {
     this.push(assistant);
 
     this.agent.stream({ message, sessionId: this.sessionId, agentType: this.cfg().agentType }).subscribe({
-      next: (e) => this.onEvent(e, assistant),
+      next: (e) => {
+        // Terminal stream error events complete (not error) the socket observable —
+        // route them to the REST fallback so a recoverable failure still answers.
+        if (e.type === 'error') {
+          this.restFallback(message, assistant);
+          return;
+        }
+        this.onEvent(e, assistant);
+      },
+      error: () => this.restFallback(message, assistant),
+    });
+  }
+
+  /** Non-streaming recovery: keep partial content, else answer via the REST endpoint. */
+  private restFallback(message: string, assistant: ChatMsg): void {
+    if (assistant.content) {
+      assistant.streaming = false;
+      this.bump();
+      this.busy.set(false);
+      this.liveStatus.set('Response ready.');
+      return;
+    }
+    this.agent.send(message, { sessionId: this.sessionId, agentType: this.cfg().agentType }).subscribe({
+      next: (r) => {
+        this.sessionId = r.sessionId;
+        assistant.content = r.response.answer;
+        assistant.visualBlocks = r.response.visualBlocks;
+        assistant.actions = r.response.actions;
+        assistant.followUps = r.response.followUpQuestions;
+        assistant.recommended = r.response.recommendedNextActions;
+        assistant.agentType = r.response.agentType;
+        assistant.messageId = r.messageId;
+        assistant.streaming = false;
+        this.bump();
+        this.busy.set(false);
+        this.liveStatus.set('Response ready.');
+      },
       error: () => {
         assistant.streaming = false;
-        assistant.failed = true;
+        if (!assistant.content) assistant.failed = true;
         this.bump();
         this.busy.set(false);
         this.liveStatus.set('The response failed.');

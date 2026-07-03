@@ -515,7 +515,16 @@ export class AstaOsComponent {
       .stream({ message, sessionId: this.sessionId, mode, documentIds })
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
-        next: (e) => this.onEvent(e, asta),
+        next: (e) => {
+          // A terminal stream error event (transport/auth/busy/orchestrator) completes
+          // the socket observable rather than erroring it — route it to the REST
+          // fallback so a recoverable failure still gets answered, not failed.
+          if (e.type === 'error') {
+            this.onStreamError(message, asta);
+            return;
+          }
+          this.onEvent(e, asta);
+        },
         error: () => this.onStreamError(message, asta),
       });
   }
@@ -574,6 +583,12 @@ export class AstaOsComponent {
   }
 
   protected closeTab(id: string): void {
+    // Don't let a tab close mid-stream — the live turn is bound to this tab and
+    // would be orphaned/lost if the tab list changed under it (P0 tab/history race).
+    if (this.busy() && id === this.activeTabId()) {
+      this.toast.error('Asta is still answering — let it finish before closing this tab.');
+      return;
+    }
     const ts = this.tabs();
     if (ts.length <= 1) {
       this.clearLive();
@@ -615,30 +630,52 @@ export class AstaOsComponent {
     return first.content.length > 26 ? `${first.content.slice(0, 26)}…` : first.content;
   }
 
-  /** Reopen a past server session into the active tab. */
+  /**
+   * Reopen a past server session. Persists the current tab first and opens the
+   * history session in its OWN tab (or switches to it if already open), so a live
+   * tab is never clobbered mid-stream (P0 tab/history race).
+   */
   protected loadSession(id: string): void {
+    if (this.busy()) {
+      this.toast.error('Asta is still answering — try again in a moment.');
+      return;
+    }
+    const existing = this.tabs().find((t) => t.sessionId === id);
+    if (existing) {
+      this.switchTab(existing.id);
+      return;
+    }
+    this.persistActiveTab();
     this.agent
       .getMessages(id)
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: (msgs) => {
+          const turns: AstaTurn[] = msgs.map((m) => ({
+            role: m.role === 'assistant' ? 'asta' : 'user',
+            content: m.content,
+            blocks: m.visualBlocks ?? [],
+            actions: m.actions ?? [],
+            followUps: m.followUpQuestions ?? [],
+            recommended: m.recommendedNextActions ?? [],
+            sources: m.sources ?? [],
+            agentType: m.agentType,
+            confidence: m.confidence,
+            streaming: false,
+            failed: false,
+            messageId: m.id,
+          }));
+          const tabId = `t${this.tabSeq++}`;
+          this.tabs.update((ts) => [
+            ...ts,
+            { id: tabId, title: this.tabTitle(turns), turns, sessionId: id },
+          ]);
+          this.activeTabId.set(tabId);
+          this.turns.set(turns);
           this.sessionId = id;
-          this.turns.set(
-            msgs.map((m) => ({
-              role: m.role === 'assistant' ? 'asta' : 'user',
-              content: m.content,
-              blocks: m.visualBlocks ?? [],
-              actions: m.actions ?? [],
-              followUps: m.followUpQuestions ?? [],
-              recommended: m.recommendedNextActions ?? [],
-              sources: m.sources ?? [],
-              agentType: m.agentType,
-              confidence: m.confidence,
-              streaming: false,
-              failed: false,
-              messageId: m.id,
-            })),
-          );
+          this.activity.set([]);
+          this.errored.set(false);
+          this.lastPrompt = '';
         },
         error: () => this.toast.error('Couldn’t load that session'),
       });

@@ -242,12 +242,20 @@ export class AgentSessionService {
     sessionId: string,
     content: string,
   ): Promise<AgentMessageDocument> {
-    return this.messages.create({
+    const msg = await this.messages.create({
       session: new Types.ObjectId(sessionId),
       user: new Types.ObjectId(userId),
       role: 'user',
       content,
     });
+    // Title + order the session from the FIRST user message immediately — so a
+    // session is named even if the agent fails before it can reply (was left as
+    // "New session" until the assistant message saved).
+    await this.sessions.updateOne(
+      { _id: sessionId },
+      { lastMessageAt: new Date(), ...(await this.maybeTitle(sessionId)) },
+    );
+    return msg;
   }
 
   async addAssistantMessage(
@@ -280,16 +288,46 @@ export class AgentSessionService {
     return msg;
   }
 
-  /** Title the session from its first user message. */
+  /** Title the session from its first user message (with deterministic cleanup). */
   private async maybeTitle(sessionId: string): Promise<{ title?: string }> {
     const session = await this.sessions.findById(sessionId);
     if (session && session.title === 'New session') {
       const first = await this.messages
         .findOne({ session: sessionId, role: 'user' })
         .sort({ createdAt: 1 });
-      if (first) return { title: first.content.slice(0, 60) };
+      if (first) return { title: this.deriveTitle(first.content) };
     }
     return {};
+  }
+
+  /**
+   * Turn a raw first-message into a readable, semantic session title: strip
+   * politeness + leading imperatives ("add", "create", "explain"…) and trailing
+   * "…to the roadmap screen" destinations so the title is the SUBJECT, sentence-case
+   * it, and truncate at a word boundary. "Add system design roadmap to the roadmap
+   * screen" → "System design roadmap".
+   */
+  private deriveTitle(raw: string): string {
+    let t = raw.trim().replace(/\s+/g, ' ');
+    t = t.replace(
+      /^(hey\s+asta[,\s]+|asta[,\s]+|please\s+|can you\s+|could you\s+|i want to\s+|i'd like to\s+)/i,
+      '',
+    );
+    t = t.replace(
+      /^(add|create|make|generate|build|give me|show me|help me(?: with)?|explain|teach me(?: about)?|tell me about|update|set up|set)\s+/i,
+      '',
+    );
+    t = t.replace(
+      /\s+(?:to|on|in|for)\s+(?:the\s+)?[\w\s-]{1,30}\s+(?:screen|page|section|tab|view)\b.*$/i,
+      '',
+    );
+    t = t.trim();
+    if (!t) t = raw.trim();
+    const capped = t.charAt(0).toUpperCase() + t.slice(1);
+    if (capped.length <= 60) return capped;
+    const cut = capped.slice(0, 60);
+    const lastSpace = cut.lastIndexOf(' ');
+    return `${(lastSpace > 30 ? cut.slice(0, lastSpace) : cut).trim()}…`;
   }
 
   setSessionAgent(
