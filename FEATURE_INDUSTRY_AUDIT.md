@@ -110,7 +110,9 @@ voice scripts, capstone, certificates. **Now takeable: Learn mode.**
 Strong: generated plan, modes, carry-over, streak, ledger events.
 - [x] **Chat commands** — "check off 'revise recursion'", "add 30 min of X to
   my plan" execute for real from any chat (with Undo).
-- [ ] `P3·S` Time-of-day awareness (morning vs evening plan framing).
+- [x] **Time-of-day awareness** — the Today header greets by clock and frames
+  the plan for the moment (fresh start / midday check-in with items left /
+  evening wind-down / late-session restraint / everything-done rest).
 
 ## Practice & assessment
 
@@ -121,13 +123,18 @@ shuffle already exist; spaced repetition (SM-2-lite) already exists on mistakes
 with a due queue, review UI and dashboard strip.
 - [x] **Test me, don't trust me** — real MCQ re-test per due concept (answers
   stay server-side; grading feeds the SM-2 scheduler).
-- [ ] `P3·S` Per-question timing analytics.
+- [x] **Per-question timing analytics** — each answer is timestamped; results
+  show time per question, average pace, the slowest question, and flags wrong
+  answers given in under half your average time ("rushed").
 
 ### Interview — bar: Pramp/Interviewing.io
 Strong: AI questions tailored to role + weak areas, scoring, PDF report.
 - [x] **Voice mode** — questions read aloud (TTS), answers dictated (STT),
   auto-reads the next question after each submit; toggle in the session header.
-- [ ] `P3·M` Question-bank difficulty ladder per company archetype.
+- [x] **Company-archetype difficulty ladder** — pick Startup / Big Tech /
+  Consulting / Enterprise and the generated questions follow that company's
+  interviewing style on a strict easy→hard ladder; the style is shown on the
+  session and report.
 
 ### Practice Studio (code) — bar: LeetCode editor
 Strong: real execution (Piston), problems. **Corrected:** test-case grading

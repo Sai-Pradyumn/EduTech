@@ -15,7 +15,7 @@ import {
   InterviewSessionDocument,
 } from './schemas/interview-session.schema';
 import { INTERVIEW_TYPE_META, InterviewType } from './interview-bank';
-import { InterviewCoachAgent } from './interview.agent';
+import { CompanyArchetype, InterviewCoachAgent } from './interview.agent';
 
 /**
  * Phase 9 · Interview OS — runs a mock interview grounded in the learner's target role: generates
@@ -37,6 +37,7 @@ export class InterviewService {
     userId: string,
     type: InterviewType,
     roleId?: string,
+    archetype?: CompanyArchetype,
   ): Promise<InterviewSessionDocument> {
     const profile = await this.profiles.findByUser(userId);
     const role = roleId
@@ -44,12 +45,18 @@ export class InterviewService {
       : matchRoleFromGoal(profile?.mainGoal ?? '').title;
     // Live AI → questions tailored to the role and this learner's profile
     // (goal, skills, weak areas); the deterministic bank is the offline path.
-    const generated = await this.coach.generateQuestions(userId, type, role, {
-      mainGoal: profile?.mainGoal,
-      currentSkillLevel: profile?.currentSkillLevel,
-      currentSkills: profile?.currentSkills,
-      weakAreas: profile?.weakAreas,
-    });
+    const generated = await this.coach.generateQuestions(
+      userId,
+      type,
+      role,
+      {
+        mainGoal: profile?.mainGoal,
+        currentSkillLevel: profile?.currentSkillLevel,
+        currentSkills: profile?.currentSkills,
+        weakAreas: profile?.weakAreas,
+      },
+      archetype,
+    );
     const questions = generated.map((q) => ({
       id: randomUUID(),
       question: q,
@@ -61,6 +68,7 @@ export class InterviewService {
       user: new Types.ObjectId(userId),
       type,
       role,
+      archetype: archetype ?? '',
       questions,
       currentIndex: 0,
       status: 'active',

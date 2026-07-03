@@ -14,8 +14,8 @@ import { DAILY_KIND_GLYPH, DailyDay, DailyItem, DailyPlan, DailyPlanMode, DailyP
     template: `
     <header class="asta-page-command-header">
       <div class="min-w-0">
-        <h1 class="text-[26px] leading-tight mb-2 grad-flow">Today</h1>
-        <span class="goal-pill"><span class="dot"></span>Daily Autopilot · your plan, built from your flow, gaps & roadmap</span>
+        <h1 class="text-[26px] leading-tight mb-2 grad-flow">{{ dayGreeting() }}</h1>
+        <span class="goal-pill"><span class="dot"></span>{{ dayFraming() }}</span>
       </div>
       <div class="flex gap-2.5 shrink-0">
         <asta-btn variant="ghost" size="sm" [disabled]="busy()" (click)="carryOver()" title="Pull yesterday's unfinished items into today">Carry over</asta-btn>
@@ -245,6 +245,28 @@ export class TodayComponent implements OnDestroy {
     const p = this.plan();
     return p && p.items.length ? Math.round((p.completed / p.items.length) * 100) : 0;
   });
+
+  // ── Time-of-day awareness — the plan reads differently at 8am vs 9pm ──
+
+  dayGreeting(): string {
+    const h = new Date().getHours();
+    if (h >= 5 && h < 12) return 'Good morning';
+    if (h >= 12 && h < 17) return 'Good afternoon';
+    if (h >= 17 && h < 22) return 'Good evening';
+    return 'Late session';
+  }
+
+  dayFraming(): string {
+    const h = new Date().getHours();
+    const p = this.plan();
+    const total = p?.items.length ?? 0;
+    const left = total - (p?.items.filter((i) => i.done).length ?? 0);
+    if (total > 0 && left === 0) return 'Everything done — log a reflection, then bank the win and rest.';
+    if (h >= 5 && h < 12) return 'Daily Autopilot · a fresh plan from your flow, gaps & roadmap — item one is the hardest to start.';
+    if (h >= 12 && h < 17) return `Daily Autopilot · midday check-in — ${left || 'your'} item${left === 1 ? '' : 's'} left fits the afternoon.`;
+    if (h >= 17 && h < 22) return 'Daily Autopilot · evening wind-down — finish what’s realistic, then reflect on today.';
+    return 'Daily Autopilot · late session — one focused item beats an all-nighter.';
+  }
 
   /** Projected finish time if the learner does the remaining items back-to-back from now. */
   readonly finishBy = computed(() => {

@@ -15,6 +15,8 @@ export interface InterviewSession {
   type: string;
   typeLabel: string;
   role: string;
+  archetype: string | null;
+  archetypeLabel: string | null;
   status: 'active' | 'finished';
   currentIndex: number;
   total: number;
@@ -29,12 +31,17 @@ export interface InterviewSession {
   createdAt: string;
 }
 export interface InterviewTypeMeta { type: string; label: string; focus: string }
+export interface InterviewArchetype { id: string; label: string }
 
 @Injectable({ providedIn: 'root' })
 export class InterviewService {
   private readonly api = inject(ApiService);
   types(): Observable<InterviewTypeMeta[]> { return this.api.get<InterviewTypeMeta[]>('/interview/types'); }
-  start(type: string, roleId?: string): Observable<InterviewSession> { return this.api.post<InterviewSession>('/interview/start', { type, roleId }); }
+  /** Company styles that tune the question difficulty ladder. */
+  archetypes(): Observable<InterviewArchetype[]> { return this.api.get<InterviewArchetype[]>('/interview/archetypes'); }
+  start(type: string, roleId?: string, archetype?: string): Observable<InterviewSession> {
+    return this.api.post<InterviewSession>('/interview/start', { type, roleId, ...(archetype ? { archetype } : {}) });
+  }
   respond(id: string, answer: string): Observable<InterviewSession> { return this.api.post<InterviewSession>(`/interview/${id}/respond`, { answer }); }
   skip(id: string): Observable<InterviewSession> { return this.api.post<InterviewSession>(`/interview/${id}/skip`, {}); }
   finish(id: string): Observable<InterviewSession> { return this.api.post<InterviewSession>(`/interview/${id}/finish`); }

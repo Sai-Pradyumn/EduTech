@@ -305,6 +305,7 @@ const DIFFS: Difficulty[] = ['beginner', 'intermediate', 'advanced'];
                 <div class="flex-1">
                   <h2 class="text-[18px] font-display font-semibold mb-1"><span [astaCount]="r.evaluation.score" suffix="%"></span> · {{ r.evaluation.correctCount }}/{{ r.evaluation.total }} correct</h2>
                   <p class="text-sm text-txt-soft">{{ r.evaluation.feedback }}</p>
+                  @if (paceInsight(); as pi) { <p class="text-[12px] text-txt-mute mt-1">⏱ {{ pi }}</p> }
                   <div class="flex gap-2 mt-3">
                     <asta-btn variant="accent" size="sm" astaMagnetic (click)="retake()">Retake</asta-btn>
                     <asta-btn variant="ghost" size="sm" (click)="backHome()">Back to studio</asta-btn>
@@ -332,6 +333,7 @@ const DIFFS: Difficulty[] = ['beginner', 'intermediate', 'advanced'];
                     <p class="text-sm font-medium mb-1">
                       <span [style.color]="rev.correct ? 'var(--green-deep)' : 'var(--coral-deep)'">{{ rev.correct ? '✓' : '✗' }}</span>
                       <span class="text-txt-mute font-mono mx-1">{{ p.n }}.</span>{{ rev.prompt }}
+                      @if (spentLabel(p.n - 1); as t) { <span class="rev-time">⏱ {{ t }}</span> }
                     </p>
                     @if (rev.type === 'mcq') {
                       <div class="space-y-1 ml-5">
@@ -398,6 +400,7 @@ const DIFFS: Difficulty[] = ['beginner', 'intermediate', 'advanced'];
       .q-nav-dot.done { color: var(--green-deep); border-color: color-mix(in oklch, var(--green) 45%, var(--paper-3)); background: oklch(0.80 0.16 150 / .08); }
       .rev-tabs { display: inline-flex; gap: 2px; background: var(--paper-2); border: 1px solid var(--paper-3); border-radius: 999px; padding: 3px; }
       .rev-tab { font-size: 11.5px; padding: 4px 11px; border-radius: 999px; border: none; background: transparent; color: var(--text-soft); cursor: pointer; font-variant-numeric: tabular-nums; }
+      .rev-time { font-size: 11px; font-family: var(--mono); color: var(--text-mute); margin-left: 6px; white-space: nowrap; }
       .rev-tab.on { background: color-mix(in oklch, var(--green) 20%, transparent); color: var(--text); }
     `,
     ]
@@ -486,6 +489,36 @@ export class QuizStudioComponent implements OnInit, OnDestroy {
 
   private answers = signal<Map<number, QuizAnswer>>(new Map());
   private startedAt = 0;
+
+  // ── Per-question timing (elapsed seconds at each question's LAST answer change) ──
+  private answerAt = new Map<number, number>();
+  /** Original question index → seconds spent (gap between successive answer events). */
+  readonly questionSpent = signal<Map<number, number>>(new Map());
+  /** "⏱ m:ss" for a review row, or null when the question has no timing data. */
+  spentLabel(reviewIndex: number): string | null {
+    const s = this.questionSpent().get(reviewIndex);
+    return s === undefined || s <= 0 ? null : this.fmt(s);
+  }
+  /** One honest line about pace: average, slowest, and wrong answers that look rushed. */
+  readonly paceInsight = computed(() => {
+    const r = this.result();
+    const entries = [...this.questionSpent().entries()].filter(([, s]) => s > 0);
+    if (!r || entries.length < 2) return null;
+    const avg = entries.reduce((s, [, v]) => s + v, 0) / entries.length;
+    const [slowOi, slowS] = entries.reduce((a, b) => (b[1] > a[1] ? b : a));
+    const parts = [
+      `Pace: ~${this.fmt(Math.round(avg))} per question · slowest Q${slowOi + 1} (${this.fmt(slowS)})`,
+    ];
+    const rushed = entries.filter(
+      ([oi, s]) => s < avg / 2 && r.review[oi] && !r.review[oi].correct,
+    );
+    if (rushed.length) {
+      parts.push(
+        `${rushed.map(([oi]) => `Q${oi + 1}`).join(', ')} went wrong in under half your average time — worth slowing down there`,
+      );
+    }
+    return parts.join(' · ');
+  });
 
   readonly readyDocs = computed(() => this.docs().filter((d) => d.status === 'ready'));
   readonly canGenerate = computed(() => {
@@ -640,6 +673,8 @@ export class QuizStudioComponent implements OnInit, OnDestroy {
     this.optionOrders.set(opts);
     this.answers.set(new Map());
     this.result.set(null);
+    this.answerAt = new Map();
+    this.questionSpent.set(new Map());
     this.startedAt = Date.now();
     this.view.set('take');
     this.startTimer();
@@ -662,6 +697,7 @@ export class QuizStudioComponent implements OnInit, OnDestroy {
   }
 
   setChoice(questionIndex: number, answerIndex: number): void {
+    this.answerAt.set(questionIndex, this.elapsed());
     this.answers.update((m) => {
       const next = new Map(m);
       next.set(questionIndex, { questionIndex, answerIndex });
@@ -669,11 +705,24 @@ export class QuizStudioComponent implements OnInit, OnDestroy {
     });
   }
   setText(questionIndex: number, text: string): void {
+    this.answerAt.set(questionIndex, this.elapsed());
     this.answers.update((m) => {
       const next = new Map(m);
       next.set(questionIndex, { questionIndex, text });
       return next;
     });
+  }
+
+  /** Per-question spend = gap between successive answer events, in answer order. */
+  private computeSpent(): Map<number, number> {
+    const events = [...this.answerAt.entries()].sort((a, b) => a[1] - b[1]);
+    const spent = new Map<number, number>();
+    let prev = 0;
+    for (const [oi, at] of events) {
+      spent.set(oi, Math.max(0, at - prev));
+      prev = at;
+    }
+    return spent;
   }
   answerFor(i: number): QuizAnswer | undefined {
     return this.answers().get(i);
@@ -707,6 +756,7 @@ export class QuizStudioComponent implements OnInit, OnDestroy {
     this.quizApi.submit(quiz.id, answers, Date.now() - this.startedAt).subscribe({
       next: (res) => {
         this.submitting.set(false);
+        this.questionSpent.set(this.computeSpent());
         this.result.set(res);
         this.view.set('result');
         this.refresh();

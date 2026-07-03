@@ -21,6 +21,34 @@ export interface QuestionProfile {
   weakAreas?: string[];
 }
 
+/** Company archetypes — each one shifts the interviewing style + difficulty ladder. */
+export const COMPANY_ARCHETYPES = {
+  startup: {
+    label: 'Startup',
+    style:
+      'Scrappy startup interview: practical shipping ability, breadth, ownership. Probe real building experience, ambiguity tolerance and speed-vs-quality trade-offs.',
+  },
+  big_tech: {
+    label: 'Big Tech',
+    style:
+      'Big-Tech (FAANG-style) interview: rigorous fundamentals, algorithms and data-structure depth, scalability thinking. The ladder should end at a genuinely hard question.',
+  },
+  consulting: {
+    label: 'Consulting',
+    style:
+      'Consulting-style interview: structured problem decomposition, client-ready communication, estimation. Case-flavoured questions that demand a spoken framework.',
+  },
+  enterprise: {
+    label: 'Enterprise',
+    style:
+      'Large-enterprise interview: reliability, maintainability, process discipline, cross-team collaboration and integrating with legacy systems.',
+  },
+} as const;
+export type CompanyArchetype = keyof typeof COMPANY_ARCHETYPES;
+export const ARCHETYPE_IDS = Object.keys(
+  COMPANY_ARCHETYPES,
+) as CompanyArchetype[];
+
 /**
  * Phase 9 · InterviewCoachAgent — scores a spoken/typed interview answer and gives terse, useful
  * feedback. LLM when live; a transparent deterministic heuristic otherwise (offline-safe).
@@ -41,11 +69,13 @@ export class InterviewCoachAgent {
     type: InterviewType,
     role: string,
     profile?: QuestionProfile | null,
+    archetype?: CompanyArchetype,
   ): Promise<string[]> {
     const fallback = buildQuestions(type, role);
     if (!this.ai.isLive) return fallback;
 
     const meta = INTERVIEW_TYPE_META[type];
+    const company = archetype ? COMPANY_ARCHETYPES[archetype] : undefined;
     const learner = [
       profile?.mainGoal ? `Goal: ${profile.mainGoal}` : '',
       profile?.currentSkillLevel ? `Level: ${profile.currentSkillLevel}` : '',
@@ -68,9 +98,12 @@ export class InterviewCoachAgent {
             role: 'system',
             content:
               `You are a senior interviewer running a ${meta.label} interview for a "${role}" role ` +
-              `(focus: ${meta.focus}). Write 5 sharp, realistic interview questions a real interviewer ` +
-              'would ask, tailored to this candidate. Open approachable, end harder. One question per ' +
-              'item; no numbering, no preamble.',
+              `(focus: ${meta.focus}). ` +
+              (company ? `${company.style} ` : '') +
+              'Write 5 sharp, realistic interview questions a real interviewer would ask, tailored to ' +
+              'this candidate. Build a strict difficulty ladder: question 1 is an approachable warm-up, ' +
+              'each question is clearly harder than the last, and question 5 is a genuine stretch. ' +
+              'One question per item; no numbering, no preamble.',
           },
           {
             role: 'user',

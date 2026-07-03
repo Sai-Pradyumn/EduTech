@@ -9,7 +9,7 @@ import { SkeletonComponent } from '../../shared/ui/skeleton.component';
 import { ToastService } from '../../core/services/toast.service';
 import { SpeechRecognitionService } from '../../core/services/speech-recognition.service';
 import { TextToSpeechService } from '../../core/services/text-to-speech.service';
-import { InterviewService, InterviewSession, InterviewTypeMeta } from '../../core/services/interview.service';
+import { InterviewArchetype, InterviewService, InterviewSession, InterviewTypeMeta } from '../../core/services/interview.service';
 import { printDocument, PrintSection } from '../../shared/util/print';
 import { downloadPdf } from '../../shared/util/pdf';
 
@@ -36,7 +36,7 @@ import { downloadPdf } from '../../shared/util/pdf';
             <div class="flex items-start gap-4 flex-wrap">
               <div class="text-center shrink-0"><asta-ring [value]="s.overallScore" [size]="92" /><p class="g-lbl">Overall</p></div>
               <div class="min-w-0 flex-1">
-                <p class="kicker mb-1">{{ s.typeLabel }} · {{ s.role }}</p>
+                <p class="kicker mb-1">{{ s.typeLabel }} · {{ s.role }}{{ s.archetypeLabel ? ' · ' + s.archetypeLabel + ' style' : '' }}</p>
                 <p class="summary">{{ s.summary }}</p>
                 <div class="grid grid-cols-3 gap-2 mt-3">
                   <div class="sub"><span class="sv">{{ s.technicalScore }}</span><span class="sl">Technical</span></div>
@@ -84,7 +84,7 @@ import { downloadPdf } from '../../shared/util/pdf';
           <!-- active session -->
           <asta-card class="block motion-card-reveal motion-row-primary active">
             <div class="flex items-center justify-between mb-3 gap-2 flex-wrap">
-              <p class="kicker !mb-0">{{ s.typeLabel }} · {{ s.role }}</p>
+              <p class="kicker !mb-0">{{ s.typeLabel }} · {{ s.role }}{{ s.archetypeLabel ? ' · ' + s.archetypeLabel + ' style' : '' }}</p>
               <div class="flex items-center gap-2">
                 @if (stt.supported) {
                   <button class="voice-toggle" [class.on]="voiceMode()" (click)="toggleVoice(s)"
@@ -123,6 +123,16 @@ import { downloadPdf } from '../../shared/util/pdf';
       <!-- picker + history -->
       <asta-card class="block motion-card-reveal motion-row-primary mb-4">
         <p class="kicker mb-3">Start a mock interview</p>
+        @if (archetypes().length) {
+          <div class="arch-row" role="radiogroup" aria-label="Company style">
+            <span class="arch-lbl">Company style</span>
+            @for (a of archetypes(); track a.id) {
+              <button class="arch-pill" role="radio" [attr.aria-checked]="archetype() === a.id"
+                [class.on]="archetype() === a.id" (click)="archetype.set(archetype() === a.id ? null : a.id)">{{ a.label }}</button>
+            }
+          </div>
+          <p class="arch-hint">{{ archetype() ? 'Questions climb a difficulty ladder tuned to this company style.' : 'Optional — pick a style to tune the question ladder (generic otherwise).' }}</p>
+        }
         <div class="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
           @for (t of types(); track t.type) {
             <button class="type" (click)="start(t.type)" [disabled]="busy()">
@@ -188,6 +198,11 @@ import { downloadPdf } from '../../shared/util/pdf';
     :host { display: block; }
     .copy-report { font-size: 11px; color: var(--peri, #8aa6ff); background: transparent; border: none; cursor: pointer; }
     .copy-report:hover { color: var(--green-deep); }
+    .arch-row { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-bottom: 6px; }
+    .arch-lbl { font-size: 11px; color: var(--text-mute); text-transform: uppercase; letter-spacing: .04em; margin-right: 2px; }
+    .arch-pill { font-size: 12px; padding: 4px 12px; border-radius: 999px; border: 1px solid var(--paper-3); background: var(--paper-2); color: var(--text-soft); cursor: pointer; transition: border-color .15s, background .15s; }
+    .arch-pill.on { border-color: color-mix(in oklab, var(--green) 55%, var(--paper-3)); background: color-mix(in oklab, var(--green) 12%, var(--paper-2)); color: var(--text); font-weight: 600; }
+    .arch-hint { font-size: 11.5px; color: var(--text-mute); margin-bottom: 12px; }
     .type { text-align: left; padding: 12px 14px; border: 1px solid var(--paper-3); border-radius: 12px; background: var(--paper-2); cursor: pointer; transition: border-color .15s, transform .1s; }
     .type:hover { border-color: color-mix(in oklab, var(--green) 45%, var(--paper-3)); transform: translateY(-1px); }
     .t-label { display: block; font-size: 13.5px; font-weight: 600; }
@@ -294,6 +309,9 @@ export class InterviewComponent {
     this.listening.set(false);
   }
   readonly types = signal<InterviewTypeMeta[]>([]);
+  /** Company styles that tune the question difficulty ladder (optional pick). */
+  readonly archetypes = signal<InterviewArchetype[]>([]);
+  readonly archetype = signal<string | null>(null);
   readonly sessions = signal<InterviewSession[]>([]);
   readonly session = signal<InterviewSession | null>(null);
   readonly loading = signal(true);
@@ -346,6 +364,7 @@ export class InterviewComponent {
       this.api.session(id).subscribe({ next: (s) => { this.session.set(s); this.loading.set(false); }, error: () => { this.loading.set(false); this.toast.error('Session not found'); } });
     } else {
       this.api.types().subscribe({ next: (t) => this.types.set(t), error: () => {} });
+      this.api.archetypes().subscribe({ next: (a) => this.archetypes.set(a), error: () => {} });
       this.api.sessions().subscribe({ next: (s) => { this.sessions.set(s); this.loading.set(false); }, error: () => this.loading.set(false) });
     }
   }
@@ -354,7 +373,7 @@ export class InterviewComponent {
 
   start(type: string): void {
     this.busy.set(true);
-    this.api.start(type).subscribe({ next: (s) => { this.session.set(s); this.resetTurn(); this.busy.set(false); }, error: () => { this.busy.set(false); this.toast.error('Could not start'); } });
+    this.api.start(type, undefined, this.archetype() ?? undefined).subscribe({ next: (s) => { this.session.set(s); this.resetTurn(); this.busy.set(false); }, error: () => { this.busy.set(false); this.toast.error('Could not start'); } });
   }
   open(id: string): void {
     this.loading.set(true);

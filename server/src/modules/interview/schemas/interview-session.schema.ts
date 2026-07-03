@@ -25,6 +25,8 @@ export class InterviewSession {
   type!: InterviewType;
 
   @Prop({ default: '' }) role!: string;
+  /** Company archetype the ladder was tuned for ('' = generic). */
+  @Prop({ default: '' }) archetype!: string;
   @Prop({ type: [InterviewQASchema], default: [] }) questions!: InterviewQA[];
   @Prop({ default: 0 }) currentIndex!: number;
 

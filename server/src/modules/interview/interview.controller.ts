@@ -4,6 +4,11 @@ import { AuthUser } from '../../common/interfaces';
 import { InterviewService } from './interview.service';
 import { InterviewSessionDocument } from './schemas/interview-session.schema';
 import { INTERVIEW_TYPES, INTERVIEW_TYPE_META } from './interview-bank';
+import {
+  ARCHETYPE_IDS,
+  COMPANY_ARCHETYPES,
+  CompanyArchetype,
+} from './interview.agent';
 import { RespondInterviewDto, StartInterviewDto } from './dto/interview.dto';
 
 function toView(s: InterviewSessionDocument) {
@@ -12,6 +17,10 @@ function toView(s: InterviewSessionDocument) {
     type: s.type,
     typeLabel: INTERVIEW_TYPE_META[s.type].label,
     role: s.role,
+    archetype: s.archetype || null,
+    archetypeLabel: s.archetype
+      ? (COMPANY_ARCHETYPES[s.archetype as CompanyArchetype]?.label ?? null)
+      : null,
     status: s.status,
     currentIndex: s.currentIndex,
     total: s.questions.length,
@@ -50,9 +59,20 @@ export class InterviewController {
     }));
   }
 
+  /** Company archetypes — each tunes the question ladder's style. */
+  @Get('archetypes')
+  archetypes() {
+    return ARCHETYPE_IDS.map((id) => ({
+      id,
+      label: COMPANY_ARCHETYPES[id].label,
+    }));
+  }
+
   @Post('start')
   async start(@CurrentUser() user: AuthUser, @Body() dto: StartInterviewDto) {
-    return toView(await this.interview.start(user.id, dto.type, dto.roleId));
+    return toView(
+      await this.interview.start(user.id, dto.type, dto.roleId, dto.archetype),
+    );
   }
 
   @Post(':id/respond')
