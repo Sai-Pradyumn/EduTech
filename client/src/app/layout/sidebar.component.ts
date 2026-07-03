@@ -115,6 +115,9 @@ export class SidebarComponent {
     Account: 'nav.account',
     Workspace: 'nav.workspace',
     Manage: 'nav.manage',
+    Outcome: 'nav.outcome',
+    Ecosystem: 'nav.ecosystem',
+    Platform: 'nav.platform',
   };
 
   /** Translate known nav group headings; unknown headings pass through unchanged. */

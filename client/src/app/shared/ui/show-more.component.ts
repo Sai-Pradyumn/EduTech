@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
+import { TranslatePipe } from '../pipes/translate.pipe';
 
 /**
  * Shared "reveal more" control for windowed lists (see `windowedList`). Renders
@@ -8,10 +9,11 @@ import { ChangeDetectionStrategy, Component, input, output } from '@angular/core
   selector: 'asta-show-more',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [TranslatePipe],
   template: `
     @if (remaining() > 0) {
       <button type="button" class="show-more" (click)="more.emit()">
-        Show {{ step() }} more
+        {{ 'action.showMore' | t }}
         <span class="rem">· {{ remaining() }} hidden</span>
       </button>
     }
