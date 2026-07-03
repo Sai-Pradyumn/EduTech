@@ -1,5 +1,24 @@
 import { Injectable, Logger } from '@nestjs/common';
+import { DomainKey } from '../../../common/domain-keys';
 import { ContextEngineService } from './context-engine.service';
+
+/**
+ * Default invalidation receipt per command namespace — the domains a write in that
+ * feature realistically changes downstream. A command may still override with its
+ * own `affects`. This is what makes "mark week 2 done" refresh Today + the dashboard,
+ * not just the roadmap.
+ */
+const DOMAIN_DEFAULTS: Record<string, DomainKey[]> = {
+  // Upstream changes (roadmap/flows/mistakes) don't list 'dailyPlan' directly — Today
+  // watches those domains and *regenerates* its plan, whereas a direct 'dailyPlan'
+  // signal (from daily_plan.* commands, which already mutated the plan) just reloads.
+  roadmap: ['roadmap', 'dashboard', 'intelligence'],
+  daily_plan: ['dailyPlan', 'dashboard'],
+  mistakes: ['mistakes', 'dashboard', 'intelligence'],
+  flows: ['flows', 'dashboard'],
+  course: ['course', 'dashboard'],
+  memory: ['memory'],
+};
 
 /** The outcome of a real state change executed from a chat message. */
 export interface ChatCommandResult {
@@ -11,6 +30,8 @@ export interface ChatCommandResult {
   routeLabel?: string;
   /** Inverse command — rendered as an "Undo" chip that sends this text back through chat. */
   undo?: { text: string };
+  /** Domains this write touched — the client refreshes screens bound to them. */
+  affects?: DomainKey[];
 }
 
 /**
@@ -23,6 +44,9 @@ export interface ChatCommand {
   description: string;
   /** Canonical phrasings that match — used by the "did you mean" suggester. */
   examples?: string[];
+  /** Domains this command's writes affect — applied to its result as the default
+   *  invalidation receipt (a result may still override with its own `affects`). */
+  affects?: DomainKey[];
   /** Returns extracted params when the message clearly asks for this command. */
   match(message: string): Record<string, unknown> | null;
   execute(
@@ -92,7 +116,15 @@ export class ChatCommandRegistryService {
       );
       try {
         const result = await command.execute(userId, params);
-        if (result.ok) this.contextEngine.invalidate(userId);
+        if (result.ok) {
+          this.contextEngine.invalidate(userId);
+          // Default the invalidation receipt from the command's declared domains,
+          // else from its namespace (roadmap.* → roadmap/dailyPlan/dashboard/…).
+          if (!result.affects) {
+            result.affects =
+              command.affects ?? DOMAIN_DEFAULTS[command.name.split('.')[0]];
+          }
+        }
         return [result];
       } catch (err) {
         this.logger.warn(

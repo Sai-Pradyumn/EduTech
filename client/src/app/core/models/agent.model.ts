@@ -97,6 +97,9 @@ export interface AgentResponse {
   followUpQuestions: string[];
   recommendedNextActions: string[];
   nextAction?: NextAction;
+  /** Domains a chat command changed this turn — the client refreshes screens bound
+   *  to them (app-wide invalidation). Absent when nothing was written. */
+  invalidate?: string[];
 }
 
 /** Proactive "what to do next", decided by the orchestrator from the learner's state. */

@@ -16,6 +16,7 @@ import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { AgentService } from '../../core/services/agent.service';
 import { ToastService } from '../../core/services/toast.service';
+import { DomainBusService } from '../../core/services/domain-bus.service';
 import { AuthService } from '../../core/services/auth.service';
 import { IntelligenceService } from '../../core/services/intelligence.service';
 import { VoiceActivationService } from '../../core/services/voice-activation.service';
@@ -343,6 +344,7 @@ export class AstaOsComponent {
   protected readonly agent = inject(AgentService);
   protected readonly voice = inject(VoiceActivationService);
   private readonly toast = inject(ToastService);
+  private readonly bus = inject(DomainBusService);
   private readonly memory = inject(MemoryService);
   private readonly guardian = inject(GuardianService);
   private readonly mode = inject(AstaModeService);
@@ -987,6 +989,8 @@ export class AstaOsComponent {
     asta.messageId = messageId;
     asta.streaming = false;
     if (response.nextAction) this.next.set(response.nextAction);
+    // A chat command wrote state → refresh every open screen bound to those domains.
+    this.bus.invalidate(response.invalidate);
   }
 
   private fail(asta: AstaTurn): void {

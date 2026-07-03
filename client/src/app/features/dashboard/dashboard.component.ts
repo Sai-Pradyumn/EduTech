@@ -1,7 +1,9 @@
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, computed, inject, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { forkJoin } from 'rxjs';
 import { Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../core/services/auth.service';
+import { DomainBusService } from '../../core/services/domain-bus.service';
 import { RoadmapService } from '../../core/services/roadmap.service';
 import { StudentProfileService } from '../../core/services/student-profile.service';
 import { IntelligenceService } from '../../core/services/intelligence.service';
@@ -373,6 +375,8 @@ export class DashboardComponent {
   private readonly intelligence = inject(IntelligenceService);
   private readonly agent = inject(AgentService);
   private readonly router = inject(Router);
+  private readonly bus = inject(DomainBusService);
+  private readonly destroyRef = inject(DestroyRef);
   private readonly confetti = inject(ConfettiService);
   private readonly career = inject(CareerReadinessService);
   private readonly passportApi = inject(SkillPassportService);
@@ -470,6 +474,8 @@ export class DashboardComponent {
         // Celebrate completing a week (not un-completing).
         if (!completed) this.confetti.burst({ y: 0.42 });
         this.intelligence.overview().subscribe({ next: (d) => this.intel.set(d), error: () => undefined });
+        // Cascade: refresh next-move/reviews/plan here and regenerate Today elsewhere.
+        this.bus.invalidate(['roadmap', 'dashboard', 'intelligence']);
       },
       error: () => this.busy.set(false),
     });
@@ -507,6 +513,28 @@ export class DashboardComponent {
 
   constructor() {
     this.load();
+    // Any state change elsewhere (chat command, week toggle) refreshes the dependent
+    // dashboard slices — fixes "next move / Today item stays stale after a change".
+    this.bus
+      .on(['dashboard', 'roadmap', 'dailyPlan', 'intelligence', 'course', 'mistakes'])
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(() => this.refreshSlices());
+  }
+
+  /** Quiet refresh of the dependent slices (no spinner) — driven by the domain bus. */
+  private refreshSlices(): void {
+    if (!this.profile()) return;
+    this.roadmaps.getActive().subscribe({
+      next: (r) => {
+        this.roadmap.set(r);
+        if (r) this.intelligence.overview().subscribe({ next: (d) => this.intel.set(d), error: () => undefined });
+      },
+      error: () => undefined,
+    });
+    this.agent.nextAction().subscribe({ next: (n) => this.nextMove.set(n), error: () => undefined });
+    this.dailyPlan.today().subscribe({ next: (p) => this.plan.set(p), error: () => undefined });
+    this.mistakes.stats().subscribe({ next: (s) => this.reviewsDue.set(s.due), error: () => undefined });
+    this.coursesApi.list().subscribe({ next: (c) => this.courses.set(c), error: () => undefined });
   }
 
   goToRoadmap(): void {

@@ -11,6 +11,7 @@ import { AiRateLimitService } from '../ai/guards/ai-rate-limit.service';
 import { PromptInjectionGuard } from '../ai/guards/prompt-injection.guard';
 import { AgentRouterService } from './core/agent-router.service';
 import { AgentContextService } from './core/agent-context.service';
+import { mergeDomains } from '../../common/domain-keys';
 import {
   ChatCommandRegistryService,
   ChatCommandResult,
@@ -251,6 +252,12 @@ export class AgentOrchestratorService {
             })),
           ...response.actions,
         ].slice(0, 6);
+        // Receipt: which domains changed → the client refreshes any open screen
+        // bound to them (roadmap → Today/dashboard/intelligence all update at once).
+        const invalidate = mergeDomains(
+          executed.filter((r) => r.ok).map((r) => r.affects),
+        );
+        if (invalidate.length) response.invalidate = invalidate;
       }
       const didYouMean = await suggestPromise;
       if (didYouMean) {

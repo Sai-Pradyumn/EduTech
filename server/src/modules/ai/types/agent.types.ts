@@ -1,4 +1,5 @@
 import { AgentType, Intent, Role } from '../../../common/enums';
+import { DomainKey } from '../../../common/domain-keys';
 
 /** Normalized request every agent receives via the orchestrator. */
 export interface AgentRequest {
@@ -184,6 +185,9 @@ export interface AgentResponse {
   recommendedNextActions: string[];
   /** Proactive next move chosen from the learner's state (orchestrator-attached). */
   nextAction?: NextAction;
+  /** Domains a chat command changed this turn — the client refreshes screens bound
+   *  to them (app-wide invalidation). Empty/absent when nothing was written. */
+  invalidate?: DomainKey[];
 }
 
 /* ───────────────────── Streaming workflow events ───────────────────── */

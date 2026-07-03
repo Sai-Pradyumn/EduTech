@@ -1,10 +1,12 @@
-import { ChangeDetectionStrategy, Component, OnDestroy, computed, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, OnDestroy, computed, inject, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Router } from '@angular/router';
 import { ButtonComponent } from '../../shared/ui/button.component';
 import { CardComponent } from '../../shared/ui/card.component';
 import { EmptyStateComponent } from '../../shared/ui/empty-state.component';
 import { SkeletonComponent } from '../../shared/ui/skeleton.component';
 import { ToastService } from '../../core/services/toast.service';
+import { DomainBusService } from '../../core/services/domain-bus.service';
 import { DAILY_KIND_GLYPH, DailyDay, DailyItem, DailyPlan, DailyPlanMode, DailyPlanService, DailyStreak } from '../../core/services/daily-plan.service';
 
 @Component({
@@ -206,6 +208,8 @@ export class TodayComponent implements OnDestroy {
   private readonly api = inject(DailyPlanService);
   private readonly toast = inject(ToastService);
   private readonly router = inject(Router);
+  private readonly bus = inject(DomainBusService);
+  private readonly destroyRef = inject(DestroyRef);
 
   readonly plan = signal<DailyPlan | null>(null);
   readonly streak = signal<DailyStreak | null>(null);
@@ -277,7 +281,20 @@ export class TodayComponent implements OnDestroy {
     return new Date(Date.now() + remaining * 60000).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
   });
 
-  constructor() { this.load(); }
+  constructor() {
+    this.load();
+    // App-wide invalidation: a chat command that edits the plan directly just needs
+    // a reload; an upstream change (roadmap/flow/mistake) needs a regenerate so the
+    // plan reflects the new reality (done-state is preserved across regeneration).
+    this.bus
+      .on(['dailyPlan'])
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(() => this.syncPlan(false));
+    this.bus
+      .on(['roadmap', 'flows', 'mistakes'])
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(() => this.syncPlan(true));
+  }
 
   load(): void {
     this.loading.set(true);
@@ -285,6 +302,15 @@ export class TodayComponent implements OnDestroy {
     this.api.today().subscribe({
       next: (p) => { this.plan.set(p); this.loading.set(false); },
       error: () => { this.loadError.set(true); this.loading.set(false); },
+    });
+    this.refreshStreak();
+  }
+
+  /** Quiet background refresh triggered by the domain bus (no toast, no spinner). */
+  private syncPlan(regenerate: boolean): void {
+    (regenerate ? this.api.recalculate() : this.api.today()).subscribe({
+      next: (p) => this.plan.set(p),
+      error: () => undefined,
     });
     this.refreshStreak();
   }

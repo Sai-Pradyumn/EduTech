@@ -3,6 +3,7 @@ import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { AgentService } from '../../core/services/agent.service';
 import { ToastService } from '../../core/services/toast.service';
+import { DomainBusService } from '../../core/services/domain-bus.service';
 import { AgentAction, AgentSessionSummary, AgentStreamEvent, VisualBlock, WorkflowStepView } from '../../core/models';
 import { RichContentComponent } from '../../shared/components/ai/rich-content.component';
 import { ButtonComponent } from '../../shared/ui/button.component';
@@ -321,6 +322,7 @@ const STARTERS = [
 export class TutorWorkspaceComponent {
   private readonly agent = inject(AgentService);
   private readonly toast = inject(ToastService);
+  private readonly bus = inject(DomainBusService);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
 
@@ -518,6 +520,7 @@ export class TutorWorkspaceComponent {
         this.bump();
         this.busy.set(false);
         this.liveStatus.set('Response ready.');
+        this.bus.invalidate(r.response.invalidate);
       },
       error: () => {
         assistant.streaming = false;
@@ -689,6 +692,7 @@ export class TutorWorkspaceComponent {
         this.bump();
         this.busy.set(false);
         this.liveStatus.set('Response ready.');
+        this.bus.invalidate(e.response.invalidate);
         break;
       case 'error':
         assistant.streaming = false;

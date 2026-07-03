@@ -1,9 +1,11 @@
-import { ChangeDetectionStrategy, Component, Input, computed, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, Input, computed, inject, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { RoadmapService } from '../../core/services/roadmap.service';
 import { ToastService } from '../../core/services/toast.service';
 import { ConfettiService } from '../../core/services/confetti.service';
+import { DomainBusService } from '../../core/services/domain-bus.service';
 import { Roadmap, RoadmapVersionDiff, RoadmapVersionSummary } from '../../core/models';
 import { ButtonComponent } from '../../shared/ui/button.component';
 import { CardComponent } from '../../shared/ui/card.component';
@@ -470,6 +472,18 @@ export class RoadmapDetailsComponent {
   private readonly toast = inject(ToastService);
   private readonly confetti = inject(ConfettiService);
   private readonly router = inject(Router);
+  private readonly bus = inject(DomainBusService);
+  private readonly destroyRef = inject(DestroyRef);
+
+  constructor() {
+    // Reload if the roadmap is changed elsewhere (a chat command from the dock).
+    this.bus
+      .on(['roadmap'])
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(() => {
+        if (this._id) this.load();
+      });
+  }
 
   /** Bound from the :id route param via withComponentInputBinding(). */
   @Input() set id(value: string) {
