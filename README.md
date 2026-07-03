@@ -255,6 +255,7 @@ Every AI surface goes through one pipeline: **classify intent → route to agent
 `ml-service/` is a **real** Python PEFT/LoRA service (training + inference, GPU-ready, with a no-GPU smoke path) — separate from NestJS, which only orchestrates job records. It is **not** wired into the running app yet (`ENABLE_FINE_TUNING=false`). See [`docs/FINE_TUNING_LORA_ARCHITECTURE.md`](docs/FINE_TUNING_LORA_ARCHITECTURE.md).
 
 ## Repo docs
+- **Architecture Decision Records** (the load-bearing calls, tracked in-repo): [`adr/`](adr/README.md) — provider abstraction, Agent OS pipeline, AI output contract, entitlements & metering.
 - [`docs/PRODUCT_REQUIREMENTS.md`](docs/PRODUCT_REQUIREMENTS.md) · [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) · [`docs/IMPLEMENTATION_PLAN.md`](docs/IMPLEMENTATION_PLAN.md)
 - [`docs/DATABASE_SCHEMA.md`](docs/DATABASE_SCHEMA.md) · [`docs/API_CONTRACTS.md`](docs/API_CONTRACTS.md) · [`docs/AI_AGENTS.md`](docs/AI_AGENTS.md)
 - Phase 3: [`docs/AI_AGENT_OS.md`](docs/AI_AGENT_OS.md) · [`docs/AGENT_WORKFLOWS.md`](docs/AGENT_WORKFLOWS.md) · [`docs/RAG_ARCHITECTURE.md`](docs/RAG_ARCHITECTURE.md) · [`docs/VOICE_AGENT_ARCHITECTURE.md`](docs/VOICE_AGENT_ARCHITECTURE.md) · [`docs/FINE_TUNING_LORA_ARCHITECTURE.md`](docs/FINE_TUNING_LORA_ARCHITECTURE.md)
