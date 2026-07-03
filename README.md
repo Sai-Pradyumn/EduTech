@@ -215,6 +215,8 @@ npm run build            # builds server then client
 
 Frontend (`client/.env.example`): `API_BASE_URL`, `SOCKET_URL` → set in `client/src/environments/environment.ts`.
 
+**Secrets hygiene.** `server/.env.example` is the single source of truth for server config — every var the app reads is listed there (grouped, with safe placeholders). Real `.env` files are git-ignored (`.env`, `**/.env`, only `*.example` is tracked), so no secret is ever committed. The **client bundle contains no secrets by design** — `environment.ts` holds only the public API/socket URLs; all provider keys, payment/OAuth secrets and signing keys live exclusively server-side and are never shipped to the browser.
+
 ---
 
 ## How the AI provider abstraction works

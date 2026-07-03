@@ -20,10 +20,13 @@ import { errorInterceptor } from './core/interceptors/error.interceptor';
 import { AuthService } from './core/services/auth.service';
 import { WebVitalsService } from './core/services/web-vitals.service';
 import { AstaTitleStrategy } from './core/title-strategy';
+import { provideActiveLocale } from './core/i18n/locale-providers';
 
 export const appConfig: ApplicationConfig = {
   providers: [
     provideZoneChangeDetection({ eventCoalescing: true }),
+    // Date/number/currency pipes format in the learner's saved locale (₹/$, dd-MM, grouping).
+    ...provideActiveLocale(),
     provideRouter(
       routes,
       withComponentInputBinding(),

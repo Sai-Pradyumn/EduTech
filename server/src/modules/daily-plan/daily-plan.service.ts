@@ -25,24 +25,43 @@ export class DailyPlanService {
     private readonly ledger: LedgerService,
   ) {}
 
-  private today(): string {
+  /**
+   * The learner's "today" as YYYY-MM-DD. When the caller passes their IANA zone
+   * (the client sends it as `x-timezone`), the day boundary — which drives the
+   * streak, carry-over and today's plan — follows their wall clock, not the
+   * server's UTC. Falls back to UTC when no/invalid zone is given.
+   */
+  private today(tz?: string): string {
+    if (tz) {
+      try {
+        return new Intl.DateTimeFormat('en-CA', {
+          timeZone: tz,
+          year: 'numeric',
+          month: '2-digit',
+          day: '2-digit',
+        }).format(new Date());
+      } catch {
+        /* invalid zone → UTC */
+      }
+    }
     return new Date().toISOString().slice(0, 10);
   }
 
-  async getToday(userId: string): Promise<DailyPlanDocument> {
-    const date = this.today();
+  async getToday(userId: string, tz?: string): Promise<DailyPlanDocument> {
+    const date = this.today(tz);
     const existing = await this.model
       .findOne({ user: new Types.ObjectId(userId), date })
       .exec();
-    return existing ?? this.generate(userId, 'normal');
+    return existing ?? this.generate(userId, 'normal', tz);
   }
 
   /** Build today's plan from the active flow, open mistakes, the roadmap and a quiz nudge. */
   async generate(
     userId: string,
     mode: DailyPlanMode,
+    tz?: string,
   ): Promise<DailyPlanDocument> {
-    const date = this.today();
+    const date = this.today(tz);
     const prev = await this.model
       .findOne({ user: new Types.ObjectId(userId), date })
       .exec();
@@ -186,8 +205,9 @@ export class DailyPlanService {
   async completeItem(
     userId: string,
     itemId: string,
+    tz?: string,
   ): Promise<DailyPlanDocument> {
-    const plan = await this.getToday(userId);
+    const plan = await this.getToday(userId, tz);
     const item = plan.items.find((i) => i.id === itemId);
     if (!item) throw new NotFoundException('Plan item not found');
     item.done = !item.done;
@@ -213,8 +233,9 @@ export class DailyPlanService {
     userId: string,
     title: string,
     estimateMinutes = 20,
+    tz?: string,
   ): Promise<DailyPlanDocument> {
-    const plan = await this.getToday(userId);
+    const plan = await this.getToday(userId, tz);
     plan.items.push({
       id: `i_c_${Date.now().toString(36)}`,
       kind: 'revision',
@@ -233,8 +254,12 @@ export class DailyPlanService {
   }
 
   /** Persist a learner-chosen item order (drag-to-reorder on the Today screen). */
-  async reorder(userId: string, itemIds: string[]): Promise<DailyPlanDocument> {
-    const plan = await this.getToday(userId);
+  async reorder(
+    userId: string,
+    itemIds: string[],
+    tz?: string,
+  ): Promise<DailyPlanDocument> {
+    const plan = await this.getToday(userId, tz);
     const byId = new Map(plan.items.map((i) => [i.id, i]));
     const reordered = itemIds
       .map((id) => byId.get(id))
@@ -252,8 +277,9 @@ export class DailyPlanService {
     userId: string,
     itemId: string,
     note: string,
+    tz?: string,
   ): Promise<DailyPlanDocument> {
-    const plan = await this.getToday(userId);
+    const plan = await this.getToday(userId, tz);
     const item = plan.items.find((i) => i.id === itemId);
     if (!item) throw new NotFoundException('Plan item not found');
     item.note = note.slice(0, 500);
@@ -266,8 +292,9 @@ export class DailyPlanService {
     userId: string,
     mood: number | undefined,
     reflection: string | undefined,
+    tz?: string,
   ): Promise<DailyPlanDocument> {
-    const plan = await this.getToday(userId);
+    const plan = await this.getToday(userId, tz);
     if (mood !== undefined)
       plan.mood = Math.min(5, Math.max(1, Math.round(mood)));
     if (reflection !== undefined) plan.reflection = reflection.slice(0, 280);
@@ -279,8 +306,8 @@ export class DailyPlanService {
    * drops off. Skips items already present today (matched on sourceId/title)
    * and is safe to run more than once.
    */
-  async carryOver(userId: string): Promise<DailyPlanDocument> {
-    const today = await this.getToday(userId);
+  async carryOver(userId: string, tz?: string): Promise<DailyPlanDocument> {
+    const today = await this.getToday(userId, tz);
     const dayMs = 86_400_000;
     const yStr = new Date(
       new Date(`${today.date}T00:00:00.000Z`).getTime() - dayMs,
@@ -316,8 +343,8 @@ export class DailyPlanService {
     return today.save();
   }
 
-  recalculate(userId: string): Promise<DailyPlanDocument> {
-    return this.generate(userId, 'normal');
+  recalculate(userId: string, tz?: string): Promise<DailyPlanDocument> {
+    return this.generate(userId, 'normal', tz);
   }
 
   /**
@@ -325,7 +352,10 @@ export class DailyPlanService {
    * finished at least one plan item. The current streak is still alive if today
    * isn't done yet but yesterday was (you have until end of day to keep it).
    */
-  async streak(userId: string): Promise<{
+  async streak(
+    userId: string,
+    tz?: string,
+  ): Promise<{
     current: number;
     best: number;
     activeToday: boolean;
@@ -345,7 +375,7 @@ export class DailyPlanService {
 
     const dayMs = 86_400_000;
     const key = (d: Date) => d.toISOString().slice(0, 10);
-    const todayStr = this.today();
+    const todayStr = this.today(tz);
     const activeToday = active.has(todayStr);
 
     // Current streak: walk back from today (or yesterday if today not yet done).
@@ -384,6 +414,7 @@ export class DailyPlanService {
   async history(
     userId: string,
     days = 7,
+    tz?: string,
   ): Promise<
     {
       date: string;
@@ -395,7 +426,7 @@ export class DailyPlanService {
   > {
     const span = Math.min(Math.max(days, 1), 31);
     const dayMs = 86_400_000;
-    const todayStart = new Date(`${this.today()}T00:00:00.000Z`).getTime();
+    const todayStart = new Date(`${this.today(tz)}T00:00:00.000Z`).getTime();
     const fromStr = new Date(todayStart - (span - 1) * dayMs)
       .toISOString()
       .slice(0, 10);
@@ -430,8 +461,8 @@ export class DailyPlanService {
     return out;
   }
 
-  quickMode(userId: string): Promise<DailyPlanDocument> {
-    return this.generate(userId, 'quick');
+  quickMode(userId: string, tz?: string): Promise<DailyPlanDocument> {
+    return this.generate(userId, 'quick', tz);
   }
 
   private trimToBudget(items: DailyItem[], minutes: number): DailyItem[] {
