@@ -3,6 +3,13 @@ import { Observable } from 'rxjs';
 import { ApiService } from './api.service';
 import { CohortDetail, CohortStatus, CohortView, LeaderboardRow } from '../models';
 
+/** Peer-facing leaderboard payload: rows only when the viewer has opted in. */
+export interface PeerLeaderboard {
+  optedIn: boolean;
+  rows: LeaderboardRow[];
+  listedCount: number;
+}
+
 /** Cohort-based learning API (B3). */
 @Injectable({ providedIn: 'root' })
 export class CohortService {
@@ -28,6 +35,16 @@ export class CohortService {
 
   leaderboard(id: string): Observable<LeaderboardRow[]> {
     return this.api.get<LeaderboardRow[]>(`/cohorts/${id}/leaderboard`);
+  }
+
+  /** Peer leaderboard — opt-in both ways (empty until you join it yourself). */
+  peerLeaderboard(id: string): Observable<PeerLeaderboard> {
+    return this.api.get<PeerLeaderboard>(`/cohorts/${id}/leaderboard/peers`);
+  }
+
+  /** Join/leave the peer leaderboards (user-level privacy choice). */
+  setLeaderboardOptIn(optIn: boolean): Observable<{ ok: boolean; optIn: boolean }> {
+    return this.api.post<{ ok: boolean; optIn: boolean }>('/cohorts/leaderboard/opt-in', { optIn });
   }
 
   update(id: string, patch: { name?: string; description?: string; roadmapGoal?: string; status?: CohortStatus }): Observable<CohortView> {

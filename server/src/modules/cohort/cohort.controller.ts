@@ -23,6 +23,7 @@ import {
   AddCohortMembersDto,
   AnnouncementDto,
   CreateCohortDto,
+  LeaderboardOptInDto,
   UpdateCohortDto,
 } from './dto/cohort.dto';
 
@@ -78,6 +79,28 @@ export class CohortController {
   async leaderboard(@CurrentOrg() ctx: OrgContext, @Param('id') id: string) {
     await this.assertOrg(ctx, id);
     return this.cohorts.leaderboard(id);
+  }
+
+  /** Peer leaderboard — opt-in both ways: only listed members can look. */
+  @Get(':id/leaderboard/peers')
+  @Permissions(Permission.CohortView)
+  async peerLeaderboard(
+    @CurrentUser() user: AuthUser,
+    @CurrentOrg() ctx: OrgContext,
+    @Param('id') id: string,
+  ) {
+    await this.assertOrg(ctx, id);
+    return this.cohorts.peerLeaderboard(id, user.id);
+  }
+
+  /** Join/leave the peer leaderboards (a user-level privacy choice). */
+  @Post('leaderboard/opt-in')
+  async leaderboardOptIn(
+    @CurrentUser() user: AuthUser,
+    @Body() dto: LeaderboardOptInDto,
+  ) {
+    await this.users.setLeaderboardOptIn(user.id, dto.optIn);
+    return { ok: true, optIn: dto.optIn };
   }
 
   @Patch(':id')

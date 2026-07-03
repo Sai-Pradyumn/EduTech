@@ -275,6 +275,57 @@ export class CohortService {
     const students = (
       c.students as { _id: Types.ObjectId; name: string }[]
     ).slice(0, LEADERBOARD_CAP);
+    return this.rankRows(students);
+  }
+
+  /**
+   * Peer-facing leaderboard — opt-in on BOTH sides: only opted-in members are
+   * listed, and you must be opted in yourself to see the list at all.
+   * Managers keep the full view via `leaderboard()`.
+   */
+  async peerLeaderboard(
+    id: string,
+    viewerId: string,
+  ): Promise<{
+    optedIn: boolean;
+    rows: LeaderboardRow[];
+    listedCount: number;
+  }> {
+    const c = await this.cohorts
+      .findById(id)
+      .populate<{
+        students: {
+          _id: Types.ObjectId;
+          name: string;
+          leaderboardOptIn?: boolean;
+        }[];
+      }>('students', 'name leaderboardOptIn')
+      .lean()
+      .exec();
+    if (!c) throw new NotFoundException('Cohort not found');
+    const students = c.students as {
+      _id: Types.ObjectId;
+      name: string;
+      leaderboardOptIn?: boolean;
+    }[];
+    const listed = students
+      .filter((s) => s.leaderboardOptIn)
+      .slice(0, LEADERBOARD_CAP);
+    const viewerOptedIn = !!students.find((s) => String(s._id) === viewerId)
+      ?.leaderboardOptIn;
+    if (!viewerOptedIn) {
+      return { optedIn: false, rows: [], listedCount: listed.length };
+    }
+    return {
+      optedIn: true,
+      rows: await this.rankRows(listed),
+      listedCount: listed.length,
+    };
+  }
+
+  private async rankRows(
+    students: { _id: Types.ObjectId; name: string }[],
+  ): Promise<LeaderboardRow[]> {
     const rows = await Promise.all(
       students.map(async (s) => {
         const li = await this.intelligence.overview(String(s._id));

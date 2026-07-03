@@ -44,6 +44,22 @@ export class Resource {
   @Prop({ default: '' }) description!: string;
   /** Curator quality score 0–100 (ranks ties). */
   @Prop({ default: 70, min: 0, max: 100 }) quality!: number;
+
+  /** Community submissions land as 'pending' until an admin approves them. */
+  @Prop({
+    type: String,
+    enum: ['approved', 'pending'],
+    default: 'approved',
+    index: true,
+  })
+  status!: 'approved' | 'pending';
+
+  @Prop({ type: Types.ObjectId, ref: 'User' })
+  submittedBy?: Types.ObjectId;
+
+  /** Learner upvotes — social proof shown on every card. */
+  @Prop({ type: [{ type: Types.ObjectId, ref: 'User' }], default: [] })
+  upvotes!: Types.ObjectId[];
 }
 
 export const ResourceSchema = SchemaFactory.createForClass(Resource);

@@ -7,7 +7,7 @@ import { ProjectService } from '../../core/services/project.service';
 import { AuthService } from '../../core/services/auth.service';
 import { OrgContextService } from '../../core/services/org-context.service';
 import { ToastService } from '../../core/services/toast.service';
-import { CommunityChannel, CommunityReply, CommunityThread, Project, ThreadKind } from '../../core/models';
+import { CommunityChannel, CommunityReply, CommunityReport, CommunityThread, Project, ThreadKind } from '../../core/models';
 
 /**
  * Community + discussion (B9). Org-scoped channels (General / Help / Showcase), threads
@@ -119,6 +119,25 @@ import { CommunityChannel, CommunityReply, CommunityThread, Project, ThreadKind 
             </div>
           </div>
         }
+
+        <!-- Moderation queue — OrgManage only; snapshots survive content deletion -->
+        @if (canModerate() && openReports().length) {
+          <div class="card motion-card-reveal mb-4" style="padding:16px 18px;border-color:color-mix(in oklch, var(--coral, #e07856) 35%, var(--paper-3))">
+            <p class="kicker mb-2">Moderation · {{ openReports().length }} open report{{ openReports().length === 1 ? '' : 's' }}</p>
+            <div class="space-y-2">
+              @for (rep of openReports(); track rep.id) {
+                <div class="rep-row">
+                  <div class="min-w-0 flex-1">
+                    <p class="text-[13px] font-medium truncate">{{ rep.replyId ? 'Reply in' : 'Thread' }} “{{ rep.threadTitle }}”</p>
+                    <p class="text-[12px] text-txt-mute truncate">“{{ rep.preview }}”{{ rep.reason ? ' · ' + rep.reason : '' }} · flagged by {{ rep.reporterName }}</p>
+                  </div>
+                  <button class="btn-soft" (click)="selectThread(rep.threadId)">Open</button>
+                  <button class="btn-soft" (click)="resolveReport(rep.id)">Resolve</button>
+                </div>
+              }
+            </div>
+          </div>
+        }
         @if (activeThread(); as t) {
           <div class="card motion-card-reveal motion-row-primary" style="padding:22px" [style.--motion-card-index]="0">
             <div class="flex items-start gap-4">
@@ -137,7 +156,10 @@ import { CommunityChannel, CommunityReply, CommunityThread, Project, ThreadKind 
                 @if (t.projectId) {
                   <a class="btn-soft inline-block mt-3" routerLink="/app/projects" [queryParams]="{ projectId: t.projectId }">🛠 View project: {{ t.projectTitle }} →</a>
                 }
-                @if (canDelete(t.authorId)) { <button class="text-[11px] text-txt-mute hover:text-[color:var(--danger)] mt-3 block" (click)="deleteThread(t.id)">Delete thread</button> }
+                <div class="flex items-center gap-3 mt-3">
+                  @if (canDelete(t.authorId)) { <button class="text-[11px] text-txt-mute hover:text-[color:var(--danger)]" (click)="deleteThread(t.id)">Delete thread</button> }
+                  @if (!isMine(t.authorId)) { <button class="text-[11px] text-txt-mute hover:text-txt" (click)="report(t.id)">⚑ Report</button> }
+                </div>
               </div>
             </div>
           </div>
@@ -158,6 +180,7 @@ import { CommunityChannel, CommunityReply, CommunityThread, Project, ThreadKind 
                         <button class="text-[11px] text-[color:var(--green-deep)] font-semibold" (click)="accept(r.id)">Accept answer</button>
                       }
                       @if (canDelete(r.authorId)) { <button class="text-[11px] text-txt-mute hover:text-[color:var(--danger)]" (click)="deleteReply(r.id)">Delete</button> }
+                      @if (!isMine(r.authorId)) { <button class="text-[11px] text-txt-mute hover:text-txt" (click)="report(activeThread()!.id, r.id)">⚑ Report</button> }
                     </div>
                   </div>
                 </div>
@@ -193,6 +216,7 @@ import { CommunityChannel, CommunityReply, CommunityThread, Project, ThreadKind 
       .vote-on { border-color: var(--green); color: var(--green-deep); background: oklch(0.80 0.16 150 / .12); animation: astaSoftPop 0.3s var(--ease-spring); }
       @media (prefers-reduced-motion: reduce) { .vote-on { animation: none; } .vote:hover, .vote-sm:hover, .vote:active, .vote-sm:active { transform: none; } }
       .vote-mini { font-family: var(--mono); font-size: 10px; color: var(--text-mute); flex-shrink: 0; padding-top: 2px; }
+      .rep-row { display: flex; align-items: center; gap: 8px; }
     `,
     ]
 })
@@ -238,6 +262,10 @@ export class CommunityComponent implements OnInit {
   ntProjectId = '';
   replyBody = '';
 
+  // ── moderation reports ──
+  readonly reports = signal<CommunityReport[]>([]);
+  readonly openReports = computed(() => this.reports().filter((r) => r.status === 'open'));
+
   ngOnInit(): void {
     this.api.channels().subscribe({
       next: (chs) => {
@@ -246,6 +274,28 @@ export class CommunityComponent implements OnInit {
       },
     });
     this.projectApi.list().subscribe({ next: (p) => this.myProjects.set(p) });
+    if (this.canModerate()) {
+      this.api.reports().subscribe({ next: (r) => this.reports.set(r), error: () => this.reports.set([]) });
+    }
+  }
+
+  isMine(authorId: string): boolean {
+    return authorId === this.meId();
+  }
+
+  report(threadId: string, replyId?: string): void {
+    this.api.report(threadId, replyId).subscribe({
+      next: (res) =>
+        this.toast.success(res.duplicate ? 'Already reported — the moderators have it' : 'Reported to the moderators'),
+      error: (e) => this.toast.error(e?.message ?? 'Could not report'),
+    });
+  }
+
+  resolveReport(id: string): void {
+    this.api.resolveReport(id).subscribe({
+      next: () => this.reports.update((list) => list.map((r) => (r.id === id ? { ...r, status: 'resolved' as const } : r))),
+      error: (e) => this.toast.error(e?.message ?? 'Could not resolve'),
+    });
   }
 
   selectChannel(c: CommunityChannel): void {

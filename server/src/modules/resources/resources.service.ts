@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Injectable,
   Logger,
   NotFoundException,
@@ -33,6 +34,10 @@ export interface ResourceView {
   description: string;
   /** The learner's saved/in_progress/done state, when known. */
   progress: ProgressStatus | null;
+  upvotes: number;
+  hasUpvoted: boolean;
+  /** 'pending' only ever appears on the submitter's own suggestions. */
+  status: 'approved' | 'pending';
   /** For-you only: why this was picked for the learner. */
   reason?: string;
 }
@@ -94,15 +99,22 @@ export class ResourcesService implements OnModuleInit {
     if (filter.kind) query.kind = filter.kind;
     if (filter.level) query.level = filter.level;
     if (filter.topic) query.topics = filter.topic.toLowerCase();
+    // Pending community submissions are visible only to their submitter.
+    const conditions: Record<string, unknown>[] = [
+      {
+        $or: [
+          { status: { $ne: 'pending' } },
+          { submittedBy: new Types.ObjectId(userId) },
+        ],
+      },
+    ];
     if (filter.q?.trim()) {
       const rx = new RegExp(this.escapeRegex(filter.q.trim()), 'i');
-      query.$or = [
-        { title: rx },
-        { description: rx },
-        { provider: rx },
-        { topics: rx },
-      ];
+      conditions.push({
+        $or: [{ title: rx }, { description: rx }, { provider: rx }, { topics: rx }],
+      });
     }
+    query.$and = conditions;
     const docs = await this.resources
       .find(query)
       .sort({ quality: -1, title: 1 })
@@ -115,7 +127,11 @@ export class ResourcesService implements OnModuleInit {
   /** Resources matched to this learner's goal, skills, weak areas and current week. */
   async forYou(userId: string, limit = 12): Promise<ResourceView[]> {
     const signal = await this.learnerSignal(userId);
-    const docs = await this.resources.find().lean().exec();
+    // Never recommend unreviewed community submissions.
+    const docs = await this.resources
+      .find({ status: { $ne: 'pending' } })
+      .lean()
+      .exec();
 
     const scored = docs
       .map((doc) => {
@@ -175,7 +191,7 @@ export class ResourcesService implements OnModuleInit {
     const byId = new Map(docs.map((d) => [String(d._id), d]));
     return rows
       .filter((r) => byId.has(String(r.resource)))
-      .map((r) => this.toView(byId.get(String(r.resource))!, r.status));
+      .map((r) => this.toView(byId.get(String(r.resource))!, r.status, userId));
   }
 
   async setProgress(
@@ -195,7 +211,7 @@ export class ResourcesService implements OnModuleInit {
         { upsert: true },
       )
       .exec();
-    return this.toView(doc, status);
+    return this.toView(doc, status, userId);
   }
 
   async clearProgress(userId: string, resourceId: string): Promise<void> {
@@ -205,6 +221,93 @@ export class ResourcesService implements OnModuleInit {
         resource: new Types.ObjectId(resourceId),
       })
       .exec();
+  }
+
+  // ── community submissions + upvotes ─────────────────────────
+
+  /** Suggest a resource for the catalog — lands as 'pending' until an admin approves. */
+  async suggest(
+    userId: string,
+    input: {
+      title: string;
+      url: string;
+      provider: string;
+      kind: ResourceKind;
+      level: ResourceLevel;
+      topics: string[];
+      minutes?: number;
+      description?: string;
+      free?: boolean;
+    },
+  ): Promise<ResourceView> {
+    const existing = await this.resources
+      .findOne({ url: input.url.trim() })
+      .lean()
+      .exec();
+    if (existing) {
+      throw new BadRequestException('That link is already in the catalog.');
+    }
+    const doc = await this.resources.create({
+      title: input.title.trim(),
+      url: input.url.trim(),
+      provider: input.provider.trim(),
+      kind: input.kind,
+      level: input.level,
+      topics: input.topics.map((t) => t.trim().toLowerCase()).filter(Boolean),
+      minutes: input.minutes ?? 0,
+      free: input.free ?? true,
+      description: (input.description ?? '').trim(),
+      quality: 50, // community submissions start below curated entries
+      status: 'pending',
+      submittedBy: new Types.ObjectId(userId),
+    });
+    return this.toView(doc.toObject(), null, userId);
+  }
+
+  async toggleUpvote(userId: string, resourceId: string): Promise<ResourceView> {
+    if (!Types.ObjectId.isValid(resourceId))
+      throw new NotFoundException('Resource not found');
+    const doc = await this.resources.findById(resourceId).exec();
+    if (!doc) throw new NotFoundException('Resource not found');
+    const idx = doc.upvotes.findIndex((v) => String(v) === userId);
+    if (idx >= 0) doc.upvotes.splice(idx, 1);
+    else doc.upvotes.push(new Types.ObjectId(userId));
+    await doc.save();
+    return this.toView(doc.toObject(), null, userId);
+  }
+
+  /** Admin review queue: pending community submissions, oldest first. */
+  async pending(viewerId: string): Promise<ResourceView[]> {
+    const docs = await this.resources
+      .find({ status: 'pending' })
+      .sort({ createdAt: 1 })
+      .limit(100)
+      .lean()
+      .exec();
+    return docs.map((d) => this.toView(d, null, viewerId));
+  }
+
+  async approve(viewerId: string, resourceId: string): Promise<ResourceView> {
+    if (!Types.ObjectId.isValid(resourceId))
+      throw new NotFoundException('Resource not found');
+    const doc = await this.resources
+      .findByIdAndUpdate(resourceId, { $set: { status: 'approved' } }, { new: true })
+      .lean()
+      .exec();
+    if (!doc) throw new NotFoundException('Resource not found');
+    return this.toView(doc, null, viewerId);
+  }
+
+  /** Reject (delete) a pending submission; approved catalog entries are untouchable here. */
+  async reject(resourceId: string): Promise<{ ok: true }> {
+    if (!Types.ObjectId.isValid(resourceId))
+      throw new NotFoundException('Resource not found');
+    const res = await this.resources
+      .deleteOne({ _id: resourceId, status: 'pending' })
+      .exec();
+    if (res.deletedCount === 0)
+      throw new NotFoundException('Pending submission not found');
+    return { ok: true };
   }
 
   // ───────────────────────── internals ─────────────────────────
@@ -254,13 +357,17 @@ export class ResourcesService implements OnModuleInit {
       .lean()
       .exec();
     const status = new Map(rows.map((r) => [String(r.resource), r.status]));
-    return docs.map((d) => this.toView(d, status.get(String(d._id)) ?? null));
+    return docs.map((d) =>
+      this.toView(d, status.get(String(d._id)) ?? null, userId),
+    );
   }
 
   private toView(
     d: Resource & { _id: unknown },
     progress: ProgressStatus | null,
+    viewerId: string,
   ): ResourceView {
+    const upvotes = d.upvotes ?? [];
     return {
       id: String(d._id),
       title: d.title,
@@ -273,6 +380,9 @@ export class ResourcesService implements OnModuleInit {
       free: d.free,
       description: d.description,
       progress,
+      upvotes: upvotes.length,
+      hasUpvoted: upvotes.some((v) => String(v) === viewerId),
+      status: d.status === 'pending' ? 'pending' : 'approved',
     };
   }
 

@@ -50,6 +50,10 @@ export class User {
   @Prop({ default: false })
   isOnboarded!: boolean;
 
+  /** Show me on cohort peer leaderboards (opt-in; hidden by default). */
+  @Prop({ default: false })
+  leaderboardOptIn!: boolean;
+
   @Prop({ select: false })
   refreshTokenHash?: string;
 

@@ -166,14 +166,18 @@ per-document scoping (select docs → documentIds) already exists in the hub.
 
 ### Resources — bar: curated marketplaces
 Strong: curated catalog, personalized "for you" with reasons, library.
-- [ ] `P3·M` Community submissions + upvotes (governance needed).
+- [x] **Community submissions + upvotes** — "Suggest a resource" lands as
+  pending (visible only to the submitter, never recommended) until an admin
+  approves/rejects it; upvote toggle on every card (URL-deduped, quality 50
+  start so curated entries keep ranking precedence).
 
 ## Career
 
 ### Resume / JD match — bar: Teal/Rezi
-Strong: AI analysis, JD matching, PDF.
-- [ ] `P2·M` Track applications against JD matches (applications feature
-  exists; link them).
+Strong: AI analysis, JD matching, PDF. **Corrected:** applications ARE
+JD-matches — each tracked application carries the JD text, match score,
+matched/missing skills, tailored bullets, cover letter and prep plan through
+the saved→applied→interviewing→offer pipeline; nothing left to link.
 
 ### Career readiness / Portfolio / Skill passport — bar: LinkedIn profile
 Strong: readiness scoring, portfolio, verifiable ledger. **Corrected:** a public
@@ -190,7 +194,10 @@ Strong: real Jitsi rooms, recaps, orchestrated agents in-room.
 
 ### Community / Spaces / Cohorts — bar: Discord/Circle
 Strong: threads, spaces with sources.
-- [ ] `P2·L` Moderation tooling (report/flag queue) before scale.
+- [x] **Moderation tooling** — ⚑ Report on any thread/reply (deduped per
+  reporter, snapshot preview survives deletion); OrgManage moderators get an
+  in-community queue with open-first ordering, jump-to-target and resolve;
+  delete-any already existed.
 
 ## Platform
 
@@ -207,7 +214,9 @@ Strong: nudge engine with real triggers.
 
 ### Gamification (streaks/certificates/ledger) — bar: Duolingo
 Strong: streaks, confetti, certificates, immutable ledger.
-- [ ] `P3·M` League/leaderboard among cohort peers (opt-in).
+- [x] **Peer leaderboard (opt-in both ways)** — students must join the board
+  to appear on it AND to see it; leaving re-hides their scores instantly.
+  Managers keep the full view + CSV.
 
 ---
 

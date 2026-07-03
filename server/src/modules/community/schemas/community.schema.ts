@@ -141,3 +141,51 @@ export class CommunityReply {
 export const CommunityReplySchema =
   SchemaFactory.createForClass(CommunityReply);
 CommunityReplySchema.index({ thread: 1, isAnswer: -1, createdAt: 1 });
+
+export type CommunityReportDocument = HydratedDocument<CommunityReport>;
+
+/**
+ * A member's flag on a thread or reply. Moderators (OrgManage) work the queue:
+ * open reports surface in the community UI with jump-to-target and resolve.
+ * The preview is a snapshot, so the queue stays meaningful even after the
+ * offending content is deleted.
+ */
+@Schema({ timestamps: true, collection: 'community_reports' })
+export class CommunityReport {
+  @Prop({
+    type: Types.ObjectId,
+    ref: 'Organization',
+    required: true,
+    index: true,
+  })
+  organization!: Types.ObjectId;
+
+  @Prop({ type: Types.ObjectId, ref: 'CommunityThread', required: true })
+  thread!: Types.ObjectId;
+
+  /** Set when the report targets a reply inside the thread. */
+  @Prop({ type: Types.ObjectId, ref: 'CommunityReply' })
+  reply?: Types.ObjectId;
+
+  @Prop({ type: Types.ObjectId, ref: 'User', required: true })
+  reporter!: Types.ObjectId;
+
+  @Prop({ default: '' }) reporterName!: string;
+  @Prop({ default: '' }) reason!: string;
+  @Prop({ default: '' }) threadTitle!: string;
+  /** Snapshot of the reported content (survives target deletion). */
+  @Prop({ default: '' }) preview!: string;
+
+  @Prop({
+    type: String,
+    enum: ['open', 'resolved'],
+    default: 'open',
+    index: true,
+  })
+  status!: 'open' | 'resolved';
+
+  createdAt?: Date;
+}
+export const CommunityReportSchema =
+  SchemaFactory.createForClass(CommunityReport);
+CommunityReportSchema.index({ organization: 1, status: 1, createdAt: -1 });

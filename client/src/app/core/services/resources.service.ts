@@ -25,8 +25,24 @@ export interface LearningResource {
   free: boolean;
   description: string;
   progress: ResourceProgress | null;
+  upvotes: number;
+  hasUpvoted: boolean;
+  /** 'pending' appears only on your own not-yet-approved suggestions. */
+  status: 'approved' | 'pending';
   /** For-you only: why this was matched to the learner. */
   reason?: string;
+}
+
+export interface SuggestResourceInput {
+  title: string;
+  url: string;
+  provider: string;
+  kind: ResourceKind;
+  level: ResourceLevel;
+  topics: string[];
+  minutes?: number;
+  description?: string;
+  free?: boolean;
 }
 
 /** Curated learning resources: catalog, personalized picks, personal library. */
@@ -67,5 +83,15 @@ export class ResourcesService {
 
   clearProgress(id: string): Observable<{ removed: boolean }> {
     return this.api.delete<{ removed: boolean }>(`/resources/${id}/progress`);
+  }
+
+  /** Suggest a resource for the catalog — pending until an admin approves. */
+  suggest(input: SuggestResourceInput): Observable<LearningResource> {
+    return this.api.post<LearningResource>('/resources/suggest', input);
+  }
+
+  /** Toggle your upvote on a resource. */
+  upvote(id: string): Observable<LearningResource> {
+    return this.api.post<LearningResource>(`/resources/${id}/upvote`, {});
   }
 }

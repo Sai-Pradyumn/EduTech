@@ -1,7 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
 import { ApiService } from './api.service';
-import { CommunityChannel, CommunityReply, CommunityThread, CreateThreadRequest, ThreadWithReplies } from '../models';
+import { CommunityChannel, CommunityReply, CommunityReport, CommunityThread, CreateThreadRequest, ThreadWithReplies } from '../models';
 
 /** Community + discussion API (Phase 4 · B9). */
 @Injectable({ providedIn: 'root' })
@@ -50,5 +50,25 @@ export class CommunityService {
 
   deleteReply(id: string): Observable<{ ok: boolean }> {
     return this.api.delete<{ ok: boolean }>(`/community/replies/${id}`);
+  }
+
+  // ── moderation reports ──
+
+  /** Flag a thread (or a reply in it) for the moderators. */
+  report(threadId: string, replyId?: string, reason?: string): Observable<{ ok: boolean; duplicate: boolean }> {
+    return this.api.post<{ ok: boolean; duplicate: boolean }>('/community/report', {
+      threadId,
+      ...(replyId ? { replyId } : {}),
+      ...(reason ? { reason } : {}),
+    });
+  }
+
+  /** Moderator queue — 403 for non-moderators (callers hide the UI on error). */
+  reports(): Observable<CommunityReport[]> {
+    return this.api.get<CommunityReport[]>('/community/reports');
+  }
+
+  resolveReport(id: string): Observable<{ ok: boolean }> {
+    return this.api.post<{ ok: boolean }>(`/community/reports/${id}/resolve`, {});
   }
 }

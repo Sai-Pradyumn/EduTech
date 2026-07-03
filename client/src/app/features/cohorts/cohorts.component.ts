@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component, OnInit, computed, inject, signal } from '@angular/core';
 import { DatePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { CohortService } from '../../core/services/cohort.service';
+import { CohortService, PeerLeaderboard } from '../../core/services/cohort.service';
 import { OrgService } from '../../core/services/org.service';
 import { OrgContextService } from '../../core/services/org-context.service';
 import { ToastService } from '../../core/services/toast.service';
@@ -112,16 +112,26 @@ import { ProgressComponent } from '../../shared/ui/progress.component';
               </div>
             </div>
 
-            <!-- Leaderboard -->
+            <!-- Leaderboard (managers: everyone · peers: opt-in both ways) -->
             <div class="card motion-card-reveal" style="padding:18px" [style.--motion-card-index]="1">
               <div class="flex items-center justify-between mb-3">
                 <p class="kicker !mb-0" style="color:var(--green-deep)">Leaderboard</p>
-                @if (canManage() && leaderboard().length) {
-                  <button class="pill" style="cursor:pointer" (click)="exportLeaderboard()">⬇ CSV</button>
-                }
+                <div class="flex items-center gap-2">
+                  @if (!canManage() && peer()?.optedIn) {
+                    <button class="pill" style="cursor:pointer" (click)="optIn(false)">Leave leaderboard</button>
+                  }
+                  @if (canManage() && leaderboard().length) {
+                    <button class="pill" style="cursor:pointer" (click)="exportLeaderboard()">⬇ CSV</button>
+                  }
+                </div>
               </div>
-              @if (leaderboard().length === 0) {
-                <p class="text-sm text-txt-mute">No students yet — add some to populate the leaderboard.</p>
+              @if (!canManage() && peer() && !peer()!.optedIn) {
+                <div class="text-sm text-txt-soft">
+                  <p class="mb-3">The peer leaderboard is opt-in both ways — join it to see the {{ peer()!.listedCount }} member{{ peer()!.listedCount === 1 ? '' : 's' }} already on it. Joining shares your health, readiness and active-days with them.</p>
+                  <button class="pill" style="cursor:pointer" (click)="optIn(true)">Join the leaderboard</button>
+                </div>
+              } @else if (leaderboard().length === 0) {
+                <p class="text-sm text-txt-mute">{{ canManage() ? 'No students yet — add some to populate the leaderboard.' : "No one on the board yet — you're the first. 🎉" }}</p>
               }
               <div class="space-y-2.5">
                 @for (r of leaderboard(); track r.userId) {
@@ -240,6 +250,8 @@ export class CohortsComponent implements OnInit {
   readonly orgCohorts = signal<CohortView[]>([]);
   readonly selected = signal<CohortDetail | null>(null);
   readonly leaderboard = signal<LeaderboardRow[]>([]);
+  /** Peer view of the leaderboard (students) — null for managers. */
+  readonly peer = signal<PeerLeaderboard | null>(null);
   readonly orgMembers = signal<OrgMember[]>([]);
   readonly creating = signal(false);
 
@@ -295,11 +307,36 @@ export class CohortsComponent implements OnInit {
 
   select(id: string): void {
     this.cohorts.detail(id).subscribe({ next: (d) => this.selected.set(d) });
-    this.cohorts.leaderboard(id).subscribe({ next: (l) => this.leaderboard.set(l) });
+    if (this.canManage()) {
+      this.peer.set(null);
+      this.cohorts.leaderboard(id).subscribe({ next: (l) => this.leaderboard.set(l) });
+    } else {
+      // Peers get the opt-in view: rows only once they've joined the board themselves.
+      this.leaderboard.set([]);
+      this.cohorts.peerLeaderboard(id).subscribe({
+        next: (p) => {
+          this.peer.set(p);
+          this.leaderboard.set(p.rows);
+        },
+        error: () => this.peer.set(null),
+      });
+    }
     const orgId = this.orgCtx.activeOrgId();
     if (this.canManage() && orgId) {
       this.orgApi.members(orgId).subscribe({ next: (m) => this.orgMembers.set(m) });
     }
+  }
+
+  /** Join/leave the peer leaderboards, then refresh the view. */
+  optIn(join: boolean): void {
+    this.cohorts.setLeaderboardOptIn(join).subscribe({
+      next: () => {
+        this.toast.success(join ? "You're on the leaderboard now" : 'Left the leaderboard — your scores are hidden again');
+        const c = this.selected();
+        if (c) this.select(c.id);
+      },
+      error: (e) => this.toast.error(e?.message ?? 'Could not update'),
+    });
   }
 
   create(): void {

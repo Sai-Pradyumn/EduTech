@@ -37,3 +37,10 @@ export class CreateThreadDto {
 export class CreateReplyDto {
   @IsString() @MinLength(1) @MaxLength(8000) body!: string;
 }
+
+export class ReportContentDto {
+  @IsMongoId() threadId!: string;
+  /** Present when the report targets a reply inside the thread. */
+  @IsOptional() @IsMongoId() replyId?: string;
+  @IsOptional() @IsString() @MaxLength(300) reason?: string;
+}

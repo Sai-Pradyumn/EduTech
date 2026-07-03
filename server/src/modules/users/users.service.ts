@@ -32,6 +32,13 @@ export class UsersService {
     });
   }
 
+  /** Cohort peer-leaderboard visibility (opt-in; hidden by default). */
+  async setLeaderboardOptIn(userId: string, optIn: boolean): Promise<void> {
+    await this.userModel
+      .updateOne({ _id: userId }, { $set: { leaderboardOptIn: optIn } })
+      .exec();
+  }
+
   /** Find a Google-linked account by email and link/create as needed (Phase 10 · OAuth).
    *  Google has verified the email, so the account is always emailVerified. */
   async findOrCreateGoogle(profile: GoogleProfile): Promise<UserDocument> {

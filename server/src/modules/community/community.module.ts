@@ -8,6 +8,8 @@ import {
   CommunityChannelSchema,
   CommunityReply,
   CommunityReplySchema,
+  CommunityReport,
+  CommunityReportSchema,
   CommunityThread,
   CommunityThreadSchema,
 } from './schemas/community.schema';
@@ -25,6 +27,7 @@ import { CommunityService } from './services/community.service';
       { name: CommunityChannel.name, schema: CommunityChannelSchema },
       { name: CommunityThread.name, schema: CommunityThreadSchema },
       { name: CommunityReply.name, schema: CommunityReplySchema },
+      { name: CommunityReport.name, schema: CommunityReportSchema },
     ]),
     UsersModule,
     TenancyModule,

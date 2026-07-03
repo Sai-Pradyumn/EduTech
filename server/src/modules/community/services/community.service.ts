@@ -13,6 +13,8 @@ import {
   CommunityChannelDocument,
   CommunityReply,
   CommunityReplyDocument,
+  CommunityReport,
+  CommunityReportDocument,
   CommunityThread,
   CommunityThreadDocument,
   ThreadKind,
@@ -58,6 +60,18 @@ export interface ReplyView {
   createdAt: string;
 }
 
+export interface ReportView {
+  id: string;
+  threadId: string;
+  replyId?: string;
+  threadTitle: string;
+  preview: string;
+  reporterName: string;
+  reason: string;
+  status: 'open' | 'resolved';
+  createdAt: string;
+}
+
 const DEFAULT_CHANNELS: {
   name: string;
   slug: string;
@@ -93,6 +107,8 @@ export class CommunityService {
     private readonly threads: Model<CommunityThreadDocument>,
     @InjectModel(CommunityReply.name)
     private readonly replies: Model<CommunityReplyDocument>,
+    @InjectModel(CommunityReport.name)
+    private readonly reports: Model<CommunityReportDocument>,
     private readonly projects: ProjectsService,
   ) {}
 
@@ -326,6 +342,85 @@ export class CommunityService {
     await this.threads
       .updateOne({ _id: reply.thread }, { $inc: { replyCount: -1 } })
       .exec();
+    return { ok: true };
+  }
+
+  // ── moderation reports ────────────────────────────────────────────────────
+
+  /** Flag a thread (or a reply in it). One open report per reporter+target. */
+  async report(
+    orgId: string,
+    userId: string,
+    userName: string,
+    input: { threadId: string; replyId?: string; reason?: string },
+  ): Promise<{ ok: true; duplicate: boolean }> {
+    const thread = await this.threadDoc(input.threadId);
+    let reply: CommunityReplyDocument | null = null;
+    if (input.replyId) {
+      reply = await this.replyDoc(input.replyId);
+      if (String(reply.thread) !== String(thread._id))
+        throw new BadRequestException('That reply is not in this thread.');
+    }
+    const preview = (reply ? reply.body : `${thread.title} — ${thread.body}`)
+      .replace(/\s+/g, ' ')
+      .slice(0, 160);
+
+    const existing = await this.reports
+      .findOne({
+        reporter: new Types.ObjectId(userId),
+        thread: thread._id,
+        status: 'open',
+        ...(reply ? { reply: reply._id } : { reply: { $exists: false } }),
+      })
+      .lean()
+      .exec();
+    if (existing) return { ok: true, duplicate: true };
+
+    await this.reports.create({
+      organization: new Types.ObjectId(orgId),
+      thread: thread._id,
+      ...(reply ? { reply: reply._id } : {}),
+      reporter: new Types.ObjectId(userId),
+      reporterName: userName,
+      reason: (input.reason ?? '').trim().slice(0, 300),
+      threadTitle: thread.title,
+      preview,
+    });
+    return { ok: true, duplicate: false };
+  }
+
+  /** Moderator queue: open reports first (newest), then recent resolved ones. */
+  async listReports(orgId: string): Promise<ReportView[]> {
+    const list = await this.reports
+      .find({ organization: new Types.ObjectId(orgId) })
+      .sort({ status: 1, createdAt: -1 }) // 'open' < 'resolved'
+      .limit(50)
+      .lean<CommunityReportDocument[]>()
+      .exec();
+    return list.map((r) => ({
+      id: String(r._id),
+      threadId: String(r.thread),
+      replyId: r.reply ? String(r.reply) : undefined,
+      threadTitle: r.threadTitle,
+      preview: r.preview,
+      reporterName: r.reporterName,
+      reason: r.reason,
+      status: r.status,
+      createdAt: r.createdAt?.toISOString() ?? '',
+    }));
+  }
+
+  async resolveReport(orgId: string, id: string): Promise<{ ok: true }> {
+    if (!Types.ObjectId.isValid(id))
+      throw new NotFoundException('Report not found');
+    const res = await this.reports
+      .updateOne(
+        { _id: id, organization: new Types.ObjectId(orgId) },
+        { $set: { status: 'resolved' } },
+      )
+      .exec();
+    if (res.matchedCount === 0)
+      throw new NotFoundException('Report not found');
     return { ok: true };
   }
 

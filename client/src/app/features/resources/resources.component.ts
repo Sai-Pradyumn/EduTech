@@ -18,6 +18,7 @@ import {
   ResourceLevel,
   ResourceProgress,
   ResourcesService,
+  SuggestResourceInput,
 } from '../../core/services/resources.service';
 
 const KINDS: { key: ResourceKind | ''; label: string }[] = [
@@ -48,9 +49,34 @@ const LEVELS: { key: ResourceLevel | ''; label: string }[] = [
         <span class="goal-pill"><span class="dot"></span>Curated learning, matched to your goal and weak areas</span>
       </div>
       <div class="flex gap-2.5 shrink-0">
+        <asta-btn variant="ghost" size="sm" (click)="suggesting.set(!suggesting())">{{ suggesting() ? 'Close' : '＋ Suggest a resource' }}</asta-btn>
         <asta-btn variant="ghost" size="sm" (click)="refresh()" [disabled]="loading()">Refresh</asta-btn>
       </div>
     </header>
+
+    <!-- Community submission — pending until an admin approves -->
+    @if (suggesting()) {
+      <div class="card mb-5 motion-card-reveal" style="padding:18px">
+        <p class="kicker mb-1">Suggest a resource</p>
+        <p class="text-[12px] text-txt-mute mb-3">Share something genuinely useful — it stays visible only to you until an admin approves it into the catalog.</p>
+        <div class="grid gap-2 sm:grid-cols-2">
+          <input class="res-input" [(ngModel)]="sgTitle" placeholder="Title" aria-label="Resource title" />
+          <input class="res-input" [(ngModel)]="sgUrl" placeholder="https://…" aria-label="Resource URL" />
+          <input class="res-input" [(ngModel)]="sgProvider" placeholder="Provider (e.g. MDN)" aria-label="Provider" />
+          <input class="res-input" [(ngModel)]="sgTopics" placeholder="topics, comma, separated" aria-label="Topics" />
+          <select class="res-input" [(ngModel)]="sgKind" aria-label="Kind">
+            @for (k of kinds; track k.key) { @if (k.key) { <option [value]="k.key">{{ k.label }}</option> } }
+          </select>
+          <select class="res-input" [(ngModel)]="sgLevel" aria-label="Level">
+            @for (l of levels; track l.key) { @if (l.key) { <option [value]="l.key">{{ l.label }}</option> } }
+          </select>
+        </div>
+        <textarea class="res-input mt-2 w-full" rows="2" [(ngModel)]="sgDesc" placeholder="One honest sentence on why it's worth someone's time" aria-label="Description"></textarea>
+        <div class="mt-3">
+          <asta-btn variant="accent" size="sm" [disabled]="!canSuggest() || suggestBusy()" (click)="suggest()">{{ suggestBusy() ? 'Submitting…' : 'Submit for review' }}</asta-btn>
+        </div>
+      </div>
+    }
 
     <!-- For you -->
     @if (loadingForYou()) {
@@ -124,6 +150,7 @@ const LEVELS: { key: ResourceLevel | ''; label: string }[] = [
           @for (r of catalog(); track r.id; let i = $index) {
             <div class="res" [style.--motion-card-index]="i % 3">
               <div class="res-meta">{{ r.provider }} · {{ kindLabel(r.kind) }} · {{ r.level }}@if (r.minutes) { · ~{{ hours(r.minutes) }}}@if (!r.free) { · paid }</div>
+              @if (r.status === 'pending') { <span class="why" style="color:var(--amber-deep,#b45309)">⏳ pending review — visible only to you</span> }
               <a class="res-title" [href]="r.url" target="_blank" rel="noopener noreferrer">{{ r.title }} ↗</a>
               <p class="res-desc">{{ r.description }}</p>
               <div class="res-topics">
@@ -133,6 +160,7 @@ const LEVELS: { key: ResourceLevel | ''; label: string }[] = [
               </div>
               <div class="res-actions">
                 <asta-btn [variant]="r.progress ? 'ghost' : 'accent'" size="sm" (click)="cycle(r)">{{ actionLabel(r.progress) }}</asta-btn>
+                <button type="button" class="upv" [class.on]="r.hasUpvoted" (click)="upvote(r)" [attr.aria-label]="(r.hasUpvoted ? 'Remove upvote from ' : 'Upvote ') + r.title">▲ {{ r.upvotes }}</button>
                 @if (r.progress) { <span class="pill state-{{ r.progress }}">{{ stateLabel(r.progress) }}</span> }
               </div>
             </div>
@@ -158,6 +186,9 @@ const LEVELS: { key: ResourceLevel | ''; label: string }[] = [
     .seg{font-size:12px;padding:5px 11px;border-radius:999px;border:1px solid var(--paper-3);background:var(--paper-2);color:var(--txt-soft);cursor:pointer;transition:all .15s var(--ease)}
     .seg:hover{border-color:var(--green)}
     .seg-on{background:var(--ink);color:var(--paper);border-color:var(--ink)}
+    .upv{font-size:11.5px;font-weight:600;padding:4px 10px;border-radius:999px;border:1px solid var(--paper-3);background:var(--paper);color:var(--txt-soft);cursor:pointer;transition:all .15s var(--ease)}
+    .upv:hover{border-color:var(--green);color:var(--green-deep)}
+    .upv.on{border-color:var(--green);color:var(--green-deep);background:color-mix(in oklab,var(--green) 12%,transparent)}
     .state-saved{color:var(--peri-deep)}
     .state-in_progress{color:var(--amber-deep,#b45309)}
     .state-done{color:var(--green-deep)}
@@ -183,6 +214,61 @@ export class ResourcesComponent implements OnInit {
   readonly doneCount = computed(
     () => this.library().filter((r) => r.progress === 'done').length,
   );
+
+  // ── community submission ──
+  readonly suggesting = signal(false);
+  readonly suggestBusy = signal(false);
+  sgTitle = '';
+  sgUrl = '';
+  sgProvider = '';
+  sgTopics = '';
+  sgKind: ResourceKind = 'article';
+  sgLevel: ResourceLevel = 'beginner';
+  sgDesc = '';
+
+  canSuggest(): boolean {
+    return this.sgTitle.trim().length >= 3 && /^https?:\/\/\S+/.test(this.sgUrl.trim()) && this.sgProvider.trim().length >= 2;
+  }
+
+  suggest(): void {
+    if (!this.canSuggest() || this.suggestBusy()) return;
+    this.suggestBusy.set(true);
+    const input: SuggestResourceInput = {
+      title: this.sgTitle.trim(),
+      url: this.sgUrl.trim(),
+      provider: this.sgProvider.trim(),
+      kind: this.sgKind,
+      level: this.sgLevel,
+      topics: this.sgTopics.split(',').map((t) => t.trim()).filter(Boolean).slice(0, 6),
+      description: this.sgDesc.trim() || undefined,
+    };
+    this.api.suggest(input).subscribe({
+      next: (r) => {
+        this.suggestBusy.set(false);
+        this.suggesting.set(false);
+        this.sgTitle = this.sgUrl = this.sgProvider = this.sgTopics = this.sgDesc = '';
+        this.catalog.update((list) => [r, ...list]);
+        this.toast.success('Submitted — it stays visible only to you until an admin approves it');
+      },
+      error: (e) => {
+        this.suggestBusy.set(false);
+        this.toast.error(e?.message ?? 'Could not submit');
+      },
+    });
+  }
+
+  upvote(r: LearningResource): void {
+    this.api.upvote(r.id).subscribe({
+      next: (updated) => {
+        const patch = (list: LearningResource[]) =>
+          list.map((x) => (x.id === r.id ? { ...x, upvotes: updated.upvotes, hasUpvoted: updated.hasUpvoted } : x));
+        this.catalog.update(patch);
+        this.forYou.update(patch);
+        this.library.update(patch);
+      },
+      error: (e) => this.toast.error(e?.message ?? 'Could not upvote'),
+    });
+  }
 
   ngOnInit(): void {
     this.refresh();

@@ -54,3 +54,16 @@ export interface CreateThreadRequest {
   tags?: string[];
   projectId?: string;
 }
+
+/** One entry in the moderator report queue. */
+export interface CommunityReport {
+  id: string;
+  threadId: string;
+  replyId?: string;
+  threadTitle: string;
+  preview: string;
+  reporterName: string;
+  reason: string;
+  status: 'open' | 'resolved';
+  createdAt: string;
+}

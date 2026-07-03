@@ -1,5 +1,6 @@
 import {
   IsArray,
+  IsBoolean,
   IsDateString,
   IsEnum,
   IsIn,
@@ -37,4 +38,8 @@ export class AddCohortMembersDto {
 export class AnnouncementDto {
   @IsString() @MinLength(1) @MaxLength(160) title!: string;
   @IsOptional() @IsString() @MaxLength(2000) body?: string;
+}
+
+export class LeaderboardOptInDto {
+  @IsBoolean() optIn!: boolean;
 }

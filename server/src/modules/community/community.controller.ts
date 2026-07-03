@@ -22,6 +22,7 @@ import {
   CreateChannelDto,
   CreateReplyDto,
   CreateThreadDto,
+  ReportContentDto,
 } from './dto/community.dto';
 
 /**
@@ -143,6 +144,39 @@ export class CommunityController {
     @Param('id') id: string,
   ) {
     return this.community.deleteReply(id, user.id, this.canModerate(ctx));
+  }
+
+  // ── moderation reports ───────────────────────────────────────────────────
+
+  /** Any member can flag a thread/reply; duplicates are absorbed quietly. */
+  @Post('report')
+  async report(
+    @CurrentUser() user: AuthUser,
+    @CurrentOrg() ctx: OrgContext,
+    @Body() dto: ReportContentDto,
+  ) {
+    await this.assertThreadOrg(ctx, dto.threadId);
+    const reporter = await this.users.findByIdOrThrow(user.id);
+    return this.community.report(this.orgOrThrow(ctx), user.id, reporter.name, {
+      threadId: dto.threadId,
+      replyId: dto.replyId,
+      reason: dto.reason,
+    });
+  }
+
+  /** Moderator queue (OrgManage): open reports first, then recent resolved. */
+  @Get('reports')
+  reports(@CurrentOrg() ctx: OrgContext) {
+    if (!this.canModerate(ctx))
+      throw new ForbiddenException('Moderators only.');
+    return this.community.listReports(this.orgOrThrow(ctx));
+  }
+
+  @Post('reports/:id/resolve')
+  resolveReport(@CurrentOrg() ctx: OrgContext, @Param('id') id: string) {
+    if (!this.canModerate(ctx))
+      throw new ForbiddenException('Moderators only.');
+    return this.community.resolveReport(this.orgOrThrow(ctx), id);
   }
 
   // ── isolation helpers ──────────────────────────────────────────────────────
