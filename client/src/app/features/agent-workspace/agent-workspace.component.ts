@@ -32,6 +32,16 @@ interface WorkspaceConfig {
   starters: string[];
 }
 
+/** Per-agent conversation, kept in memory so switching agent routes preserves each chat. */
+interface PersonaState {
+  agentType: string;
+  messages: ChatMsg[];
+  steps: WorkflowStepView[];
+  sessionId?: string;
+  busy: boolean;
+  lastTopic: string;
+}
+
 const DEFAULT: WorkspaceConfig = { agentType: 'tutor', title: 'AI Agent', subtitle: '', avatar: 'A', starters: [] };
 
 /**
@@ -240,8 +250,23 @@ export class AgentWorkspaceComponent implements OnInit {
   readonly liveStatus = signal('');
 
   draft = '';
-  private sessionId?: string;
-  private lastTopic = '';
+  /**
+   * One conversation per agent persona. Navigating between agent routes reuses this
+   * component; we snapshot/restore per agentType so an in-progress chat is never
+   * wiped, and streams write to their own persona state even after you switch away
+   * (AGENT-BUG-001).
+   */
+  private readonly states = new Map<string, PersonaState>();
+  private active: PersonaState = this.stateFor(DEFAULT.agentType);
+
+  private stateFor(agentType: string): PersonaState {
+    let s = this.states.get(agentType);
+    if (!s) {
+      s = { agentType, messages: [], steps: [], sessionId: undefined, busy: false, lastTopic: '' };
+      this.states.set(agentType, s);
+    }
+    return s;
+  }
 
   readonly latest = computed(() => {
     const m = this.messages();
@@ -253,20 +278,30 @@ export class AgentWorkspaceComponent implements OnInit {
   readonly latestRecommended = computed(() => this.latest()?.recommended ?? []);
 
   ngOnInit(): void {
-    // Reset when navigating between agent routes (same component, different data).
+    // Switch personas when navigating between agent routes (same component, different
+    // data) — keep each persona's chat instead of wiping it.
     this.route.data.subscribe((data) => {
+      const agentType = (data['agentType'] as string) ?? DEFAULT.agentType;
       this.cfg.set({
-        agentType: (data['agentType'] as string) ?? DEFAULT.agentType,
+        agentType,
         title: (data['title'] as string) ?? DEFAULT.title,
         subtitle: (data['subtitle'] as string) ?? '',
         avatar: (data['avatar'] as string) ?? 'A',
         starters: (data['starters'] as string[]) ?? [],
       });
-      this.messages.set([]);
-      this.steps.set([]);
-      this.sessionId = undefined;
+      if (this.active.agentType === agentType) return; // same persona re-emit
+      this.active = this.stateFor(agentType);
       this.draft = '';
+      this.reflect();
     });
+  }
+
+  /** Push the active persona's state into the render signals. */
+  private reflect(): void {
+    this.messages.set([...this.active.messages]);
+    this.steps.set([...this.active.steps]);
+    this.busy.set(this.active.busy);
+    this.liveStatus.set('');
   }
 
   onComposer(e: ComposerSubmit): void {
@@ -279,44 +314,48 @@ export class AgentWorkspaceComponent implements OnInit {
   }
 
   send(text: string): void {
+    const st = this.active;
     const message = text.trim();
-    if (!message || this.busy()) return;
-    this.lastTopic = message;
+    if (!message || st.busy) return;
+    st.lastTopic = message;
     this.draft = '';
-    this.busy.set(true);
-    this.liveStatus.set('Asta is responding…');
-    this.steps.set([]);
+    st.busy = true;
+    this.syncBusy(st);
+    if (st === this.active) this.liveStatus.set('Asta is responding…');
+    st.steps = [];
+    this.syncSteps(st);
 
-    this.push({ role: 'user', content: message, visualBlocks: [], actions: [], followUps: [], recommended: [], streaming: false });
+    this.pushMsg(st, { role: 'user', content: message, visualBlocks: [], actions: [], followUps: [], recommended: [], streaming: false });
     const assistant: ChatMsg = { role: 'assistant', content: '', visualBlocks: [], actions: [], followUps: [], recommended: [], streaming: true };
-    this.push(assistant);
+    this.pushMsg(st, assistant);
 
-    this.agent.stream({ message, sessionId: this.sessionId, agentType: this.cfg().agentType }).subscribe({
+    this.agent.stream({ message, sessionId: st.sessionId, agentType: st.agentType }).subscribe({
       next: (e) => {
         // Terminal stream error events complete (not error) the socket observable —
         // route them to the REST fallback so a recoverable failure still answers.
         if (e.type === 'error') {
-          this.restFallback(message, assistant);
+          this.restFallback(st, message, assistant);
           return;
         }
-        this.onEvent(e, assistant);
+        this.onEvent(st, e, assistant);
       },
-      error: () => this.restFallback(message, assistant),
+      error: () => this.restFallback(st, message, assistant),
     });
   }
 
   /** Non-streaming recovery: keep partial content, else answer via the REST endpoint. */
-  private restFallback(message: string, assistant: ChatMsg): void {
+  private restFallback(st: PersonaState, message: string, assistant: ChatMsg): void {
     if (assistant.content) {
       assistant.streaming = false;
-      this.bump();
-      this.busy.set(false);
-      this.liveStatus.set('Response ready.');
+      this.bump(st);
+      st.busy = false;
+      this.syncBusy(st);
+      if (st === this.active) this.liveStatus.set('Response ready.');
       return;
     }
-    this.agent.send(message, { sessionId: this.sessionId, agentType: this.cfg().agentType }).subscribe({
+    this.agent.send(message, { sessionId: st.sessionId, agentType: st.agentType }).subscribe({
       next: (r) => {
-        this.sessionId = r.sessionId;
+        st.sessionId = r.sessionId;
         assistant.content = r.response.answer;
         assistant.visualBlocks = r.response.visualBlocks;
         assistant.actions = r.response.actions;
@@ -325,24 +364,26 @@ export class AgentWorkspaceComponent implements OnInit {
         assistant.agentType = r.response.agentType;
         assistant.messageId = r.messageId;
         assistant.streaming = false;
-        this.bump();
-        this.busy.set(false);
-        this.liveStatus.set('Response ready.');
+        this.bump(st);
+        st.busy = false;
+        this.syncBusy(st);
+        if (st === this.active) this.liveStatus.set('Response ready.');
         this.bus.invalidate(r.response.invalidate);
       },
       error: () => {
         assistant.streaming = false;
         if (!assistant.content) assistant.failed = true;
-        this.bump();
-        this.busy.set(false);
-        this.liveStatus.set('The response failed.');
+        this.bump(st);
+        st.busy = false;
+        this.syncBusy(st);
+        if (st === this.active) this.liveStatus.set('The response failed.');
       },
     });
   }
 
   /** Re-send the last user prompt after a failed response. */
   retry(): void {
-    if (this.lastTopic) this.send(this.lastTopic);
+    if (this.active.lastTopic) this.send(this.active.lastTopic);
   }
 
   runAction(a: AgentAction): void {
@@ -362,7 +403,7 @@ export class AgentWorkspaceComponent implements OnInit {
       this.send('Show me the fix');
       return;
     }
-    const topic = (a.payload?.['topic'] as string) ?? this.lastTopic;
+    const topic = (a.payload?.['topic'] as string) ?? this.active.lastTopic;
     switch (a.kind) {
       case 'simpler': this.send(`Explain ${topic} in a simpler way`); break;
       case 'ask_interviewer': this.send(`Interview me on ${topic}`); break;
@@ -376,21 +417,21 @@ export class AgentWorkspaceComponent implements OnInit {
     this.agent.sendFeedback(rating, msg.messageId).subscribe({ next: () => this.toast.success('Thanks for the feedback') });
   }
 
-  private onEvent(e: AgentStreamEvent, assistant: ChatMsg): void {
+  private onEvent(st: PersonaState, e: AgentStreamEvent, assistant: ChatMsg): void {
     switch (e.type) {
-      case 'started': this.sessionId = e.sessionId; break;
+      case 'started': st.sessionId = e.sessionId; break;
       case 'plan':
-        if (e.steps.length > 1) this.steps.update((s) => [...s, { kind: 'tool_call', label: `Plan: ${e.steps.map((p) => p.agentType.replace('_', ' ')).join(' → ')}` }]);
+        if (e.steps.length > 1) this.addStep(st, { kind: 'tool_call', label: `Plan: ${e.steps.map((p) => p.agentType.replace('_', ' ')).join(' → ')}` });
         break;
       case 'step_started':
-        if (e.index > 0) this.steps.update((s) => [...s, { kind: 'thinking', label: `Step ${e.index + 1}: ${e.goal}` }]);
+        if (e.index > 0) this.addStep(st, { kind: 'thinking', label: `Step ${e.index + 1}: ${e.goal}` });
         break;
       case 'step_completed': break;
-      case 'thinking': this.steps.update((s) => [...s, { kind: 'thinking', label: e.label }]); break;
-      case 'tool_call': this.steps.update((s) => [...s, { kind: 'tool_call', label: e.label }]); break;
-      case 'tool_result': this.steps.update((s) => [...s, { kind: 'tool_result', label: e.summary }]); break;
-      case 'chunk': assistant.content += e.delta; this.bump(); break;
-      case 'visual_block': assistant.visualBlocks = [...assistant.visualBlocks, e.block]; this.bump(); break;
+      case 'thinking': this.addStep(st, { kind: 'thinking', label: e.label }); break;
+      case 'tool_call': this.addStep(st, { kind: 'tool_call', label: e.label }); break;
+      case 'tool_result': this.addStep(st, { kind: 'tool_result', label: e.summary }); break;
+      case 'chunk': assistant.content += e.delta; this.bump(st); break;
+      case 'visual_block': assistant.visualBlocks = [...assistant.visualBlocks, e.block]; this.bump(st); break;
       case 'completed':
         assistant.content = e.response.answer;
         assistant.visualBlocks = e.response.visualBlocks;
@@ -400,26 +441,44 @@ export class AgentWorkspaceComponent implements OnInit {
         assistant.agentType = e.response.agentType;
         assistant.streaming = false;
         assistant.messageId = e.messageId;
-        this.steps.update((s) => [...s, { kind: 'done', label: 'Done' }]);
-        this.bump();
-        this.busy.set(false);
-        this.liveStatus.set('Response ready.');
+        this.addStep(st, { kind: 'done', label: 'Done' });
+        this.bump(st);
+        st.busy = false;
+        this.syncBusy(st);
+        if (st === this.active) this.liveStatus.set('Response ready.');
         this.bus.invalidate(e.response.invalidate);
         break;
       case 'error':
         assistant.streaming = false;
         if (!assistant.content) assistant.failed = true;
-        this.bump();
-        this.busy.set(false);
-        this.liveStatus.set('The response failed.');
+        this.bump(st);
+        st.busy = false;
+        this.syncBusy(st);
+        if (st === this.active) this.liveStatus.set('The response failed.');
         break;
     }
   }
 
-  private push(m: ChatMsg): void {
-    this.messages.update((list) => [...list, m]);
+  // ── persona-state ↔ render-signal sync (only the active persona drives the view) ──
+  private pushMsg(st: PersonaState, m: ChatMsg): void {
+    st.messages = [...st.messages, m];
+    this.syncMsgs(st);
   }
-  private bump(): void {
-    this.messages.update((list) => [...list]);
+  private addStep(st: PersonaState, step: WorkflowStepView): void {
+    st.steps = [...st.steps, step];
+    this.syncSteps(st);
+  }
+  /** Assistant objects mutate in place while streaming — re-emit the array to render. */
+  private bump(st: PersonaState): void {
+    this.syncMsgs(st);
+  }
+  private syncMsgs(st: PersonaState): void {
+    if (st === this.active) this.messages.set([...st.messages]);
+  }
+  private syncSteps(st: PersonaState): void {
+    if (st === this.active) this.steps.set([...st.steps]);
+  }
+  private syncBusy(st: PersonaState): void {
+    if (st === this.active) this.busy.set(st.busy);
   }
 }
