@@ -20,11 +20,18 @@
     "lint": "npm run lint --workspace server && npm run lint --workspace client --if-present",
     "test": "npm run test --workspace server && npm run test --workspace client",
     "test:e2e": "playwright test --config e2e/playwright.config.ts",
-    "test:e2e:install": "playwright install chromium"
+    "test:e2e:install": "playwright install chromium",
+    "prepare": "husky"
+  },
+  "lint-staged": {
+    "server/src/**/*.ts": "eslint --fix --config server/eslint.config.mjs",
+    "client/src/**/*.{ts,html}": "eslint --fix --config client/eslint.config.js"
   },
   "devDependencies": {
     "@playwright/test": "^1.49.0",
-    "concurrently": "^9.1.0"
+    "concurrently": "^9.1.0",
+    "husky": "^9.1.7",
+    "lint-staged": "^16.4.0"
   },
   "overrides": {
     "dompurify": "^3.4.0"

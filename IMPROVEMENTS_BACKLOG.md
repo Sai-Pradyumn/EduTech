@@ -51,7 +51,7 @@ effort `S` (hours) · `M` (a day) · `L` (multi-day).
 
 ## 7. Data consistency
 - [x] Streak harmonized (topbar now uses the canonical daily-plan streak).
-- [ ] `P2·S` **Audit other dual-source metrics** — health/readiness appear in multiple places (dashboard, cohort, reports, skill-twin); confirm they derive from one source.
+- [x] **Audit other dual-source metrics** — verified 2026-07: health/readiness derive from ONE source everywhere (LearningIntelligenceService.overview) — skill-twin (`readiness = overview.readinessScore`, `health: overview.healthScore`), reports (`li.healthScore`), cohort leaderboards (`intelligence.overview`), dashboard/cockpit (same endpoint). The cockpit now also exposes the exact blend ("why?" drill-downs).
 - [ ] `P3·S` **Timezone correctness** — daily-plan "today" uses UTC slice; verify behaviour for non-UTC users (streak/day boundaries).
 
 ## 8. Feature depth vs industry (2026-07 audit → `FEATURE_INDUSTRY_AUDIT.md`)
@@ -67,6 +67,7 @@ effort `S` (hours) · `M` (a day) · `L` (multi-day).
 - [x] **Memory manager** — profile section lists everything Asta knows (confirmed + observed) with two-click delete; remember/forget-by-chat names exactly what changed.
 - [x] **Time-based engagement** — daily inactivity + due-review nudges, Monday week-in-review digest (in-app always; email when SMTP configured), session-soon reminders (@nestjs/schedule crons, createUnique-deduped).
 - [x] **Version diff view** — "What changed?" per roadmap version (week-level added/removed/changed + field changes) before restoring; plus weekly-plan ICS export.
+- [x] **Round 2 (2026-07) — everything else in `FEATURE_INDUSTRY_AUDIT.md` closed**: OS cross-session search + pinned sessions + tutor export, flows complete-from-chat + "did you mean" suggester + repair-weakest, practice hidden grading cases, quiz per-question timing, interview company-archetype ladder, time-aware Today, KH audio overview, community moderation queue, opt-in peer leaderboard, resource submissions + upvotes, cockpit "why" drill-downs, resume-course strip, weekly session series.
 
 ## 9. UX & features
 - [x] **Keyboard-shortcuts help overlay** (`?`) — modal listing app + palette shortcuts.
@@ -84,7 +85,7 @@ effort `S` (hours) · `M` (a day) · `L` (multi-day).
 - [ ] `P3·M` **Expand offline coverage** — the offline cache + sync queue exist; extend the cached GET allowlist and add offline-friendly empty states on more screens.
 
 ## 12. Docs & DevEx
-- [ ] `P2·S` **Pre-commit hooks** — husky + lint-staged. _Deferred:_ the server lint script bakes in `--fix` (mutates files) and flat-config resolution from the monorepo root is fiddly; do it once client lint exists so one lint-staged config covers both.
+- [x] **Pre-commit hooks** — husky + lint-staged at the monorepo root: staged `server/src/**/*.ts` and `client/src/**/*.{ts,html}` are eslint-`--fix`ed against their own flat configs before every commit (the old deferral reason — no client lint — is long gone).
 - [x] **API docs** — Swagger UI served at `/api/docs`, generated from the Nest controllers (non-production by default; `ENABLE_API_DOCS=true` to expose in prod).
 - [ ] `P3·S` **ADRs** — short architecture-decision records for the big calls (Agent OS pipeline, provider abstraction, entitlements).
 
