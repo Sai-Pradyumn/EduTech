@@ -19,6 +19,33 @@ export class MistakesChatCommands implements OnModuleInit {
 
   onModuleInit(): void {
     this.registry.register({
+      name: 'mistakes.log',
+      description: 'Log a concept you keep getting wrong',
+      examples: [
+        'I keep getting recursion wrong',
+        'log a mistake: async/await',
+      ],
+      match: (m) => {
+        const t = m.trim();
+        if (!t || t.includes('?')) return null;
+        const r =
+          /(?:i\s+)?(?:keep|always|often|constantly)\s+(?:getting|get)\s+(.{2,60}?)\s+wrong\b/i.exec(
+            t,
+          ) ??
+          /(?:i\s+)?(?:keep|always)\s+(?:messing\s+up|failing\s+at)\s+(.{2,60})/i.exec(
+            t,
+          ) ??
+          /(?:i(?:'m| am)?\s+)?struggl(?:e|ing)\s+with\s+(.{2,60})/i.exec(t) ??
+          /log\s+(?:a\s+)?mistake(?:\s+for|:)?\s+(.{2,60})/i.exec(t) ??
+          /track\s+(.{2,60}?)\s+as\s+(?:a\s+)?(?:weak\s+area|weakness|gap|mistake)/i.exec(
+            t,
+          );
+        return r ? { concept: r[1].trim() } : null;
+      },
+      execute: (userId, p) => this.logMistake(userId, p.concept as string),
+    });
+
+    this.registry.register({
       name: 'mistakes.start_review',
       description: 'Open the spaced-review queue',
       examples: ['start my review', 'review my mistakes'],
@@ -61,6 +88,35 @@ export class MistakesChatCommands implements OnModuleInit {
       },
       execute: (userId) => this.repairWeakest(userId),
     });
+  }
+
+  /** Log a concept the learner keeps getting wrong as a real, reviewable mistake. */
+  private async logMistake(
+    userId: string,
+    concept: string,
+  ): Promise<ChatCommandResult> {
+    const clean = concept
+      .trim()
+      .replace(/[.!,;:]+$/, '')
+      .replace(/^(?:the|understanding|doing|with)\s+/i, '')
+      .trim()
+      .slice(0, 80);
+    if (clean.length < 2) {
+      return {
+        ok: false,
+        summary:
+          'I couldn\'t tell which concept to log — try "I keep getting recursion wrong".',
+      };
+    }
+    const mistake = await this.mistakes.captureManual(userId, {
+      concept: clean,
+    });
+    return {
+      ok: true,
+      summary: `Logged "${mistake.concept}" as a weak area (severity ${mistake.severity}/100). It'll surface in your spaced-review queue — recall it a few times and it fades.`,
+      route: '/app/mistakes',
+      routeLabel: 'Open Mistake OS',
+    };
   }
 
   private async repairWeakest(userId: string): Promise<ChatCommandResult> {

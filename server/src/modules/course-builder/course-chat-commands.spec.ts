@@ -40,6 +40,15 @@ function courses() {
 function build() {
   const service = {
     list: jest.fn().mockResolvedValue(courses()),
+    generate: jest
+      .fn()
+      .mockImplementation((_u: string, dto: { goal: string }) =>
+        Promise.resolve({
+          _id: 'cNew',
+          title: `${dto.goal} course`,
+          modules: [{ id: 'm0', lessons: [{ id: 'l0' }, { id: 'l1' }] }],
+        }),
+      ),
     setArchived: jest
       .fn()
       .mockImplementation((_u: string, id: string, archived: boolean) => {
@@ -117,5 +126,30 @@ describe('CourseChatCommands', () => {
     );
     expect(results).toEqual([]);
     expect(service.setArchived).not.toHaveBeenCalled();
+  });
+
+  it('"create a course on react hooks" generates a REAL course', async () => {
+    const { registry, service } = build();
+    const [r] = await registry.detectAndExecute(
+      'u1',
+      'create a course on react hooks',
+    );
+    expect(service.generate).toHaveBeenCalledWith('u1', {
+      goal: 'react hooks',
+    });
+    expect(r.ok).toBe(true);
+    expect(r.summary).toContain('Created a new course');
+    expect(r.route).toBe('/app/course-builder/cNew');
+    expect(r.affects).toEqual(['course', 'dashboard']);
+  });
+
+  it('"can you create a course for me?" is a question → never creates', async () => {
+    const { registry, service } = build();
+    const results = await registry.detectAndExecute(
+      'u1',
+      'can you create a course for me?',
+    );
+    expect(results).toEqual([]);
+    expect(service.generate).not.toHaveBeenCalled();
   });
 });

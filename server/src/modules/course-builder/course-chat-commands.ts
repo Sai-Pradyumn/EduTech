@@ -22,6 +22,24 @@ export class CourseChatCommands implements OnModuleInit {
 
   onModuleInit(): void {
     this.registry.register({
+      name: 'course.create',
+      description: 'Create a new course for a topic',
+      examples: [
+        'create a course on typescript',
+        'build me a course for react hooks',
+      ],
+      match: (m) =>
+        this.guarded(m, () => {
+          const r =
+            /(?:create|generate|make|build|design)\s+(?:me\s+)?(?:a\s+|an\s+|my\s+)?(?:new\s+)?course\s+(?:on|about|for|to\s+(?:learn|teach|master))\s+(.{3,200})/i.exec(
+              m.trim(),
+            );
+          return r ? { goal: r[1].trim() } : null;
+        }),
+      execute: (userId, p) => this.createCourse(userId, p.goal as string),
+    });
+
+    this.registry.register({
       name: 'course.archive',
       description: 'Archive a course',
       examples: ['archive my typescript course'],
@@ -64,6 +82,32 @@ export class CourseChatCommands implements OnModuleInit {
         }),
       execute: (userId, p) => this.continueCourse(userId, p.name as string),
     });
+  }
+
+  /** Create a real course from a chat request via the normal generation pipeline. */
+  private async createCourse(
+    userId: string,
+    goal: string,
+  ): Promise<ChatCommandResult> {
+    const clean = goal
+      .replace(/[.!?]+$/, '')
+      .trim()
+      .slice(0, 160);
+    if (clean.length < 2) {
+      return {
+        ok: false,
+        summary:
+          'I couldn\'t tell what the course should cover — try "create a course on TypeScript".',
+      };
+    }
+    const course = await this.courses.generate(userId, { goal: clean });
+    const lessons = course.modules.flatMap((m) => m.lessons).length;
+    return {
+      ok: true,
+      summary: `Created a new course — "${course.title}" (${course.modules.length} modules, ${lessons} lessons). It's a private draft you can refine and publish.`,
+      route: `/app/course-builder/${String(course._id)}`,
+      routeLabel: 'Open course',
+    };
   }
 
   private async archive(
