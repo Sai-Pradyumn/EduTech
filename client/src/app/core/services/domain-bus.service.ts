@@ -13,7 +13,10 @@ export type DomainKey =
   | 'skillTwin'
   | 'ledger'
   | 'memory'
-  | 'profile';
+  | 'profile'
+  | 'portfolio'
+  | 'applications'
+  | 'passport';
 
 /**
  * App-wide invalidation bus. When Asta (or a chat command) writes a domain, the

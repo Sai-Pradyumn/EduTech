@@ -1,4 +1,5 @@
-import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, inject, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { ButtonComponent } from '../../shared/ui/button.component';
@@ -16,6 +17,7 @@ import {
 } from '../../core/services/skill-passport.service';
 import { LedgerService } from '../../core/services/ledger.service';
 import { LEDGER_KIND_META, LedgerKind } from '../../core/services/ledger.service';
+import { DomainBusService } from '../../core/services/domain-bus.service';
 
 @Component({
     selector: 'asta-skill-passport',
@@ -259,6 +261,8 @@ export class SkillPassportComponent {
   private readonly ledger = inject(LedgerService);
   private readonly toast = inject(ToastService);
   private readonly router = inject(Router);
+  private readonly bus = inject(DomainBusService);
+  private readonly destroyRef = inject(DestroyRef);
 
   readonly p = signal<SkillPassport | null>(null);
   readonly loading = signal(true);
@@ -273,7 +277,11 @@ export class SkillPassportComponent {
     return this.showAllTimeline() ? pp.timeline : pp.timeline.slice(0, 14);
   }
 
-  constructor() { this.refresh(); }
+  constructor() {
+    this.refresh();
+    // Reload when passport-affecting data changes elsewhere (privacy reset, new proof).
+    this.bus.on(['passport', 'skillTwin', 'ledger']).pipe(takeUntilDestroyed(this.destroyRef)).subscribe(() => this.refresh());
+  }
 
   refresh(): void {
     this.loading.set(true); this.loadError.set(false);

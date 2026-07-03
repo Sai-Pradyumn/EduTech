@@ -1,4 +1,5 @@
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, computed, inject, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { forkJoin } from 'rxjs';
 import { FormsModule } from '@angular/forms';
 import { ButtonComponent } from '../../shared/ui/button.component';
@@ -6,6 +7,7 @@ import { CardComponent } from '../../shared/ui/card.component';
 import { RingComponent } from '../../shared/ui/ring.component';
 import { SkeletonComponent } from '../../shared/ui/skeleton.component';
 import { ToastService } from '../../core/services/toast.service';
+import { DomainBusService } from '../../core/services/domain-bus.service';
 import { Application, ApplicationService, JdMatch } from '../../core/services/resume.service';
 
 @Component({
@@ -208,6 +210,8 @@ import { Application, ApplicationService, JdMatch } from '../../core/services/re
 export class ApplicationsComponent {
   private readonly api = inject(ApplicationService);
   private readonly toast = inject(ToastService);
+  private readonly bus = inject(DomainBusService);
+  private readonly destroyRef = inject(DestroyRef);
   readonly statuses: Application['status'][] = ['saved', 'applied', 'interviewing', 'offer', 'rejected'];
   readonly company = signal('');
   readonly role = signal('');
@@ -270,7 +274,14 @@ export class ApplicationsComponent {
     return sorted;
   });
 
-  constructor() { this.api.list().subscribe({ next: (a) => { this.apps.set(a); this.loading.set(false); }, error: () => this.loading.set(false) }); }
+  constructor() {
+    this.reload();
+    // Reload if applications are cleared elsewhere (e.g. Data & Privacy → clear tracker).
+    this.bus.on(['applications']).pipe(takeUntilDestroyed(this.destroyRef)).subscribe(() => this.reload());
+  }
+  private reload(): void {
+    this.api.list().subscribe({ next: (a) => { this.apps.set(a); this.loading.set(false); }, error: () => this.loading.set(false) });
+  }
 
   // ── bulk selection ──
   readonly selected = signal<Set<string>>(new Set());

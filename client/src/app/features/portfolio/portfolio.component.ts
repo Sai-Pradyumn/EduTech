@@ -1,10 +1,12 @@
-import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, inject, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import { ButtonComponent } from '../../shared/ui/button.component';
 import { CardComponent } from '../../shared/ui/card.component';
 import { EmptyStateComponent } from '../../shared/ui/empty-state.component';
 import { SkeletonComponent } from '../../shared/ui/skeleton.component';
 import { ToastService } from '../../core/services/toast.service';
+import { DomainBusService } from '../../core/services/domain-bus.service';
 import { Portfolio, PortfolioService } from '../../core/services/portfolio.service';
 
 @Component({
@@ -130,6 +132,8 @@ import { Portfolio, PortfolioService } from '../../core/services/portfolio.servi
 export class PortfolioComponent {
   private readonly api = inject(PortfolioService);
   private readonly toast = inject(ToastService);
+  private readonly bus = inject(DomainBusService);
+  private readonly destroyRef = inject(DestroyRef);
   readonly p = signal<Portfolio | null>(null);
   readonly loading = signal(true);
   readonly loadError = signal(false);
@@ -138,7 +142,11 @@ export class PortfolioComponent {
   readonly linkUrl = signal('');
   private patchBuf: Partial<Portfolio> = {};
 
-  constructor() { this.refresh(); }
+  constructor() {
+    this.refresh();
+    // Reload if the portfolio is changed elsewhere (e.g. Data & Privacy → go private).
+    this.bus.on(['portfolio']).pipe(takeUntilDestroyed(this.destroyRef)).subscribe(() => this.refresh());
+  }
 
   addLink(): void {
     const cur = this.p();

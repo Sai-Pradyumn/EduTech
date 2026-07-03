@@ -3,6 +3,7 @@ import { ButtonComponent } from '../../shared/ui/button.component';
 import { CardComponent } from '../../shared/ui/card.component';
 import { SkeletonComponent } from '../../shared/ui/skeleton.component';
 import { ToastService } from '../../core/services/toast.service';
+import { DomainBusService, DomainKey } from '../../core/services/domain-bus.service';
 import { PrivacyService, PrivacySettings } from '../../core/services/privacy.service';
 
 @Component({
@@ -67,6 +68,7 @@ import { PrivacyService, PrivacySettings } from '../../core/services/privacy.ser
 export class PrivacyComponent {
   private readonly api = inject(PrivacyService);
   private readonly toast = inject(ToastService);
+  private readonly bus = inject(DomainBusService);
   readonly s = signal<PrivacySettings | null>(null);
   readonly loading = signal(true);
   readonly busy = signal(false);
@@ -77,13 +79,24 @@ export class PrivacyComponent {
     this.loading.set(true);
     this.api.settings().subscribe({ next: (s) => { this.s.set(s); this.loading.set(false); }, error: () => this.loading.set(false) });
   }
+  /** Domains each destructive action invalidates, so open dependent screens refresh. */
+  private static readonly AFFECTS: Record<string, DomainKey[]> = {
+    private: ['portfolio', 'passport'],
+    twin: ['skillTwin', 'mistakes', 'intelligence', 'dashboard'],
+    apps: ['applications'],
+  };
+
   confirm(action: string): void {
     if (this.armed() !== action) { this.armed.set(action); setTimeout(() => this.armed.set(null), 4000); return; }
     this.armed.set(null); this.busy.set(true);
     const obs: import('rxjs').Observable<unknown> =
       action === 'private' ? this.api.makePrivate() : action === 'twin' ? this.api.resetSkillTwin() : this.api.clearApplications();
     obs.subscribe({
-      next: () => { this.busy.set(false); this.toast.success('Done'); this.refresh(); },
+      next: () => {
+        this.busy.set(false); this.toast.success('Done'); this.refresh();
+        // Tell dependent screens (portfolio/passport/applications/…) to reload.
+        this.bus.invalidate(PrivacyComponent.AFFECTS[action]);
+      },
       error: () => { this.busy.set(false); this.toast.error('Action failed'); },
     });
   }

@@ -16,7 +16,10 @@ export type DomainKey =
   | 'skillTwin'
   | 'ledger'
   | 'memory'
-  | 'profile';
+  | 'profile'
+  | 'portfolio'
+  | 'applications'
+  | 'passport';
 
 /** De-duped union of affected domains. */
 export function mergeDomains(lists: (DomainKey[] | undefined)[]): DomainKey[] {
