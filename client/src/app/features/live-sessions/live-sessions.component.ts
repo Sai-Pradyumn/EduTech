@@ -44,7 +44,14 @@ import { CohortView, LiveSessionStatus, SessionDetail, SessionView } from '../..
             </select>
             <label for="ls-start" class="text-[11px] font-mono uppercase tracking-wider text-txt-mute">Start</label>
             <input id="ls-start" class="input mb-2 mt-1" type="datetime-local" [(ngModel)]="newStart" />
-            <input class="input mb-3" type="number" min="10" max="480" placeholder="Duration (mins)" [(ngModel)]="newDuration" />
+            <input class="input mb-2" type="number" min="10" max="480" placeholder="Duration (mins)" [(ngModel)]="newDuration" />
+            <label for="ls-repeat" class="text-[11px] font-mono uppercase tracking-wider text-txt-mute">Repeat weekly</label>
+            <select id="ls-repeat" class="input mb-3 mt-1" [(ngModel)]="newRepeat">
+              <option [ngValue]="1">Just once</option>
+              <option [ngValue]="4">4 weeks</option>
+              <option [ngValue]="8">8 weeks</option>
+              <option [ngValue]="12">12 weeks</option>
+            </select>
             <button class="w-full inline-flex items-center justify-center rounded-full px-4 py-2.5 text-sm font-semibold text-ink"
               style="background:var(--green)" [disabled]="!newTitle.trim() || !newStart || creating()" (click)="create()">
               {{ creating() ? 'Scheduling…' : 'Schedule session' }}
@@ -223,6 +230,8 @@ export class LiveSessionsComponent implements OnInit {
   newCohortId = '';
   newStart = '';
   newDuration: number | null = 60;
+  /** Weekly occurrences to create up front (1 = just this one). */
+  newRepeat = 1;
   endNotes = '';
 
   ngOnInit(): void {
@@ -252,14 +261,18 @@ export class LiveSessionsComponent implements OnInit {
         cohortId: this.newCohortId || undefined,
         scheduledStart: new Date(this.newStart).toISOString(),
         durationMins: this.newDuration ?? 60,
+        repeatWeeks: this.newRepeat > 1 ? this.newRepeat : undefined,
       })
       .subscribe({
         next: (d) => {
           this.creating.set(false);
+          const repeated = this.newRepeat > 1;
           this.newTitle = this.newDesc = this.newCohortId = this.newStart = '';
           this.newDuration = 60;
-          this.toast.success('Session scheduled');
-          this.orgSessions.update((list) => [this.toView(d), ...list]);
+          this.newRepeat = 1;
+          this.toast.success(repeated ? 'Weekly series scheduled' : 'Session scheduled');
+          if (repeated) this.load(); // series = several new sessions; refetch the list
+          else this.orgSessions.update((list) => [this.toView(d), ...list]);
           this.selected.set(d);
         },
         error: (e) => {

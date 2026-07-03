@@ -21,11 +21,21 @@ export interface TimelineItem {
   detail?: string;
   at: string;
 }
+/** One contributing signal of a blended metric — the "why" behind the number. */
+export interface MetricSignal {
+  label: string;
+  value: number;
+  weight: number;
+  contribution: number;
+}
+
 export interface LearningIntelligence {
   hasData: boolean;
   headline: string;
   healthScore: number;
   readinessScore: number;
+  healthWhy: MetricSignal[];
+  readinessWhy: MetricSignal[];
   scores: ScoreCard[];
   radar: IntelRadarAxis[];
   weaknesses: IntelWeakness[];

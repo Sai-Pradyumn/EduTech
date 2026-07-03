@@ -18,6 +18,8 @@ export class CreateLiveSessionDto {
   @IsOptional() @IsMongoId() cohortId?: string;
   @IsDateString() scheduledStart!: string;
   @IsOptional() @IsInt() @Min(10) @Max(480) durationMins?: number;
+  /** Create this many weekly occurrences up front (1 = just this one). */
+  @IsOptional() @IsInt() @Min(1) @Max(12) repeatWeeks?: number;
 }
 
 export class UpdateLiveSessionDto {

@@ -46,11 +46,33 @@ import { MagneticDirective } from '../../shared/directives/magnetic.directive';
         <asta-card class="block mb-5 motion-card-reveal motion-row-primary" style="--motion-card-index:0">
           <div class="flex flex-wrap items-center gap-6">
             <div class="flex items-center gap-5">
-              <div class="text-center"><asta-ring [value]="d.healthScore" [size]="104" /><p class="kicker mt-2">Learning health</p></div>
-              <div class="text-center"><asta-ring [value]="d.readinessScore" [size]="104" tone="peri" /><p class="kicker mt-2">Career readiness</p></div>
+              <div class="text-center">
+                <asta-ring [value]="d.healthScore" [size]="104" /><p class="kicker mt-2">Learning health</p>
+                <button class="why-link" (click)="whyOpen.set(whyOpen() === 'health' ? null : 'health')">{{ whyOpen() === 'health' ? 'hide' : 'why?' }}</button>
+              </div>
+              <div class="text-center">
+                <asta-ring [value]="d.readinessScore" [size]="104" tone="peri" /><p class="kicker mt-2">Career readiness</p>
+                <button class="why-link" (click)="whyOpen.set(whyOpen() === 'readiness' ? null : 'readiness')">{{ whyOpen() === 'readiness' ? 'hide' : 'why?' }}</button>
+              </div>
             </div>
             <p class="flex-1 min-w-[240px] text-[15px] text-txt-soft">{{ d.headline }}</p>
           </div>
+          @if (whyOpen(); as w) {
+            @let signals = w === 'health' ? d.healthWhy : d.readinessWhy;
+            @if (signals?.length) {
+              <div class="why-panel">
+                <p class="text-[11px] font-mono uppercase tracking-wider text-txt-mute mb-2">How {{ w === 'health' ? 'learning health' : 'career readiness' }} is computed</p>
+                @for (s of signals; track s.label) {
+                  <div class="why-row">
+                    <span class="min-w-0 flex-1 truncate">{{ s.label }}</span>
+                    <span class="font-mono text-txt-mute">{{ s.value }}% × {{ s.weight }}</span>
+                    <span class="font-mono" style="min-width:52px;text-align:right">= +{{ s.contribution }} pts</span>
+                  </div>
+                }
+                <p class="text-[11px] text-txt-mute mt-2">Move the biggest low signal and the score follows — no magic, just this blend.</p>
+              </div>
+            }
+          }
         </asta-card>
 
         <div class="grid gap-4 grid-cols-2 lg:grid-cols-4 mb-5 motion-strip">
@@ -169,6 +191,10 @@ import { MagneticDirective } from '../../shared/directives/magnetic.directive';
     styles: [
         `
       .bar { height: 6px; border-radius: 100px; background: var(--paper-3); overflow: hidden; }
+      .why-link { font-size: 11px; color: var(--txt-mute); text-decoration: underline dotted; background: none; border: none; cursor: pointer; margin-top: 2px; }
+      .why-link:hover { color: var(--text); }
+      .why-panel { margin-top: 14px; padding: 12px 14px; border-radius: 12px; background: var(--paper-2); border: 1px solid var(--paper-3); }
+      .why-row { display: flex; align-items: baseline; gap: 12px; font-size: 13px; padding: 3px 0; }
       .bar-fill { height: 100%; border-radius: 100px; background: var(--green); transition: width .8s var(--ease); }
       .lg-dot { display: inline-block; width: 10px; height: 10px; border-radius: 3px; }
       .tl-dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
@@ -183,6 +209,8 @@ export class IntelligenceCockpitComponent {
   readonly data = signal<LearningIntelligence | null>(null);
   readonly loading = signal(true);
   readonly error = signal(false);
+  /** Which blended metric's "why" panel is open. */
+  readonly whyOpen = signal<'health' | 'readiness' | null>(null);
 
   readonly radarAxes = computed<RadarAxis[]>(() =>
     (this.data()?.radar ?? []).map((a) => ({ label: a.label, value: a.value, target: a.target })),

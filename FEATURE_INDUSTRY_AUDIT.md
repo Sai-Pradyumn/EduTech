@@ -104,7 +104,9 @@ voice scripts, capstone, certificates. **Now takeable: Learn mode.**
   open (LessonComposerService; cached; honest outline offline).
 - [x] **Resume-where-you-left-off** — lastLessonId + completedLessons; course
   cards show progress + "Continue: <lesson>".
-- [ ] `P3·S` Deep-link "continue course" from Today/dashboard strips.
+- [x] **Continue-course strip on the dashboard** — the most recent unfinished
+  course with a continue point gets a "Resume" strip (progress % + next
+  lesson) linking straight into the reader.
 
 ### Daily plan / Today — bar: Todoist + Duolingo daily goals
 Strong: generated plan, modes, carry-over, streak, ledger events.
@@ -190,7 +192,9 @@ Strong: real Jitsi rooms, recaps, orchestrated agents in-room.
 - [x] **Reminders + calendar** — org members get a nudge when a session starts
   within the hour (15-min scheduler scan, deduped); "Add to calendar" downloads
   a standard .ics with a 15-min alarm and the join link.
-- [ ] `P3·M` Recurring session templates.
+- [x] **Recurring sessions** — "Repeat weekly ×4/8/12" on the scheduler
+  creates the whole series up front; every occurrence is its own session
+  (own room, recap, reminders, .ics).
 
 ### Community / Spaces / Cohorts — bar: Discord/Circle
 Strong: threads, spaces with sources.
@@ -203,8 +207,9 @@ Strong: threads, spaces with sources.
 
 ### Dashboard / Intelligence — bar: Whoop/Strava-style insight surfaces
 Strong: skill twin, cognitive guardian, momentum, next action.
-- [ ] `P2·S` One "why" drill-down per metric (readiness → contributing
-  signals), reusing skill-twin explanations.
+- [x] **"Why?" drill-downs** — both cockpit rings (learning health, career
+  readiness) expose the exact blend: each contributing signal with its value,
+  weight and points contributed. Full formula transparency, no magic numbers.
 
 ### Notifications / Nudges — bar: Duolingo's engagement engine
 Strong: nudge engine with real triggers.

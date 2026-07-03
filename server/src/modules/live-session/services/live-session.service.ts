@@ -60,27 +60,31 @@ export class LiveSessionService {
     hostName: string,
     dto: CreateLiveSessionDto,
   ): Promise<SessionDetail> {
-    const session = await this.sessions.create({
-      organization: new Types.ObjectId(orgId),
-      cohort: dto.cohortId ? new Types.ObjectId(dto.cohortId) : undefined,
-      title: dto.title,
-      description: dto.description ?? '',
-      host: new Types.ObjectId(hostId),
-      hostName,
-      scheduledStart: new Date(dto.scheduledStart),
-      durationMins: dto.durationMins ?? 60,
-      status: LiveSessionStatus.Scheduled,
-      meetingUrl: this.meetingLink(),
-      createdBy: new Types.ObjectId(hostId),
-    });
-    // B13: notify cohort students that a session is scheduled.
-    if (dto.cohortId)
-      await this.notifyCohort(
-        dto.cohortId,
-        session.title,
-        session.scheduledStart,
-      );
-    return this.detail(session);
+    // Weekly recurrence: every occurrence is created up front — each is its own
+    // independently manageable session (own room, own recap, own reminders).
+    const weeks = Math.min(Math.max(dto.repeatWeeks ?? 1, 1), 12);
+    const start = new Date(dto.scheduledStart);
+    let first: LiveSessionDocument | null = null;
+    for (let i = 0; i < weeks; i++) {
+      const session = await this.sessions.create({
+        organization: new Types.ObjectId(orgId),
+        cohort: dto.cohortId ? new Types.ObjectId(dto.cohortId) : undefined,
+        title: dto.title,
+        description: dto.description ?? '',
+        host: new Types.ObjectId(hostId),
+        hostName,
+        scheduledStart: new Date(start.getTime() + i * 7 * 86_400_000),
+        durationMins: dto.durationMins ?? 60,
+        status: LiveSessionStatus.Scheduled,
+        meetingUrl: this.meetingLink(),
+        createdBy: new Types.ObjectId(hostId),
+      });
+      first ??= session;
+    }
+    // B13: notify cohort students that a session is scheduled (once per series).
+    if (dto.cohortId && first)
+      await this.notifyCohort(dto.cohortId, first.title, first.scheduledStart);
+    return this.detail(first!);
   }
 
   async listForOrg(orgId: string): Promise<SessionView[]> {

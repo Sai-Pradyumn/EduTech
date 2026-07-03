@@ -21,6 +21,7 @@ import { CareerReadinessService, ReadinessAnalysis } from '../../core/services/c
 import { SkillPassportService, SkillPassport } from '../../core/services/skill-passport.service';
 import { DailyPlanService, DailyPlan, DAILY_KIND_GLYPH, DailyItemKind } from '../../core/services/daily-plan.service';
 import { MistakeService } from '../../core/services/mistake.service';
+import { Course, CourseService } from '../../core/services/course.service';
 
 /**
  * Dashboard — compact Noir cockpit. Command header → active-roadmap + progress
@@ -115,6 +116,20 @@ import { MistakeService } from '../../core/services/mistake.service';
             </div>
           </a>
         }
+      }
+
+      <!-- Continue course — pick up exactly where the last lesson left off -->
+      @if (continueCourse(); as cc) {
+        <a [routerLink]="['/app/courses', cc.id]" class="card hover-lift block mb-5 dashboard-reveal" style="padding:13px 18px;text-decoration:none;--motion-card-index:0">
+          <div class="flex items-center gap-3 flex-wrap">
+            <span class="rev-ico" aria-hidden="true">▶</span>
+            <div class="flex-1 min-w-[200px]">
+              <p class="kicker mb-0.5">Continue course</p>
+              <p class="text-sm text-txt-soft"><span class="font-semibold text-txt">{{ cc.title }}</span> · {{ cc.pct }}% done{{ cc.nextLesson ? ' · next: ' + cc.nextLesson : '' }}</p>
+            </div>
+            <span class="text-sm font-semibold shrink-0" style="color:var(--green-deep)">Resume <span class="arr">→</span></span>
+          </div>
+        </a>
       }
 
       <!-- Spaced-review nudge — concepts due for recall (drives Skill Twin) -->
@@ -363,6 +378,7 @@ export class DashboardComponent {
   private readonly passportApi = inject(SkillPassportService);
   private readonly dailyPlan = inject(DailyPlanService);
   private readonly mistakes = inject(MistakeService);
+  private readonly coursesApi = inject(CourseService);
 
   readonly profile = signal<StudentProfile | null>(null);
   readonly roadmap = signal<Roadmap | null>(null);
@@ -372,6 +388,26 @@ export class DashboardComponent {
   readonly passport = signal<SkillPassport | null>(null);
   readonly plan = signal<DailyPlan | null>(null);
   readonly reviewsDue = signal(0);
+  readonly courses = signal<Course[]>([]);
+
+  /** The course to resume: started (has a continue point), not finished, most recent first. */
+  readonly continueCourse = computed(() => {
+    const started = this.courses().filter((c) => c.lastLessonId);
+    for (const c of started) {
+      const lessons = c.modules.flatMap((m) => m.lessons);
+      if (!lessons.length) continue;
+      const done = new Set(c.completedLessons);
+      if (done.size >= lessons.length) continue; // finished — nothing to resume
+      const next = lessons.find((l) => !done.has(l.id));
+      return {
+        id: c.id,
+        title: c.title,
+        pct: Math.round((done.size / lessons.length) * 100),
+        nextLesson: next?.title ?? null,
+      };
+    }
+    return null;
+  });
   readonly loading = signal(true);
   readonly error = signal(false);
 
@@ -498,6 +534,7 @@ export class DashboardComponent {
           this.passportApi.me().subscribe({ next: (p) => this.passport.set(p), error: () => undefined });
           this.dailyPlan.today().subscribe({ next: (p) => this.plan.set(p), error: () => undefined });
           this.mistakes.stats().subscribe({ next: (s) => this.reviewsDue.set(s.due), error: () => undefined });
+          this.coursesApi.list().subscribe({ next: (c) => this.courses.set(c), error: () => undefined });
         }
         if (profile && roadmap) {
           this.intelligence.overview().subscribe({ next: (d) => this.intel.set(d), error: () => undefined });

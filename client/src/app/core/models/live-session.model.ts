@@ -43,4 +43,6 @@ export interface CreateSessionRequest {
   cohortId?: string;
   scheduledStart: string;
   durationMins?: number;
+  /** Weekly occurrences to create up front (1/omitted = just this one). */
+  repeatWeeks?: number;
 }

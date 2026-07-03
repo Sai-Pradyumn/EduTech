@@ -29,11 +29,26 @@ export interface TimelineItem {
   detail?: string;
   at: string;
 }
+/** One contributing signal of a blended metric — the "why" behind the number. */
+export interface MetricSignal {
+  label: string;
+  /** The signal's own 0–100 value. */
+  value: number;
+  /** Its weight in the blend. */
+  weight: number;
+  /** Rounded points it contributes (value × weight). */
+  contribution: number;
+}
+
 export interface LearningIntelligence {
   hasData: boolean;
   headline: string;
   healthScore: number;
   readinessScore: number;
+  /** Exact blend behind healthScore — full formula transparency. */
+  healthWhy: MetricSignal[];
+  /** Exact blend behind readinessScore. */
+  readinessWhy: MetricSignal[];
   scores: ScoreCard[];
   radar: RadarAxis[];
   weaknesses: Weakness[];
@@ -199,11 +214,45 @@ export class LearningIntelligenceService {
       .reverse()
       .map((a, i) => ({ label: `#${i + 1}`, score: a.score }));
 
+    // "Why" drill-downs — the exact blend inputs, so the numbers explain themselves.
+    const signal = (
+      label: string,
+      value: number,
+      weight: number,
+    ): MetricSignal => ({
+      label,
+      value: Math.round(value),
+      weight,
+      contribution: Math.round(value * weight),
+    });
+    const healthWhy = [
+      signal('Roadmap progress', roadmapProgress, 0.3),
+      signal(
+        hasQuiz ? 'Quiz average' : 'Quiz average (no attempts yet — neutral)',
+        hasQuiz ? quizAvg : 50,
+        0.3,
+      ),
+      signal('Consistency (active days / 14)', activityScore, 0.2),
+      signal('Weak-area control', weakControl, 0.2),
+    ];
+    const readinessWhy = [
+      signal('Skill coverage vs role target', skillCoverage, 0.35),
+      signal(
+        hasQuiz ? 'Quiz average' : 'Quiz average (no attempts yet — neutral)',
+        hasQuiz ? quizAvg : 45,
+        0.25,
+      ),
+      signal('Roadmap progress', roadmapProgress, 0.2),
+      signal('Projects shipped', projectScore, 0.2),
+    ];
+
     return {
       hasData: !!profile,
       headline: this.headline(profile, healthScore, readinessScore, weaknesses),
       healthScore,
       readinessScore,
+      healthWhy,
+      readinessWhy,
       scores,
       radar,
       weaknesses,
