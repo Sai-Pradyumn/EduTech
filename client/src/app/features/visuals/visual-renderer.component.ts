@@ -1,7 +1,8 @@
-import { ChangeDetectionStrategy, Component, Input, computed, inject, signal } from '@angular/core';
-import { DomSanitizer, SafeHtml, SafeUrl } from '@angular/platform-browser';
+import { ChangeDetectionStrategy, Component, Input, SecurityContext, computed, inject, signal } from '@angular/core';
+import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { MarkdownPipe } from '../../shared/pipes/markdown.pipe';
 import { Visual, VisualGraph } from '../../core/services/visual.service';
+import { sanitizeMarkup } from '../../shared/util/sanitize-markup';
 
 interface PlacedNode {
   id: string;
@@ -136,7 +137,7 @@ export class VisualRendererComponent {
     try {
       const { renderMermaid } = await import('../../shared/util/mermaid');
       const svg = await renderMermaid(code);
-      this.mermaidSvg.set(this.sanitizer.bypassSecurityTrustHtml(svg));
+      this.mermaidSvg.set(this.sanitizer.bypassSecurityTrustHtml(sanitizeMarkup(svg)));
     } catch {
       this.mermaidFailed.set(true);
     }
@@ -228,11 +229,15 @@ export class VisualRendererComponent {
     return `0 0 ${Math.max(w, 100)} ${Math.max(h, 100)}`;
   });
 
+  /** SVG/HTML visuals: scrub script vectors first, THEN trust (Angular would strip SVG). */
   safeHtml(): SafeHtml {
-    return this.sanitizer.bypassSecurityTrustHtml(this._visual()?.content ?? '');
+    return this.sanitizer.bypassSecurityTrustHtml(
+      sanitizeMarkup(this._visual()?.content ?? ''),
+    );
   }
-  safeUrl(): SafeUrl {
-    return this.sanitizer.bypassSecurityTrustUrl(this._visual()?.content ?? '');
+  /** Image src: let Angular's URL sanitizer validate it (blocks javascript:, allows data:image). */
+  safeUrl(): string {
+    return this.sanitizer.sanitize(SecurityContext.URL, this._visual()?.content ?? '') ?? '';
   }
   clip(s: string): string {
     return s.length > 22 ? s.slice(0, 21) + '…' : s;
