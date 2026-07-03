@@ -66,12 +66,16 @@ export interface FunctionTest {
   /** Positional args passed to the learner's `solution` function. */
   input: unknown[];
   expected: unknown;
+  /** Hidden cases still grade, but their name/inputs/expectation are never shown. */
+  hidden?: boolean;
 }
 
 export interface StdioTest {
   name: string;
   stdin: string;
   expectedStdout: string;
+  /** Hidden cases still grade, but their name/inputs/expectation are never shown. */
+  hidden?: boolean;
 }
 
 /** A learner-saved Free Play snippet (persisted server-side). */

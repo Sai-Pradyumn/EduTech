@@ -19,6 +19,7 @@ export const PRACTICE_PROBLEMS: readonly PracticeProblem[] = [
       { name: 'sums positive numbers', input: [[1, 2, 3, 4]], expected: 10 },
       { name: 'handles an empty array', input: [[]], expected: 0 },
       { name: 'handles negatives', input: [[-5, 5, 10]], expected: 10 },
+      { name: 'decimals', input: [[10, -10, 3.5, 6.5]], expected: 10, hidden: true },
     ],
   },
   {
@@ -35,6 +36,7 @@ export const PRACTICE_PROBLEMS: readonly PracticeProblem[] = [
       { name: 'pair at the start', input: [[2, 7, 11, 15], 9], expected: [0, 1] },
       { name: 'a later pair', input: [[3, 2, 4], 6], expected: [1, 2] },
       { name: 'duplicates', input: [[3, 3], 6], expected: [0, 1] },
+      { name: 'pair at the end', input: [[4, 6, 1, 3], 4], expected: [2, 3], hidden: true },
     ],
   },
   {
@@ -52,6 +54,7 @@ export const PRACTICE_PROBLEMS: readonly PracticeProblem[] = [
       { name: 'not a palindrome', input: ['hello'], expected: false },
       { name: 'single char', input: ['a'], expected: true },
       { name: 'empty string', input: [''], expected: true },
+      { name: 'case sensitivity', input: ['Aa'], expected: false, hidden: true },
     ],
   },
   {
@@ -67,6 +70,7 @@ export const PRACTICE_PROBLEMS: readonly PracticeProblem[] = [
       { name: 'mixed letters', input: ['education'], expected: 5 },
       { name: 'no vowels', input: ['rhythm'], expected: 0 },
       { name: 'all vowels', input: ['aeiou'], expected: 5 },
+      { name: 'uppercase excluded', input: ['EDUcation'], expected: 3, hidden: true },
     ],
   },
   {
@@ -82,6 +86,7 @@ export const PRACTICE_PROBLEMS: readonly PracticeProblem[] = [
       { name: 'three words', stdin: 'the quick fox', expectedStdout: 'fox quick the' },
       { name: 'two words', stdin: 'hello world', expectedStdout: 'world hello' },
       { name: 'single word', stdin: 'asta', expectedStdout: 'asta' },
+      { name: 'five words', stdin: 'a b c d e', expectedStdout: 'e d c b a', hidden: true },
     ],
   },
   {
@@ -97,6 +102,7 @@ export const PRACTICE_PROBLEMS: readonly PracticeProblem[] = [
       { name: 'sum to 5', stdin: '5', expectedStdout: '15' },
       { name: 'sum to 1', stdin: '1', expectedStdout: '1' },
       { name: 'sum to 100', stdin: '100', expectedStdout: '5050' },
+      { name: 'sum to 1000', stdin: '1000', expectedStdout: '500500', hidden: true },
     ],
   },
   {
@@ -112,6 +118,7 @@ export const PRACTICE_PROBLEMS: readonly PracticeProblem[] = [
       { name: '5!', stdin: '5', expectedStdout: '120' },
       { name: '0!', stdin: '0', expectedStdout: '1' },
       { name: '7!', stdin: '7', expectedStdout: '5040' },
+      { name: '12!', stdin: '12', expectedStdout: '479001600', hidden: true },
     ],
   },
   {
@@ -127,6 +134,7 @@ export const PRACTICE_PROBLEMS: readonly PracticeProblem[] = [
       { name: 'adds positives', stdin: '3 4', expectedStdout: '7' },
       { name: 'handles negatives', stdin: '10 -2', expectedStdout: '8' },
       { name: 'handles zero', stdin: '0 0', expectedStdout: '0' },
+      { name: 'both negative', stdin: '-5 -7', expectedStdout: '-12', hidden: true },
     ],
   },
   {
@@ -139,7 +147,15 @@ export const PRACTICE_PROBLEMS: readonly PracticeProblem[] = [
       'Read an integer N, then print 1..N one per line — but "Fizz" for multiples of 3, "Buzz" for 5, "FizzBuzz" for both.',
     harness: 'stdio',
     starterCode: `n = int(input())\n# print the FizzBuzz sequence\n`,
-    stdioTests: [{ name: 'first five', stdin: '5', expectedStdout: '1\n2\nFizz\n4\nBuzz' }],
+    stdioTests: [
+      { name: 'first five', stdin: '5', expectedStdout: '1\n2\nFizz\n4\nBuzz' },
+      {
+        name: 'through fifteen',
+        stdin: '15',
+        expectedStdout: '1\n2\nFizz\n4\nBuzz\nFizz\n7\n8\nFizz\nBuzz\n11\nFizz\n13\n14\nFizzBuzz',
+        hidden: true,
+      },
+    ],
   },
   {
     id: 'java-reverse',
@@ -153,6 +169,7 @@ export const PRACTICE_PROBLEMS: readonly PracticeProblem[] = [
     stdioTests: [
       { name: 'reverses a word', stdin: 'hello', expectedStdout: 'olleh' },
       { name: 'reverses a phrase', stdin: 'asta os', expectedStdout: 'so atsa' },
+      { name: 'palindrome input', stdin: 'racecar', expectedStdout: 'racecar', hidden: true },
     ],
   },
   {

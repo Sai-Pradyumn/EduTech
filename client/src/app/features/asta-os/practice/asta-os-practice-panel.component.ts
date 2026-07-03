@@ -109,6 +109,9 @@ const FREE_FILENAME: Record<SupportedLanguage, string> = {
                 <span class="tag exec">{{ execLabel() }}</span>
               </div>
               <p class="statement">{{ problem().statement }}</p>
+              @if (hiddenCount() > 0) {
+                <p class="hid-note">🔒 {{ hiddenCount() }} hidden grading case{{ hiddenCount() === 1 ? '' : 's' }} — handle the edges, not just the examples.</p>
+              }
             </div>
 
             <asta-code-editor [value]="code()" [language]="problem().language" (valueChange)="code.set($event)" ariaLabel="Your solution" />
@@ -344,6 +347,7 @@ const FREE_FILENAME: Record<SupportedLanguage, string> = {
       .tag[data-d='medium'] { color: var(--asta-gold); border-color: color-mix(in srgb, var(--asta-gold) 40%, transparent); }
       .tag[data-d='hard'] { color: var(--asta-coral); border-color: color-mix(in srgb, var(--asta-coral) 40%, transparent); }
       .statement { font-size: 14.5px; line-height: 1.6; }
+      .hid-note { margin-top: 8px; font-size: 12px; color: var(--asta-subtle); }
 
       .actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 12px; }
       .actions .spacer { flex: 1; }
@@ -474,6 +478,13 @@ export class AstaOsPracticePanelComponent {
   protected readonly modeOptions: AstaDropdownOption[] = PRACTICE_MODES.map((m) => ({ value: m.value, label: m.label }));
 
   protected readonly lastError = computed(() => this.runResult()?.stderr ?? this.validation()?.stderr ?? null);
+
+  /** Hidden grading cases for the current problem (they grade, but never reveal themselves). */
+  protected readonly hiddenCount = computed(() => {
+    const p = this.problem();
+    const tests = p.harness === 'function' ? p.functionTests : p.stdioTests;
+    return (tests ?? []).filter((t) => t.hidden).length;
+  });
   protected readonly note = computed(() => this.runResult()?.note ?? this.validation()?.note ?? null);
   protected readonly modeLabel = computed(() => PRACTICE_MODES.find((m) => m.value === this.practiceMode())?.label ?? 'Hint only');
   protected readonly clock = computed(() => {

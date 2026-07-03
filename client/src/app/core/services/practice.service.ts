@@ -78,10 +78,13 @@ export class PracticeService {
     );
   }
 
-  submit(problem: PracticeProblem, code: string): Promise<CodeValidationResult> {
-    if (problem.harness === 'function') return this.validateJs(code, problem.functionTests ?? []);
+  async submit(problem: PracticeProblem, code: string): Promise<CodeValidationResult> {
+    if (problem.harness === 'function') {
+      const tests = problem.functionTests ?? [];
+      return this.maskHidden(await this.validateJs(code, tests), tests);
+    }
     const tests = problem.stdioTests ?? [];
-    return this.firstValue(
+    const result = await this.firstValue(
       this.api.post<CodeValidationResult>('/practice/submit', { language: problem.language, code, tests }),
     ).catch(
       (e): CodeValidationResult => ({
@@ -94,6 +97,30 @@ export class PracticeService {
         simulated: false,
       }),
     );
+    return this.maskHidden(result, tests);
+  }
+
+  /** Hidden cases grade like any other, but never reveal their name, inputs or expectation. */
+  private maskHidden(
+    result: CodeValidationResult,
+    tests: ReadonlyArray<{ hidden?: boolean }>,
+  ): CodeValidationResult {
+    if (!tests.some((t) => t.hidden)) return result;
+    let n = 0;
+    return {
+      ...result,
+      results: result.results.map((r, i) => {
+        if (!tests[i]?.hidden) return r;
+        n++;
+        return {
+          name: `Hidden case ${n}`,
+          passed: r.passed,
+          detail: r.passed
+            ? undefined
+            : 'Fails a hidden edge case — think about an input you haven’t covered yet.',
+        };
+      }),
+    };
   }
 
   private errorText(e: unknown): string {

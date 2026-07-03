@@ -130,9 +130,13 @@ Strong: AI questions tailored to role + weak areas, scoring, PDF report.
 - [ ] `P3·M` Question-bank difficulty ladder per company archetype.
 
 ### Practice Studio (code) — bar: LeetCode editor
-Strong: real execution (Piston), problems.
-- [ ] `P2·M` Test-case-based grading (currently output-eyeballing), hidden
-  cases.
+Strong: real execution (Piston), problems. **Corrected:** test-case grading
+already existed ("Check tests" — in-browser function tests for JS, server
+stdin→stdout grading for the rest, results feeding ledger/Mistake OS).
+- [x] **Hidden cases** — every problem now carries hidden grading cases:
+  they grade like any other, but the UI shows only "Hidden case N" with a
+  neutral failure hint (never the inputs or expectation); the statement warns
+  "N hidden grading cases — handle the edges".
 
 ### Mistake OS — bar: error-log products (Anki lapses)
 Strong: severity/frequency, repair routing into live features.
