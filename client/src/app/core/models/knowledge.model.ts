@@ -33,6 +33,14 @@ export interface Flashcard {
   source: string;
 }
 
+/** A spoken-overview script for a document (narrated client-side with TTS). */
+export interface AudioOverview {
+  title: string;
+  script: string;
+  /** True when the script is the extractive fallback, not a live-model narration. */
+  fallback: boolean;
+}
+
 export type Groundedness = 'grounded' | 'partial' | 'insufficient';
 
 export interface Citation {

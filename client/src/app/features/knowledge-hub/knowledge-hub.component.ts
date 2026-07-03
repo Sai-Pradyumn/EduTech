@@ -2,9 +2,11 @@ import { ChangeDetectionStrategy, Component, OnDestroy, OnInit, computed, inject
 import { FormsModule } from '@angular/forms';
 import { AgentService } from '../../core/services/agent.service';
 import { KnowledgeService } from '../../core/services/knowledge.service';
+import { TextToSpeechService } from '../../core/services/text-to-speech.service';
 import { ToastService } from '../../core/services/toast.service';
 import {
   AgentStreamEvent,
+  AudioOverview,
   DocumentSummary,
   Flashcard,
   KnowledgeDoc,
@@ -153,6 +155,7 @@ const STARTERS = [
                 (select)="toggleSelect($event.id)"
                 (summary)="loadSummary($event)"
                 (flashcards)="loadFlashcards($event)"
+                (audio)="loadAudio($event)"
                 (delete)="remove($event)"
                 (retry)="retryIngestion($event)"
                 (save)="saveDoc($event)"
@@ -200,6 +203,25 @@ const STARTERS = [
                   </div>
                 }
               </div>
+            }
+            @if (p.audioLoading) {
+              <p class="text-sm text-txt-mute">Asta is writing the narration…</p>
+            }
+            @if (p.audio; as a) {
+              <div class="flex items-center gap-2 mb-2">
+                @if (tts.speaking()) {
+                  <button class="audio-btn" (click)="stopAudio()">■ Stop</button>
+                  <span class="text-[11px] text-txt-mute">Narrating…</span>
+                } @else {
+                  <button class="audio-btn" (click)="playAudio(a)">▶ Play overview</button>
+                  <span class="text-[11px] text-txt-mute">~{{ audioMinutes(a) }} min listen</span>
+                }
+                @if (a.fallback) { <span class="text-[11px] text-txt-mute">· extractive (no live AI)</span> }
+              </div>
+              <button class="text-[11px] text-txt-mute hover:text-txt" (click)="showTranscript.set(!showTranscript())">{{ showTranscript() ? 'Hide' : 'Show' }} transcript</button>
+              @if (showTranscript()) {
+                <p class="text-[13px] text-txt-soft mt-2" style="white-space:pre-wrap">{{ a.script }}</p>
+              }
             }
           </div>
         }
@@ -311,6 +333,8 @@ const STARTERS = [
       .lib-scope { display: flex; gap: 10px; }
       .lib-link { font-size: 11px; font-weight: 600; color: var(--green-deep); background: transparent; border: none; cursor: pointer; padding: 0; }
       .lib-link:hover { text-decoration: underline; }
+      .audio-btn { font-size: 12.5px; font-weight: 600; padding: 6px 14px; border-radius: 999px; border: 1px solid color-mix(in oklch, var(--green) 40%, var(--paper-3)); background: color-mix(in oklch, var(--green) 10%, transparent); color: var(--green-deep); cursor: pointer; transition: background .12s; }
+      .audio-btn:hover { background: color-mix(in oklch, var(--green) 18%, transparent); }
     `,
     ]
 })
@@ -318,6 +342,7 @@ export class KnowledgeHubComponent implements OnInit, OnDestroy {
   private readonly knowledge = inject(KnowledgeService);
   private readonly agent = inject(AgentService);
   private readonly toast = inject(ToastService);
+  protected readonly tts = inject(TextToSpeechService);
 
   readonly starters = STARTERS;
   readonly docs = signal<KnowledgeDoc[]>([]);
@@ -330,7 +355,14 @@ export class KnowledgeHubComponent implements OnInit, OnDestroy {
   readonly uploading = signal(false);
   readonly dragOver = signal(false);
   readonly pasteMode = signal(false);
-  readonly panel = signal<{ title: string; summary?: DocumentSummary; cards?: Flashcard[] } | null>(null);
+  readonly panel = signal<{
+    title: string;
+    summary?: DocumentSummary;
+    cards?: Flashcard[];
+    audio?: AudioOverview;
+    audioLoading?: boolean;
+  } | null>(null);
+  readonly showTranscript = signal(false);
 
   draft = '';
   pasteTitle = '';
@@ -454,6 +486,7 @@ export class KnowledgeHubComponent implements OnInit, OnDestroy {
 
   ngOnDestroy(): void {
     if (this.pollTimer) clearInterval(this.pollTimer);
+    this.tts.cancel(); // never keep narrating after leaving the Hub
   }
 
   refresh(): void {
@@ -599,10 +632,48 @@ export class KnowledgeHubComponent implements OnInit, OnDestroy {
       error: () => this.toast.error?.('Could not build flashcards'),
     });
   }
-  copyPanel(p: { title: string; summary?: DocumentSummary; cards?: Flashcard[] }): void {
+
+  // ── audio overview (NotebookLM-style narration via browser TTS) ──
+
+  loadAudio(d: KnowledgeDoc): void {
+    this.showTranscript.set(false);
+    this.panel.set({ title: `Audio overview · ${d.title}`, audioLoading: true });
+    this.knowledge.audioOverview(d.id).subscribe({
+      next: (audio) => {
+        this.panel.set({ title: `Audio overview · ${d.title}`, audio });
+        this.playAudio(audio);
+      },
+      error: () => {
+        this.panel.set(null);
+        this.toast.error?.('Could not build the audio overview');
+      },
+    });
+  }
+
+  playAudio(a: AudioOverview): void {
+    if (!this.tts.supported) {
+      this.showTranscript.set(true);
+      this.toast.info?.('This browser has no speech synthesis — transcript shown instead.');
+      return;
+    }
+    void this.tts.speakLong(a.script, { rate: 1.0 });
+  }
+
+  stopAudio(): void {
+    this.tts.cancel();
+  }
+
+  /** Rough listen time at ~155 spoken words per minute. */
+  audioMinutes(a: AudioOverview): number {
+    return Math.max(1, Math.round(a.script.split(/\s+/).length / 155));
+  }
+  copyPanel(p: { title: string; summary?: DocumentSummary; cards?: Flashcard[]; audio?: AudioOverview }): void {
     const lines: string[] = [`# ${p.title}`, ''];
     if (p.summary) {
       lines.push(p.summary.tldr, '', '## Key points', ...p.summary.keyPoints.map((k) => `- ${k}`));
+    }
+    if (p.audio) {
+      lines.push(p.audio.script);
     }
     if (p.cards?.length) {
       lines.push('## Flashcards', '');

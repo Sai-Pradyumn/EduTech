@@ -84,6 +84,7 @@ import { KnowledgeDoc } from '../../../core/models';
               @if (d.status === 'ready') {
                 <button type="button" class="mini" (click)="summary.emit(d)">Summary</button>
                 <button type="button" class="mini" (click)="flashcards.emit(d)">Flashcards</button>
+                <button type="button" class="mini" (click)="audio.emit(d)">🎧 Audio</button>
               }
               @if (d.status === 'failed') {
                 <button type="button" class="mini retry" (click)="retry.emit(d)">Retry <span class="arr">→</span></button>
@@ -138,6 +139,8 @@ export class KnowledgeShardComponent {
   @Output() select = new EventEmitter<KnowledgeDoc>();
   @Output() summary = new EventEmitter<KnowledgeDoc>();
   @Output() flashcards = new EventEmitter<KnowledgeDoc>();
+  /** Spoken audio overview — parent fetches the script and narrates it. */
+  @Output() audio = new EventEmitter<KnowledgeDoc>();
   @Output() delete = new EventEmitter<KnowledgeDoc>();
   /** Failed ingestion — parent decides how to retry; the shard never calls services. */
   @Output() retry = new EventEmitter<KnowledgeDoc>();

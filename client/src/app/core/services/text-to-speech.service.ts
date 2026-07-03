@@ -33,10 +33,45 @@ export class TextToSpeechService {
     });
   }
 
+  private longSession = 0;
+
+  /**
+   * Speak arbitrarily long text (utterances are capped at ~800 chars) by
+   * splitting into sentence groups and speaking them in sequence. `cancel()`
+   * or a newer speakLong call stops the remaining queue.
+   */
+  async speakLong(input: string, opts: { rate?: number } = {}): Promise<void> {
+    const text = this.clean(input);
+    if (!this.supported || !text) return;
+    const session = ++this.longSession;
+    for (const part of this.splitSentences(text, 700)) {
+      if (session !== this.longSession) return; // cancelled or superseded
+      await this.speak(part, opts);
+    }
+  }
+
   cancel(): void {
+    this.longSession++;
     if (!this.supported) return;
     window.speechSynthesis.cancel();
     this.speaking.set(false);
+  }
+
+  /** Group whole sentences into chunks of at most `max` characters. */
+  private splitSentences(text: string, max: number): string[] {
+    const sentences = text.match(/[^.!?]+[.!?]+(?:\s+|$)|[^.!?]+$/g) ?? [text];
+    const parts: string[] = [];
+    let current = '';
+    for (const s of sentences) {
+      if (current && (current + s).length > max) {
+        parts.push(current);
+        current = s;
+      } else {
+        current += s;
+      }
+    }
+    if (current.trim()) parts.push(current);
+    return parts;
   }
 
   /** Reduce markdown/code/links to readable plain text. */

@@ -5,6 +5,7 @@ import { environment } from '../../../environments/environment';
 import { ApiService } from './api.service';
 import {
   ApiResponse,
+  AudioOverview,
   DocumentSummary,
   Flashcard,
   GroundedAnswer,
@@ -65,6 +66,11 @@ export class KnowledgeService {
 
   flashcards(id: string): Observable<Flashcard[]> {
     return this.api.get<Flashcard[]>(`/knowledge/documents/${id}/flashcards`);
+  }
+
+  /** Spoken-overview script; the caller narrates it with browser TTS. */
+  audioOverview(id: string): Observable<AudioOverview> {
+    return this.api.get<AudioOverview>(`/knowledge/documents/${id}/audio-overview`);
   }
 
   /** Non-streaming grounded answer (the Hub uses the streaming RAG agent for chat). */

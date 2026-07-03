@@ -159,8 +159,10 @@ Strong: severity/frequency, repair routing into live features.
 Strong: hybrid retrieval (Qdrant dense + keyword), summaries, flashcards,
 doc-grounded quizzes. **Corrected:** grounded chat with cited sources AND
 per-document scoping (select docs → documentIds) already exists in the hub.
-- [ ] `P2·M` Audio overview (NotebookLM's headline feature) via the existing
-  voice synthesis path.
+- [x] **Audio overview** (NotebookLM's headline feature) — 🎧 on every ready
+  doc: a grounded narration script (live AI, honest extractive fallback) read
+  aloud with browser TTS in sentence-chunked playback; listen-time estimate,
+  stop control, show-transcript, copy.
 
 ### Resources — bar: curated marketplaces
 Strong: curated catalog, personalized "for you" with reasons, library.

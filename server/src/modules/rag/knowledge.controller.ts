@@ -124,6 +124,12 @@ export class KnowledgeController {
     return this.knowledge.flashcards(user.id, id);
   }
 
+  /** Spoken-overview script (NotebookLM-style); the client narrates it with TTS. */
+  @Get('documents/:id/audio-overview')
+  audioOverview(@CurrentUser() user: AuthUser, @Param('id') id: string) {
+    return this.knowledge.audioOverview(user.id, id);
+  }
+
   @Post('ask')
   ask(@CurrentUser() user: AuthUser, @Body() dto: AskDto) {
     return this.ragAnswer.answer(dto.question, {

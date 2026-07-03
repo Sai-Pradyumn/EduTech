@@ -39,6 +39,15 @@ export interface Flashcard {
   source: string;
 }
 
+/** A spoken-overview script for a document (played with browser TTS client-side). */
+export interface AudioOverview {
+  title: string;
+  /** Plain conversational narration, ~300–450 words, no markdown. */
+  script: string;
+  /** True when the script is the extractive fallback, not a live-model narration. */
+  fallback: boolean;
+}
+
 /** Document-level operations for the Knowledge Hub (listing, deletion, summary, flashcards). */
 @Injectable()
 export class KnowledgeService {
@@ -155,6 +164,78 @@ export class KnowledgeService {
       operation: 'rag.summary',
     });
     return result?.tldr ? result : fallback();
+  }
+
+  /**
+   * NotebookLM-style audio overview: a conversational narration script for the
+   * document, grounded ONLY in its chunks — the client plays it with browser
+   * TTS. Live model when available; an honest extractive script otherwise.
+   */
+  async audioOverview(userId: string, id: string): Promise<AudioOverview> {
+    const doc = await this.owned(userId, id);
+    const chunks = await this.docChunks(doc._id, 10);
+    const sample = chunks
+      .map((c) => c.text)
+      .join('\n')
+      .slice(0, 2600);
+
+    const fallback = (): AudioOverview => {
+      const body = chunks
+        .slice(0, 6)
+        .map((c) => c.text.replace(/\s+/g, ' ').replace(/^…\s*/, '').trim())
+        .filter(Boolean)
+        .map((s) => (s.length > 220 ? `${s.slice(0, 220)}…` : s))
+        .join(' Next: ');
+      return {
+        title: doc.title,
+        script:
+          `Here is a quick overview of "${doc.title}". ` +
+          (body ||
+            'The document is still being processed, so there is nothing to narrate yet.') +
+          ` That covers the main sections of ${doc.title}. For a narrated deep dive, connect a live AI provider.`,
+        fallback: true,
+      };
+    };
+
+    if (!this.ai.isLive || chunks.length === 0) return fallback();
+    try {
+      const out = await this.ai.generateStructuredOutput<{ script: string }>(
+        [
+          {
+            role: 'system',
+            content:
+              'Write a spoken AUDIO OVERVIEW of the document — a warm, clear narration a learner ' +
+              'listens to while commuting. Ground it ONLY in the provided text. Walk through the ' +
+              'main ideas in order, briefly explain any jargon the text uses, and end with the two ' +
+              'or three takeaways worth remembering. Plain sentences only: no markdown, no headings, ' +
+              'no lists, no stage directions. 300–450 words.',
+          },
+          { role: 'user', content: `Title: ${doc.title}\n\n${sample}` },
+        ],
+        {
+          type: 'object',
+          properties: {
+            script: { type: 'string', minLength: 600, maxLength: 4200 },
+          },
+          required: ['script'],
+        },
+        {
+          temperature: 0.5,
+          meta: {
+            userId,
+            agentType: AgentType.Rag,
+            operation: 'rag.audio_overview',
+          },
+          mockFactory: () => ({ script: '' }),
+        },
+      );
+      const script = (out.script ?? '').trim();
+      return script.length >= 400
+        ? { title: doc.title, script, fallback: false }
+        : fallback();
+    } catch {
+      return fallback();
+    }
   }
 
   async flashcards(
