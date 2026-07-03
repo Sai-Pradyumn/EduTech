@@ -39,17 +39,42 @@ bugs. Builds/tests verified green (server 162 unit tests + lint 0 errors, client
 - **P1 dashboard course-resume route** — `/app/courses/:id` → `/app/course-builder/:id`.
 - **P2 certificate copy** — copies the full shareable verification URL, not the bare id.
 
-**Still open (tracked, not yet done)** — larger feature/architecture work: the central
-Asta write-orchestration + app-wide invalidation bus (roadmap change → Today/dashboard/
-intelligence refresh), roadmap task→percentage model, Marketplace clone, Creator Studio
-type-specific templates, Mentor Sessions workflow (notes/state machine/scheduling),
-Institution real assignments + sampled-vs-total, Integrations calendar authenticated
-export, Data export URL/job semantics, Security current-device accuracy, Profile
-name↔auth sync, and standardizing loading/error/empty states across account/ecosystem
-screens.
-
-_(Also: the build-verification blocker noted below is environment-specific — Node was
+_(The build-verification blocker noted below is environment-specific — Node was
 available in this pass, so server/client builds + tests actually ran and are green.)_
+
+## Resolution log #2 — large builds (server 192 tests + lint 0, client build green)
+
+**Large build #1 — central Asta updates (DONE)**
+- **App-wide invalidation bus** — a chat command now returns an `invalidate` receipt
+  (server `common/domain-keys.ts`; client `DomainBusService`) and every open dependent
+  screen refreshes: Today reloads on a direct plan edit but **regenerates** on an
+  upstream roadmap/flow/mistake change; the dashboard refreshes next-move/plan/reviews/
+  courses (its week-toggle cascades too); roadmap details reloads. Fixes P1 *"dependent
+  screens don't update after one domain changes."*
+- **Write-from-chat tools** — `roadmap.create`, `course.create`, `flows.create`,
+  `mistakes.log` now build/record **real entities** from natural language (fixes the
+  headline P1 where Asta only replied with a plan, never persisted one).
+- **Safe multi-write** — a compound message ("do X; then Y") runs one command per clause
+  (explicit connectors only, distinct command once, capped at 4), with per-command
+  confirmation + Undo as the receipt.
+
+**Large build #2 — Mentor Sessions workflow (DONE, except real payment)**
+- **Lifecycle state machine** — requested→accepted→completed (or →cancelled); terminal
+  states frozen; accept/complete mentor-only, either party cancels.
+- **Request guards** — no self-requests; one open request per student↔mentor pair.
+- **Org visibility** — profiles stamp their org; the browse list hides your own profile
+  and shows org-only mentors solely to same-org viewers (was leaking to everyone).
+- **Scheduling + notes** — mentor proposes a slot on accept (`scheduledAt`, shown to
+  both); mentor notes are now editable from the UI (was display-only). Visible
+  error/empty states on Browse + Sessions.
+- _Deferred:_ real payment capture (needs the payment-provider wiring; the workflow is
+  otherwise complete).
+
+**Still open (tracked)** — roadmap task→percentage model, Marketplace clone, Creator
+Studio type-specific templates, Institution real assignments + sampled-vs-total,
+Integrations calendar authenticated export, Data export URL/job semantics, Security
+current-device accuracy, Profile name↔auth sync, mentor payment capture, and
+standardizing loading/error/empty states across the remaining account/ecosystem screens.
 
 ## Highest priority findings
 
