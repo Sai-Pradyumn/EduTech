@@ -30,6 +30,15 @@ describe('FlowsChatCommands', () => {
       updateNode: jest
         .fn()
         .mockResolvedValue(saved ?? { nodes: [], progressPercentage: 50 }),
+      generate: jest
+        .fn()
+        .mockImplementation((_u: string, dto: { goal: string }) =>
+          Promise.resolve({
+            _id: flowId,
+            title: `${dto.goal} flow`,
+            nodes: [node('n1', 'a'), node('n2', 'b')],
+          }),
+        ),
     };
     new FlowsChatCommands(registry as never, flows as never).onModuleInit();
     return { commands, flows };
@@ -89,6 +98,23 @@ describe('FlowsChatCommands', () => {
     expect(result?.undo?.text).toBe(
       "mark 'Event loop deep dive' complete in my flow",
     );
+  });
+
+  it('"create a flow for system design" generates a REAL flow', async () => {
+    const { commands, flows } = build(null);
+    const result = await run(commands, 'create a flow for system design');
+    expect(flows.generate).toHaveBeenCalledWith('u1', {
+      goal: 'system design',
+    });
+    expect(result?.ok).toBe(true);
+    expect(result?.summary).toContain('Created a new learning flow');
+    expect(result?.route).toBe('/app/flows/f1');
+  });
+
+  it('"can you make a flow for me?" is a question → never creates', async () => {
+    const { commands, flows } = build(null);
+    expect(await run(commands, 'can you make a flow for me?')).toBeNull();
+    expect(flows.generate).not.toHaveBeenCalled();
   });
 
   it('never matches questions, plan check-offs or roadmap wordings', async () => {

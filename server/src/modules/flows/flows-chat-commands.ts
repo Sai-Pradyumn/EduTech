@@ -36,6 +36,16 @@ export class FlowsChatCommands implements OnModuleInit {
 
   onModuleInit(): void {
     this.registry.register({
+      name: 'flows.create',
+      description: 'Create a new learning flow for a topic',
+      examples: [
+        'create a flow for system design',
+        'make me a learning flow on react',
+      ],
+      match: (m) => this.matchCreate(m),
+      execute: (userId, p) => this.createFlow(userId, String(p['goal'])),
+    });
+    this.registry.register({
       name: 'flows.complete_node',
       description: 'Mark a step in the active learning flow complete',
       examples: [
@@ -82,6 +92,16 @@ export class FlowsChatCommands implements OnModuleInit {
     return null;
   }
 
+  private matchCreate(message: string): Record<string, unknown> | null {
+    const t = this.guard(message);
+    if (!t) return null;
+    const m =
+      /^(?:create|generate|make|build|design)\s+(?:me\s+)?(?:a\s+|an\s+|my\s+)?(?:new\s+)?(?:learning\s+)?flow\s+(?:for|on|about|to\s+(?:learn|master))\s+(.{3,160})/i.exec(
+        t,
+      );
+    return m ? { goal: m[1].trim() } : null;
+  }
+
   private matchReopen(message: string): Record<string, unknown> | null {
     const t = this.guard(message);
     if (!t) return null;
@@ -93,6 +113,31 @@ export class FlowsChatCommands implements OnModuleInit {
   }
 
   // ── execution ──
+
+  /** Create a real learning flow from a chat request via the generation pipeline. */
+  private async createFlow(
+    userId: string,
+    goal: string,
+  ): Promise<ChatCommandResult> {
+    const clean = goal
+      .replace(/[.!?]+$/, '')
+      .trim()
+      .slice(0, 160);
+    if (clean.length < 3) {
+      return {
+        ok: false,
+        summary:
+          'I couldn\'t tell what the flow should cover — try "create a flow for system design".',
+      };
+    }
+    const flow = await this.flows.generate(userId, { goal: clean });
+    return {
+      ok: true,
+      summary: `Created a new learning flow — "${flow.title}" (${flow.nodes.length} steps). It's ready in Flow Studio.`,
+      route: `/app/flows/${String(flow._id)}`,
+      routeLabel: 'Open the flow',
+    };
+  }
 
   private async setNode(
     userId: string,
