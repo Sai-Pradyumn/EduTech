@@ -1,4 +1,6 @@
+import { HttpClient } from '@angular/common/http';
 import { Injectable, computed, effect, inject, signal } from '@angular/core';
+import { firstValueFrom } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import { LocalCacheService } from './local-cache.service';
 import { NetworkStatusService } from './network-status.service';
@@ -22,6 +24,7 @@ export interface QueuedAction {
 export class SyncQueueService {
   private readonly cache = inject(LocalCacheService);
   private readonly net = inject(NetworkStatusService);
+  private readonly http = inject(HttpClient);
   private readonly base = environment.apiBaseUrl;
 
   readonly pending = signal<QueuedAction[]>([]);
@@ -80,19 +83,24 @@ export class SyncQueueService {
     this.pending.set([]);
   }
 
+  /**
+   * Replay one queued mutation through Angular's HttpClient so it passes the same
+   * interceptor chain as live requests — the auth-token, refresh-and-retry, and
+   * error interceptors. This fixes queued work silently failing after the access
+   * token expired offline: a 401 now transparently refreshes and retries instead
+   * of being counted as a transient failure and eventually dropped (CORE-BUG-002).
+   */
   private async send(item: QueuedAction): Promise<boolean> {
     try {
-      const token = localStorage.getItem('asta.accessToken');
-      const res = await fetch(`${this.base}${item.path}`, {
-        method: item.method,
-        headers: {
-          'Content-Type': 'application/json',
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        },
-        body: item.body ? JSON.stringify(item.body) : undefined,
-      });
-      return res.ok;
+      await firstValueFrom(
+        this.http.request(item.method, `${this.base}${item.path}`, {
+          body: item.body,
+        }),
+      );
+      return true;
     } catch {
+      // Interceptors already handled refresh/retry + error surfacing; a failure
+      // here is real → stay queued for retry (or drop after flush()'s attempt cap).
       return false;
     }
   }
