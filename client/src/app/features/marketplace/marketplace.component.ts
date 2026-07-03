@@ -52,7 +52,7 @@ const TYPES = ['', 'flow', 'roadmap', 'quiz', 'project', 'simulation', 'intervie
             <div class="flex flex-wrap gap-1 mt-2">@for (tag of t.tags.slice(0,4); track tag) { <span class="tag">{{ tag }}</span> }</div>
             <div class="flex items-center justify-between mt-3">
               <span class="creator">by {{ t.creatorName }}</span>
-              <asta-btn variant="accent" size="sm" (click)="use(t)">Use template</asta-btn>
+              <asta-btn variant="accent" size="sm" [loading]="using() === t.id" [disabled]="using() !== null" (click)="use(t)">{{ using() === t.id ? 'Cloning…' : 'Use template' }}</asta-btn>
             </div>
           </asta-card>
         }
@@ -93,6 +93,7 @@ export class MarketplaceComponent {
   readonly templates = signal<Template[]>([]);
   readonly loading = signal(true);
   readonly loadError = signal(false);
+  readonly using = signal<string | null>(null);
 
   readonly view = computed(() => {
     const lvl = this.levelFilter();
@@ -107,9 +108,16 @@ export class MarketplaceComponent {
   }
   setFilter(t: string): void { this.filter.set(t); this.load(); }
   use(t: Template): void {
+    if (this.using() !== null) return;
+    this.using.set(t.id);
+    const label = t.type.replace(/_/g, ' ');
     this.api.use(t.id).subscribe({
-      next: (r) => { this.toast.success(`Using "${t.title}" — opening ${t.type}`); this.router.navigate([r.cloneRoute]); },
-      error: () => this.toast.error('Could not use template'),
+      next: (r) => {
+        this.using.set(null);
+        this.toast.success(r.created ? `Cloned "${t.title}" into your ${label}` : `Starting a ${label} from "${t.title}"`);
+        this.router.navigate([r.route], r.queryParams ? { queryParams: r.queryParams } : {});
+      },
+      error: () => { this.using.set(null); this.toast.error('Could not use this template — please try again'); },
     });
   }
   go(route: string): void { this.router.navigate([route]); }

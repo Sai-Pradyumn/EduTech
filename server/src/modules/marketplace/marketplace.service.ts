@@ -16,6 +16,7 @@ import {
   ReviewTemplateDto,
   UpdateTemplateDto,
 } from './dto/marketplace.dto';
+import { CloneResult, TemplateClonerService } from './template-cloner.service';
 
 @Injectable()
 export class MarketplaceService {
@@ -23,6 +24,7 @@ export class MarketplaceService {
     @InjectModel(MarketplaceTemplate.name)
     private readonly model: Model<MarketplaceTemplateDocument>,
     private readonly users: UsersService,
+    private readonly cloner: TemplateClonerService,
   ) {}
 
   /** Browse published templates with optional type/role filters. */
@@ -42,6 +44,8 @@ export class MarketplaceService {
   }
 
   async get(id: string): Promise<Record<string, unknown>> {
+    if (!Types.ObjectId.isValid(id))
+      throw new NotFoundException('Template not found');
     const t = await this.model.findById(id).exec();
     if (!t) throw new NotFoundException('Template not found');
     return this.toView(t, true);
@@ -116,24 +120,26 @@ export class MarketplaceService {
     return t;
   }
 
-  /** "Use" a template — increments usage and returns the cloneable content for the consumer. */
-  async use(id: string): Promise<{
-    ok: true;
-    type: TemplateType;
-    content: Record<string, unknown>;
-    cloneRoute: string;
-  }> {
+  /**
+   * "Use" a template — actually CLONES it into a real personal asset (via the
+   * asset's own generation pipeline), records the usage, and returns a deep link
+   * to the created asset. Previously this only bumped a counter and returned a
+   * generic route, so the consumer landed on an empty screen (MARKET-BUG-001).
+   */
+  async use(
+    userId: string,
+    id: string,
+  ): Promise<{ ok: true; type: TemplateType } & CloneResult> {
+    if (!Types.ObjectId.isValid(id))
+      throw new NotFoundException('Template not available');
     const t = await this.model.findById(id).exec();
     if (!t || t.status !== 'published')
       throw new NotFoundException('Template not available');
+    // Clone first — a generation failure must not count as a use.
+    const clone = await this.cloner.clone(userId, t);
     t.usageCount += 1;
     await t.save();
-    return {
-      ok: true,
-      type: t.type,
-      content: t.content,
-      cloneRoute: CLONE_ROUTE[t.type] ?? '/app/dashboard',
-    };
+    return { ok: true, type: t.type, ...clone };
   }
 
   private async owned(
@@ -172,16 +178,3 @@ export class MarketplaceService {
     };
   }
 }
-
-/** Where "use template" routes the consumer to clone it into a personal asset. */
-const CLONE_ROUTE: Record<TemplateType, string> = {
-  flow: '/app/flows',
-  roadmap: '/app/roadmap/generate',
-  quiz: '/app/quizzes',
-  simulation: '/app/simulations',
-  project: '/app/projects',
-  study_space: '/app/spaces',
-  interview: '/app/interview',
-  visual: '/app/visuals',
-  course: '/app/course-builder',
-};

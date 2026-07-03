@@ -17,6 +17,15 @@ export interface Template {
   reviewNote?: string;
   content?: Record<string, unknown>;
 }
+export interface UseTemplateResult {
+  ok: true;
+  type: string;
+  /** True when a real personal asset was cloned; false when we seeded a create screen. */
+  created: boolean;
+  assetId: string | null;
+  route: string;
+  queryParams?: Record<string, string>;
+}
 export interface CreateTemplateInput {
   type: string;
   title: string;
@@ -37,5 +46,5 @@ export class MarketplaceService {
   create(input: CreateTemplateInput): Observable<{ id: string; status: string }> { return this.api.post<{ id: string; status: string }>('/marketplace/templates', input); }
   submit(id: string): Observable<{ id: string; status: string }> { return this.api.post<{ id: string; status: string }>(`/marketplace/templates/${id}/publish`); }
   review(id: string, decision: 'published' | 'rejected', note?: string): Observable<{ id: string; status: string }> { return this.api.post<{ id: string; status: string }>(`/marketplace/templates/${id}/review`, { decision, note }); }
-  use(id: string): Observable<{ ok: true; type: string; cloneRoute: string }> { return this.api.post<{ ok: true; type: string; cloneRoute: string }>(`/marketplace/templates/${id}/use`); }
+  use(id: string): Observable<UseTemplateResult> { return this.api.post<UseTemplateResult>(`/marketplace/templates/${id}/use`); }
 }

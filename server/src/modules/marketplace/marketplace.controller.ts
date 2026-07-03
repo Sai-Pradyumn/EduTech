@@ -73,7 +73,7 @@ export class MarketplaceController {
   }
 
   @Post('templates/:id/use')
-  use(@Param('id') id: string) {
-    return this.market.use(id);
+  use(@CurrentUser() user: AuthUser, @Param('id') id: string) {
+    return this.market.use(user.id, id);
   }
 }
