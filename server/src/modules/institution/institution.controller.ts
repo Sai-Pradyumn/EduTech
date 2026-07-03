@@ -4,11 +4,24 @@ import { Roles } from '../../common/decorators/roles.decorator';
 import { Role } from '../../common/enums';
 import { AuthUser } from '../../common/interfaces';
 import { InstitutionService } from './institution.service';
-import { IsIn, IsString, MaxLength, MinLength } from 'class-validator';
+import {
+  IsDateString,
+  IsIn,
+  IsOptional,
+  IsString,
+  MaxLength,
+  MinLength,
+} from 'class-validator';
+import {
+  ASSIGNMENT_KINDS,
+  AssignmentKind,
+} from './schemas/institution-assignment.schema';
 
 class AssignDto {
-  @IsIn(['flow', 'template']) kind!: 'flow' | 'template';
+  @IsIn(ASSIGNMENT_KINDS) kind!: AssignmentKind;
   @IsString() @MinLength(2) @MaxLength(120) title!: string;
+  @IsOptional() @IsString() @MaxLength(400) note?: string;
+  @IsOptional() @IsDateString() dueAt?: string;
 }
 
 /** Institution analytics — admin/mentor only, scoped to their own org. */
@@ -27,22 +40,18 @@ export class InstitutionController {
     return this.institution.cohortOutcomes(user.id, id);
   }
 
-  @Post('cohorts/:id/assign-flow')
-  assignFlow(
+  @Post('cohorts/:id/assign')
+  assign(
     @CurrentUser() user: AuthUser,
     @Param('id') id: string,
     @Body() dto: AssignDto,
   ) {
-    return this.institution.assign(user.id, id, 'flow', dto.title);
+    return this.institution.assign(user.id, id, dto);
   }
 
-  @Post('cohorts/:id/assign-template')
-  assignTemplate(
-    @CurrentUser() user: AuthUser,
-    @Param('id') id: string,
-    @Body() dto: AssignDto,
-  ) {
-    return this.institution.assign(user.id, id, 'template', dto.title);
+  @Get('cohorts/:id/assignments')
+  assignments(@CurrentUser() user: AuthUser, @Param('id') id: string) {
+    return this.institution.listAssignments(user.id, id);
   }
 
   @Get('reports/outcomes')

@@ -1,7 +1,14 @@
 import { ForbiddenException, Injectable } from '@nestjs/common';
+import { InjectModel } from '@nestjs/mongoose';
+import { Model, Types } from 'mongoose';
 import { CohortService } from '../cohort/services/cohort.service';
 import { CareerReadinessService } from '../career-readiness/career-readiness.service';
 import { UsersService } from '../users/users.service';
+import {
+  AssignmentKind,
+  InstitutionAssignment,
+  InstitutionAssignmentDocument,
+} from './schemas/institution-assignment.schema';
 
 export interface StudentOutcome {
   id: string;
@@ -12,17 +19,34 @@ export interface StudentOutcome {
   atRisk: boolean;
 }
 
+export interface AssignmentView {
+  id: string;
+  kind: AssignmentKind;
+  title: string;
+  note: string;
+  dueAt: string | null;
+  overdue: boolean;
+  createdBy: string;
+  createdAt: string;
+}
+
 export interface InstitutionOverview {
   orgName: string;
   cohorts: {
     id: string;
     name: string;
+    /** Total learners enrolled in the cohort. */
     students: number;
+    /** How many we computed readiness for this request (see totals.sampled). */
+    sampledStudents: number;
     avgReadiness: number;
     atRisk: number;
   }[];
   totals: {
+    /** Total learners enrolled across the institution. */
     students: number;
+    /** How many learners readiness was actually computed for (sampling cap). */
+    sampled: number;
     avgReadiness: number;
     atRisk: number;
     jobReady: number;
@@ -39,13 +63,17 @@ export interface InstitutionOverview {
  */
 @Injectable()
 export class InstitutionService {
-  /** Cap how many students we compute readiness for in one request (keeps it responsive). */
-  private readonly MAX_STUDENTS = 40;
+  /** Global cap on readiness computations per request (keeps it responsive). */
+  private readonly MAX_STUDENTS = 60;
+  /** Per-cohort sample cap so every cohort gets a representative sample. */
+  private readonly MAX_PER_COHORT = 25;
 
   constructor(
     private readonly cohorts: CohortService,
     private readonly readiness: CareerReadinessService,
     private readonly users: UsersService,
+    @InjectModel(InstitutionAssignment.name)
+    private readonly assignments: Model<InstitutionAssignmentDocument>,
   ) {}
 
   private async orgIdOf(userId: string): Promise<string> {
@@ -68,12 +96,19 @@ export class InstitutionService {
     const allOutcomes: StudentOutcome[] = [];
     const gapTally = new Map<string, number>();
     let processed = 0;
+    let totalEnrolled = 0;
 
     for (const c of cohorts) {
       const detail = await this.cohorts.getDetail(c.id);
+      totalEnrolled += detail.students.length;
       const outcomes: StudentOutcome[] = [];
       for (const s of detail.students) {
-        if (processed >= this.MAX_STUDENTS) break;
+        // Per-cohort cap keeps every cohort represented; global cap bounds work.
+        if (
+          outcomes.length >= this.MAX_PER_COHORT ||
+          processed >= this.MAX_STUDENTS
+        )
+          break;
         processed += 1;
         const outcome = await this.outcomeFor(s.userId, s.name, gapTally);
         outcomes.push(outcome);
@@ -88,22 +123,22 @@ export class InstitutionService {
         id: c.id,
         name: c.name,
         students: detail.students.length,
+        sampledStudents: outcomes.length,
         avgReadiness: avg,
         atRisk: outcomes.filter((o) => o.atRisk).length,
       });
     }
 
-    const totalStudents = allOutcomes.length;
-    const avgReadiness = totalStudents
-      ? Math.round(
-          allOutcomes.reduce((a, o) => a + o.readiness, 0) / totalStudents,
-        )
+    const sampled = allOutcomes.length;
+    const avgReadiness = sampled
+      ? Math.round(allOutcomes.reduce((a, o) => a + o.readiness, 0) / sampled)
       : 0;
     return {
       orgName,
       cohorts: cohortRows,
       totals: {
-        students: totalStudents,
+        students: totalEnrolled,
+        sampled,
         avgReadiness,
         atRisk: allOutcomes.filter((o) => o.atRisk).length,
         jobReady: allOutcomes.filter((o) => o.readiness >= 82).length,
@@ -131,7 +166,13 @@ export class InstitutionService {
   async cohortOutcomes(
     userId: string,
     cohortId: string,
-  ): Promise<{ id: string; name: string; students: StudentOutcome[] }> {
+  ): Promise<{
+    id: string;
+    name: string;
+    total: number;
+    sampled: number;
+    students: StudentOutcome[];
+  }> {
     await this.assertOrg(userId, cohortId);
     const detail = await this.cohorts.getDetail(cohortId);
     const gapTally = new Map<string, number>();
@@ -142,35 +183,97 @@ export class InstitutionService {
     return {
       id: detail.id,
       name: detail.name,
+      total: detail.students.length,
+      sampled: students.length,
       students: students.sort((a, b) => b.readiness - a.readiness),
     };
   }
 
-  /** Assign a flow/template to a cohort by posting it as an announcement (foundation). */
+  /**
+   * Assign a learning asset to a cohort — persisted as a real assignment (with an
+   * optional due date), and also announced so learners see it (INST-GAP-001).
+   */
   async assign(
     userId: string,
     cohortId: string,
-    kind: 'flow' | 'template',
-    title: string,
-  ): Promise<{ ok: true }> {
-    await this.assertOrg(userId, cohortId);
+    dto: {
+      kind: AssignmentKind;
+      title: string;
+      note?: string;
+      dueAt?: string;
+    },
+  ): Promise<{ ok: true; id: string }> {
+    const orgId = await this.assertOrg(userId, cohortId);
     const user = await this.users.findByIdOrThrow(userId);
+    const parsedDue = dto.dueAt ? new Date(dto.dueAt) : undefined;
+    const dueAt =
+      parsedDue && !Number.isNaN(parsedDue.getTime()) ? parsedDue : undefined;
+
+    const created = await this.assignments.create({
+      organization: new Types.ObjectId(orgId),
+      cohort: new Types.ObjectId(cohortId),
+      createdBy: new Types.ObjectId(userId),
+      kind: dto.kind,
+      title: dto.title,
+      note: dto.note ?? '',
+      dueAt,
+    });
+
+    const dueLine = dueAt ? ` Due ${dueAt.toDateString()}.` : '';
+    const noteLine = dto.note ? ` Note: ${dto.note}` : '';
     await this.cohorts.postAnnouncement(
       cohortId,
       user.name,
-      `Assigned ${kind}: ${title}`,
-      `Your mentor assigned a ${kind} — "${title}". Open it from your dashboard to begin.`,
+      `Assigned ${dto.kind}: ${dto.title}`,
+      `Your mentor assigned a ${dto.kind} — "${dto.title}".${dueLine} Open it from your dashboard to begin.${noteLine}`,
     );
-    return { ok: true };
+    return { ok: true, id: String(created._id) };
   }
 
-  private async assertOrg(userId: string, cohortId: string): Promise<void> {
+  /** A cohort's assignments, newest first, with an overdue flag. */
+  async listAssignments(
+    userId: string,
+    cohortId: string,
+  ): Promise<AssignmentView[]> {
+    await this.assertOrg(userId, cohortId);
+    const list = await this.assignments
+      .find({ cohort: new Types.ObjectId(cohortId) })
+      .sort({ createdAt: -1 })
+      .limit(50)
+      .exec();
+    const now = Date.now();
+    return Promise.all(
+      list.map(async (a) => {
+        const by = await this.users
+          .findById(String(a.createdBy))
+          .catch(() => null);
+        return {
+          id: String(a._id),
+          kind: a.kind,
+          title: a.title,
+          note: a.note,
+          dueAt: a.dueAt?.toISOString() ?? null,
+          overdue: !!a.dueAt && a.dueAt.getTime() < now,
+          createdBy: by?.name ?? 'Mentor',
+          createdAt:
+            (
+              a as InstitutionAssignmentDocument & { createdAt?: Date }
+            ).createdAt?.toISOString() ?? '',
+        };
+      }),
+    );
+  }
+
+  private async assertOrg(userId: string, cohortId: string): Promise<string> {
+    if (!Types.ObjectId.isValid(cohortId))
+      throw new ForbiddenException('That cohort is not in your institution.');
     const [orgId, cohortOrg] = await Promise.all([
       this.orgIdOf(userId),
       this.cohorts.orgIdOf(cohortId),
     ]);
     if (orgId !== cohortOrg)
       throw new ForbiddenException('That cohort is not in your institution.');
+    return orgId;
   }
 
   private async outcomeFor(

@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { DatePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ButtonComponent } from '../../shared/ui/button.component';
 import { CardComponent } from '../../shared/ui/card.component';
@@ -6,12 +7,12 @@ import { EmptyStateComponent } from '../../shared/ui/empty-state.component';
 import { RingComponent } from '../../shared/ui/ring.component';
 import { SkeletonComponent } from '../../shared/ui/skeleton.component';
 import { ToastService } from '../../core/services/toast.service';
-import { CohortOutcomes, InstitutionOverview, InstitutionService } from '../../core/services/institution.service';
+import { Assignment, AssignmentKind, CohortOutcomes, InstitutionOverview, InstitutionService } from '../../core/services/institution.service';
 
 @Component({
     selector: 'asta-institution',
     changeDetection: ChangeDetectionStrategy.OnPush,
-    imports: [FormsModule, ButtonComponent, CardComponent, EmptyStateComponent, RingComponent, SkeletonComponent],
+    imports: [DatePipe, FormsModule, ButtonComponent, CardComponent, EmptyStateComponent, RingComponent, SkeletonComponent],
     template: `
     <header class="asta-page-command-header">
       <div class="min-w-0">
@@ -34,6 +35,9 @@ import { CohortOutcomes, InstitutionOverview, InstitutionService } from '../../c
         <asta-card class="stat motion-card-reveal" [style.--motion-card-index]="2"><p class="num" style="color:var(--green-deep)">{{ ov.totals.jobReady }}</p><p class="lbl">Job-ready</p></asta-card>
         <asta-card class="stat motion-card-reveal" [style.--motion-card-index]="3"><p class="num" style="color:var(--coral, #ffb454)">{{ ov.totals.atRisk }}</p><p class="lbl">At risk</p></asta-card>
       </div>
+      @if (ov.totals.sampled < ov.totals.students) {
+        <p class="samp">Readiness metrics are sampled from {{ ov.totals.sampled }} of {{ ov.totals.students }} students to stay responsive.</p>
+      }
 
       <div class="grid gap-4 lg:grid-cols-[1fr_320px] items-start">
         <div class="min-w-0 space-y-4">
@@ -45,14 +49,15 @@ import { CohortOutcomes, InstitutionOverview, InstitutionService } from '../../c
                   <div class="cohort" [class.sel]="selectedId() === c.id">
                     <div class="flex items-center gap-3 cursor-pointer" role="button" tabindex="0" [attr.aria-expanded]="selectedId() === c.id" (click)="selectCohort(c.id)" (keyup.enter)="selectCohort(c.id)">
                       <asta-ring [value]="c.avgReadiness" [size]="48" />
-                      <span class="min-w-0 flex-1"><span class="c-name">{{ c.name }}</span><span class="c-meta">{{ c.students }} students · {{ c.atRisk }} at risk</span></span>
+                      <span class="min-w-0 flex-1"><span class="c-name">{{ c.name }}</span><span class="c-meta">{{ c.students }} students@if (c.sampledStudents < c.students) { · {{ c.sampledStudents }} sampled } · {{ c.atRisk }} at risk</span></span>
                       <span class="drill">{{ selectedId() === c.id ? '▾' : 'View students ›' }}</span>
                     </div>
 
                     @if (selectedId() === c.id) {
                       <div class="detail">
                         @if (detailLoading()) { <asta-skeleton h="80px" /> }
-                        @else if (detail()) {
+                        @else if (detail(); as d) {
+                          @if (d.sampled < d.total) { <p class="samp2">Showing readiness for {{ d.sampled }} of {{ d.total }} students.</p> }
                           <div class="flex items-center gap-2 mb-2">
                             <input class="inp" placeholder="Search students…" [ngModel]="detailQuery()" (ngModelChange)="detailQuery.set($event)" (click)="$event.stopPropagation()" />
                             <select class="inp" style="flex:0 0 auto" [ngModel]="detailSort()" (ngModelChange)="detailSort.set($event)" (click)="$event.stopPropagation()">
@@ -72,13 +77,35 @@ import { CohortOutcomes, InstitutionOverview, InstitutionService } from '../../c
                               }
                             </div>
                           } @else { <p class="text-sm text-txt-mute">No students match.</p> }
+
+                          <div class="assigns">
+                            <p class="kicker2">Assignments</p>
+                            @if (assignmentsLoading()) { <asta-skeleton h="36px" /> }
+                            @else if (assignments().length) {
+                              <div class="space-y-1.5">
+                                @for (a of assignments(); track a.id) {
+                                  <div class="arow">
+                                    <span class="min-w-0"><span class="a-kind">{{ a.kind }}</span><span class="a-title">{{ a.title }}</span>@if (a.note) { <span class="a-note">{{ a.note }}</span> }</span>
+                                    @if (a.dueAt) { <span class="a-due" [class.over]="a.overdue">{{ a.overdue ? 'Overdue' : 'Due' }} {{ a.dueAt | date:'MMM d' }}</span> }
+                                  </div>
+                                }
+                              </div>
+                            } @else { <p class="text-sm text-txt-mute">No assignments yet.</p> }
+                          </div>
                         } @else { <p class="text-sm text-txt-mute">Could not load students.</p> }
                       </div>
                     }
 
-                    <div class="flex items-center gap-2 mt-2">
-                      <input class="inp" placeholder="Assign flow/template title…" [(ngModel)]="assignTitle[c.id]" (click)="$event.stopPropagation()" />
-                      <asta-btn size="sm" variant="ghost" (click)="assign(c.id)" [disabled]="!assignTitle[c.id]">Assign</asta-btn>
+                    <div class="assign mt-2">
+                      <div class="flex items-center gap-2 flex-wrap">
+                        <select class="inp" style="flex:0 0 auto" [ngModel]="assignKind[c.id] || 'flow'" (ngModelChange)="assignKind[c.id] = $event" aria-label="Assignment type">
+                          @for (k of kinds; track k) { <option [value]="k">{{ k }}</option> }
+                        </select>
+                        <input class="inp" placeholder="Assignment title…" [(ngModel)]="assignTitle[c.id]" />
+                        <input class="inp" style="flex:0 0 auto" type="date" [ngModel]="assignDue[c.id]" (ngModelChange)="assignDue[c.id] = $event" aria-label="Due date" />
+                        <asta-btn size="sm" variant="ghost" (click)="assign(c.id)" [disabled]="!assignTitle[c.id]">Assign</asta-btn>
+                      </div>
+                      <input class="inp mt-2" placeholder="Note for learners (optional)" [ngModel]="assignNote[c.id]" (ngModelChange)="assignNote[c.id] = $event" />
                     </div>
                   </div>
                 }
@@ -134,6 +161,17 @@ import { CohortOutcomes, InstitutionOverview, InstitutionService } from '../../c
     .prow { display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: 13px; padding: 4px 0; }
     .ps { font-weight: 700; font-variant-numeric: tabular-nums; }
     .gap { font-size: 11px; color: var(--text-mute); }
+    .samp { font-size: 11.5px; color: var(--text-mute); margin: -8px 0 16px; }
+    .samp2 { font-size: 11px; color: var(--text-mute); margin: 0 0 8px; }
+    .assign .inp { min-width: 0; }
+    .assigns { margin-top: 12px; padding-top: 10px; border-top: 1px dashed var(--paper-3); }
+    .kicker2 { font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: var(--text-mute); margin-bottom: 6px; }
+    .arow { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 6px 9px; border-radius: 9px; background: var(--paper); }
+    .a-kind { font-size: 9.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; color: var(--peri, #8aa6ff); margin-right: 7px; }
+    .a-title { font-size: 12.5px; font-weight: 600; }
+    .a-note { display: block; font-size: 11px; color: var(--text-mute); }
+    .a-due { font-size: 10.5px; white-space: nowrap; padding: 2px 8px; border-radius: 999px; background: var(--paper-3); color: var(--text-soft); }
+    .a-due.over { background: color-mix(in oklab, var(--coral, #ffb454) 20%, transparent); color: var(--coral, #ffb454); font-weight: 600; }
   `]
 })
 export class InstitutionComponent {
@@ -142,7 +180,15 @@ export class InstitutionComponent {
   readonly o = signal<InstitutionOverview | null>(null);
   readonly loading = signal(true);
   readonly loadError = signal(false);
+  readonly kinds: AssignmentKind[] = ['flow', 'template', 'roadmap', 'course', 'quiz', 'project'];
   assignTitle: Record<string, string> = {};
+  assignKind: Record<string, AssignmentKind> = {};
+  assignDue: Record<string, string> = {};
+  assignNote: Record<string, string> = {};
+
+  // cohort assignments (loaded when a cohort is opened)
+  readonly assignments = signal<Assignment[]>([]);
+  readonly assignmentsLoading = signal(false);
 
   // cohort drilldown (reuses the existing /cohorts/:id/outcomes endpoint)
   readonly selectedId = signal<string | null>(null);
@@ -177,6 +223,15 @@ export class InstitutionComponent {
       next: (d) => { this.detail.set(d); this.detailLoading.set(false); },
       error: () => { this.detailLoading.set(false); this.toast.error('Could not load cohort students'); },
     });
+    this.loadAssignments(id);
+  }
+  loadAssignments(id: string): void {
+    this.assignmentsLoading.set(true);
+    this.assignments.set([]);
+    this.api.assignments(id).subscribe({
+      next: (a) => { this.assignments.set(a); this.assignmentsLoading.set(false); },
+      error: () => this.assignmentsLoading.set(false),
+    });
   }
   refresh(): void {
     this.loading.set(true); this.loadError.set(false);
@@ -185,6 +240,18 @@ export class InstitutionComponent {
   assign(cohortId: string): void {
     const title = this.assignTitle[cohortId]?.trim();
     if (!title) return;
-    this.api.assignFlow(cohortId, title).subscribe({ next: () => { this.toast.success('Assigned to cohort'); this.assignTitle[cohortId] = ''; }, error: () => this.toast.error('Could not assign') });
+    this.api.assign(cohortId, {
+      kind: this.assignKind[cohortId] ?? 'flow',
+      title,
+      note: this.assignNote[cohortId]?.trim() || undefined,
+      dueAt: this.assignDue[cohortId] || undefined,
+    }).subscribe({
+      next: () => {
+        this.toast.success('Assigned to cohort');
+        this.assignTitle[cohortId] = ''; this.assignNote[cohortId] = ''; this.assignDue[cohortId] = '';
+        if (this.selectedId() === cohortId) this.loadAssignments(cohortId);
+      },
+      error: () => this.toast.error('Could not assign — please try again'),
+    });
   }
 }
