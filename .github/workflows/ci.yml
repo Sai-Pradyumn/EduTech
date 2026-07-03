@@ -18,6 +18,8 @@ jobs:
         run: npm ci
       - name: Lint
         run: npm run lint --if-present
+      - name: A11y — WCAG contrast audit of the OKLCH tokens
+        run: npm run contrast:audit
       - name: Build (server + client)
         run: npm run build
         env:

@@ -22,7 +22,9 @@
   /* Text */
   --text: oklch(0.22 0.025 264);
   --text-soft: oklch(0.44 0.02 264);
-  --text-mute: oklch(0.60 0.015 264);
+  /* Darkened 0.60→0.55 so muted captions/kickers clear WCAG AA (4.5:1) on --paper,
+     not just AA-large. Verified by scripts/contrast-audit.mjs. */
+  --text-mute: oklch(0.55 0.015 264);
   --on-ink: oklch(0.96 0.006 86);
   --on-ink-soft: oklch(0.78 0.015 264);
   --on-ink-mute: oklch(0.62 0.02 264);
@@ -92,7 +94,8 @@
   /* Text */
   --text: oklch(0.94 0.01 86);
   --text-soft: oklch(0.74 0.02 264);
-  --text-mute: oklch(0.58 0.02 264);
+  /* Lightened 0.58→0.59 so muted text clears WCAG AA (4.5:1) on the dark --paper. */
+  --text-mute: oklch(0.59 0.02 264);
   --on-ink: oklch(0.96 0.006 86);
   --on-ink-soft: oklch(0.78 0.015 264);
   --on-ink-mute: oklch(0.62 0.02 264);
