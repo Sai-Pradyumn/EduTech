@@ -38,10 +38,13 @@ export const appConfig: ApplicationConfig = {
     provideHttpClient(
       withInterceptors([authTokenInterceptor, errorInterceptor, refreshInterceptor]),
     ),
-    // Restore the session from a stored token before the app renders. Only an
-    // actually-invalid token (401/403) clears the session — a transient failure
-    // during boot (rate limit, flaky network, server restart) must NOT log the
-    // user out; their refresh token is still perfectly valid.
+    // Restore the session from a stored token before the app renders. Only a
+    // confirmed-invalid token clears the session. A 401 here means the refresh
+    // interceptor already tried and failed to refresh, so the credentials are
+    // truly dead → log out. A 403 means the token is VALID but forbidden (a
+    // permission/middleware edge, not expired creds) and a transient failure
+    // (rate limit, flaky network, server restart) is recoverable — neither must
+    // log the user out while their refresh token is still good.
     provideAppInitializer(async () => {
       const auth = inject(AuthService);
       if (!auth.accessToken) return;
@@ -49,7 +52,11 @@ export const appConfig: ApplicationConfig = {
         await firstValueFrom(auth.loadCurrentUser());
       } catch (err) {
         const status = (err as { status?: number })?.status ?? 0;
-        if (status === 401 || status === 403) auth.clearSession();
+        if (status === 401) auth.clearSession();
+        else if (status === 403)
+          console.warn(
+            'Bootstrap /auth/me was forbidden (403) — keeping the session; credentials are still valid.',
+          );
       }
     }),
     // Start web-vitals reporting once the app boots.
