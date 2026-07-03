@@ -11,6 +11,34 @@ export class SocketService {
   private readonly auth = inject(AuthService);
   private socket?: Socket;
 
+  /**
+   * The server runs one agent stream per socket to bound cost. Since the whole
+   * app shares one socket, a second stream started before the first finishes
+   * would otherwise be rejected. We serialize sends through a FIFO queue (the
+   * next stream waits its turn instead of erroring) and tag each with a runId so
+   * events never cross-talk between runs (SOCKET-BUG-001).
+   */
+  private streamActive = false;
+  private readonly waiters: (() => void)[] = [];
+
+  private acquire(run: () => void): void {
+    if (this.streamActive) this.waiters.push(run);
+    else {
+      this.streamActive = true;
+      run();
+    }
+  }
+  private release(): void {
+    const next = this.waiters.shift();
+    if (next) next();
+    else this.streamActive = false;
+  }
+  private newRunId(): string {
+    return typeof crypto !== 'undefined' && crypto.randomUUID
+      ? crypto.randomUUID()
+      : Math.random().toString(36).slice(2);
+  }
+
   private connect(): Socket {
     if (this.socket?.connected) return this.socket;
     if (this.socket) {
@@ -50,41 +78,70 @@ export class SocketService {
     documentIds?: string[];
   }): Observable<AgentStreamEvent> {
     return new Observable<AgentStreamEvent>((subscriber) => {
-      const socket = this.connect();
+      const runId = this.newRunId();
       let settled = false;
-      const finish = (event: AgentStreamEvent) => {
-        if (settled) return;
-        settled = true;
-        subscriber.next(event);
-        subscriber.complete();
-      };
+      let acquired = false; // took the active-stream slot
+      let socket: Socket | undefined;
 
-      const onEvent = (event: AgentStreamEvent) => {
-        if (settled) return;
-        subscriber.next(event);
-        if (event.type === 'completed' || event.type === 'error') {
-          settled = true;
-          subscriber.complete();
-        }
-      };
-      const onDisconnect = () =>
-        finish({ type: 'error', messageId: '', message: 'Connection lost — please try again.' });
-      const onConnectError = () =>
-        finish({ type: 'error', messageId: '', message: 'Could not reach Asta. Check your connection.' });
-
-      socket.on('agent.event', onEvent);
-      socket.once('disconnect', onDisconnect);
-      socket.io.once('reconnect_failed', onConnectError);
-      if (socket.connected) {
-        socket.emit('agent.send', payload);
-      } else {
-        socket.once('connect', () => socket.emit('agent.send', payload));
-      }
-
-      return () => {
+      const teardown = () => {
+        if (!socket) return;
         socket.off('agent.event', onEvent);
         socket.off('disconnect', onDisconnect);
         socket.io.off('reconnect_failed', onConnectError);
+      };
+      // Settle this run and hand the slot to the next queued stream.
+      const done = () => {
+        if (settled) return;
+        settled = true;
+        teardown();
+        subscriber.complete();
+        if (acquired) this.release();
+      };
+      const emit = (event: AgentStreamEvent) => {
+        if (settled) return;
+        subscriber.next(event);
+        if (event.type === 'completed' || event.type === 'error') done();
+      };
+
+      const onEvent = (event: AgentStreamEvent & { runId?: string }) => {
+        if (settled) return;
+        // Ignore events belonging to a different run on the shared socket.
+        if (event.runId && event.runId !== runId) return;
+        emit(event);
+      };
+      const onDisconnect = () =>
+        emit({ type: 'error', messageId: '', message: 'Connection lost — please try again.' });
+      const onConnectError = () =>
+        emit({ type: 'error', messageId: '', message: 'Could not reach Asta. Check your connection.' });
+
+      const start = () => {
+        acquired = true;
+        if (settled) {
+          // Unsubscribed while queued — release the slot we were just handed.
+          this.release();
+          return;
+        }
+        socket = this.connect();
+        socket.on('agent.event', onEvent);
+        socket.once('disconnect', onDisconnect);
+        socket.io.once('reconnect_failed', onConnectError);
+        const send = () => socket!.emit('agent.send', { ...payload, runId });
+        if (socket.connected) send();
+        else socket.once('connect', send);
+      };
+
+      this.acquire(start);
+
+      return () => {
+        if (settled) return;
+        settled = true;
+        teardown();
+        if (acquired) this.release();
+        else {
+          // Still queued — drop ourselves from the waiters.
+          const i = this.waiters.indexOf(start);
+          if (i >= 0) this.waiters.splice(i, 1);
+        }
       };
     });
   }
@@ -92,5 +149,7 @@ export class SocketService {
   disconnect(): void {
     this.socket?.disconnect();
     this.socket = undefined;
+    this.streamActive = false;
+    this.waiters.length = 0;
   }
 }

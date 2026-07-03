@@ -36,6 +36,9 @@ interface AgentSendPayload {
   source?: string;
   /** RAG scope — restrict retrieval to these documents. */
   documentIds?: string[];
+  /** Client-generated run id — echoed on every event so one shared socket can
+   *  route concurrent/queued streams to the right subscriber (SOCKET-BUG-001). */
+  runId?: string;
 }
 
 /**
@@ -78,6 +81,7 @@ export class EventsGateway implements OnGatewayConnection {
   ): Promise<{ ok: boolean; sessionId?: string }> {
     const data = client.data as SocketData;
     const userId = data.userId;
+    const runId = payload?.runId;
     if (!userId) {
       this.reject(client);
       return { ok: false };
@@ -90,16 +94,19 @@ export class EventsGateway implements OnGatewayConnection {
       this.emitError(
         client,
         `Message too long (max ${MAX_MESSAGE_LEN} characters).`,
+        runId,
       );
       return { ok: false };
     }
 
     // One run per socket: a second send while one is streaming would interleave
-    // token events and double the cost. Tell the client instead of running it.
+    // token events and double the cost. The client serializes sends, so this is a
+    // safety net — carry the runId so the right subscriber unblocks.
     if (data.busy) {
       this.emitError(
         client,
         'Still answering your previous message — please wait.',
+        runId,
       );
       return { ok: false };
     }
@@ -110,7 +117,9 @@ export class EventsGateway implements OnGatewayConnection {
       `[WS] agent.send from user ${userId} | agent: ${payload.agentType ?? 'auto'} | message: "${msgPreview}${message.length > 60 ? '...' : ''}"`,
     );
 
-    const emit = (event: AgentStreamEvent) => client.emit('agent.event', event);
+    // Tag every streamed event with the run id so the client can route it.
+    const emit = (event: AgentStreamEvent) =>
+      client.emit('agent.event', runId ? { ...event, runId } : event);
     try {
       const result = await this.orchestrator.handle(
         {
@@ -138,6 +147,7 @@ export class EventsGateway implements OnGatewayConnection {
       this.emitError(
         client,
         'Asta could not finish that response. Please try again.',
+        runId,
       );
       return { ok: false };
     } finally {
@@ -160,8 +170,13 @@ export class EventsGateway implements OnGatewayConnection {
   }
 
   /** Emit a terminal error event on the agent stream (completes the client observable). */
-  private emitError(client: Socket, message: string): void {
-    client.emit('agent.event', { type: 'error', messageId: '', message });
+  private emitError(client: Socket, message: string, runId?: string): void {
+    client.emit('agent.event', {
+      type: 'error',
+      messageId: '',
+      message,
+      ...(runId ? { runId } : {}),
+    });
   }
 
   private reject(client: Socket): void {
