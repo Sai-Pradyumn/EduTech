@@ -219,11 +219,25 @@ export class ShellComponent {
   readonly isAdmin = this.auth.isAdmin;
   readonly nav = computed(() => {
     const base = this.isAdmin() ? ADMIN_NAV : STUDENT_NAV;
+    const isPlatformAdmin = this.orgCtx.isPlatformAdmin();
+    // Hide screens whose backend rejects a plain student, so the sidebar can't
+    // route the user into a guaranteed 403 (P0 — sidebar/authorization mismatch).
+    // Institution is admin/mentor-only; Developer needs org-manage.
+    const canSee: Record<string, boolean> = {
+      '/app/institution': isPlatformAdmin || this.orgCtx.has('student.view'),
+      '/app/developer': isPlatformAdmin || this.orgCtx.has('organization.manage'),
+    };
+    const gated = base
+      .map((group) => ({
+        ...group,
+        items: group.items.filter((it) => canSee[it.route] ?? true),
+      }))
+      .filter((group) => group.items.length > 0);
     return [
-      ...base,
+      ...gated,
       ...workspaceNav({
         hasOrg: this.orgCtx.orgs().length > 0,
-        isPlatformAdmin: this.orgCtx.isPlatformAdmin(),
+        isPlatformAdmin,
         canMentor: this.orgCtx.has('student.view'),
         canReports: this.orgCtx.has('admin.reports.view'),
       }),

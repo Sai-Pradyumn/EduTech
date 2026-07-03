@@ -120,7 +120,7 @@ import { Course, CourseService } from '../../core/services/course.service';
 
       <!-- Continue course — pick up exactly where the last lesson left off -->
       @if (continueCourse(); as cc) {
-        <a [routerLink]="['/app/courses', cc.id]" class="card hover-lift block mb-5 dashboard-reveal" style="padding:13px 18px;text-decoration:none;--motion-card-index:0">
+        <a [routerLink]="['/app/course-builder', cc.id]" class="card hover-lift block mb-5 dashboard-reveal" style="padding:13px 18px;text-decoration:none;--motion-card-index:0">
           <div class="flex items-center gap-3 flex-wrap">
             <span class="rev-ico" aria-hidden="true">▶</span>
             <div class="flex-1 min-w-[200px]">

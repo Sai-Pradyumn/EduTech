@@ -1,6 +1,6 @@
 import { Injectable, computed, inject, signal } from '@angular/core';
 import { Router } from '@angular/router';
-import { Observable, tap } from 'rxjs';
+import { Observable, finalize, map, shareReplay, tap, throwError } from 'rxjs';
 import { ApiService } from './api.service';
 import { AuthResult, User } from '../models';
 
@@ -66,6 +66,32 @@ export class AuthService {
   /** Restores the session on app start from a stored token. */
   loadCurrentUser(): Observable<{ user: User }> {
     return this.api.get<{ user: User }>('/auth/me').pipe(tap((res) => this.user.set(res.user)));
+  }
+
+  /**
+   * Exchanges the refresh token for a fresh access token (token rotation). Shared/
+   * de-duplicated: concurrent 401s that all trigger a refresh await a single POST,
+   * so we never fire N parallel refreshes or rotate the token out from under each
+   * other. Used by the refresh-and-retry interceptor. Clears itself when settled.
+   */
+  private refreshInFlight$: Observable<string> | null = null;
+  refreshAccessToken(): Observable<string> {
+    if (this.refreshInFlight$) return this.refreshInFlight$;
+    const token = this.refreshToken;
+    if (!token) return throwError(() => new Error('No refresh token'));
+    this.refreshInFlight$ = this.api
+      .post<{ accessToken: string; refreshToken: string }>('/auth/refresh', {
+        refreshToken: token,
+      })
+      .pipe(
+        tap((res) => this.setTokens(res.accessToken, res.refreshToken)),
+        map((res) => res.accessToken),
+        finalize(() => {
+          this.refreshInFlight$ = null;
+        }),
+        shareReplay({ bufferSize: 1, refCount: false }),
+      );
+    return this.refreshInFlight$;
   }
 
   logout(): void {

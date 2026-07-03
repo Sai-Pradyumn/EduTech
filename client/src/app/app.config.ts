@@ -17,6 +17,7 @@ import { firstValueFrom } from 'rxjs';
 import { routes } from './app.routes';
 import { authTokenInterceptor } from './core/interceptors/auth-token.interceptor';
 import { errorInterceptor } from './core/interceptors/error.interceptor';
+import { refreshInterceptor } from './core/interceptors/refresh.interceptor';
 import { AuthService } from './core/services/auth.service';
 import { WebVitalsService } from './core/services/web-vitals.service';
 import { AstaTitleStrategy } from './core/title-strategy';
@@ -32,7 +33,11 @@ export const appConfig: ApplicationConfig = {
       withComponentInputBinding(),
       withInMemoryScrolling({ scrollPositionRestoration: 'top' }),
     ),
-    provideHttpClient(withInterceptors([authTokenInterceptor, errorInterceptor])),
+    // Order matters: refreshInterceptor is last so its 401 handler runs FIRST on the
+    // response path — it refreshes + retries before errorInterceptor's logout fires.
+    provideHttpClient(
+      withInterceptors([authTokenInterceptor, errorInterceptor, refreshInterceptor]),
+    ),
     // Restore the session from a stored token before the app renders. Only an
     // actually-invalid token (401/403) clears the session — a transient failure
     // during boot (rate limit, flaky network, server restart) must NOT log the

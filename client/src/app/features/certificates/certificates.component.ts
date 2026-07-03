@@ -115,7 +115,10 @@ export class CertificatesComponent implements OnInit {
   }
 
   copy(vid: string): void {
-    void navigator.clipboard?.writeText(vid);
-    this.toast.success('Verification ID copied');
+    // Copy the full shareable verification URL, not just the bare id — a recipient
+    // needs a link they can open, not a token they have to paste into a form.
+    const url = `${location.origin}/certificate/verify/${vid}`;
+    void navigator.clipboard?.writeText(url);
+    this.toast.success('Verification link copied');
   }
 }
