@@ -77,19 +77,21 @@ APP-MF-001, RESUME-MF-001, PORT-MF-001, CREATOR-MF-001, BILL-MF-001, INTEG-MF-00
 DATA-MF-001, PRIV-MF-001, SECURITY-MF-001, NOTIF-MF-001, ORG-MF-001,
 ADMIN-MF-001..008. → Build **one shared GET-error-state helper** (CORE-MF-001) then apply.
 
-### Larger / provider-dependent (needs decision or external wiring)
+### ✅ Larger bucket — DONE (commits 9a76789, 5c5cbcb, b0b6b5f, 18c9701, 91b0a48, 1920bcc)
+- ✅ SOCKET-BUG-001 — `9a76789` client FIFO queue + runId routing on the shared socket.
+- ✅ AGENT-BUG-001 — `5c5cbcb` per-persona chat state; streams write their own persona, no cross-corruption.
+- ✅ CORE-BUG-001 — `b0b6b5f` bootstrap only logs out on 401; a 403 keeps the (valid) session.
+- ✅ CORE-BUG-002 / OFFLINE-MF-001 — `18c9701` sync queue replays via HttpClient (refresh-and-retry applies).
+- ✅ VISUAL-BUG-001 — `91b0a48` sanitizeMarkup() scrubs SVG/HTML/mermaid before trust; URL sanitizer for img src.
+- ✅ PRIV-BUG-001 — `1920bcc` destructive privacy actions emit invalidation; portfolio/passport/applications reload.
+
+### Larger — still open
 - BILL-BUG-001 / BILL-ENH-001 — real payment provider (mock today). **Deferred** (needs provider keys).
 - VISUAL-MF-001 / VOICE-MF-001 / PRACTICE-ENH-001 / AI-ENH-001 — mock provider gating/copy.
-- SOCKET-BUG-001 — key socket streams by request/session so concurrent AI sends don't reject.
-- AGENT-BUG-001 — persist draft session per agent route (don't drop on nav).
 - AGENT-BUG-002 — conversation branching / persist truncated branch server-side.
-- OFFLINE-MF-001 / CORE-BUG-002 — refresh-aware sync queue (raw fetch bypasses interceptors).
-- CORE-BUG-001 — bootstrap 403 shouldn't clear session (distinguish from expired creds).
 - PEER-BUG-001 — peer room live updates (currently fetch-once).
-- VISUAL-BUG-001 — sanitize generated SVG/HTML instead of bypassSecurityTrust.
 - Feature gaps: WORKFLOW-GAP-001 (run history UI), REPORT-GAP-001 (placeholder metrics),
   PUSH-GAP-001 (push fanout), OUTCOME-GAP-001, REPLAY-GAP-001, CERT-GAP-001, PROOF-GAP-001.
-- PRIV-BUG-001 — privacy destructive actions invalidate dependent screens.
 
 ---
 
@@ -113,3 +115,9 @@ ADMIN-MF-001..008. → Build **one shared GET-error-state helper** (CORE-MF-001)
   guard. +4 specs.
 - ✅ **MEDIUM BUCKET COMPLETE.** Final gate: server **202/202** (35 suites), server lint 0 errors
   (7 pre-existing warnings), client `ng build` dev clean, client lint 0. Commits fd9ab88, 130e005, 14097a7.
+- ✅ **LARGER BUCKET COMPLETE (6 items).** SOCKET-BUG-001 (socket FIFO queue + runId),
+  AGENT-BUG-001 (per-persona chat), CORE-BUG-001 (403 keeps session), CORE-BUG-002 (sync via
+  HttpClient), VISUAL-BUG-001 (sanitizeMarkup + URL sanitizer), PRIV-BUG-001 (invalidation bus).
+  Gate: server 202/202, client build clean, both lints 0, sanitize spec 5/5. Commits 9a76789,
+  5c5cbcb, b0b6b5f, 18c9701, 91b0a48, 1920bcc. Still-open larger: billing (deferred), AGENT-BUG-002,
+  PEER-BUG-001, mock-provider gating, and the feature-gap set (workflow/report/push/outcome/replay/cert/proof).
