@@ -31,6 +31,7 @@ export interface MentorSession {
   role: 'student' | 'mentor';
   counterpartName: string;
   linkedProjectId: string | null;
+  scheduledAt: string | null;
   createdAt: string;
 }
 
@@ -45,6 +46,8 @@ export class MentorMarketplaceService {
     return this.api.post<{ id: string; status: string }>('/mentor-sessions', input);
   }
   sessions(): Observable<MentorSession[]> { return this.api.get<MentorSession[]>('/mentor-sessions'); }
-  setStatus(id: string, status: string): Observable<{ id: string; status: string }> { return this.api.patch<{ id: string; status: string }>(`/mentor-sessions/${id}/status`, { status }); }
+  setStatus(id: string, status: string, scheduledAt?: string): Observable<{ id: string; status: string }> {
+    return this.api.patch<{ id: string; status: string }>(`/mentor-sessions/${id}/status`, scheduledAt ? { status, scheduledAt } : { status });
+  }
   addNotes(id: string, notes: string): Observable<{ id: string; notes: string }> { return this.api.post<{ id: string; notes: string }>(`/mentor-sessions/${id}/notes`, { notes }); }
 }

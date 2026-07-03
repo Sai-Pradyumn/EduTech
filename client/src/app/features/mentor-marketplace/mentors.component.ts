@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { DatePipe } from '@angular/common';
 import { Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { ButtonComponent } from '../../shared/ui/button.component';
@@ -11,7 +12,7 @@ import { Mentor, MentorMarketplaceService, MentorProfileInput, MentorSession } f
 @Component({
     selector: 'asta-mentors',
     changeDetection: ChangeDetectionStrategy.OnPush,
-    imports: [FormsModule, ButtonComponent, CardComponent, EmptyStateComponent, SkeletonComponent],
+    imports: [FormsModule, DatePipe, ButtonComponent, CardComponent, EmptyStateComponent, SkeletonComponent],
     template: `
     <header class="asta-page-command-header">
       <div class="min-w-0">
@@ -27,6 +28,7 @@ import { Mentor, MentorMarketplaceService, MentorProfileInput, MentorSession } f
 
     @if (tab() === 'browse') {
       @if (loading()) { <div class="grid gap-3 sm:grid-cols-2">@for (i of [1,2,3,4]; track i) { <asta-card><asta-skeleton h="140px" /></asta-card> }</div> }
+      @else if (error()) { <asta-card><asta-empty-state title="Couldn’t load mentors" description="Something went wrong reaching the marketplace."><asta-btn variant="accent" (click)="reloadMentors()">Retry</asta-btn></asta-empty-state></asta-card> }
       @else if (mentors().length) {
         <div class="toolbar mb-4">
           <input class="inp" style="flex:1 1 220px;margin:0" [ngModel]="mentorQuery()" (ngModelChange)="mentorQuery.set($event)" placeholder="Search mentors — name, skill, headline…" aria-label="Search mentors" />
@@ -72,6 +74,7 @@ import { Mentor, MentorMarketplaceService, MentorProfileInput, MentorSession } f
 
     @if (tab() === 'sessions') {
       @if (loading()) { <asta-card><asta-skeleton h="160px" /></asta-card> }
+      @else if (sessionsError()) { <asta-card><asta-empty-state title="Couldn’t load your sessions" description="Something went wrong."><asta-btn variant="accent" (click)="loadSessions()">Retry</asta-btn></asta-empty-state></asta-card> }
       @else if (sessions().length) {
         <div class="space-y-2">
           @for (s of sessions(); track s.id) {
@@ -80,15 +83,33 @@ import { Mentor, MentorMarketplaceService, MentorProfileInput, MentorSession } f
                 <div class="min-w-0">
                   <p class="s-title">{{ label(s.type) }} · {{ s.role === 'student' ? 'with ' + s.counterpartName : s.counterpartName }}</p>
                   @if (s.message) { <p class="s-msg">{{ s.message }}</p> }
+                  @if (s.scheduledAt) { <p class="s-slot">📅 {{ s.scheduledAt | date: 'EEE, MMM d · h:mm a' }}</p> }
                   @if (s.notes) { <p class="s-notes"><b>Mentor notes:</b> {{ s.notes }}</p> }
                 </div>
                 <div class="flex items-center gap-2">
                   <span class="status" [attr.data-s]="s.status">{{ s.status }}</span>
-                  @if (s.role === 'mentor' && s.status === 'requested') { <asta-btn size="sm" variant="accent" (click)="setStatus(s, 'accepted')">Accept</asta-btn> }
-                  @if (s.role === 'mentor' && s.status === 'accepted') { <asta-btn size="sm" variant="accent" (click)="setStatus(s, 'completed')">Complete</asta-btn> }
-                  @if (s.role === 'student' && (s.status === 'requested' || s.status === 'accepted')) { <asta-btn size="sm" variant="ghost" (click)="setStatus(s, 'cancelled')">Cancel</asta-btn> }
+                  @if (s.role === 'mentor' && s.status === 'requested') { <asta-btn size="sm" variant="accent" [disabled]="busy()" (click)="accept(s)">Accept</asta-btn> }
+                  @if (s.role === 'mentor' && s.status === 'accepted') { <asta-btn size="sm" variant="accent" [disabled]="busy()" (click)="setStatus(s, 'completed')">Complete</asta-btn> }
+                  @if (s.role === 'student' && (s.status === 'requested' || s.status === 'accepted')) { <asta-btn size="sm" variant="ghost" [disabled]="busy()" (click)="setStatus(s, 'cancelled')">Cancel</asta-btn> }
                 </div>
               </div>
+
+              <!-- Mentor: propose a slot when accepting a request -->
+              @if (s.role === 'mentor' && s.status === 'requested') {
+                <div class="sub-row">
+                  <label class="lbl !mt-0" [attr.for]="'slot-' + s.id">Propose a slot (optional)</label>
+                  <input class="inp" type="datetime-local" [id]="'slot-' + s.id" [ngModel]="slotDraft[s.id] ?? ''" (ngModelChange)="slotDraft[s.id] = $event" />
+                </div>
+              }
+
+              <!-- Mentor: add / edit completion notes on an active or finished session -->
+              @if (s.role === 'mentor' && (s.status === 'accepted' || s.status === 'completed')) {
+                <div class="sub-row">
+                  <label class="lbl !mt-0" [attr.for]="'notes-' + s.id">Mentor notes for the student</label>
+                  <textarea class="inp" rows="2" [id]="'notes-' + s.id" [ngModel]="notesDraft[s.id] ?? s.notes" (ngModelChange)="notesDraft[s.id] = $event" placeholder="Feedback, next steps, resources…"></textarea>
+                  <div class="mt-2"><asta-btn size="sm" variant="ghost" [disabled]="savingNotes()" (click)="saveNotes(s)">Save notes</asta-btn></div>
+                </div>
+              }
             </asta-card>
           }
         </div>
@@ -132,7 +153,9 @@ import { Mentor, MentorMarketplaceService, MentorProfileInput, MentorSession } f
     .lbl { display: block; font-size: 11px; color: var(--text-mute); text-transform: uppercase; letter-spacing: .04em; margin: 8px 0 4px; }
     .s-title { font-size: 13.5px; font-weight: 600; }
     .s-msg { font-size: 12.5px; color: var(--text-soft); margin-top: 2px; }
+    .s-slot { font-size: 12px; color: var(--peri-deep, #6b82d6); margin-top: 4px; font-weight: 600; }
     .s-notes { font-size: 12px; color: var(--text-mute); margin-top: 4px; }
+    .sub-row { margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--paper-3); }
     .status { font-size: 10.5px; font-weight: 700; text-transform: uppercase; padding: 2px 8px; border-radius: 999px; background: var(--paper-3); color: var(--text-mute); }
     .status[data-s="completed"] { background: color-mix(in oklab, var(--green) 20%, transparent); color: var(--green-deep); }
     .status[data-s="accepted"] { background: color-mix(in oklab, var(--peri, #8aa6ff) 20%, transparent); color: var(--peri, #8aa6ff); }
@@ -146,6 +169,11 @@ export class MentorsComponent {
   readonly sessions = signal<MentorSession[]>([]);
   readonly loading = signal(true);
   readonly busy = signal(false);
+  readonly error = signal(false);
+  readonly sessionsError = signal(false);
+  readonly savingNotes = signal(false);
+  readonly slotDraft: Record<string, string | undefined> = {};
+  readonly notesDraft: Record<string, string | undefined> = {};
   readonly expertiseStr = signal('');
   readonly mentorQuery = signal('');
   readonly pricing = signal<'all' | 'free' | 'paid'>('all');
@@ -167,14 +195,51 @@ export class MentorsComponent {
   prof: MentorProfileInput = { headline: '', bio: '', availability: '' };
 
   constructor() {
-    this.api.list().subscribe({ next: (m) => { this.mentors.set(m); this.loading.set(false); }, error: () => this.loading.set(false) });
+    this.reloadMentors();
     // Deep-link: /app/mentor-sessions opens the Sessions tab directly.
     if (inject(Router).url.includes('mentor-sessions')) this.loadSessions();
   }
 
+  reloadMentors(): void {
+    this.loading.set(true);
+    this.error.set(false);
+    this.api.list().subscribe({
+      next: (m) => { this.mentors.set(m); this.loading.set(false); },
+      error: () => { this.error.set(true); this.loading.set(false); },
+    });
+  }
+
   loadSessions(): void {
-    this.tab.set('sessions'); this.loading.set(true);
-    this.api.sessions().subscribe({ next: (s) => { this.sessions.set(s); this.loading.set(false); }, error: () => this.loading.set(false) });
+    this.tab.set('sessions'); this.loading.set(true); this.sessionsError.set(false);
+    this.api.sessions().subscribe({
+      next: (s) => { this.sessions.set(s); this.loading.set(false); },
+      error: () => { this.sessionsError.set(true); this.loading.set(false); },
+    });
+  }
+
+  /** Mentor accepts a request, optionally proposing the entered slot. */
+  accept(s: MentorSession): void {
+    const raw = this.slotDraft[s.id];
+    let iso: string | undefined;
+    if (raw) {
+      const d = new Date(raw);
+      if (!Number.isNaN(d.getTime())) iso = d.toISOString();
+    }
+    this.busy.set(true);
+    this.api.setStatus(s.id, 'accepted', iso).subscribe({
+      next: () => { this.busy.set(false); this.toast.success('Session accepted'); this.loadSessions(); },
+      error: () => this.busy.set(false),
+    });
+  }
+
+  /** Mentor saves completion/feedback notes for the student. */
+  saveNotes(s: MentorSession): void {
+    const notes = (this.notesDraft[s.id] ?? s.notes).trim();
+    this.savingNotes.set(true);
+    this.api.addNotes(s.id, notes).subscribe({
+      next: () => { this.savingNotes.set(false); this.toast.success('Notes saved'); this.loadSessions(); },
+      error: () => this.savingNotes.set(false),
+    });
   }
   loadProfile(): void {
     this.tab.set('profile');
@@ -188,7 +253,9 @@ export class MentorsComponent {
     });
   }
   setStatus(s: MentorSession, status: string): void {
-    this.api.setStatus(s.id, status).subscribe({ next: () => { this.toast.success(`Session ${status}`); this.loadSessions(); }, error: () => this.toast.error('Could not update') });
+    // The error interceptor surfaces the server's specific reason (e.g. an illegal
+    // lifecycle transition), so don't double-toast a generic message here.
+    this.api.setStatus(s.id, status).subscribe({ next: () => { this.toast.success(`Session ${status}`); this.loadSessions(); }, error: () => undefined });
   }
   saveProfile(): void {
     this.busy.set(true);
