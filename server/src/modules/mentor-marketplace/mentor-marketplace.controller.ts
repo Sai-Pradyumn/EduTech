@@ -14,8 +14,8 @@ export class MentorsController {
   constructor(private readonly market: MentorMarketplaceService) {}
 
   @Get()
-  list() {
-    return this.market.listMentors();
+  list(@CurrentUser() user: AuthUser) {
+    return this.market.listMentors(user.id);
   }
 
   @Get('profile/me')
@@ -83,7 +83,12 @@ export class MentorSessionsController {
     @Param('id') id: string,
     @Body() dto: UpdateSessionStatusDto,
   ) {
-    const s = await this.market.updateStatus(user.id, id, dto.status);
+    const s = await this.market.updateStatus(
+      user.id,
+      id,
+      dto.status,
+      dto.scheduledAt,
+    );
     return { id: String(s._id), status: s.status };
   }
 

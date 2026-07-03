@@ -42,6 +42,8 @@ export class MentorSession {
   @Prop({ default: '' }) notes!: string;
   @Prop() linkedProjectId?: string;
   @Prop() linkedPortfolioUsername?: string;
+  /** Agreed slot, set by the mentor when accepting (optional). */
+  @Prop() scheduledAt?: Date;
 }
 
 export const MentorSessionSchema = SchemaFactory.createForClass(MentorSession);

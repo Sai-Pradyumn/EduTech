@@ -33,6 +33,10 @@ export class MentorProfile {
   })
   visibility!: 'public' | 'org';
 
+  /** The mentor's org (from their profile) — required to enforce `org` visibility. */
+  @Prop({ type: Types.ObjectId, ref: 'Organization', index: true })
+  organization?: Types.ObjectId;
+
   @Prop({
     type: { avg: Number, count: Number },
     default: () => ({ avg: 0, count: 0 }),

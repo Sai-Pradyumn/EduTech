@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   ForbiddenException,
   Injectable,
   NotFoundException,
@@ -42,8 +43,21 @@ export interface SessionView {
   role: 'student' | 'mentor';
   counterpartName: string;
   linkedProjectId: string | null;
+  scheduledAt: string | null;
   createdAt: string;
 }
+
+/**
+ * The session lifecycle as a strict state machine — a request can only move along
+ * these edges (was: any status → any status). Terminal states have no outgoing edges.
+ */
+const SESSION_TRANSITIONS: Record<MentorSessionStatus, MentorSessionStatus[]> =
+  {
+    requested: ['accepted', 'cancelled'],
+    accepted: ['completed', 'cancelled'],
+    completed: [],
+    cancelled: [],
+  };
 
 @Injectable()
 export class MentorMarketplaceService {
@@ -57,13 +71,29 @@ export class MentorMarketplaceService {
   ) {}
 
   // ── profiles ──
-  async listMentors(): Promise<MentorView[]> {
+  /**
+   * Browsable mentors for `viewerId`: never your own profile, and `org`-visible
+   * profiles only when the viewer shares that org — so org-only mentors no longer
+   * leak into the public list.
+   */
+  async listMentors(viewerId: string): Promise<MentorView[]> {
+    const viewer = await this.users.findById(viewerId).catch(() => null);
+    const viewerOrg = viewer?.primaryOrganization
+      ? String(viewer.primaryOrganization)
+      : null;
     const list = await this.profiles
       .find()
       .sort({ 'ratingSummary.avg': -1, createdAt: -1 })
-      .limit(60)
+      .limit(120)
       .exec();
-    return Promise.all(list.map((p) => this.toMentorView(p)));
+    const visible = list.filter((p) => {
+      if (String(p.user) === viewerId) return false; // not yourself
+      if (p.visibility === 'public') return true;
+      return (
+        !!viewerOrg && !!p.organization && String(p.organization) === viewerOrg
+      );
+    });
+    return Promise.all(visible.slice(0, 60).map((p) => this.toMentorView(p)));
   }
 
   async getMentor(id: string): Promise<MentorView> {
@@ -80,6 +110,8 @@ export class MentorMarketplaceService {
     userId: string,
     dto: UpsertMentorProfileDto,
   ): Promise<MentorProfileDocument> {
+    // Stamp the mentor's org so `org` visibility can be enforced on the list.
+    const self = await this.users.findById(userId).catch(() => null);
     const update = {
       headline: dto.headline,
       expertise: dto.expertise ?? [],
@@ -88,6 +120,7 @@ export class MentorMarketplaceService {
       pricingMode: dto.pricingMode ?? 'free',
       priceNote: dto.priceNote ?? '',
       visibility: dto.visibility ?? 'public',
+      organization: self?.primaryOrganization ?? undefined,
     };
     await this.profiles
       .updateOne(
@@ -106,6 +139,23 @@ export class MentorMarketplaceService {
   ): Promise<MentorSessionDocument> {
     const profile = await this.profiles.findById(dto.mentorId).exec();
     if (!profile) throw new NotFoundException('Mentor not found');
+    // You can't mentor yourself.
+    if (String(profile.user) === studentId)
+      throw new BadRequestException(
+        "You can't request a session with your own mentor profile.",
+      );
+    // One open request per student↔mentor pair — no spamming the same mentor.
+    const open = await this.sessions
+      .findOne({
+        mentor: profile.user,
+        student: new Types.ObjectId(studentId),
+        status: { $in: ['requested', 'accepted'] },
+      })
+      .exec();
+    if (open)
+      throw new BadRequestException(
+        'You already have an open session with this mentor — wait for it to finish first.',
+      );
     return this.sessions.create({
       mentor: profile.user,
       student: new Types.ObjectId(studentId),
@@ -140,6 +190,7 @@ export class MentorMarketplaceService {
           role: isStudent ? ('student' as const) : ('mentor' as const),
           counterpartName: counterpart?.name ?? 'Unknown',
           linkedProjectId: s.linkedProjectId ?? null,
+          scheduledAt: s.scheduledAt?.toISOString() ?? null,
           createdAt:
             (
               s as MentorSessionDocument & { createdAt?: Date }
@@ -153,13 +204,26 @@ export class MentorMarketplaceService {
     userId: string,
     id: string,
     status: MentorSessionStatus,
+    scheduledAt?: string,
   ): Promise<MentorSessionDocument> {
     const session = await this.ownedAny(userId, id);
     const isMentor = String(session.mentor) === userId;
-    // Students may only cancel; mentors may accept/complete/cancel.
-    if (!isMentor && status !== 'cancelled')
-      throw new ForbiddenException('Only the mentor can change this status.');
+    // Enforce the lifecycle: only edges in the state machine are allowed, so a
+    // request can't jump straight to completed or move out of a terminal state.
+    if (!SESSION_TRANSITIONS[session.status].includes(status))
+      throw new BadRequestException(
+        `A ${session.status} session can't be moved to ${status}.`,
+      );
+    // Accepting + completing are the mentor's calls; either party may cancel.
+    if ((status === 'accepted' || status === 'completed') && !isMentor)
+      throw new ForbiddenException(
+        'Only the mentor can accept or complete a session.',
+      );
     session.status = status;
+    if (status === 'accepted' && scheduledAt) {
+      const when = new Date(scheduledAt);
+      if (!Number.isNaN(when.getTime())) session.scheduledAt = when;
+    }
     await session.save();
     if (status === 'completed') {
       const mentor = await this.users

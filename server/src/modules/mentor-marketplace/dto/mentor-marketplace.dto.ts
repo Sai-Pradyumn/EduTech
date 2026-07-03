@@ -1,6 +1,7 @@
 import {
   ArrayMaxSize,
   IsArray,
+  IsDateString,
   IsIn,
   IsMongoId,
   IsOptional,
@@ -39,6 +40,8 @@ export class RequestSessionDto {
 
 export class UpdateSessionStatusDto {
   @IsIn(SESSION_STATUS) status!: MentorSessionStatus;
+  /** Agreed slot — only honoured when the mentor accepts the request. */
+  @IsOptional() @IsDateString() scheduledAt?: string;
 }
 
 export class SessionNotesDto {
