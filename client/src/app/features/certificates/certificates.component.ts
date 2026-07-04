@@ -1,9 +1,10 @@
-import { ChangeDetectionStrategy, Component, OnInit, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnInit, computed, inject, signal } from '@angular/core';
 import { DatePipe } from '@angular/common';
 import { ButtonComponent } from '../../shared/ui/button.component';
 import { SkeletonComponent } from '../../shared/ui/skeleton.component';
 import { CertificateService } from '../../core/services/certificate.service';
 import { ToastService } from '../../core/services/toast.service';
+import { OrgContextService } from '../../core/services/org-context.service';
 import { CertificateView } from '../../core/models';
 
 /** My certificates (B7): credential cards with a public verification link. */
@@ -17,6 +18,7 @@ import { CertificateView } from '../../core/models';
       <div class="min-w-0">
         <h1 class="text-[26px] leading-tight mb-2 grad-flow">Certificates</h1>
         <span class="goal-pill"><span class="dot"></span>Your verifiable credentials · share or verify any time</span>
+        @if (canIssue()) { <p class="issuer-note">You have issuing rights — you can grant and revoke credentials for your organization's learners.</p> }
       </div>
     </header>
 
@@ -92,16 +94,20 @@ import { CertificateView } from '../../core/models';
         .cert-card:hover { transform: none; }
         .cert-card:hover .cert-shine { animation: none; }
       }
+      .issuer-note { font-size: 11.5px; color: var(--text-mute); margin-top: 6px; }
     `,
     ]
 })
 export class CertificatesComponent implements OnInit {
   private readonly certApi = inject(CertificateService);
   private readonly toast = inject(ToastService);
+  private readonly orgCtx = inject(OrgContextService);
 
   readonly certs = signal<CertificateView[]>([]);
   readonly loading = signal(true);
   readonly loadError = signal(false);
+  /** Reflect issue/revoke capability distinctly from viewing (CERT-GAP-001). */
+  readonly canIssue = computed(() => this.orgCtx.has('certificate.issue'));
 
   ngOnInit(): void { this.load(); }
 

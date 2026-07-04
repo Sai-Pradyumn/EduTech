@@ -3,6 +3,7 @@ import { DatePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ReportService } from '../../core/services/report.service';
 import { ToastService } from '../../core/services/toast.service';
+import { OrgContextService } from '../../core/services/org-context.service';
 import { AiUsageReport, StudentOutcomesReport, WeakTopicRow } from '../../core/models';
 import { BarChartComponent, DonutChartComponent, ChartDatum } from '../../shared/charts';
 import { CountDirective } from '../../shared/directives/count.directive';
@@ -191,6 +192,7 @@ type Tab = 'students' | 'weak-topics' | 'ai-usage';
 export class ReportsComponent implements OnInit {
   private readonly api = inject(ReportService);
   private readonly toast = inject(ToastService);
+  private readonly orgCtx = inject(OrgContextService);
 
   readonly tab = signal<Tab>('students');
   readonly students = signal<StudentOutcomesReport | null>(null);
@@ -234,6 +236,12 @@ export class ReportsComponent implements OnInit {
   ];
 
   ngOnInit(): void {
+    // Preflight the permission so we show the request-access state immediately
+    // instead of firing report APIs that would 403 (PROOF-GAP-001).
+    if (!this.orgCtx.has('admin.reports.view')) {
+      this.denied.set(true);
+      return;
+    }
     this.switch('students');
   }
 
