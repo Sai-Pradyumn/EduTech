@@ -44,6 +44,9 @@ export enum Permission {
   AiAnalyticsView = 'ai.analytics.view',
   BillingManage = 'billing.manage',
   CertificateIssue = 'certificate.issue',
+  /** Revoking a credential is more destructive than issuing one — held separately so an
+   *  issuer (e.g. an instructor) can grant but not unilaterally revoke. */
+  CertificateRevoke = 'certificate.revoke',
   ProjectReview = 'project.review',
   ReportsView = 'admin.reports.view',
 }
@@ -63,6 +66,7 @@ const ORG_ADMIN_PERMS: Permission[] = [
   Permission.AiAnalyticsView,
   Permission.BillingManage,
   Permission.CertificateIssue,
+  Permission.CertificateRevoke,
   Permission.ProjectReview,
   Permission.ReportsView,
 ];

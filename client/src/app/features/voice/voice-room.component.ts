@@ -406,7 +406,10 @@ export class VoiceRoomComponent implements OnDestroy {
   private send(text: string): void {
     const s = this.session();
     if (!s) return;
-    this.session.set({ ...s, transcript: [...s.transcript, { role: 'user', text, at: new Date().toISOString() }] });
+    // Optimistically show the user's turn; keep the reference so we can undo it if the
+    // turn never lands (a failed request must not leave a phantom message in the log).
+    const optimistic = { role: 'user' as const, text, at: new Date().toISOString() };
+    this.session.set({ ...s, transcript: [...s.transcript, optimistic] });
     this.state.set('thinking');
     this.api.turn(s.id, text).subscribe({
       next: (res) => {
@@ -426,7 +429,15 @@ export class VoiceRoomComponent implements OnDestroy {
           this.state.set('idle');
         }
       },
-      error: (e: Error) => { this.state.set('idle'); this.toast.error(e.message || 'Could not get a response'); },
+      error: (e: Error) => {
+        // Roll back the optimistic turn — it never reached the server — and hand the
+        // text back so the learner can retry without retyping.
+        const cur = this.session();
+        if (cur) this.session.set({ ...cur, transcript: cur.transcript.filter((t) => t !== optimistic) });
+        this.typed = text;
+        this.state.set('idle');
+        this.toast.error(e.message || 'Could not get a response');
+      },
     });
   }
 

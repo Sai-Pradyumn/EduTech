@@ -21,8 +21,19 @@ import { VerificationResult } from '../../core/models';
             <span class="cv-orb" aria-hidden="true"></span>
             <p class="text-txt-mute mt-4">Verifying credential…</p>
           </div>
+        } @else if (netError()) {
+          <!-- A transport/server failure is NOT the same as an invalid credential —
+               don't imply the certificate is forged when we simply couldn't check it. -->
+          <div class="card cv-card" style="padding:36px;text-align:center">
+            <span class="inline-grid place-items-center rounded-full mb-4" style="width:56px;height:56px;background:color-mix(in oklch, var(--warn, #d19a20) 16%, transparent);color:var(--warn, #d19a20)">
+              <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 9v4M12 17h.01M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z"/></svg>
+            </span>
+            <h1 class="font-display text-2xl">Couldn't verify right now</h1>
+            <p class="text-txt-soft mt-2">We couldn't reach the verification service. This doesn't mean the credential is invalid — check your connection and try again.</p>
+            <button class="cv-retry" (click)="retry()">Try again</button>
+          </div>
         }
-        @if (loaded() && result(); as r) {
+        @if (loaded() && !netError() && result(); as r) {
           @if (r.valid) {
             <div class="card cv-card relative overflow-hidden" style="padding:36px;text-align:center">
               <div class="absolute inset-0 pointer-events-none" style="background:radial-gradient(120% 80% at 50% 0%, oklch(0.8 0.16 150 / .12), transparent 60%)"></div>
@@ -102,6 +113,7 @@ import { VerificationResult } from '../../core/models';
         .cv-orb, .cv-card, .cv-badge, .cv-shine { animation: none; }
         .cv-check { stroke-dashoffset: 0; animation: none; }
       }
+      .cv-retry { margin-top: 18px; border-radius: 100px; padding: 8px 18px; font-size: 13px; font-weight: 600; color: var(--ink); background: var(--green); }
     `,
     ]
 })
@@ -111,16 +123,31 @@ export class CertVerifyComponent implements OnInit {
 
   readonly result = signal<VerificationResult | null>(null);
   readonly loaded = signal(false);
+  /** True when the check itself failed (network/server) — distinct from an invalid credential. */
+  readonly netError = signal(false);
 
   ngOnInit(): void {
+    this.load();
+  }
+
+  retry(): void {
+    this.load();
+  }
+
+  private load(): void {
     const vid = this.route.snapshot.paramMap.get('id') ?? '';
+    this.loaded.set(false);
+    this.netError.set(false);
     this.certApi.verify(vid).subscribe({
       next: (r) => {
+        // The API returns { valid: false } (200) for a genuinely invalid/revoked cert;
+        // reaching here means the check succeeded, so trust the verdict.
         this.result.set(r);
         this.loaded.set(true);
       },
       error: () => {
-        this.result.set({ valid: false });
+        // Couldn't reach the verifier — surface a retryable error, don't cry "forged".
+        this.netError.set(true);
         this.loaded.set(true);
       },
     });

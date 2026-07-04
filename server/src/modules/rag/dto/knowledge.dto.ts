@@ -1,6 +1,7 @@
 import {
   ArrayMaxSize,
   IsArray,
+  IsMongoId,
   IsNumber,
   IsOptional,
   IsString,
@@ -51,11 +52,12 @@ export class AskDto {
   @MaxLength(2000)
   question!: string;
 
-  /** Restrict retrieval to these documents; omit to ask the whole corpus. */
+  /** Restrict retrieval to these documents; omit to ask the whole corpus. Each id must be a
+   *  valid ObjectId so a malformed value is rejected with 400, not cast-thrown into a 500. */
   @IsOptional()
   @IsArray()
   @ArrayMaxSize(50)
-  @IsString({ each: true })
+  @IsMongoId({ each: true })
   documentIds?: string[];
 }
 

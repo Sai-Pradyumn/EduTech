@@ -56,17 +56,18 @@ keeps its resolution logs.
 - **Error/empty-state sweep** — build the shared GET-error helper (CORE-MF-001) then apply.
 - **Larger** — SOCKET-BUG-001, AGENT-BUG-001/002, offline sync queue, billing (deferred: needs provider).
 
-### Quick wins (hours each) — do after Medium bucket unless user redirects
-- ROAD-BUG-001 — task completion → progress % (task-level progress, not just whole weeks)
-- KNOW-BUG-001 — validate `documentIds` before ObjectId cast (400 not 500)
-- DEV-BUG-002 / SEC-BUG-001 / PASSPORT-BUG-001 — guard malformed ObjectIds → 400/404
-- VOICE-BUG-001 — roll back optimistic transcript on failed turn
-- PORT-BUG-001 — public portfolio: distinguish "not published" from network error
-- CERT-BUG-002 — public verify: API failure ≠ invalid/revoked
-- CERT-BUG-001 — revoke needs distinct permission (not issue permission)
-- PROFILE-ENH-001 — profile update refreshes auth header/sidebar identity
-- BILL-ENH-001 — make mock payment mode explicit / hide purchase CTAs
-- Nav-vs-guard mismatches (defense-in-depth forbidden states): COMM/COHORT/LIVE/INST/DEV/ADMIN-BUG-001
+### Quick wins (hours each) — round 1 DONE (commit pending)
+- ✅ KNOW-BUG-001 — `AskDto.documentIds` now `@IsMongoId({ each: true })` → malformed id 400s (was 500).
+- ✅ VOICE-BUG-001 — failed voice turn rolls back the optimistic user turn + restores the input text.
+- ✅ PORT-BUG-001 — public portfolio: 404 = "not published"; network/5xx = retryable "couldn't load".
+- ✅ CERT-BUG-002 — public verify: a transport/server failure is a retryable "couldn't verify", not "forged".
+- ✅ CERT-BUG-001 — new `Permission.CertificateRevoke` (org-admin+, NOT instructors); revoke route gated on
+  it + malformed-id guard in revoke() → 404 not 500. +3 specs.
+- ✅ BILL-ENH-001 — already done (CTA "Upgrade · test mode" + test-mode copy).
+- ⬜ ROAD-BUG-001 — task completion → progress % (task-level progress, not just whole weeks)
+- ⬜ DEV-BUG-002 / SEC-BUG-001 / PASSPORT-BUG-001 — guard malformed ObjectIds → 400/404 (broader sweep)
+- ⬜ PROFILE-ENH-001 — profile update refreshes auth header/sidebar identity
+- ⬜ Nav-vs-guard mismatches (defense-in-depth forbidden states): COMM/COHORT/LIVE/INST/DEV/ADMIN-BUG-001
 
 ### Error/empty-state sweep (the big "Missing fixes" bucket, mostly S each)
 Standardize load-error/empty/retry across screens that swallow GET failures. IDs:
@@ -97,10 +98,17 @@ ADMIN-MF-001..008. → Build **one shared GET-error-state helper** (CORE-MF-001)
 - ✅ REPORT-GAP-001 — already real: UI surfaces only real aggregation (student outcomes / weak topics / AI usage) + real CSV; the "future" PDF/placement bits are NOT shown (nothing misleading).
 - ✅ PUSH-GAP-001 — already real: push.notify() sends live Web Push (VAPID-gated, prunes 404/410 dead subs); notifications fan out to it on create. Audit was stale.
 
-### BILLING (provider-dependent) — honest-gated; goes live when keys added
-- Payment flows use MockPaymentProvider until `ENABLE_PAYMENT_PROVIDER=true` + Razorpay/Stripe keys.
-  Client already shows test-mode copy + CTA label; checkout handles mock/live/redirect. Real capture
-  is purely operational (add keys) — not a code gap.
+### ✅ BILLING — COMPLETE, both providers (commit cbdcce4)
+- Razorpay + Stripe were already fully implemented (providers, webhooks, verify, client
+  widget/redirect, honest test-mode UI). Hardening added: `STRIPE_WEBHOOK_SECRET` now in the
+  Joi env schema; provider selection extracted to `createPaymentProvider()` (mock is the safe
+  default/fallback — a live provider is picked only when `ENABLE_PAYMENT_PROVIDER=true` AND that
+  provider's keys are present; missing key → mock, never a crash); money-path test coverage added
+  (was zero): factory decision table, both providers' HMAC verify (client + webhook,
+  valid/forged/malformed/no-secret), service (activate-on-paid, verify gating, idempotent webhook,
+  change-to-free, cancel, admin MRR). +29 specs.
+- **Go live = ops only:** `ENABLE_PAYMENT_PROVIDER=true`, `PAYMENT_PROVIDER=razorpay|stripe`, paste
+  that provider's keys (see `.env.example`). No code change.
 
 ### Everything from the app audit is now either shipped or honest-gated. No open Larger items.
 
@@ -135,3 +143,10 @@ ADMIN-MF-001..008. → Build **one shared GET-error-state helper** (CORE-MF-001)
   already-real/pre-built (audit stale). Commits 2e4d8e3, fe2e8a9, 1988705, 585c1da, 0b734c2.
   Final gate: **server 206/206** (35 suites), server lint 0 err, client build clean, client lint 0.
   **The entire Larger bucket is complete; only provider-key wiring (billing) remains operational.**
+- ✅ **BILLING FINISHED (both providers)** — `cbdcce4`. Razorpay + Stripe were already implemented;
+  hardened: `STRIPE_WEBHOOK_SECRET` validated, provider selection extracted to a testable factory
+  (mock-fallback on any missing key), +29 money-path specs (factory table, HMAC verify both providers,
+  service activate/verify/idempotent-webhook/cancel/MRR). Go-live = ops only (flag + keys).
+- ✅ **QUICK WINS round 1 (6 items)** — KNOW-BUG-001, VOICE-BUG-001, PORT-BUG-001, CERT-BUG-002,
+  CERT-BUG-001 (+3 specs), BILL-ENH-001 (already done). Gate: server **236/236** (39 suites), server
+  lint 0 err, client build+lint clean.

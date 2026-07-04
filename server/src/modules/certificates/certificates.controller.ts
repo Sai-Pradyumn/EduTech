@@ -39,7 +39,7 @@ export class CertificatesController {
   }
 
   @Post(':id/revoke')
-  @Permissions(Permission.CertificateIssue)
+  @Permissions(Permission.CertificateRevoke)
   revoke(@Param('id') id: string) {
     return this.certs.revoke(id);
   }

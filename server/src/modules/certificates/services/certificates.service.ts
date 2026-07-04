@@ -111,6 +111,9 @@ export class CertificatesService {
   }
 
   async revoke(id: string): Promise<{ ok: true }> {
+    // A malformed id would cast-throw into a 500; treat it as "not found" instead.
+    if (!Types.ObjectId.isValid(id))
+      throw new NotFoundException('Certificate not found');
     const res = await this.certs
       .updateOne({ _id: id }, { $set: { revoked: true } })
       .exec();

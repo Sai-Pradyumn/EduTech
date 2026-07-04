@@ -22,7 +22,14 @@ import { PortfolioService, PublicPortfolio } from '../../core/services/portfolio
       @if (loading()) {
         <asta-card><asta-skeleton h="140px" /></asta-card>
         <asta-card class="mt-3"><asta-skeleton h="200px" /></asta-card>
-      } @else if (loadError() || !p()) {
+      } @else if (netError()) {
+        <!-- A network/server failure is not the same as "not published" — offer a retry. -->
+        <asta-card>
+          <asta-empty-state title="Couldn't load this portfolio" description="There was a problem reaching Asta. Check your connection and try again.">
+            <button class="pf-retry" (click)="load()">Try again</button>
+          </asta-empty-state>
+        </asta-card>
+      } @else if (!p()) {
         <asta-card><asta-empty-state title="This portfolio is not published" description="The link may be incorrect, or the owner hasn't published yet."></asta-empty-state></asta-card>
       } @else if (p()) {
         @if (p(); as pp) {
@@ -96,6 +103,7 @@ import { PortfolioService, PublicPortfolio } from '../../core/services/portfolio
     .cert-id { color: var(--text-mute); font-size: 10.5px; }
     .footer { text-align: center; font-size: 12px; color: var(--text-mute); margin-top: 24px; }
     .footer a, .kicker { }
+    .pf-retry { border-radius: 100px; padding: 8px 18px; font-size: 13px; font-weight: 600; color: var(--ink); background: var(--green); }
   `]
 })
 export class PublicPortfolioComponent {
@@ -103,13 +111,27 @@ export class PublicPortfolioComponent {
   private readonly route = inject(ActivatedRoute);
   readonly p = signal<PublicPortfolio | null>(null);
   readonly loading = signal(true);
-  readonly loadError = signal(false);
+  /** True only for a network/server failure — a 404 means "not published" (a valid state). */
+  readonly netError = signal(false);
 
   constructor() {
+    this.load();
+  }
+
+  load(): void {
     const username = this.route.snapshot.paramMap.get('username') ?? '';
+    this.loading.set(true);
+    this.netError.set(false);
+    this.p.set(null);
     this.api.public(username).subscribe({
       next: (p) => { this.p.set(p); this.loading.set(false); },
-      error: () => { this.loadError.set(true); this.loading.set(false); },
+      error: (err: { status?: number }) => {
+        // The server returns 404 when the portfolio isn't published (or the username
+        // is wrong) — that's the honest "not published" state, not an error. Anything
+        // else (0/5xx/timeout) is a transport failure the user can retry.
+        this.netError.set(err?.status !== 404);
+        this.loading.set(false);
+      },
     });
   }
 
