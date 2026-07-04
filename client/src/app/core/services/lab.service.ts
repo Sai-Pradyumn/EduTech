@@ -46,6 +46,9 @@ export class AgentGraphApiService {
   runs(): Observable<GraphRun[]> {
     return this.api.get<GraphRun[]>('/agent-graph/runs');
   }
+  getRun(id: string): Observable<GraphRun> {
+    return this.api.get<GraphRun>(`/agent-graph/runs/${id}`);
+  }
   run(graph: string, input: string): Observable<GraphRun> {
     return this.api.post<GraphRun>('/agent-graph/runs', { graph, input });
   }
