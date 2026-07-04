@@ -590,8 +590,10 @@ export class TutorWorkspaceComponent {
     const list = this.messages();
     const userMsg = list[assistantIndex - 1];
     if (!userMsg || userMsg.role !== 'user') return;
+    // Last message we keep is the previous assistant answer (anchor for the branch).
+    const keepId = list[assistantIndex - 2]?.messageId;
     this.messages.set(list.slice(0, assistantIndex - 1));
-    this.send(userMsg.content);
+    this.branchThenSend(keepId, userMsg.content);
   }
 
   startEdit(index: number, msg: ChatMsg): void {
@@ -603,13 +605,30 @@ export class TutorWorkspaceComponent {
     this.editIndex.set(null);
     this.editDraft.set('');
   }
-  /** Resend from this point: later turns are dropped locally, then re-asked. */
+  /** Resend from this point: later turns are dropped (locally AND server-side), then re-asked. */
   saveEdit(index: number): void {
     const text = this.editDraft().trim();
     if (!text) return;
+    const keepId = this.messages()[index - 1]?.messageId; // last message to keep
     this.messages.update((list) => list.slice(0, index));
     this.cancelEdit();
-    this.send(text);
+    this.branchThenSend(keepId, text);
+  }
+
+  /**
+   * Persist the truncated branch server-side FIRST (so the stored history matches
+   * what the learner now sees), then re-ask. Best-effort: if truncation fails we
+   * still answer rather than block the user (AGENT-BUG-002).
+   */
+  private branchThenSend(keepId: string | undefined, text: string): void {
+    if (!this.sessionId) {
+      this.send(text);
+      return;
+    }
+    this.agent.truncateSession(this.sessionId, keepId).subscribe({
+      next: () => this.send(text),
+      error: () => this.send(text),
+    });
   }
 
   /** Re-send the last user prompt after a failed response. */

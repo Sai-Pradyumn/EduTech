@@ -22,7 +22,12 @@ import {
   AgentSessionService,
   SessionSearchHit,
 } from './core/agent-session.service';
-import { AgentMessageDto, FeedbackDto, PinSessionDto } from './dto/agent.dto';
+import {
+  AgentMessageDto,
+  FeedbackDto,
+  PinSessionDto,
+  TruncateSessionDto,
+} from './dto/agent.dto';
 import {
   AgentMessageView,
   AgentSessionSummary,
@@ -129,6 +134,16 @@ export class AiAgentController {
   ): Promise<AgentMessageView[]> {
     const msgs = await this.sessions.getMessages(user.id, id);
     return msgs.map(toMessageView);
+  }
+
+  /** Persist a conversation branch on edit/regenerate (AGENT-BUG-002). */
+  @Post('sessions/:id/truncate')
+  truncateSession(
+    @CurrentUser() user: AuthUser,
+    @Param('id') id: string,
+    @Body() dto: TruncateSessionDto,
+  ): Promise<{ ok: true; kept: number }> {
+    return this.sessions.truncateAfter(user.id, id, dto.afterMessageId);
   }
 
   @Post('feedback')

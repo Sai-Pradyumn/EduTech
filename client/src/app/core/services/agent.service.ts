@@ -42,6 +42,11 @@ export class AgentService {
     return this.api.get<AgentMessageView[]>(`/ai/sessions/${sessionId}`);
   }
 
+  /** Persist a conversation branch: keep up to `afterMessageId`, drop the rest (edit/regenerate). */
+  truncateSession(sessionId: string, afterMessageId?: string): Observable<{ ok: true; kept: number }> {
+    return this.api.post<{ ok: true; kept: number }>(`/ai/sessions/${sessionId}/truncate`, afterMessageId ? { afterMessageId } : {});
+  }
+
   /** Search across ALL past sessions (titles + message content). */
   searchSessions(q: string): Observable<SessionSearchHit[]> {
     return this.api.get<SessionSearchHit[]>(`/ai/sessions/search?q=${encodeURIComponent(q)}`);

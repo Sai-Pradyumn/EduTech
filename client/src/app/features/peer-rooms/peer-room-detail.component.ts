@@ -1,4 +1,6 @@
-import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, inject, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { interval } from 'rxjs';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { ButtonComponent } from '../../shared/ui/button.component';
@@ -107,6 +109,7 @@ export class PeerRoomDetailComponent {
   private readonly toast = inject(ToastService);
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
+  private readonly destroyRef = inject(DestroyRef);
 
   readonly room = signal<PeerRoom | null>(null);
   readonly loading = signal(true);
@@ -115,7 +118,21 @@ export class PeerRoomDetailComponent {
   readonly busy = signal<string | null>(null);
   text = '';
 
-  constructor() { this.reload(); }
+  constructor() {
+    this.reload();
+    // Live-ish updates: poll for peers' messages + presence while the room is open,
+    // so other participants aren't invisible until a manual reload (PEER-BUG-001).
+    interval(5000).pipe(takeUntilDestroyed(this.destroyRef)).subscribe(() => this.poll());
+  }
+
+  /** Silent background refresh; skips while a foreground op is in flight or the tab is hidden. */
+  private poll(): void {
+    const r = this.room();
+    if (!r || !r.isMember || r.status !== 'open') return;
+    if (this.sending() || this.busy() || this.loading()) return;
+    if (typeof document !== 'undefined' && document.hidden) return;
+    this.api.get(r.id).subscribe({ next: (fresh) => this.room.set(fresh), error: () => undefined });
+  }
   reload(): void {
     const id = this.route.snapshot.paramMap.get('id');
     if (!id) { this.loadError.set(true); this.loading.set(false); return; }

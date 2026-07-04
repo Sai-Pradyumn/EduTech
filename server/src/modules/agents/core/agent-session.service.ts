@@ -1,6 +1,6 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model, Types } from 'mongoose';
+import { FilterQuery, Model, Types } from 'mongoose';
 import { AgentType, Intent } from '../../../common/enums';
 import { AiService } from '../../ai/ai.service';
 import { AgentResponse } from '../../ai/types/agent.types';
@@ -212,6 +212,64 @@ export class AgentSessionService {
       .find({ session: sessionId, user: new Types.ObjectId(userId) })
       .sort({ createdAt: 1 })
       .exec();
+  }
+
+  /**
+   * Persist a conversation branch: keep messages up to and including
+   * `afterMessageId` and delete everything after it in this owner's session
+   * (with no id, clears the whole session). Called when the learner edits an
+   * earlier message or regenerates an answer, so the stored history matches the
+   * branch they now see instead of silently diverging (AGENT-BUG-002).
+   */
+  async truncateAfter(
+    userId: string,
+    sessionId: string,
+    afterMessageId?: string,
+  ): Promise<{ ok: true; kept: number }> {
+    if (!Types.ObjectId.isValid(sessionId)) return { ok: true, kept: 0 };
+    const uid = new Types.ObjectId(userId);
+    const session = await this.sessions
+      .findOne({ _id: new Types.ObjectId(sessionId), user: uid })
+      .exec();
+    if (!session) throw new NotFoundException('Session not found');
+
+    let anchorAt: Date | null = null;
+    if (afterMessageId && Types.ObjectId.isValid(afterMessageId)) {
+      const anchor = await this.messages
+        .findOne({
+          _id: new Types.ObjectId(afterMessageId),
+          session: session._id,
+          user: uid,
+        })
+        .exec();
+      anchorAt =
+        (anchor as (AgentMessageDocument & { createdAt?: Date }) | null)
+          ?.createdAt ?? null;
+    }
+
+    const filter: FilterQuery<AgentMessageDocument> = {
+      session: session._id,
+      user: uid,
+    };
+    // With an anchor, drop only what came after it; without one, clear the branch.
+    if (anchorAt) filter.createdAt = { $gt: anchorAt };
+    await this.messages.deleteMany(filter).exec();
+
+    const remaining = await this.messages
+      .find({ session: session._id, user: uid })
+      .sort({ createdAt: -1 })
+      .limit(1)
+      .exec();
+    const last = remaining[0] as
+      | (AgentMessageDocument & { createdAt?: Date })
+      | undefined;
+    session.lastMessageAt = last?.createdAt ?? undefined;
+    await session.save();
+
+    const kept = await this.messages
+      .countDocuments({ session: session._id, user: uid })
+      .exec();
+    return { ok: true, kept };
   }
 
   /**

@@ -42,6 +42,13 @@ export class PinSessionDto {
   pinned!: boolean;
 }
 
+export class TruncateSessionDto {
+  /** Keep messages up to and including this id; drop the rest. Omit to clear all. */
+  @IsOptional()
+  @IsString()
+  afterMessageId?: string;
+}
+
 export class FeedbackDto {
   @IsOptional()
   @IsString()

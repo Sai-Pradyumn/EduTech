@@ -131,3 +131,81 @@ describe('AgentSessionService search & pin', () => {
     expect(invalid.sessions.updateOne).not.toHaveBeenCalled();
   });
 });
+
+describe('AgentSessionService truncateAfter', () => {
+  const userId = new Types.ObjectId().toHexString();
+  const sid = new Types.ObjectId();
+  const anchorId = new Types.ObjectId();
+
+  function exec<T>(v: T) {
+    return { exec: jest.fn().mockResolvedValue(v) };
+  }
+
+  function svc(opts: { session?: unknown; anchor?: unknown } = {}) {
+    const save = jest.fn().mockResolvedValue(undefined);
+    const sessionDoc = 'session' in opts ? opts.session : { _id: sid, save };
+    const sessions = { findOne: jest.fn().mockReturnValue(exec(sessionDoc)) };
+    const deleteMany = jest.fn().mockReturnValue(exec({ deletedCount: 2 }));
+    const findChain = {
+      sort: jest.fn(),
+      limit: jest.fn(),
+      exec: jest.fn().mockResolvedValue([]),
+    };
+    findChain.sort.mockReturnValue(findChain);
+    findChain.limit.mockReturnValue(findChain);
+    const messages = {
+      findOne: jest.fn().mockReturnValue(exec(opts.anchor ?? null)),
+      deleteMany,
+      find: jest.fn().mockReturnValue(findChain),
+      countDocuments: jest.fn().mockReturnValue(exec(3)),
+    };
+    const service = new AgentSessionService(
+      sessions as never,
+      messages as never,
+      { isLive: false } as never,
+    );
+    return { service, sessions, messages, deleteMany };
+  }
+
+  it('with an anchor, deletes only messages created after it', async () => {
+    const anchorAt = new Date('2026-07-01');
+    const { service, deleteMany } = svc({
+      anchor: { _id: anchorId, createdAt: anchorAt },
+    });
+    const r = await service.truncateAfter(
+      userId,
+      sid.toHexString(),
+      anchorId.toHexString(),
+    );
+    expect(deleteMany).toHaveBeenCalledWith(
+      expect.objectContaining({ createdAt: { $gt: anchorAt } }),
+    );
+    expect(r).toEqual({ ok: true, kept: 3 });
+  });
+
+  it('with no anchor, clears the whole branch', async () => {
+    const { service, deleteMany } = svc();
+    await service.truncateAfter(userId, sid.toHexString());
+    const calls = deleteMany.mock.calls as unknown as Record<
+      string,
+      unknown
+    >[][];
+    expect(calls[0][0]['createdAt']).toBeUndefined();
+  });
+
+  it("rejects a session that is not the owner's", async () => {
+    const { service } = svc({ session: null });
+    await expect(
+      service.truncateAfter(userId, sid.toHexString()),
+    ).rejects.toThrow();
+  });
+
+  it('is a no-op for an invalid session id', async () => {
+    const { service, sessions } = svc();
+    expect(await service.truncateAfter(userId, 'not-an-id')).toEqual({
+      ok: true,
+      kept: 0,
+    });
+    expect(sessions.findOne).not.toHaveBeenCalled();
+  });
+});
