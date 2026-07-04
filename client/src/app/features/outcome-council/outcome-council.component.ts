@@ -1,4 +1,5 @@
-import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, inject, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Router } from '@angular/router';
 import { ButtonComponent } from '../../shared/ui/button.component';
 import { CardComponent } from '../../shared/ui/card.component';
@@ -6,6 +7,7 @@ import { EmptyStateComponent } from '../../shared/ui/empty-state.component';
 import { RingComponent } from '../../shared/ui/ring.component';
 import { SkeletonComponent } from '../../shared/ui/skeleton.component';
 import { ToastService } from '../../core/services/toast.service';
+import { DomainBusService } from '../../core/services/domain-bus.service';
 import { CouncilAction, CouncilResult, OutcomeCouncilService } from '../../core/services/outcome-council.service';
 
 @Component({
@@ -23,6 +25,10 @@ import { CouncilAction, CouncilResult, OutcomeCouncilService } from '../../core/
         <asta-btn variant="accent" size="sm" (click)="convene()" [disabled]="busy()">{{ busy() ? 'Convening…' : 'Convene council' }}</asta-btn>
       </div>
     </header>
+
+    @if (stale() && result()) {
+      <div class="stale-note">Your progress changed since this verdict. <button class="lnk" (click)="convene()">Reconvene</button> for updated guidance.</div>
+    }
 
     @if (loading()) {
       <asta-card><asta-skeleton h="140px" /></asta-card>
@@ -85,6 +91,8 @@ import { CouncilAction, CouncilResult, OutcomeCouncilService } from '../../core/
   `,
     styles: [`
     :host { display: block; }
+    .stale-note { font-size: 12.5px; color: var(--text-soft); background: color-mix(in oklab, var(--coral, #ffb454) 10%, var(--paper-2)); border: 1px solid color-mix(in oklab, var(--coral, #ffb454) 25%, var(--paper-3)); border-radius: 10px; padding: 8px 12px; margin-bottom: 12px; }
+    .stale-note .lnk { color: var(--green-deep); font-weight: 600; text-decoration: underline; cursor: pointer; background: none; border: none; padding: 0; font: inherit; }
     /* The ranked verdict carries the room — accent ring + glow; the action rises in. */
     .verdict { border: 1px solid color-mix(in oklab, var(--green) 24%, var(--paper-3)); box-shadow: 0 0 24px var(--asta-accent-glow); }
     .g-lbl { font-size: 10.5px; color: var(--text-mute); text-transform: uppercase; letter-spacing: .05em; margin-top: 2px; text-align: center; }
@@ -108,24 +116,32 @@ export class OutcomeCouncilComponent {
   private readonly api = inject(OutcomeCouncilService);
   private readonly toast = inject(ToastService);
   private readonly router = inject(Router);
+  private readonly bus = inject(DomainBusService);
+  private readonly destroyRef = inject(DestroyRef);
 
   readonly result = signal<CouncilResult | null>(null);
   readonly loading = signal(true);
   readonly loadError = signal(false);
   readonly busy = signal(false);
   readonly dismissed = signal<Set<string>>(new Set());
+  /** Set when learning evidence changes so we can prompt a reconvene (OUTCOME-GAP-001). */
+  readonly stale = signal(false);
 
   constructor() {
     this.api.latest().subscribe({
       next: (r) => { this.result.set(r); this.loading.set(false); },
       error: () => { this.loadError.set(true); this.loading.set(false); },
     });
+    // The verdict is evidence-driven — flag it stale when that evidence moves.
+    this.bus.on(['roadmap', 'course', 'flows', 'mistakes', 'skillTwin', 'dailyPlan', 'intelligence'])
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(() => { if (this.result()) this.stale.set(true); });
   }
 
   convene(): void {
     this.busy.set(true);
     this.api.recommend().subscribe({
-      next: (r) => { this.result.set(r); this.dismissed.set(new Set()); this.busy.set(false); this.loading.set(false); this.toast.success('The council has spoken'); },
+      next: (r) => { this.result.set(r); this.dismissed.set(new Set()); this.busy.set(false); this.loading.set(false); this.stale.set(false); this.toast.success('The council has spoken'); },
       error: () => { this.busy.set(false); this.toast.error('Council failed to convene'); },
     });
   }

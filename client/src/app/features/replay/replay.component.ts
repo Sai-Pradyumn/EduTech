@@ -1,4 +1,5 @@
-import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, inject, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Router } from '@angular/router';
 import { ButtonComponent } from '../../shared/ui/button.component';
 import { CardComponent } from '../../shared/ui/card.component';
@@ -6,6 +7,7 @@ import { EmptyStateComponent } from '../../shared/ui/empty-state.component';
 import { SkeletonComponent } from '../../shared/ui/skeleton.component';
 import { TextToSpeechService } from '../../core/services/text-to-speech.service';
 import { ToastService } from '../../core/services/toast.service';
+import { DomainBusService } from '../../core/services/domain-bus.service';
 import { LearningReplay, ReplayService } from '../../core/services/replay.service';
 
 @Component({
@@ -24,6 +26,10 @@ import { LearningReplay, ReplayService } from '../../core/services/replay.servic
         @if (replay()) { <asta-btn variant="accent" size="sm" (click)="playRecap()">{{ tts.speaking() ? 'Stop' : '▶ Play recap' }}</asta-btn> }
       </div>
     </header>
+
+    @if (stale() && replay()) {
+      <div class="stale-note">New activity since this replay — <button class="lnk" (click)="generate()">regenerate</button> to include it.</div>
+    }
 
     @if (loading()) {
       <asta-card><asta-skeleton h="280px" /></asta-card>
@@ -65,6 +71,8 @@ import { LearningReplay, ReplayService } from '../../core/services/replay.servic
     styles: [
         `
       :host { display: block; }
+      .stale-note { font-size: 12.5px; color: var(--text-soft); background: color-mix(in oklab, var(--coral, #ffb454) 10%, var(--paper-2)); border: 1px solid color-mix(in oklab, var(--coral, #ffb454) 25%, var(--paper-3)); border-radius: 10px; padding: 8px 12px; margin-bottom: 12px; }
+      .stale-note .lnk { color: var(--green-deep); font-weight: 600; text-decoration: underline; cursor: pointer; background: none; border: none; padding: 0; font: inherit; }
       /* The narrated recap is the stage — violet ring + glow, text rises in. */
       .recap { border: 1px solid color-mix(in oklab, var(--peri,#8aa6ff) 30%, var(--paper-3)); box-shadow: 0 0 22px var(--asta-glow-violet); }
       .recap-text { font-size: 15px; line-height: 1.6; animation: astaRevealUp .5s var(--ease) .15s both; }
@@ -86,16 +94,26 @@ export class ReplayComponent {
   private readonly api = inject(ReplayService);
   private readonly router = inject(Router);
   private readonly toast = inject(ToastService);
+  private readonly bus = inject(DomainBusService);
+  private readonly destroyRef = inject(DestroyRef);
   readonly tts = inject(TextToSpeechService);
 
   readonly replay = signal<LearningReplay | null>(null);
   readonly loading = signal(true);
   readonly loadError = signal(false);
+  /** Set when learning activity changes so we can prompt a regenerate (REPLAY-GAP-001). */
+  readonly stale = signal(false);
 
-  constructor() { this.generate(); }
+  constructor() {
+    this.generate();
+    // The replay is built from recent activity — flag it stale when that activity moves.
+    this.bus.on(['roadmap', 'course', 'flows', 'mistakes', 'dailyPlan', 'skillTwin'])
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(() => { if (this.replay()) this.stale.set(true); });
+  }
   generate(): void {
     this.loading.set(true); this.loadError.set(false);
-    this.api.generate().subscribe({ next: (r) => { this.replay.set(r); this.loading.set(false); }, error: () => { this.loadError.set(true); this.loading.set(false); } });
+    this.api.generate().subscribe({ next: (r) => { this.replay.set(r); this.loading.set(false); this.stale.set(false); }, error: () => { this.loadError.set(true); this.loading.set(false); } });
   }
   playRecap(): void {
     const r = this.replay(); if (!r) return;
