@@ -185,7 +185,9 @@ export class VisualsListComponent {
 
   constructor() {
     this.refresh();
-    this.api.status().subscribe({ next: (s) => this.imageLive.set(s.imageGeneration) });
+    // On a status failure, assume no live image provider — the honest default
+    // (shows the "diagrams render locally" note) rather than implying AI images (VISUAL-MF-002).
+    this.api.status().subscribe({ next: (s) => this.imageLive.set(s.imageGeneration), error: () => this.imageLive.set(false) });
   }
 
   meta(t: VisualType) {

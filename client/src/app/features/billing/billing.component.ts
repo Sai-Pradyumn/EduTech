@@ -165,7 +165,7 @@ import { GaugeComponent } from '../../shared/charts';
                 [style.background]="isCurrent(p.id) ? 'var(--paper-2)' : 'var(--green)'"
                 [style.color]="isCurrent(p.id) ? 'var(--text-mute)' : 'var(--ink)'"
                 [disabled]="isCurrent(p.id) || busy() || p.id === 'enterprise'" (click)="upgrade(p.id)">
-                {{ isCurrent(p.id) ? 'Current plan' : (p.id === 'enterprise' ? 'Contact sales' : (p.id === 'free' ? 'Switch to Free' : 'Upgrade')) }}
+                {{ isCurrent(p.id) ? 'Current plan' : (p.id === 'enterprise' ? 'Contact sales' : (p.id === 'free' ? 'Switch to Free' : (providerLive() ? 'Upgrade' : 'Upgrade · test mode'))) }}
               </button>
             </div>
           } @empty {
