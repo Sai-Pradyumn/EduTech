@@ -26,7 +26,7 @@ import { ProductAnalyticsService } from '../core/services/product-analytics.serv
 import { NetworkStatusService } from '../core/services/network-status.service';
 import { SyncQueueService } from '../core/services/sync-queue.service';
 import { OfflineService } from '../core/services/offline.service';
-import { ADMIN_NAV, STUDENT_NAV, workspaceNav } from '../core/constants/nav';
+import { ADMIN_NAV, ROUTE_PERMISSIONS, STUDENT_NAV, workspaceNav } from '../core/constants/nav';
 
 /** App shell: fixed sidebar + sticky topbar + routed content (DESIGN_SPEC §5). */
 @Component({
@@ -220,17 +220,17 @@ export class ShellComponent {
   readonly nav = computed(() => {
     const base = this.isAdmin() ? ADMIN_NAV : STUDENT_NAV;
     const isPlatformAdmin = this.orgCtx.isPlatformAdmin();
-    // Hide screens whose backend rejects a plain student, so the sidebar can't
-    // route the user into a guaranteed 403 (P0 — sidebar/authorization mismatch).
-    // Institution is admin/mentor-only; Developer needs org-manage.
-    const canSee: Record<string, boolean> = {
-      '/app/institution': isPlatformAdmin || this.orgCtx.has('student.view'),
-      '/app/developer': isPlatformAdmin || this.orgCtx.has('organization.manage'),
+    // Hide screens whose backend rejects a plain student, so the sidebar can't route
+    // the user into a guaranteed 403 (P0 — sidebar/authorization mismatch). The
+    // route→permission map is shared with the command palette (ROUTE_PERMISSIONS).
+    const canSee = (route: string): boolean => {
+      const perm = ROUTE_PERMISSIONS[route];
+      return !perm || this.orgCtx.has(perm);
     };
     const gated = base
       .map((group) => ({
         ...group,
-        items: group.items.filter((it) => canSee[it.route] ?? true),
+        items: group.items.filter((it) => canSee(it.route)),
       }))
       .filter((group) => group.items.length > 0);
     return [

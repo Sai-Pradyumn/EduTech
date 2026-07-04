@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { SkillTwinService } from '../skill-twin/skill-twin.service';
@@ -511,6 +515,9 @@ export class SkillPassportService {
   }
 
   async removeEvidence(userId: string, id: string): Promise<{ ok: true }> {
+    // A malformed evidence id is a bad request, not a 500 from a failed cast.
+    if (!Types.ObjectId.isValid(id))
+      throw new BadRequestException('Invalid evidence id');
     await this.evidenceModel
       .deleteOne({
         _id: new Types.ObjectId(id),

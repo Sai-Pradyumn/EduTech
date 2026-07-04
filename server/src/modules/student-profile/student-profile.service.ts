@@ -96,6 +96,10 @@ export class StudentProfileService {
       throw new NotFoundException(
         'Student profile not found. Complete onboarding first.',
       );
+    // Keep the account identity (used by the header/sidebar) consistent with the
+    // profile's full name so an edit isn't stale until the next full reload.
+    if (typeof dto.fullName === 'string' && dto.fullName.trim())
+      await this.users.setName(userId, dto.fullName.trim());
     return profile;
   }
 }

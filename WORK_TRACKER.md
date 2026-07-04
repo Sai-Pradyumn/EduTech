@@ -56,7 +56,7 @@ keeps its resolution logs.
 - **Error/empty-state sweep** — build the shared GET-error helper (CORE-MF-001) then apply.
 - **Larger** — SOCKET-BUG-001, AGENT-BUG-001/002, offline sync queue, billing (deferred: needs provider).
 
-### Quick wins (hours each) — round 1 DONE (commit pending)
+### ✅ Quick wins bucket — COMPLETE (rounds 1 + 2)
 - ✅ KNOW-BUG-001 — `AskDto.documentIds` now `@IsMongoId({ each: true })` → malformed id 400s (was 500).
 - ✅ VOICE-BUG-001 — failed voice turn rolls back the optimistic user turn + restores the input text.
 - ✅ PORT-BUG-001 — public portfolio: 404 = "not published"; network/5xx = retryable "couldn't load".
@@ -64,10 +64,17 @@ keeps its resolution logs.
 - ✅ CERT-BUG-001 — new `Permission.CertificateRevoke` (org-admin+, NOT instructors); revoke route gated on
   it + malformed-id guard in revoke() → 404 not 500. +3 specs.
 - ✅ BILL-ENH-001 — already done (CTA "Upgrade · test mode" + test-mode copy).
-- ⬜ ROAD-BUG-001 — task completion → progress % (task-level progress, not just whole weeks)
-- ⬜ DEV-BUG-002 / SEC-BUG-001 / PASSPORT-BUG-001 — guard malformed ObjectIds → 400/404 (broader sweep)
-- ⬜ PROFILE-ENH-001 — profile update refreshes auth header/sidebar identity
-- ⬜ Nav-vs-guard mismatches (defense-in-depth forbidden states): COMM/COHORT/LIVE/INST/DEV/ADMIN-BUG-001
+- ✅ ROAD-BUG-001 — `computeProgress` is task-aware: each week an equal share, filled by the fraction of
+  its tasks checked (or full when the week is marked complete / has no tasks). +6 specs.
+- ✅ DEV-BUG-002 / SEC-BUG-001 / PASSPORT-BUG-001 — `Types.ObjectId.isValid` guards on session revoke,
+  evidence remove, and developer api-key/webhook ids → 400 not 500.
+- ✅ PROFILE-ENH-001 — profile update syncs `User.name` server-side (`UsersService.setName`) + client
+  refreshes the global auth store (`loadCurrentUser`) so header/sidebar identity isn't stale.
+- ✅ Nav-vs-guard — shared `ROUTE_PERMISSIONS` map gates sidebar + command palette; added Community
+  (org.view), Cohorts + Live Sessions (cohort.view); Institution/Developer already gated. ADMIN-BUG-001:
+  admin nav already sound (shown only to role==='admin' = platform admin, who holds ALL_PERMISSIONS).
+
+**QUICK WINS BUCKET COMPLETE.** Gate: server **242/242** (40 suites), server+client lint 0, client build clean.
 
 ### Error/empty-state sweep (the big "Missing fixes" bucket, mostly S each)
 Standardize load-error/empty/retry across screens that swallow GET failures. IDs:

@@ -461,6 +461,9 @@ export class ProfileComponent implements OnInit {
         this.saving.set(false);
         this.savedAt.set(true);
         this.toast.success('Profile updated.');
+        // Refresh the global identity so the header/sidebar name/initial isn't stale
+        // (the server syncs User.name from the profile's full name). Best-effort.
+        this.auth.loadCurrentUser().subscribe({ error: () => undefined });
       },
       error: () => {
         this.saving.set(false);

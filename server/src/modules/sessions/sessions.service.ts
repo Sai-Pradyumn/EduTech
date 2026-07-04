@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { BadRequestException, Injectable, Logger } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { Session, SessionDocument } from './schemas/session.schema';
@@ -69,6 +69,9 @@ export class SessionsService {
   }
 
   async revoke(userId: string, sessionId: string) {
+    // Reject a malformed id with a clean 400 instead of letting the cast throw a 500.
+    if (!Types.ObjectId.isValid(sessionId))
+      throw new BadRequestException('Invalid session id');
     await this.sessions
       .updateOne(
         {

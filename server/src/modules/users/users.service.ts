@@ -117,6 +117,11 @@ export class UsersService {
     await this.userModel.updateOne({ _id: id }, { isOnboarded: true }).exec();
   }
 
+  /** Keep the canonical account name in sync when the profile's full name changes. */
+  async setName(id: string, name: string): Promise<void> {
+    await this.userModel.updateOne({ _id: id }, { name }).exec();
+  }
+
   async touchLastActive(id: string): Promise<void> {
     await this.userModel
       .updateOne({ _id: id }, { lastActiveAt: new Date() })

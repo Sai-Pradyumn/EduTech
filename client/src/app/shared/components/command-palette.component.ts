@@ -2,9 +2,10 @@ import { ChangeDetectionStrategy, Component, HostListener, computed, inject, sig
 import { Router } from '@angular/router';
 import { ModalComponent } from '../ui/modal.component';
 import { SearchComponent } from '../ui/search.component';
-import { ADMIN_NAV, STUDENT_NAV } from '../../core/constants/nav';
+import { ADMIN_NAV, ROUTE_PERMISSIONS, STUDENT_NAV } from '../../core/constants/nav';
 import { AGENTS } from '../../core/constants/agents';
 import { AuthService } from '../../core/services/auth.service';
+import { OrgContextService } from '../../core/services/org-context.service';
 import { ThemeService } from '../../core/services/theme.service';
 
 interface Command {
@@ -98,6 +99,7 @@ export class CommandPaletteComponent {
   private readonly router = inject(Router);
   private readonly auth = inject(AuthService);
   private readonly theme = inject(ThemeService);
+  private readonly orgCtx = inject(OrgContextService);
 
   readonly open = signal(false);
   readonly query = signal('');
@@ -106,7 +108,13 @@ export class CommandPaletteComponent {
   private readonly all = computed<Command[]>(() => {
     const groups = this.auth.isAdmin() ? ADMIN_NAV : STUDENT_NAV;
     const navCmds: Command[] = groups.flatMap((g) =>
-      g.items.map((it) => ({ label: it.label, hint: it.route.replace('/app/', '').replace('/', ''), route: it.route, group: g.heading })),
+      g.items
+        // Same permission gate as the sidebar — don't offer a route the backend will 403.
+        .filter((it) => {
+          const perm = ROUTE_PERMISSIONS[it.route];
+          return !perm || this.orgCtx.has(perm);
+        })
+        .map((it) => ({ label: it.label, hint: it.route.replace('/app/', '').replace('/', ''), route: it.route, group: g.heading })),
     );
     const agentCmds: Command[] = [
       { label: 'Ask the AI Tutor', hint: 'tutor', route: '/app/tutor', group: 'Agents' },

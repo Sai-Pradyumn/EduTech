@@ -1,4 +1,9 @@
-import { Injectable, Logger, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  Logger,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { createHash, createHmac, randomBytes, randomUUID } from 'crypto';
 import { Model, Types } from 'mongoose';
@@ -71,6 +76,8 @@ export class DeveloperService {
   }
 
   async revokeKey(orgId: string, id: string) {
+    if (!Types.ObjectId.isValid(id))
+      throw new BadRequestException('Invalid API key id');
     await this.keys
       .updateOne(
         { _id: new Types.ObjectId(id), org: new Types.ObjectId(orgId) },
@@ -126,6 +133,8 @@ export class DeveloperService {
     id: string,
     patch: { url?: string; events?: string[]; active?: boolean },
   ) {
+    if (!Types.ObjectId.isValid(id))
+      throw new BadRequestException('Invalid webhook id');
     const doc = await this.endpoints
       .findOneAndUpdate(
         { _id: new Types.ObjectId(id), org: new Types.ObjectId(orgId) },
@@ -138,6 +147,8 @@ export class DeveloperService {
   }
 
   async deleteWebhook(orgId: string, id: string) {
+    if (!Types.ObjectId.isValid(id))
+      throw new BadRequestException('Invalid webhook id');
     await this.endpoints
       .deleteOne({
         _id: new Types.ObjectId(id),
@@ -149,6 +160,8 @@ export class DeveloperService {
 
   /** Fire a test event to an endpoint and record the delivery. */
   async testWebhook(orgId: string, id: string) {
+    if (!Types.ObjectId.isValid(id))
+      throw new BadRequestException('Invalid webhook id');
     const ep = await this.endpoints
       .findOne({ _id: new Types.ObjectId(id), org: new Types.ObjectId(orgId) })
       .exec();

@@ -657,9 +657,30 @@ export class RoadmapService {
   }
 
   private computeProgress(roadmap: RoadmapDocument): number {
-    const totalWeeks = roadmap.weeklyPlan.length;
-    if (totalWeeks === 0) return 0;
-    return Math.round((roadmap.completedWeeks.length / totalWeeks) * 100);
+    const weeks = roadmap.weeklyPlan;
+    if (weeks.length === 0) return 0;
+    const completedWeekSet = new Set(roadmap.completedWeeks);
+    const doneTasks = new Set(roadmap.completedTasks);
+
+    // Each week carries an equal share of the plan; within an incomplete week that
+    // share fills with the fraction of its tasks checked off — so ticking individual
+    // tasks moves the bar instead of waiting for a whole week to be marked done. A
+    // week explicitly marked complete (or with no tasks) counts as its full share.
+    let sum = 0;
+    for (const w of weeks) {
+      if (completedWeekSet.has(w.weekNumber)) {
+        sum += 1;
+        continue;
+      }
+      const n = w.tasks.length;
+      if (n === 0) continue;
+      let done = 0;
+      for (let i = 0; i < n; i++) {
+        if (doneTasks.has(`w${w.weekNumber}:t${i}`)) done++;
+      }
+      sum += done / n;
+    }
+    return Math.round((sum / weeks.length) * 100);
   }
 
   private assertOwner(roadmap: RoadmapDocument, userId: string): void {

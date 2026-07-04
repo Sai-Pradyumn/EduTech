@@ -52,6 +52,20 @@ const I = {
   privacy: 'M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10ZM9 12l2 2 4-4',
 };
 
+/**
+ * Routes whose backend requires a permission a plain (non-org) student lacks. Hide them
+ * from the sidebar AND the command palette so we never route the user into a guaranteed
+ * 403. The value is a permission string checked via OrgContextService.has() — which is
+ * true for platform admins automatically, so they always see everything.
+ */
+export const ROUTE_PERMISSIONS: Record<string, string> = {
+  '/app/institution': 'student.view', // admin/mentor-only
+  '/app/developer': 'organization.manage',
+  '/app/community': 'organization.view',
+  '/app/cohorts': 'cohort.view',
+  '/app/live-sessions': 'cohort.view',
+};
+
 /** Org/platform nav appended for members + operators (permission-aware, built at runtime). */
 export function workspaceNav(opts: { hasOrg: boolean; isPlatformAdmin: boolean; canMentor: boolean; canReports?: boolean }): NavGroup[] {
   const items: NavItem[] = [];
