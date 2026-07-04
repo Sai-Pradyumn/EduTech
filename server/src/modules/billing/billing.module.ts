@@ -16,8 +16,7 @@ import {
 import { BillingController } from './billing.controller';
 import { BillingService } from './services/billing.service';
 import { MockPaymentProvider } from './providers/mock-payment.provider';
-import { RazorpayPaymentProvider } from './providers/razorpay-payment.provider';
-import { StripePaymentProvider } from './providers/external-payment.providers';
+import { createPaymentProvider } from './providers/payment-provider.factory';
 import {
   PAYMENT_PROVIDER_TOKEN,
   PaymentProvider,
@@ -41,31 +40,14 @@ import {
     BillingService,
     MockPaymentProvider,
     {
+      // Live providers activate only when ENABLE_PAYMENT_PROVIDER=true + the chosen
+      // provider's keys are present; anything missing degrades to mock (see the factory).
       provide: PAYMENT_PROVIDER_TOKEN,
       inject: [ConfigService, MockPaymentProvider],
       useFactory: (
         config: ConfigService,
         mock: MockPaymentProvider,
-      ): PaymentProvider => {
-        // Live providers activate only when ENABLE_PAYMENT_PROVIDER + keys are present.
-        const enabled =
-          config.get<string>('ENABLE_PAYMENT_PROVIDER') === 'true';
-        if (!enabled) return mock;
-        const choice = config.get<string>('PAYMENT_PROVIDER') ?? 'razorpay';
-        const rzpId = config.get<string>('RAZORPAY_KEY_ID');
-        const rzpSecret = config.get<string>('RAZORPAY_KEY_SECRET');
-        const rzpWebhook = config.get<string>('RAZORPAY_WEBHOOK_SECRET') ?? '';
-        if (choice === 'razorpay' && rzpId && rzpSecret)
-          return new RazorpayPaymentProvider(rzpId, rzpSecret, rzpWebhook);
-        const stripeKey = config.get<string>('STRIPE_SECRET_KEY');
-        if (choice === 'stripe' && stripeKey)
-          return new StripePaymentProvider(
-            stripeKey,
-            config.get<string>('STRIPE_WEBHOOK_SECRET') ?? '',
-            config.get<string>('clientOrigin') ?? '',
-          );
-        return mock;
-      },
+      ): PaymentProvider => createPaymentProvider(config, mock),
     },
   ],
   exports: [BillingService],

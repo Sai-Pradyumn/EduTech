@@ -94,6 +94,7 @@ export const validationSchema = Joi.object({
   RAZORPAY_KEY_SECRET: Joi.string().allow('').default(''),
   RAZORPAY_WEBHOOK_SECRET: Joi.string().allow('').default(''),
   STRIPE_SECRET_KEY: Joi.string().allow('').default(''),
+  STRIPE_WEBHOOK_SECRET: Joi.string().allow('').default(''),
   VAPID_PUBLIC_KEY: Joi.string().allow('').default(''),
   VAPID_PRIVATE_KEY: Joi.string().allow('').default(''),
   VAPID_SUBJECT: Joi.string().allow('').default('mailto:support@asta.dev'),
