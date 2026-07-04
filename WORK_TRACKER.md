@@ -85,13 +85,24 @@ ADMIN-MF-001..008. → Build **one shared GET-error-state helper** (CORE-MF-001)
 - ✅ VISUAL-BUG-001 — `91b0a48` sanitizeMarkup() scrubs SVG/HTML/mermaid before trust; URL sanitizer for img src.
 - ✅ PRIV-BUG-001 — `1920bcc` destructive privacy actions emit invalidation; portfolio/passport/applications reload.
 
-### Larger — still open
-- BILL-BUG-001 / BILL-ENH-001 — real payment provider (mock today). **Deferred** (needs provider keys).
-- VISUAL-MF-001 / VOICE-MF-001 / PRACTICE-ENH-001 / AI-ENH-001 — mock provider gating/copy.
-- AGENT-BUG-002 — conversation branching / persist truncated branch server-side.
-- PEER-BUG-001 — peer room live updates (currently fetch-once).
-- Feature gaps: WORKFLOW-GAP-001 (run history UI), REPORT-GAP-001 (placeholder metrics),
-  PUSH-GAP-001 (push fanout), OUTCOME-GAP-001, REPLAY-GAP-001, CERT-GAP-001, PROOF-GAP-001.
+### ✅ Larger bucket — FULLY COMPLETE (round 2, commits 2e4d8e3 → 0b734c2)
+- ✅ AGENT-BUG-002 — `2e4d8e3` server truncateAfter + POST /ai/sessions/:id/truncate; tutor persists branch. +4 specs.
+- ✅ PEER-BUG-001 — `2e4d8e3` (bundled) peer-room 5s polling while open (pauses when hidden/busy).
+- ✅ VISUAL-MF-002 — `fe2e8a9` status() error handler → honest default. BILL-ENH-001 — CTA "Upgrade · test mode".
+- ✅ VISUAL-MF-001 / VOICE-MF-001 / PRACTICE-ENH-001 — already surfaced (local-render note / "demo · browser speech" / "simulated" badge).
+- ✅ AI-ENH-001 — satisfied by design: app degrades to deterministic offline output with visible notices; admin `/ai/providers` snapshot.
+- ✅ OUTCOME-GAP-001 + REPLAY-GAP-001 — `1988705` DomainBus stale-prompt (cost-aware, no auto-LLM).
+- ✅ CERT-GAP-001 + PROOF-GAP-001 — `585c1da` reports permission preflight + certificate issuer note.
+- ✅ WORKFLOW-GAP-001 — `0b734c2` run-history UI (list + load/error/empty + replay detail).
+- ✅ REPORT-GAP-001 — already real: UI surfaces only real aggregation (student outcomes / weak topics / AI usage) + real CSV; the "future" PDF/placement bits are NOT shown (nothing misleading).
+- ✅ PUSH-GAP-001 — already real: push.notify() sends live Web Push (VAPID-gated, prunes 404/410 dead subs); notifications fan out to it on create. Audit was stale.
+
+### BILLING (provider-dependent) — honest-gated; goes live when keys added
+- Payment flows use MockPaymentProvider until `ENABLE_PAYMENT_PROVIDER=true` + Razorpay/Stripe keys.
+  Client already shows test-mode copy + CTA label; checkout handles mock/live/redirect. Real capture
+  is purely operational (add keys) — not a code gap.
+
+### Everything from the app audit is now either shipped or honest-gated. No open Larger items.
 
 ---
 
@@ -115,9 +126,12 @@ ADMIN-MF-001..008. → Build **one shared GET-error-state helper** (CORE-MF-001)
   guard. +4 specs.
 - ✅ **MEDIUM BUCKET COMPLETE.** Final gate: server **202/202** (35 suites), server lint 0 errors
   (7 pre-existing warnings), client `ng build` dev clean, client lint 0. Commits fd9ab88, 130e005, 14097a7.
-- ✅ **LARGER BUCKET COMPLETE (6 items).** SOCKET-BUG-001 (socket FIFO queue + runId),
-  AGENT-BUG-001 (per-persona chat), CORE-BUG-001 (403 keeps session), CORE-BUG-002 (sync via
-  HttpClient), VISUAL-BUG-001 (sanitizeMarkup + URL sanitizer), PRIV-BUG-001 (invalidation bus).
-  Gate: server 202/202, client build clean, both lints 0, sanitize spec 5/5. Commits 9a76789,
-  5c5cbcb, b0b6b5f, 18c9701, 91b0a48, 1920bcc. Still-open larger: billing (deferred), AGENT-BUG-002,
-  PEER-BUG-001, mock-provider gating, and the feature-gap set (workflow/report/push/outcome/replay/cert/proof).
+- ✅ **LARGER BUCKET round 1 (6 items).** SOCKET-BUG-001, AGENT-BUG-001, CORE-BUG-001, CORE-BUG-002,
+  VISUAL-BUG-001, PRIV-BUG-001. Commits 9a76789, 5c5cbcb, b0b6b5f, 18c9701, 91b0a48, 1920bcc.
+- ✅ **LARGER BUCKET round 2 — CLOSED OUT (no pendings).** AGENT-BUG-002 (branch truncation, +4 specs),
+  PEER-BUG-001 (poll), VISUAL-MF-002 + BILL-ENH-001 (honesty), OUTCOME-GAP-001 + REPLAY-GAP-001
+  (stale prompts), CERT-GAP-001 + PROOF-GAP-001 (permissions), WORKFLOW-GAP-001 (run history).
+  REPORT-GAP-001 + PUSH-GAP-001 + VISUAL-MF-001/VOICE-MF-001/PRACTICE-ENH-001/AI-ENH-001 verified
+  already-real/pre-built (audit stale). Commits 2e4d8e3, fe2e8a9, 1988705, 585c1da, 0b734c2.
+  Final gate: **server 206/206** (35 suites), server lint 0 err, client build clean, client lint 0.
+  **The entire Larger bucket is complete; only provider-key wiring (billing) remains operational.**
