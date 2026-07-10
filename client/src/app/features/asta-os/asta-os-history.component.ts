@@ -42,6 +42,8 @@ import { AgentSessionSummary, SessionSearchHit } from '../../core/models';
             <p class="kick">Matches everywhere</p>
             @if (searching()) {
               <p class="muted">Searching…</p>
+            } @else if (searchError()) {
+              <p class="muted">Search failed — <button type="button" class="lnk" (click)="onQuery(q)">Retry</button></p>
             } @else if (hits().length) {
               @for (h of hits(); track h.sessionId) {
                 <button type="button" class="item" role="menuitem" (click)="pick(h.sessionId)">
@@ -60,7 +62,12 @@ import { AgentSessionSummary, SessionSearchHit } from '../../core/models';
             <p class="kick">Recent sessions</p>
             @if (loading()) {
               <p class="muted">Loading…</p>
-            } @else if (sessions().length) {
+            } @else {
+              <!-- Stale sessions stay listed under the error note; only hide the list when there is nothing to show. -->
+              @if (loadError()) {
+                <p class="muted">Couldn't load sessions — <button type="button" class="lnk" (click)="refresh()">Retry</button></p>
+              }
+              @if (sessions().length) {
               @for (s of sessions(); track s.id) {
                 <div class="row">
                   <button type="button" class="item" role="menuitem" (click)="pick(s.id)">

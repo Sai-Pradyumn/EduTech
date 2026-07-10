@@ -13,6 +13,8 @@ import {
 import { FileInterceptor } from '@nestjs/platform-express';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { AuthUser } from '../../common/interfaces';
+import { checkUpload } from '../../common/security/file-signature';
+import { sanitizeFilename } from '../../common/security/sanitize';
 import { IngestionService } from './services/ingestion.service';
 import { KnowledgeService } from './services/knowledge.service';
 import { KnowledgeQaService } from './services/knowledge-qa.service';
@@ -67,12 +69,28 @@ export class KnowledgeController {
         `Unsupported file type: ${file.mimetype || file.originalname}.`,
       );
     }
+    // Content-based validation (FU-01): the declared mime/extension is attacker-controlled,
+    // so inspect the actual bytes — this rejects an executable renamed `notes.pdf` or a
+    // PDF whose content is really HTML/zip. Complements size + extension checks above.
+    const contentCheck = checkUpload({
+      buffer: file.buffer,
+      mimetype: file.mimetype,
+      filename: file.originalname,
+    });
+    if (!contentCheck.ok) {
+      throw new BadRequestException(
+        contentCheck.reason ?? 'File content failed validation.',
+      );
+    }
+    // Filenames are attacker-controlled metadata — reduce to a safe basename before they
+    // reach storage/logs/UI (path traversal, control chars, reserved names).
+    const safeName = sanitizeFilename(file.originalname);
     const result = await this.ingestion.ingest({
       userId: user.id,
-      title: (body.title?.trim() || file.originalname).slice(0, 200),
+      title: (body.title?.trim() || safeName).slice(0, 200),
       source: 'upload',
       mimeType: file.mimetype,
-      filename: file.originalname,
+      filename: safeName,
       buffer: file.buffer,
     });
     return result;

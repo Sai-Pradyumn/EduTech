@@ -17,6 +17,14 @@ export class AuditController {
     return this.audit.list({ limit: 200 });
   }
 
+  /** Integrity check: re-walks the hash chain and reports the first broken link, if any
+   *  (SECURITY_IMPLEMENTATION.md §15 · P2 tamper-evident audit). */
+  @Roles(Role.Admin)
+  @Get('admin/audit-logs/verify')
+  verifyChain() {
+    return this.audit.verifyChain();
+  }
+
   @Permissions(Permission.OrgManage)
   @Get('org/audit-logs')
   orgLogs(@CurrentOrg() org: OrgContext) {

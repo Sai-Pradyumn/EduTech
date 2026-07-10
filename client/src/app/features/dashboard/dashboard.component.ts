@@ -87,6 +87,11 @@ import { Course, CourseService } from '../../core/services/course.service';
         </div>
       </header>
 
+      <!-- Grouped refresh-failure note — panels below keep last-good data instead of vanishing -->
+      @if (sliceError()) {
+        <p class="text-[13px] text-txt-soft mb-4">Couldn’t refresh some dashboard panels. <button class="lnk" (click)="retryPanels()">Retry</button></p>
+      }
+
       <!-- Proactive "Your next move" — the system decides what's next from your state -->
       @if (nextMove(); as nm) {
         <asta-card class="mb-5 next-move dashboard-primary-card dashboard-reveal" style="--motion-card-index:0">

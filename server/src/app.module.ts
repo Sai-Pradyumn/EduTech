@@ -11,6 +11,8 @@ import { TransformInterceptor } from './common/interceptors/transform.intercepto
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
 import { RolesGuard } from './common/guards/roles.guard';
 import { PermissionsGuard } from './common/guards/permissions.guard';
+import { MfaEnforcementGuard } from './common/guards/mfa-enforcement.guard';
+import { SecretLeakInterceptor } from './common/interceptors/secret-leak.interceptor';
 import { HealthController } from './health.controller';
 import { AuthModule } from './modules/auth/auth.module';
 import { MailerModule } from './modules/mailer/mailer.module';
@@ -165,9 +167,12 @@ import { SocketsModule } from './sockets/sockets.module';
   providers: [
     { provide: APP_FILTER, useClass: AllExceptionsFilter },
     { provide: APP_INTERCEPTOR, useClass: TransformInterceptor },
+    // Egress canary: strips credential fields from any response + logs the offender.
+    { provide: APP_INTERCEPTOR, useClass: SecretLeakInterceptor },
     { provide: APP_GUARD, useClass: JwtAuthGuard },
     { provide: APP_GUARD, useClass: RolesGuard },
     { provide: APP_GUARD, useClass: PermissionsGuard },
+    { provide: APP_GUARD, useClass: MfaEnforcementGuard },
   ],
 })
 export class AppModule {}

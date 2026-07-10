@@ -473,7 +473,11 @@ export class KnowledgeHubComponent implements OnInit, OnDestroy {
       answer: assistant.content,
       sources: assistant.sources,
       confidence: assistant.confidence,
-    }).subscribe({ next: () => undefined, error: () => undefined });
+    }).subscribe({
+      next: () => undefined,
+      // The answer already rendered and the local cache holds it — just be honest about sync.
+      error: () => this.toast.warning("Couldn't sync this answer to your account — it's kept on this device."),
+    });
   }
 
   clearChat(): void {
@@ -481,7 +485,10 @@ export class KnowledgeHubComponent implements OnInit, OnDestroy {
     this.steps.set([]);
     this.sessionId = undefined;
     try { localStorage.removeItem(CHAT_KEY); } catch { /* ignore */ }
-    this.knowledge.clearQa().subscribe({ next: () => undefined, error: () => undefined });
+    this.knowledge.clearQa().subscribe({
+      next: () => undefined,
+      error: () => this.toast.warning("Cleared on this device, but the synced history couldn't be cleared — it may reappear."),
+    });
   }
 
   ngOnDestroy(): void {

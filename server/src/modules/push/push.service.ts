@@ -1,8 +1,9 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { BadRequestException, Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import * as webpush from 'web-push';
+import { checkUrlShape } from '../../common/security/ssrf-guard';
 import {
   PushSubscription,
   PushSubscriptionDocument,
@@ -49,6 +50,18 @@ export class PushService {
   }
 
   async subscribe(userId: string, input: WebPushInput) {
+    // The endpoint is a browser-supplied URL the server later POSTs to — require a public
+    // https target so a crafted subscription can't aim pushes at internal services
+    // (SSRF · SECURITY_IMPLEMENTATION.md §4.6). Real push endpoints (FCM/Mozilla/WNS) are
+    // always public https, so this rejects nothing legitimate.
+    const shape = checkUrlShape(input.endpoint, {
+      allowedProtocols: ['https:'],
+    });
+    if (!shape.ok) {
+      throw new BadRequestException(
+        `Invalid push endpoint: ${shape.reason ?? 'must be a public https URL'}`,
+      );
+    }
     await this.subs.updateOne(
       { endpoint: input.endpoint },
       {

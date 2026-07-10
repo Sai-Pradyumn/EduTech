@@ -8,6 +8,7 @@ import { SkeletonComponent } from '../../shared/ui/skeleton.component';
 import { RichContentComponent } from '../../shared/components/ai/rich-content.component';
 import { ToastService } from '../../core/services/toast.service';
 import { ConfettiService } from '../../core/services/confetti.service';
+import { DomainBusService } from '../../core/services/domain-bus.service';
 import { Course, CourseLesson, CourseModule, CourseService, CourseVisibility } from '../../core/services/course.service';
 
 /** One row in the flattened lesson navigation. */
@@ -218,6 +219,7 @@ export class CourseDetailComponent {
   private readonly api = inject(CourseService);
   private readonly toast = inject(ToastService);
   private readonly confetti = inject(ConfettiService);
+  private readonly bus = inject(DomainBusService);
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
 
@@ -354,7 +356,7 @@ export class CourseDetailComponent {
   genProject(): void { this.run('project', this.api.generateProject(this.id()), 'Project generated'); }
   genFlow(): void {
     this.busy.set('flow');
-    this.api.generateFlow(this.id()).subscribe({ next: (r) => { this.course.set(r.course); this.busy.set(null); this.toast.success('Flow created'); this.router.navigate(['/app/flows', r.flowId]); }, error: (e: Error) => { this.busy.set(null); this.toast.error(e.message || 'Failed'); } });
+    this.api.generateFlow(this.id()).subscribe({ next: (r) => { this.course.set(r.course); this.busy.set(null); this.bus.invalidate(['flows', 'roadmap']); this.toast.success('Flow created'); this.router.navigate(['/app/flows', r.flowId]); }, error: (e: Error) => { this.busy.set(null); this.toast.error(e.message || 'Failed'); } });
   }
   publish(v: CourseVisibility): void {
     this.api.publish(this.id(), v).subscribe({ next: (c) => { this.course.set(c); this.toast.success(`Published (${v})`); }, error: (e: Error) => this.toast.error(e.message || 'Could not publish') });

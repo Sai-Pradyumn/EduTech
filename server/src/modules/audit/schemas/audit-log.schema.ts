@@ -33,6 +33,20 @@ export class AuditLog {
 
   @Prop()
   userAgent?: string;
+
+  /* ── Tamper-evident hash chain (SECURITY_IMPLEMENTATION.md §15 · P2) ───────────────
+   * entryHash = SHA-256(prevHash | canonical(payload) | chainedAt). Editing or deleting
+   * any historical row breaks every later link; AuditService.verifyChain() detects it. */
+
+  @Prop()
+  prevHash?: string;
+
+  @Prop({ index: true })
+  entryHash?: string;
+
+  /** The exact ISO timestamp folded into the hash (createdAt could be re-serialized). */
+  @Prop()
+  chainedAt?: string;
 }
 
 export const AuditLogSchema = SchemaFactory.createForClass(AuditLog);

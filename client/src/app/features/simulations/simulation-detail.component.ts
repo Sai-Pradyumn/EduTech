@@ -6,6 +6,7 @@ import { CardComponent } from '../../shared/ui/card.component';
 import { EmptyStateComponent } from '../../shared/ui/empty-state.component';
 import { SkeletonComponent } from '../../shared/ui/skeleton.component';
 import { ToastService } from '../../core/services/toast.service';
+import { DomainBusService } from '../../core/services/domain-bus.service';
 import { SIM_TYPE_META, Simulation, SimulationService, SimulationType } from '../../core/services/simulation.service';
 
 @Component({
@@ -113,6 +114,7 @@ import { SIM_TYPE_META, Simulation, SimulationService, SimulationType } from '..
 export class SimulationDetailComponent {
   private readonly api = inject(SimulationService);
   private readonly toast = inject(ToastService);
+  private readonly bus = inject(DomainBusService);
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
 
@@ -147,7 +149,7 @@ export class SimulationDetailComponent {
   }
   finish(): void {
     this.finishing.set(true);
-    this.api.finish(this.id()).subscribe({ next: (s) => { this.sim.set(s); this.finishing.set(false); this.toast.success(`Scored ${s.score}/100`); }, error: () => { this.finishing.set(false); this.toast.error('Could not finish'); } });
+    this.api.finish(this.id()).subscribe({ next: (s) => { this.sim.set(s); this.finishing.set(false); this.bus.invalidate(['dailyPlan', 'roadmap', 'passport']); this.toast.success(`Scored ${s.score}/100`); }, error: () => { this.finishing.set(false); this.toast.error('Could not finish'); } });
   }
   retry(harder: boolean): void {
     this.api.retry(this.id(), harder).subscribe({ next: (s) => { this.toast.success('New round started'); this.router.navigate(['/app/simulations', s.id]); }, error: () => this.toast.error('Could not retry') });

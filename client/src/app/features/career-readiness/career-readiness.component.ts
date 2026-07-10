@@ -48,9 +48,16 @@ import { downloadPdf } from '../../shared/util/pdf';
           <div class="min-w-0 flex-1">
             <p class="kicker mb-1">Target role</p>
             <div class="flex items-center gap-2 flex-wrap">
-              <select class="role-select" [value]="an.role.id" (change)="onRole($event)">
-                @for (r of roles(); track r.id) { <option [value]="r.id">{{ r.title }} · {{ r.level }}</option> }
-              </select>
+              @if (roles().length) {
+                <select class="role-select" [value]="an.role.id" (change)="onRole($event)">
+                  @for (r of roles(); track r.id) { <option [value]="r.id">{{ r.title }} · {{ r.level }}</option> }
+                </select>
+              } @else {
+                <p class="text-[13.5px] font-semibold">{{ an.role.title }} · {{ an.role.level }}</p>
+              }
+              @if (rolesError()) {
+                <p class="text-xs text-txt-mute">Couldn't load target roles. <button class="lnk" (click)="loadRoles()">Retry</button></p>
+              }
             </div>
             <p class="explain">{{ an.explanation }}</p>
           </div>
@@ -155,6 +162,7 @@ import { downloadPdf } from '../../shared/util/pdf';
     .hero { border: 1px solid color-mix(in oklab, var(--green) 20%, var(--paper-3)); }
     .band { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; margin-top: 4px; }
     .role-select { background: var(--paper-2); border: 1px solid var(--paper-3); color: var(--text); border-radius: 9px; padding: 7px 10px; font-size: 13.5px; font-weight: 600; }
+    .lnk { color: var(--green-deep); font-weight: 600; text-decoration: underline; cursor: pointer; background: none; border: none; padding: 0; font: inherit; }
     .explain { font-size: 13.5px; color: var(--text-soft); margin-top: 8px; line-height: 1.5; }
     .dim-head { display: grid; grid-template-columns: 130px 1fr auto auto auto; align-items: center; gap: 10px; cursor: pointer; }
     .d-label { font-size: 12.5px; font-weight: 500; }
@@ -203,12 +211,18 @@ export class CareerReadinessComponent {
   readonly roles = signal<CareerRoleSummary[]>([]);
   readonly loading = signal(true);
   readonly loadError = signal(false);
+  readonly rolesError = signal(false);
   readonly busy = signal(false);
   readonly open = signal<string | null>(null);
 
   constructor() {
-    this.api.roles().subscribe({ next: (r) => this.roles.set(r), error: () => {} });
+    this.loadRoles();
     this.refresh();
+  }
+
+  loadRoles(): void {
+    this.rolesError.set(false);
+    this.api.roles().subscribe({ next: (r) => this.roles.set(r), error: () => this.rolesError.set(true) });
   }
 
   refresh(): void {

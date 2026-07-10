@@ -1,6 +1,8 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
+import { checkUrlShape } from '../../common/security/ssrf-guard';
+import { CircuitBreakerRegistry } from '../../common/security/circuit-breaker';
 import { GoogleCalendarService } from './google-calendar.service';
 import {
   IntegrationConnection,
@@ -194,23 +196,46 @@ export class IntegrationsService {
     return { connected: true, provider };
   }
 
-  /** Validate an incoming-webhook URL for the given chat provider. */
+  /** Allowed webhook hosts per provider (exact host or subdomain — never a path substring). */
+  private static readonly WEBHOOK_HOSTS: Record<string, string[]> = {
+    slack: ['hooks.slack.com'],
+    discord: ['discord.com', 'discordapp.com'],
+  };
+
+  /**
+   * Validate an incoming-webhook URL for the given chat provider. Parses the URL and checks
+   * the real hostname against an allowlist — not a substring match, which
+   * `https://evil.com/hooks.slack.com/` would have slipped past (§4.6 SSRF). Also enforces
+   * https and the provider's expected webhook path.
+   */
   private assertWebhookUrl(provider: string, url: string): void {
-    if (!url || !/^https:\/\//i.test(url)) {
+    const allowedHosts = IntegrationsService.WEBHOOK_HOSTS[provider] ?? [];
+    const shape = checkUrlShape(url, {
+      allowedProtocols: ['https:'],
+      allowedHosts,
+    });
+    if (!shape.ok || !shape.url) {
       throw new BadRequestException(
-        'A valid https:// webhook URL is required.',
+        `A valid https:// ${provider} incoming-webhook URL is required.`,
       );
     }
-    const ok =
-      (provider === 'slack' && /hooks\.slack\.com\//i.test(url)) ||
-      (provider === 'discord' &&
-        /discord(app)?\.com\/api\/webhooks\//i.test(url));
-    if (!ok) {
+    const path = shape.url.pathname;
+    const validPath =
+      (provider === 'slack' && path.startsWith('/services/')) ||
+      (provider === 'discord' && path.startsWith('/api/webhooks/'));
+    if (!validPath) {
       throw new BadRequestException(
         `That does not look like a ${provider} incoming-webhook URL.`,
       );
     }
   }
+
+  /** Per-provider circuit breakers: a failing Slack/Discord endpoint fails fast instead of
+   *  tying up sockets for the full timeout on every announce (§10 · safe integrations). */
+  private readonly webhookBreakers = new CircuitBreakerRegistry({
+    failureThreshold: 4,
+    cooldownMs: 60_000,
+  });
 
   /** POST a message to a Slack/Discord incoming webhook. Throws on a non-2xx/timeout. */
   private async postWebhook(
@@ -218,23 +243,28 @@ export class IntegrationsService {
     url: string,
     message: string,
   ): Promise<void> {
+    // Re-check at dispatch time too: connections stored before the host-allowlist fix (or
+    // edited directly in the DB) must not become an SSRF vector via announce().
+    this.assertWebhookUrl(provider, url);
     const body =
       provider === 'slack' ? { text: message } : { content: message };
-    const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), 8000);
-    try {
-      const res = await fetch(url, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
-        signal: controller.signal,
-      });
-      if (!res.ok) {
-        throw new Error(`webhook responded ${res.status}`);
+    await this.webhookBreakers.for(provider).execute(async () => {
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), 8000);
+      try {
+        const res = await fetch(url, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body),
+          signal: controller.signal,
+        });
+        if (!res.ok) {
+          throw new Error(`webhook responded ${res.status}`);
+        }
+      } finally {
+        clearTimeout(timer);
       }
-    } finally {
-      clearTimeout(timer);
-    }
+    });
   }
 
   /** Post a message to a connected chat webhook (Slack/Discord). */

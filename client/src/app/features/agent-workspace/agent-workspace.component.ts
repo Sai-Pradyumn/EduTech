@@ -414,7 +414,10 @@ export class AgentWorkspaceComponent implements OnInit {
   }
 
   feedback(rating: 'up' | 'down', msg: ChatMsg): void {
-    this.agent.sendFeedback(rating, msg.messageId).subscribe({ next: () => this.toast.success('Thanks for the feedback') });
+    this.agent.sendFeedback(rating, msg.messageId).subscribe({
+      next: () => this.toast.success('Thanks for the feedback'),
+      error: () => this.toast.error('Could not send feedback'),
+    });
   }
 
   private onEvent(st: PersonaState, e: AgentStreamEvent, assistant: ChatMsg): void {

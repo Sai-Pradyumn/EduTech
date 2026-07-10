@@ -7,6 +7,7 @@ import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import { GoogleAuthService } from './google-auth.service';
 import { OtpService } from './otp.service';
+import { MfaService } from './mfa.service';
 import { JwtStrategy } from './strategies/jwt.strategy';
 import { EmailOtp, EmailOtpSchema } from './schemas/email-otp.schema';
 
@@ -20,7 +21,13 @@ import { EmailOtp, EmailOtpSchema } from './schemas/email-otp.schema';
     ]),
   ],
   controllers: [AuthController],
-  providers: [AuthService, GoogleAuthService, OtpService, JwtStrategy],
-  exports: [AuthService],
+  providers: [
+    AuthService,
+    GoogleAuthService,
+    OtpService,
+    MfaService,
+    JwtStrategy,
+  ],
+  exports: [AuthService, MfaService],
 })
 export class AuthModule {}

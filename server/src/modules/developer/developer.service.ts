@@ -7,6 +7,10 @@ import {
 import { InjectModel } from '@nestjs/mongoose';
 import { createHash, createHmac, randomBytes, randomUUID } from 'crypto';
 import { Model, Types } from 'mongoose';
+import {
+  assertPublicUrl,
+  checkUrlShape,
+} from '../../common/security/ssrf-guard';
 import { ApiKey, ApiKeyDocument } from './schemas/api-key.schema';
 import {
   WebhookDelivery,
@@ -108,7 +112,19 @@ export class DeveloperService {
   }
 
   // ── webhooks ──
+
+  /** Reject webhook targets that aren't public https URLs (SSRF · §4.6). Fast, DNS-free
+   *  rejection of localhost/private/metadata/non-https at registration time. */
+  private assertRegistrableWebhookUrl(url: string): void {
+    const shape = checkUrlShape(url, { allowedProtocols: ['https:'] });
+    if (!shape.ok)
+      throw new BadRequestException(
+        `Invalid webhook URL: ${shape.reason ?? 'must be a public https:// address'}`,
+      );
+  }
+
   async createWebhook(orgId: string, url: string, events: string[]) {
+    this.assertRegistrableWebhookUrl(url);
     const secret = `whsec_${randomUUID().replace(/-/g, '')}`;
     const doc = await this.endpoints.create({
       org: new Types.ObjectId(orgId),
@@ -135,6 +151,7 @@ export class DeveloperService {
   ) {
     if (!Types.ObjectId.isValid(id))
       throw new BadRequestException('Invalid webhook id');
+    if (patch.url !== undefined) this.assertRegistrableWebhookUrl(patch.url);
     const doc = await this.endpoints
       .findOneAndUpdate(
         { _id: new Types.ObjectId(id), org: new Types.ObjectId(orgId) },
@@ -207,6 +224,9 @@ export class DeveloperService {
     let responseCode: number | undefined;
     let error: string | undefined;
     try {
+      // Resolve-and-verify at send time: blocks a target whose DNS now points at a private
+      // address (rebinding) or a URL stored before the registration check existed (§4.6).
+      await assertPublicUrl(ep.url, { allowedProtocols: ['https:'] });
       const res = await fetch(ep.url, {
         method: 'POST',
         headers: {

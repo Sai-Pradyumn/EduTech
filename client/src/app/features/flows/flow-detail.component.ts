@@ -13,6 +13,7 @@ import { EmptyStateComponent } from '../../shared/ui/empty-state.component';
 import { SkeletonComponent } from '../../shared/ui/skeleton.component';
 import { ToastService } from '../../core/services/toast.service';
 import { ConfettiService } from '../../core/services/confetti.service';
+import { DomainBusService } from '../../core/services/domain-bus.service';
 import { Flow, FlowNode, FlowService } from '../../core/services/flow.service';
 import { VisualService } from '../../core/services/visual.service';
 import { EDGE_META, FLOW_NODE_META, toneColor } from './flow-node-meta';
@@ -352,6 +353,7 @@ export class FlowDetailComponent {
   private readonly visualApi = inject(VisualService);
   private readonly toast = inject(ToastService);
   private readonly confetti = inject(ConfettiService);
+  private readonly bus = inject(DomainBusService);
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
 
@@ -670,6 +672,8 @@ export class FlowDetailComponent {
     this.flowApi.updateNode(f.id, n.id, { status }).subscribe({
       next: (updated) => {
         this.flow.set(updated);
+        // Today / Skill Twin / Passport / intelligence all derive from node progress.
+        this.bus.invalidate(['dailyPlan', 'skillTwin', 'passport', 'intelligence']);
         // Celebrate the moment the whole flow is mastered.
         if (!wasComplete && updated.status === 'completed') {
           this.confetti.burst({ y: 0.35, count: 160 });

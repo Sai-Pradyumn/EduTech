@@ -7,16 +7,40 @@
 const VERSION = 'asta-v2';
 const API_CACHE = 'asta-api-v2';
 const SHELL = ['/', '/index.html', '/manifest.webmanifest', '/icon.svg', '/favicon.ico'];
+const LOCAL_HOSTS = ['localhost', '127.0.0.1', '::1', '[::1]'];
+const IS_LOCAL_DEV =
+  LOCAL_HOSTS.includes(self.location.hostname) ||
+  self.location.hostname.endsWith('.localhost');
 
 // Read-only GET endpoints safe to serve stale when offline (no private mutations).
 const SAFE_API = ['/api/roadmap', '/api/flows', '/api/spaces', '/api/quizzes', '/api/projects', '/api/skill-passport'];
 const isSafeApi = (path) => SAFE_API.some((p) => path === p || path.startsWith(p + '/') || path.startsWith(p + '?'));
+const isDevAsset = (path) =>
+  path.endsWith('.map') ||
+  path.startsWith('/@') ||
+  path.includes('/.angular/cache/') ||
+  path.includes('/node_modules/');
 
 self.addEventListener('install', (event) => {
+  if (IS_LOCAL_DEV) {
+    event.waitUntil(self.skipWaiting());
+    return;
+  }
+
   event.waitUntil(caches.open(VERSION).then((cache) => cache.addAll(SHELL)).then(() => self.skipWaiting()));
 });
 
 self.addEventListener('activate', (event) => {
+  if (IS_LOCAL_DEV) {
+    event.waitUntil(
+      caches.keys()
+        .then((keys) => Promise.all(keys.map((key) => caches.delete(key))))
+        .then(() => self.registration.unregister())
+        .then(() => self.clients.claim()),
+    );
+    return;
+  }
+
   event.waitUntil(
     caches.keys().then((keys) => Promise.all(keys.filter((k) => k !== VERSION && k !== API_CACHE).map((k) => caches.delete(k)))).then(() => self.clients.claim()),
   );
@@ -27,6 +51,7 @@ self.addEventListener('fetch', (event) => {
   if (request.method !== 'GET') return;
 
   const url = new URL(request.url);
+  if (IS_LOCAL_DEV || isDevAsset(url.pathname)) return;
   // Safe read-only APIs: stale-while-revalidate so they work offline; everything else /api → network only.
   if (url.pathname.startsWith('/api')) {
     if (!isSafeApi(url.pathname)) return;

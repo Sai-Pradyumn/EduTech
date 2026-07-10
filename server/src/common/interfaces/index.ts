@@ -5,6 +5,9 @@ export interface JwtPayload {
   sub: string;
   email: string;
   role: Role;
+  /** Token version — bumping the user's version revokes every outstanding refresh token
+   *  ("log out all devices", forced revocation on compromise). Absent on legacy tokens. */
+  tv?: number;
 }
 
 export interface AuthUser {

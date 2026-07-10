@@ -1,0 +1,17 @@
+# Gitleaks configuration (SECURITY_IMPLEMENTATION.md §14 · SM-01 secret scanning).
+# Extends the default ruleset; allowlists only known-safe test fixtures.
+
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Known-safe fixtures: RFC test vectors and spec-only dummy values"
+paths = [
+  '''server/src/common/security/totp\.spec\.ts''',
+  '''server/src/common/security/breached-password\.spec\.ts''',
+  '''server/src/common/security/boot-checks\.spec\.ts''',
+]
+regexes = [
+  # RFC 4226/6238 published shared secret used in standards test vectors only.
+  '''12345678901234567890''',
+]

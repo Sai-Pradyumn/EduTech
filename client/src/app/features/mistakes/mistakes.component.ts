@@ -391,7 +391,7 @@ export class MistakesComponent {
     const done = () => { if (--pending === 0) this.loading.set(false); };
     this.api.list().subscribe({ next: (l) => this.mistakes.set(l), error: () => { this.loadError.set(true); done(); }, complete: done });
     this.api.stats().subscribe({ next: (s) => this.stats.set(s), error: () => { this.loadError.set(true); done(); }, complete: done });
-    this.api.due().subscribe({ next: (d) => this.dueList.set(d), error: done, complete: done });
+    this.api.due().subscribe({ next: (d) => this.dueList.set(d), error: () => { this.loadError.set(true); done(); }, complete: done });
   }
 
   /** Format a next-review date as a friendly relative hint. */
@@ -550,7 +550,10 @@ export class MistakesComponent {
   runAction(m: Mistake, a: RepairAction): void {
     if (a.kind === 'flow_repair_node') { this.addToFlow(m); return; }
     // mark done + navigate to the relevant studio with a prefilled prompt
-    this.api.toggleAction(m.id, a.id, true).subscribe({ next: (upd) => this.replace(upd), error: () => undefined });
+    this.api.toggleAction(m.id, a.id, true).subscribe({
+      next: (upd) => this.replace(upd),
+      error: () => this.toast.error('Could not mark the repair step done — it will stay open'),
+    });
     if (a.route) {
       this.router.navigate([a.route], { queryParams: a.prompt ? { prompt: a.prompt } : undefined });
     }

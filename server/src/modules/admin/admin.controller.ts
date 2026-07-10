@@ -1,14 +1,17 @@
 import { Controller, Get } from '@nestjs/common';
 import { Role } from '../../common/enums';
 import { Roles } from '../../common/decorators/roles.decorator';
+import { RequireMfa } from '../../common/decorators/require-mfa.decorator';
 import { AdminService } from './admin.service';
 
 /**
  * Admin Command Center surface (Phase 3 · A7). Role.Admin only — platform-operator
  * AI analytics + student roster for the legacy `/admin` shell.
+ * @RequireMfa enforces mandatory MFA once REQUIRE_ADMIN_MFA=true (AU-03).
  */
 @Controller('admin')
 @Roles(Role.Admin)
+@RequireMfa()
 export class AdminController {
   constructor(private readonly admin: AdminService) {}
 

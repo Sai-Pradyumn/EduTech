@@ -108,8 +108,113 @@ export class UsersService {
   }
 
   async setRefreshTokenHash(id: string, hash: string | null): Promise<void> {
+    // null must actually REMOVE the stored hash. The previous `hash ?? undefined` form was
+    // silently dropped by Mongoose (undefined values are stripped from updates), which
+    // meant logout never invalidated the refresh token — a real session-revocation bug.
     await this.userModel
-      .updateOne({ _id: id }, { refreshTokenHash: hash ?? undefined })
+      .updateOne(
+        { _id: id },
+        hash
+          ? { $set: { refreshTokenHash: hash } }
+          : { $unset: { refreshTokenHash: '' } },
+      )
+      .exec();
+  }
+
+  /** Revoke every outstanding refresh token for this user ("log out all devices"):
+   *  bump the token version and drop the stored refresh hash. */
+  async bumpTokenVersion(id: string): Promise<void> {
+    await this.userModel
+      .updateOne(
+        { _id: id },
+        { $inc: { tokenVersion: 1 }, $unset: { refreshTokenHash: '' } },
+      )
+      .exec();
+  }
+
+  /** Persist the throttle state after a failed credential login (AU-04). */
+  async applyLoginThrottle(
+    id: string,
+    attempts: number,
+    lockedUntilMs: number | null,
+  ): Promise<void> {
+    await this.userModel
+      .updateOne(
+        { _id: id },
+        {
+          $set: {
+            failedLoginAttempts: attempts,
+            loginLockedUntil: lockedUntilMs ? new Date(lockedUntilMs) : null,
+          },
+        },
+      )
+      .exec();
+  }
+
+  /** Clear the login throttle after a successful authentication. */
+  async resetLoginThrottle(id: string): Promise<void> {
+    await this.userModel
+      .updateOne(
+        { _id: id },
+        { $set: { failedLoginAttempts: 0, loginLockedUntil: null } },
+      )
+      .exec();
+  }
+
+  /* ── TOTP MFA (AU-03) — secret + recovery hashes are select:false ────────────────── */
+
+  /** Load a user including their (normally hidden) MFA secret and recovery hashes. */
+  findByIdWithMfa(id: string): Promise<UserDocument | null> {
+    if (!Types.ObjectId.isValid(id)) return Promise.resolve(null);
+    return this.userModel
+      .findById(id)
+      .select('+mfaSecret +mfaRecoveryHashes')
+      .exec();
+  }
+
+  /** Stage a TOTP secret during enrollment (not yet enabled until the first code verifies). */
+  async setMfaSecret(id: string, secret: string): Promise<void> {
+    await this.userModel
+      .updateOne(
+        { _id: id },
+        { $set: { mfaSecret: secret, mfaEnabled: false } },
+      )
+      .exec();
+  }
+
+  /** Activate MFA after a verified code, storing the hashed single-use recovery codes. */
+  async enableMfa(id: string, recoveryHashes: string[]): Promise<void> {
+    await this.userModel
+      .updateOne(
+        { _id: id },
+        {
+          $set: {
+            mfaEnabled: true,
+            mfaEnrolledAt: new Date(),
+            mfaRecoveryHashes: recoveryHashes,
+          },
+        },
+      )
+      .exec();
+  }
+
+  /** Fully disable MFA and purge the secret + recovery codes. */
+  async disableMfa(id: string): Promise<void> {
+    await this.userModel
+      .updateOne(
+        { _id: id },
+        {
+          $set: { mfaEnabled: false },
+          $unset: { mfaSecret: '', mfaRecoveryHashes: '', mfaEnrolledAt: '' },
+        },
+      )
+      .exec();
+  }
+
+  /** Persist the remaining recovery hashes after one is consumed at login. */
+  async setRecoveryHashes(id: string, hashes: string[]): Promise<void> {
+    await this.userModel
+      .updateOne({ _id: id }, { $set: { mfaRecoveryHashes: hashes } })
       .exec();
   }
 

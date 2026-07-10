@@ -10,6 +10,7 @@ import { FormsModule } from '@angular/forms';
 import { ButtonComponent } from '../../shared/ui/button.component';
 import { CardComponent } from '../../shared/ui/card.component';
 import { EmptyStateComponent } from '../../shared/ui/empty-state.component';
+import { LoadErrorComponent } from '../../shared/ui/load-error.component';
 import { OfflineNoticeComponent } from '../../shared/ui/offline-notice.component';
 import { SkeletonComponent } from '../../shared/ui/skeleton.component';
 import { ToastService } from '../../core/services/toast.service';
@@ -42,7 +43,7 @@ const LEVELS: { key: ResourceLevel | ''; label: string }[] = [
 @Component({
   selector: 'asta-resources',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormsModule, ButtonComponent, CardComponent, EmptyStateComponent, SkeletonComponent, OfflineNoticeComponent],
+  imports: [FormsModule, ButtonComponent, CardComponent, EmptyStateComponent, LoadErrorComponent, SkeletonComponent, OfflineNoticeComponent],
   template: `
     <header class="asta-page-command-header">
       <div class="min-w-0">

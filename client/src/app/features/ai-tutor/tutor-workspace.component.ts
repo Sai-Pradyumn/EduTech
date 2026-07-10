@@ -98,6 +98,8 @@ const STARTERS = [
           <div class="hist-panel">
             @if (historyLoading()) {
               <p class="text-[13px] text-txt-mute px-1 py-2">Loading your chats…</p>
+            } @else if (histError()) {
+              <p class="text-[13px] text-txt-mute px-1 py-2 flex items-center gap-2">Couldn't load your chats. <button class="retry-btn" (click)="loadHistory()">Retry</button></p>
             } @else if (history().length === 0) {
               <p class="text-[13px] text-txt-mute px-1 py-2">No past chats yet — everything you discuss is saved here.</p>
             } @else {
@@ -339,6 +341,7 @@ export class TutorWorkspaceComponent {
   readonly history = signal<AgentSessionSummary[]>([]);
   readonly showHistory = signal(false);
   readonly historyLoading = signal(false);
+  readonly histError = signal(false);
   readonly histQuery = signal('');
   readonly filteredHistory = computed(() => {
     const q = this.histQuery().trim().toLowerCase();
@@ -394,16 +397,22 @@ export class TutorWorkspaceComponent {
 
   toggleHistory(): void {
     this.showHistory.update((v) => !v);
-    if (this.showHistory() && this.history().length === 0) {
-      this.historyLoading.set(true);
-      this.agent.listSessions().subscribe({
-        next: (list) => {
-          this.history.set(list);
-          this.historyLoading.set(false);
-        },
-        error: () => this.historyLoading.set(false),
-      });
-    }
+    if (this.showHistory() && this.history().length === 0) this.loadHistory();
+  }
+
+  loadHistory(): void {
+    this.historyLoading.set(true);
+    this.histError.set(false);
+    this.agent.listSessions().subscribe({
+      next: (list) => {
+        this.history.set(list);
+        this.historyLoading.set(false);
+      },
+      error: () => {
+        this.historyLoading.set(false);
+        this.histError.set(true);
+      },
+    });
   }
 
   openSession(s: AgentSessionSummary): void {
@@ -658,7 +667,10 @@ export class TutorWorkspaceComponent {
   }
 
   feedback(rating: 'up' | 'down', msg: ChatMsg): void {
-    this.agent.sendFeedback(rating, msg.messageId).subscribe({ next: () => this.toast.success('Thanks for the feedback') });
+    this.agent.sendFeedback(rating, msg.messageId).subscribe({
+      next: () => this.toast.success('Thanks for the feedback'),
+      error: () => this.toast.error('Could not send feedback'),
+    });
   }
 
   private onEvent(e: AgentStreamEvent, assistant: ChatMsg): void {

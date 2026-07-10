@@ -43,3 +43,22 @@ export class ResendOtpDto {
   @IsEmail()
   email!: string;
 }
+
+/** A 6-digit authenticator code or an 8–12 char recovery code (with optional dash). */
+export class MfaCodeDto {
+  @IsString()
+  @MinLength(6)
+  @MaxLength(20)
+  code!: string;
+}
+
+export class MfaVerifyLoginDto {
+  @IsString()
+  @MinLength(10)
+  mfaToken!: string;
+
+  @IsString()
+  @MinLength(6)
+  @MaxLength(20)
+  code!: string;
+}

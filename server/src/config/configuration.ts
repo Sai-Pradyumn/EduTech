@@ -75,6 +75,27 @@ export interface AppConfig {
       bucket: string;
     };
   };
+  security: {
+    /** When true, accounts with an admin/platform role must have MFA enrolled to use
+     *  routes marked @RequireMfa (SECURITY_IMPLEMENTATION.md §17 · AU-03). Off by default so
+     *  a rollout can enroll admins first, then flip it on without locking anyone out. */
+    requireAdminMfa: boolean;
+    /** When true, new passwords are screened against public breach corpora via the HIBP
+     *  k-anonymity range API (AU-05). Fails open on network trouble. Off by default so dev
+     *  boxes without egress pay zero signup latency. */
+    passwordBreachCheck: boolean;
+    /** Enforce JWT issuer/audience on verification (§8). Tokens are always signed with
+     *  the claims; flip this on after one refresh lifetime so old tokens have rotated. */
+    jwtStrictClaims: boolean;
+    /** CSRF backstop: reject state-changing browser requests whose Origin is neither the
+     *  SPA origin nor the API host itself. On by default; server-to-server unaffected. */
+    strictOriginCheck: boolean;
+    /** Load shedding: max in-flight requests before responding 503 (0 = disabled). */
+    maxInflight: number;
+    /** Versioned AES-256-GCM key ring for field-level encryption (DP-03), e.g.
+     *  "1:<base64-32B>" or "1:old,2:new". Empty = store fields as-is. */
+    fieldEncryptionKeys: string;
+  };
 }
 
 export default (): AppConfig => ({
@@ -196,5 +217,13 @@ export default (): AppConfig => ({
       region: process.env.AWS_REGION ?? 'ap-south-1',
       bucket: process.env.S3_BUCKET ?? '',
     },
+  },
+  security: {
+    requireAdminMfa: process.env.REQUIRE_ADMIN_MFA === 'true',
+    passwordBreachCheck: process.env.PASSWORD_BREACH_CHECK === 'true',
+    jwtStrictClaims: process.env.JWT_STRICT_CLAIMS === 'true',
+    strictOriginCheck: process.env.STRICT_ORIGIN_CHECK !== 'false',
+    maxInflight: parseInt(process.env.MAX_INFLIGHT ?? '0', 10),
+    fieldEncryptionKeys: process.env.FIELD_ENCRYPTION_KEYS ?? '',
   },
 });

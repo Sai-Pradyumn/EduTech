@@ -1,0 +1,52 @@
+# Security gate (SECURITY_IMPLEMENTATION.md §14 · CI-01/CI-02/SM-01).
+# Blocks the PR when: a secret is committed, a high/critical advisory hits production
+# dependencies, the security specs fail, or a banned dangerous sink is introduced
+# (the static security-regression spec runs inside the server test suite).
+name: security
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  secret-scan:
+    name: Secret scan (gitleaks)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # scan full history, not just the tip
+      - uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  dependency-audit:
+    name: Dependency audit (prod deps, high+)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci --include=dev
+      - name: Audit production dependencies
+        run: npm audit --omit=dev --audit-level=high
+
+  server-security-tests:
+    name: Build + server tests (incl. security suite)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci --include=dev
+      - run: npm run build:server
+      - name: Server test suite (security specs included)
+        run: npm run test --workspace server

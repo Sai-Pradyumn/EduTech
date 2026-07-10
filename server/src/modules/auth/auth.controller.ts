@@ -15,9 +15,12 @@ import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { AuthUser } from '../../common/interfaces';
 import { AuthService } from './auth.service';
 import { GoogleAuthService } from './google-auth.service';
+import { MfaService } from './mfa.service';
 import { SessionsService } from '../sessions/sessions.service';
 import {
   LoginDto,
+  MfaCodeDto,
+  MfaVerifyLoginDto,
   RefreshDto,
   RegisterDto,
   ResendOtpDto,
@@ -35,6 +38,7 @@ export class AuthController {
   constructor(
     private readonly auth: AuthService,
     private readonly google: GoogleAuthService,
+    private readonly mfa: MfaService,
     private readonly sessions: SessionsService,
     private readonly config: ConfigService,
   ) {}
@@ -106,6 +110,23 @@ export class AuthController {
   async googleLogin(@Body() dto: GoogleLoginDto, @Req() req: Request) {
     const profile = await this.google.verify(dto.credential);
     const result = await this.auth.googleLogin(profile);
+    // No session yet when a second factor is still required.
+    if ('user' in result) {
+      await this.sessions.record(
+        result.user.id,
+        req.ip,
+        req.header('user-agent'),
+      );
+    }
+    return result;
+  }
+
+  /** Complete an MFA-gated login (redeems the short-lived mfaToken from login/google). */
+  @Public()
+  @HttpCode(HttpStatus.OK)
+  @Post('mfa/verify-login')
+  async mfaVerifyLogin(@Body() dto: MfaVerifyLoginDto, @Req() req: Request) {
+    const result = await this.auth.verifyMfaLogin(dto.mfaToken, dto.code);
     await this.sessions.record(
       result.user.id,
       req.ip,
@@ -128,8 +149,45 @@ export class AuthController {
     return { ok: true };
   }
 
+  /** Log out everywhere: bumps the session generation, revoking all refresh tokens. */
+  @HttpCode(HttpStatus.OK)
+  @Post('logout-all')
+  async logoutAll(@CurrentUser() user: AuthUser) {
+    await this.auth.logoutAll(user.id);
+    return { ok: true };
+  }
+
   @Get('me')
   async me(@CurrentUser() user: AuthUser) {
     return { user: await this.auth.getPublicUser(user.id) };
+  }
+
+  /* ── MFA enrollment / management (authenticated) — SECURITY_IMPLEMENTATION.md §6/§17 ── */
+
+  /** Current MFA state for the signed-in user. */
+  @Get('mfa/status')
+  mfaStatus(@CurrentUser() user: AuthUser) {
+    return this.mfa.status(user.id);
+  }
+
+  /** Step 1: stage a TOTP secret and return the QR provisioning URI. */
+  @HttpCode(HttpStatus.OK)
+  @Post('mfa/setup')
+  mfaSetup(@CurrentUser() user: AuthUser) {
+    return this.mfa.beginEnrollment(user.id);
+  }
+
+  /** Step 2: verify the first code, enable MFA, and return one-time recovery codes. */
+  @HttpCode(HttpStatus.OK)
+  @Post('mfa/activate')
+  mfaActivate(@CurrentUser() user: AuthUser, @Body() dto: MfaCodeDto) {
+    return this.mfa.activate(user.id, dto.code);
+  }
+
+  /** Disable MFA (requires a valid authenticator or recovery code). */
+  @HttpCode(HttpStatus.OK)
+  @Post('mfa/disable')
+  mfaDisable(@CurrentUser() user: AuthUser, @Body() dto: MfaCodeDto) {
+    return this.mfa.disable(user.id, dto.code);
   }
 }

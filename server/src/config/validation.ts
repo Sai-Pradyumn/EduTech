@@ -99,4 +99,19 @@ export const validationSchema = Joi.object({
   VAPID_PRIVATE_KEY: Joi.string().allow('').default(''),
   VAPID_SUBJECT: Joi.string().allow('').default('mailto:support@asta.dev'),
   ENABLE_BULLMQ: Joi.string().valid('true', 'false').default('false'),
+
+  // Enforce MFA on @RequireMfa admin routes (AU-03). Off by default for safe rollout.
+  REQUIRE_ADMIN_MFA: Joi.string().valid('true', 'false').default('false'),
+  // Screen new passwords against breach corpora via HIBP k-anonymity (AU-05).
+  PASSWORD_BREACH_CHECK: Joi.string().valid('true', 'false').default('false'),
+  // Share rate-limit counters across instances via Redis (API-02). Memory when false.
+  RATE_LIMIT_REDIS: Joi.string().valid('true', 'false').default('false'),
+  // Enforce JWT issuer/audience at verification (flip after one refresh lifetime).
+  JWT_STRICT_CLAIMS: Joi.string().valid('true', 'false').default('false'),
+  // CSRF backstop on state-changing browser requests. On unless explicitly disabled.
+  STRICT_ORIGIN_CHECK: Joi.string().valid('true', 'false').default('true'),
+  // Load shedding: max in-flight requests before 503 (0 disables).
+  MAX_INFLIGHT: Joi.number().integer().min(0).default(0),
+  // Versioned AES-256-GCM key ring for field-level encryption (DP-03). Empty = off.
+  FIELD_ENCRYPTION_KEYS: Joi.string().allow('').default(''),
 });
